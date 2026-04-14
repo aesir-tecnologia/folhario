@@ -2,524 +2,334 @@
 
 **Defined:** 2026-04-14
 **Core Value:** A beginner in Brazil goes from "I have no idea what this plant is" to "identified, cataloged, with care guidance" in under 2 minutes from email verification — honestly, without jargon, without fake confidence scores, and without hiding AI provenance.
-
-Requirements below are derived from `docs/CAVE-PRD.md` (CAVE-PRD — Folhário MVP, dated 2026-04-12). The PRD's §23 acceptance criteria are the acceptance source-of-truth; REQ-IDs here are user-centric rollups that each trace back to one or more ACs.
-
----
+**Source of truth:** `docs/CAVE-PRD.md` — every requirement below maps back to an AC-* in PRD §23 or a behavioral rule in §1–§22.
 
 ## v1 Requirements
 
-### Foundation
+Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
-Cross-cutting invariants that every other context depends on.
+### AUTH — Authentication, verification, credentials
 
-- [ ] **FDN-01**: Repo scaffolded with Next.js 16 App Router + React 19 + TypeScript, `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry,contracts}/` layout, with ESLint import-restriction rule blocking cross-context repository imports
-- [ ] **FDN-02**: Drizzle ORM client factory uses `postgres(url, { prepare: false })` against Supabase Supavisor transaction pooler; Drizzle only callable from inside repositories
-- [ ] **FDN-03**: Supabase project created with RLS enabled on all user-owned tables; service-role key used server-side only
-- [ ] **FDN-04**: Inngest SDK wired with dev server locally, production event + signing keys separated
-- [ ] **FDN-05**: `next-intl` i18n layer loads pt-BR catalogue from day one; every user-facing string flows through the translation layer; `<html lang="pt-BR">` and `Intl.*` formatters used for dates, numbers, currency
-- [ ] **FDN-06**: Vitest unit tests runnable via `vitest run`; Playwright E2E runnable against a deployed preview URL
-- [ ] **FDN-07**: GitHub Actions `ci.yml` runs lint, typecheck, unit, and integration tests against a real `postgres:16` service container with migrations applied; `deploy-preview.yml` provisions a Supabase branch DB per PR and runs Playwright against the Vercel preview URL; `deploy-production.yml` applies migrations to prod, deploys to Vercel, and uploads Sentry source maps. Vercel git integration is OFF
-- [ ] **FDN-08**: Sentry configured with `beforeSend` PII scrub stripping `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; request bodies dropped on identification routes; users never set via email
-- [ ] **FDN-09**: PostHog EU cloud (`https://eu.posthog.com`) initialized; event taxonomy seeded per PRD §20 (`signup_completed`, `identification_started`, `plant_added`, etc.); session replay OFF
-- [ ] **FDN-10**: PWA shell via `@serwist/next` — manifest, installable, `display: standalone`, all icon sizes, `<meta viewport>` with user scaling enabled; app-update toast notifies user when new service-worker version is waiting, triggers `skipWaiting` + reload on confirm
-- [ ] **FDN-11**: Design tokens implemented for light + dark Folhário palette (Paper Cream / Night Cream families), `color-scheme: light dark`, system preference honored, Settings override available
-- [ ] **FDN-12**: Typography — Source Serif 4 (variable) for headlines/plant names; Plus Jakarta Sans (variable) for everything else; Lucide icons only (1.5px stroke, rounded caps)
-- [ ] **FDN-13**: Safe-area support — `min-h-[100dvh]` (never `h-screen`), `env(safe-area-inset-*)` honored on top/bottom chrome; bottom nav reserves safe-area inset
-- [ ] **FDN-14**: Bottom navigation shell — Home, Catálogo, Identificar, Perfil tabs; icon + label always visible; 56px + safe-area inset; tab scroll + filter state preserved per tab
-- [ ] **FDN-15**: Focus ring global 3px Canopy/Sprout at 40% opacity, 2px offset, 8px corner radius; tab order matches visual reading order; focus moves programmatically to main content on route change
+- [ ] **AUTH-01**: User can sign up with email + password; User row created; Subscription created `status=trialing`; verification email dispatched via Resend (PRD §12, AC-AUTH-001)
+- [ ] **AUTH-02**: Unverified email+password user is blocked on gated endpoints with `email_unverified` 403 until they click the verification link; only resend-verification, Settings/account, and logout are reachable (AC-AUTH-001, §1, §12)
+- [ ] **AUTH-03**: User can sign up / log in with Google OAuth; user treated as pre-verified; gated endpoints reachable immediately; no verification email sent (AC-AUTH-002)
+- [ ] **AUTH-04**: Clicking the verification link marks the user verified and starts the "value <2 min" clock; subsequent requests to gated endpoints succeed (AC-AUTH-003, §1)
+- [ ] **AUTH-05**: User can log in with email + password using per-device JWT; no server sessions (§12)
+- [ ] **AUTH-06**: Age confirmation ≥13 is mandatory at signup; `User.age_confirmed_at` set only on confirm; <13 blocked (PRD §13, AC-LGPD-010)
+- [ ] **AUTH-07**: Signup form accepts optional partner code; partner code captured in `User.partner_code` and surfaced to billing (PRD §12, AC-SUB-003)
+- [ ] **AUTH-08**: Signup captures device timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` and stores it in `User.timezone` (§12)
+- [ ] **AUTH-09**: Signup records T&C + privacy policy acceptance linked to active `policy_version` in ConsentLog (§13)
+- [ ] **AUTH-10**: Public auth endpoints (signup, login, OAuth callbacks) enforce a narrow per-IP attempt throttle; tripping returns `rate_limited` 429; successful logins do not consume the failure budget; independent of target account (AC-AUTH-004, AC-AUTH-005, §5)
+- [ ] **AUTH-11**: User can request a password reset; endpoint always returns 200 (no enumeration); valid email receives a Resend email with single-use token, 1h expiry, hashed storage (AC-AUTH-006)
+- [ ] **AUTH-12**: Valid reset token within window lets user set a new password; reused token returns `validation_failed`; existing JWTs remain valid (AC-AUTH-006)
+- [ ] **AUTH-13**: Authed user can change password from Settings with current + new; wrong current → `invalid_credentials` 401; OAuth-only accounts have the UI hidden and the endpoint rejects with `forbidden` (AC-AUTH-007)
+- [ ] **AUTH-14**: User can log out of the current device (revokes that JWT and its push subscription only) (§14)
+- [ ] **AUTH-15**: Unverified-email full-screen blocker shown in place of app shell: "Verifique seu e-mail para começar." + resend-verification + logout link; cleared on verification (§16)
 
-### Authentication & Identity
+### IDENT — Identification flow, providers, caps, failure modes
 
-Maps to PRD §12, AC-AUTH-001 through AC-AUTH-007.
+- [ ] **IDENT-01**: Authed, consented, trialing/active, below caps → `POST /v1/identifications` returns ≤3 results above `min_confidence` ordered desc; persists `Identification status=success` with provider/model/latency/consent_version/photo_urls; emits `identification.succeeded` (AC-ID-001)
+- [ ] **IDENT-02**: First identification ever without `identification_third_party` consent triggers the LGPD consent modal disclosing Plant ID + OpenAI-compat providers and Art. 33 transfer; no provider call until granted (AC-ID-002, §13)
+- [ ] **IDENT-03**: Consent revoked or never granted → `consent_required` 403; no provider call; no Identification row (AC-ID-003)
+- [ ] **IDENT-04**: Backend filters results below `ProviderBudget.min_confidence` (seed 0.30); only above-threshold results returned, max 3 (AC-ID-004, §6)
+- [ ] **IDENT-05**: Zero results above threshold → "could not identify" UI + retake guidance; Identification row persisted with raw provider results for history (AC-ID-005)
+- [ ] **IDENT-06**: User selects a result and confirms → Plant created linked to Species, name pre-filled, `Identification.plant_id` FK set (AC-ID-006)
+- [ ] **IDENT-07**: Manual correction stored in `manual_correction`; Species resolved by name match if possible, else null + flagged (AC-ID-007)
+- [ ] **IDENT-08**: Identification history lists success + timeout + provider_unavailable attempts with `status` + `failure_reason`; success shows results + selection; re-associate-with-catalog link available (AC-ID-008, §6)
+- [ ] **IDENT-09**: Trialing user over daily cap (5) or period cap (75) → `cap_hit` 429 with reset time; no provider call; no counter increment; UI shows manual entry link, no retry button (AC-ID-009, AC-COST-001)
+- [ ] **IDENT-10**: Active user over daily cap (15) or period cap (200 per billing period) → `cap_hit` 429 (AC-ID-010, AC-COST-002)
+- [ ] **IDENT-11**: Primary provider at cost ceiling, fallback available → router skips primary, logs `cost_ceiling_reached`, dispatches fallback, client gets success (AC-ID-011, AC-COST-006)
+- [ ] **IDENT-12**: All providers exhausted → `provider_unavailable` 503; Identification row persisted `status=failed` with most specific internal `failure_reason`; internal reason never leaks to client; photo retained in IndexedDB while on screen (AC-ID-012, AC-COST-007)
+- [ ] **IDENT-13**: Provider call exceeds backend timeout → `timeout` 504; row persisted `status=failed`, `failure_reason=timeout`; visible in history (AC-ID-013)
+- [ ] **IDENT-14**: User navigates away mid-request → request completes server-side, row persisted; no in-flight UI restored on return (AC-ID-014)
+- [ ] **IDENT-15**: Malformed/empty provider response → `failure_reason=invalid_response`, breaker counter incremented, fallover to next provider (AC-ID-015)
+- [ ] **IDENT-16**: Photos with EXIF GPS tags are rejected by the server as `validation_failed`; client-side strip is the primary defense (AC-ID-016, §11)
+- [ ] **IDENT-17**: Identification accepts 1..N photos (camera/gallery multipart) with static capture guide visible (leaf + flower + whole plant + "Mais fotos melhoram a precisão") (§16)
+- [ ] **IDENT-18**: Vercel function budget for identification: total wall-clock 50s, per-call cap 30s, fallover requires ≥10s remaining budget else short-circuit `provider_unavailable` (§6)
+- [ ] **IDENT-19**: `IdentificationProvider` adapter interface with Plant ID + OpenAI-compat connectors; backend chooses active provider, not client; prompts + config versioned with app deploy (§6)
+- [ ] **IDENT-20**: Offline identification blocked with clear "Identificação requer conexão à internet." message (§10, §16)
+- [ ] **IDENT-21**: Read-only catalog mode shows paywall modal on identify attempt: "Reative sua assinatura para identificar novas plantas." (§12, §16)
 
-- [ ] **AUTH-01**: User can sign up with email + password, age-confirmation checkbox ≥13 (block <13), T&C + privacy-policy acceptance required, timezone captured from device via `Intl.DateTimeFormat().resolvedOptions().timeZone`, optional partner-code field
-- [ ] **AUTH-02**: Email-verification email dispatched via Resend on email+password signup; until verified, every gated endpoint returns `email_unverified` 403 — only resend-verification, Settings/account, and logout endpoints reachable
-- [ ] **AUTH-03**: OAuth signup (Google minimum) treated as pre-verified, bypasses the email-verification gate
-- [ ] **AUTH-04**: User can log in with email + password or Google OAuth; JWT issued per device; no server sessions
-- [ ] **AUTH-05**: Unauthed password-reset endpoint always returns 200 regardless of email existence; matching email+password accounts receive a Resend link with single-use hashed token + 1h expiry; token invalidated on use or on next password change; OAuth-only accounts receive no email
-- [ ] **AUTH-06**: Authed user can change password from Settings requiring current + new + confirmation; wrong current returns `invalid_credentials` 401; OAuth-only accounts cannot reach the endpoint (Settings control hidden)
-- [ ] **AUTH-07**: Public auth endpoints (signup, login, OAuth callbacks) share a narrow per-IP attempt throttle; tripped returns `rate_limited` 429 — this is the only place `rate_limited` is emitted in MVP
-- [ ] **AUTH-08**: Email-verification resend endpoint throttled narrowly (per-email + per-IP) and returns `rate_limited` 429 on trip without revealing whether the email exists
-- [ ] **AUTH-09**: User can log out from the current device; per-device JWT and PushSubscription revoked, other devices unaffected
+### CAT — Catalog ("Meu Jardim")
 
-### LGPD & Consent
+- [ ] **CAT-01**: From identification + selected result, Plant created with `species_id`, name pre-filled, cover photo from identification upload (AC-CAT-001)
+- [ ] **CAT-02**: Manual plant creation with name + ≥1 photo creates Plant `species_id=null` + PhotoEntry for initial photo (AC-CAT-002)
+- [ ] **CAT-03**: Manual create missing name OR missing photo → `validation_failed`, no row, field highlighted (AC-CAT-003)
+- [ ] **CAT-04**: Plant profile shows name, nickname, room, acquisition_date, notes, cover, care-card link (if CareGuide exists), active reminders, photo journal, identification history (AC-CAT-004, §7)
+- [ ] **CAT-05**: Location picker shows user's prior locations as quick-select + defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` + free text; free text becomes reusable (AC-CAT-005, AC-CAT-006)
+- [ ] **CAT-06**: Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline (AC-CAT-007)
+- [ ] **CAT-07**: Catalog default sort: `acquisition_date` desc, null dates last (AC-CAT-008)
+- [ ] **CAT-08**: Sort control offers name A-Z, name Z-A, date newest, date oldest, location; selected sort persists for session (AC-CAT-009)
+- [ ] **CAT-09**: Deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, sets `Identification.plant_id` NULL but preserves the history row (AC-CAT-010)
+- [ ] **CAT-10**: Catalog grid responsive: 2 cols ≤375px, 3 cols 600–899px, 4 cols ≥900px (§16)
+- [ ] **CAT-11**: Empty catalog state: "Sua estante ainda está esperando a primeira planta." with Sage line-art illustration + single Canopy Green primary CTA (§17)
 
-Maps to PRD §13, AC-LGPD-001 through AC-LGPD-011.
+### CARE — Care guides + toxicity + augmentation
 
-- [ ] **LGPD-01**: ConsentLog stores ToS + privacy-policy acceptance at signup on Contract legal basis (policy_version recorded); revocation never breaks catalog view access
-- [ ] **LGPD-02**: First-ever identification attempt triggers a blocking consent modal disclosing active providers (Plant ID, OpenAI-compat) + Art. 33 international transfer; ConsentLog records `identification_third_party` on Consent basis; no provider call until granted
-- [ ] **LGPD-03**: ConsentLog records push-notification consent on Consent basis when the user grants browser permission from the first-reminder prompt
-- [ ] **LGPD-04**: Settings per-consent toggle allows revocation; revoking `identification_third_party` blocks future identification requests (`consent_required` 403) but preserves existing catalog + identification history
-- [ ] **LGPD-05**: Privacy-policy version bump flagged material for an activity forces a new consent prompt before next use of that activity; updated `policy_version` recorded on grant
-- [ ] **LGPD-06**: User can request data export from Settings; Inngest `iam/generate-export` builds a zip containing `data.json` (profile, plants, photo metadata, reminders, reminder logs, identification history, consent log, subscription, billing events) + `photos/` directory with ORIGINAL photos keyed by record id; archive uploaded to `data-exports` bucket; DataExportRequest status → ready with signed time-limited `download_url`; "data export ready" email dispatched via Resend
-- [ ] **LGPD-07**: User can request account deletion from Settings; confirmation modal discloses what's deleted + 7-day grace + cancellation path; DataDeletionRequest created with `grace_period_ends_at = now + 7d`; `User.deletion_requested_at` set; account suspended immediately (only cancel-deletion + read-only LGPD endpoints reachable, others return `deletion_in_progress` 403)
-- [ ] **LGPD-08**: Inngest `iam/process-deletion` uses `step.sleepUntil(grace_period_ends_at)` with cancelOn on `deletion_cancelled`; on wake, if cancelled → exit silently; if still pending → hard-delete photos, plants, ID history, reminder logs, consent records (except minimal deletion-audit row) and dispatch "deletion complete" email; state re-read from DB on wake, never from memoized pre-sleep snapshot
-- [ ] **LGPD-09**: User in 7-day grace can cancel deletion from recovery flow; DataDeletionRequest.status → cancelled; account returns to normal access; Inngest function exits silently when it wakes
-- [ ] **LGPD-10**: Identification records capture `consent_version` active at request time
-- [ ] **LGPD-11**: Settings exposes DPO (Encarregado) contact info, privacy policy link, and ToS link (content is a pre-launch blocker, page structure ships in v1)
-- [ ] **LGPD-12**: Backups purge deleted user data within 30 days (next full backup cycle); aggregated/anonymized metrics may be retained
+- [ ] **CARE-01**: Published care guide renders all 7 fields (watering, light, soil, temperature, humidity, toxicity, difficulty) + seasonal tips + compatibility block (AC-CARE-001, §8)
+- [ ] **CARE-02**: Toxicity badge composition: icon + colored filled badge + literal text + striped border + SR `role="alert"`; always at top of care card and plant profile (AC-CARE-002, §17)
+- [ ] **CARE-03**: Mandatory disclaimer "Informação gerada por IA — confirme com um veterinário" visible on same viewport as any toxicity badge (AC-CARE-003)
+- [ ] **CARE-04**: First-ever care guide view shows one-time toxicity disclaimer modal; acknowledgement persisted in `User.toxicity_disclaimer_acknowledged_at`; never shown again (AC-CARE-004)
+- [ ] **CARE-05**: Plant whose species has no CareGuide hides the care card section but keeps all other features; `Species.flag_reason=missing_care_guide`, `flag_status=open`, `identification_count` incremented (AC-CARE-005)
+- [ ] **CARE-06**: `identification.succeeded` for a species missing a care guide triggers the `care-guide/augment` Inngest function via `CareGuideProvider.augment`; on success upsert `CareGuide source=augmented`, bump version, set `Species.flag_status=resolved`, emit `care_guide.augmented`; identification response not delayed (AC-CARE-006)
+- [ ] **CARE-07**: Augmented CareGuide rows always render with a persistent "Gerado por IA" Trust Teal chip at top; badge never removed (AC-CARE-007, §17)
+- [ ] **CARE-08**: `ProviderBudget` row for `purpose=care_guide` at/above `daily_cost_cap_cents` → augment function exits without provider call, logs `cost_ceiling_reached`, leaves CareGuide untouched; `purpose=identification` budget for same provider untouched (AC-CARE-010)
+- [ ] **CARE-09**: Founder-curated launch corpus of ≥200 domestic species with complete care guides published (LAUNCH BLOCKER, §8)
+- [ ] **CARE-10**: Care guide card visual implementation per §17 — icon rows, Calm Slate secondary text, photography-first atmosphere
 
-### Image Handling
+### REM — Reminders + daily nudge
 
-Maps to PRD §11.
+- [ ] **REM-01**: Plants without reminders show no prompt/suggestion to create one (AC-REM-001, §9)
+- [ ] **REM-02**: New user defaults `notification_time_local=09:00`; editable in Settings; applies to ALL reminders for that user; no per-reminder override (AC-REM-002)
+- [ ] **REM-03**: Reminder creation from plant profile with type (watering/fertilization) + frequency (prefilled from care guide if available) + advance_rule (default `from_scheduled`) (AC-REM-003, §9)
+- [ ] **REM-04**: First reminder ever created → browser-native push permission prompt surfaced (never at signup/first-visit/first-identify) (§15)
+- [ ] **REM-05**: `reminders/dispatch` cron emits exactly ONE `daily_reminder_summary.due` per user at their `notification_time_local` when ≥1 reminder is due/overdue; `notifications/send-push` fans out single daily nudge to every active PushSubscription; push payload carries no Done/Snooze, taps deep-link to Home (AC-REM-004, §15)
+- [ ] **REM-06**: Zero reminders due/overdue → no event emitted, no nudge sent (AC-REM-004)
+- [ ] **REM-07**: Done tapped in-app on device A → ReminderLog `action=done`; device B clears on next sync; `next_due_at` advances per `advance_rule`; Done never reachable from push payload (AC-REM-005)
+- [ ] **REM-08**: Snooze offers 1h / 3h / tomorrow; chosen option writes `ReminderLog action=snoozed` + `snooze_until` (AC-REM-006)
+- [ ] **REM-09**: `from_scheduled` reminder: next_due computed from previous scheduled + frequency regardless of snooze or late-done date (AC-REM-007, AC-REM-008)
+- [ ] **REM-10**: `from_acted` reminder: next_due computed from done timestamp + frequency (AC-REM-009)
+- [ ] **REM-11**: Default `advance_rule=from_scheduled` persisted when user doesn't touch control (AC-REM-010)
+- [ ] **REM-12**: Overdue reminders appear in a visually distinct section but do not auto-mute, auto-complete, or change visual weight as they age (AC-REM-011, §9)
+- [ ] **REM-13**: Subscription not in trialing/active → `reminders/dispatch` sends no pushes; `next_due_at` not advanced; resumes on return to trialing/active (AC-REM-012)
+- [ ] **REM-14**: No push permission OR all devices offline at notification_time → no nudge delivered; user sees due/overdue list on Home next open; no missed-push backlog entity (AC-REM-013, §15)
+- [ ] **REM-15**: Done queued offline → replayed with client UUID, server dedupes, single ReminderLog row (AC-REM-014)
+- [ ] **REM-16**: Done queued for reminder/plant deleted elsewhere → action dropped silently, no error (AC-REM-015)
+- [ ] **REM-17**: Push service returns 410 Gone or 404 Not Found → corresponding `PushSubscription` row deleted in same step; self-healing, no cron prune (AC-REM-016, §15)
+- [ ] **REM-18**: `next_due_at` computed at create/advance (UTC) from `User.notification_time_local` + `User.timezone`; dispatcher queries by UTC only; no per-request tz math at fire time (§9)
+- [ ] **REM-19**: Home "Hoje" section is the authoritative due/overdue list (source of truth for any missed push), derived live from Reminder + ReminderLog (§9, §16)
+- [ ] **REM-20**: Changing `User.timezone` in Settings does NOT retroactively shift already-scheduled reminders; only future computations use the new tz (§9)
+- [ ] **REM-21**: Reminders management screen lists reminders grouped by plant with edit/delete; header shows current global notification time with "Change in Settings" link (§16)
 
-- [ ] **IMG-01**: Client-side compression before upload, target ≤1MB, retry once at lower quality on failure before prompting user for a different photo
-- [ ] **IMG-02**: EXIF (including GPS) stripped client-side before upload; server rejects any upload still carrying GPS tags as `validation_failed`
-- [ ] **IMG-03**: Thumbnail generation on upload for catalog views; original preserved for identification accuracy; thumbnail-gen failure falls back to original + placeholder, next sync regenerates
-- [ ] **IMG-04**: Photos stored in private Supabase Storage buckets (`plant-photos`, `plant-thumbnails`, `data-exports`); access via signed URLs only; no signed URLs persisted in DB columns
-- [ ] **IMG-05**: Upload failure mid-transfer keeps the compressed image in IndexedDB for standard offline retry; no partial files in storage
+### OFF — Offline sync + queue
 
-### Plant Identification
+- [ ] **OFF-01**: Action queued in IndexedDB while offline survives close + reopen while still offline (AC-OFF-001)
+- [ ] **OFF-02**: Queued action replayed >1 time after reconnect is processed exactly once; duplicates return the original result (server-side dedup via `Idempotency-Key` = client UUID) (AC-OFF-002)
+- [ ] **OFF-03**: Multiple queued actions with distinct client timestamps replayed in ascending client-timestamp order (AC-OFF-003)
+- [ ] **OFF-04**: Queued actions targeting a plant deleted server-side are all dropped; a single discard summary toast appears on next app open, tappable to a modal grouping discarded actions by type with client timestamps (read-only) (AC-OFF-004, §10)
+- [ ] **OFF-05**: Queued field edit on stale row: last-write-wins by server timestamp, no merge UI (AC-OFF-005)
+- [ ] **OFF-06**: Queued action failing sync 5 attempts creates an `OfflineSyncFailure` row and is removed from the active queue (AC-OFF-006)
+- [ ] **OFF-07**: `OfflineSyncFailure` rows visible in Settings "Needs attention" with retry/discard per entry (AC-OFF-007)
+- [ ] **OFF-08**: Previously loaded catalog browsable offline; new identifications blocked with clear message (AC-OFF-008, §10)
+- [ ] **OFF-09**: Service worker + PWA manifest (installable, display `standalone`, all icon sizes, theme color matches brand, viewport allows user scaling) (§17, §2)
+- [ ] **OFF-10**: App-update toast: new SW version waiting → non-blocking bottom toast "Nova versão disponível" + "Atualizar"; tapping triggers `skipWaiting` + reload; honors `prefers-reduced-motion`; never auto-reloads mid-session (§16)
 
-Maps to PRD §6, AC-ID-001 through AC-ID-016, AC-COST-001 through AC-COST-010.
+### SUB — Subscription, trials, billing, webhooks
 
-- [ ] **ID-01**: `IdentificationProvider` abstraction with Plant ID v3 primary and OpenAI-compatible vision fallback; router consults per-provider cost ceiling + circuit breaker BEFORE dispatch; prompts + provider config versioned in source
-- [ ] **ID-02**: Identify flow accepts 1..N photos via camera or gallery, returns top 3 results above `ProviderBudget.min_confidence` ranked by confidence descending; each result: common_name (pt-BR), scientific_name, confidence 0..1, thumbnail
-- [ ] **ID-03**: Zero results above threshold → "could not identify" UI with retake guidance + "Tentar novamente" + "Adicionar manualmente"; Identification row still persisted with raw provider results for history
-- [ ] **ID-04**: Per-user daily + period caps enforced BEFORE any provider call (trial: 5/day, 75/window; paid: 15/day, 200/billing-period); over-cap returns `cap_hit` 429 with reset time, writes NO Identification row, increments NO ProviderUsageCounter
-- [ ] **ID-05**: Per-provider daily USD ceilings (default $5/day Plant ID + $5/day OpenAI-compat) enforced via atomic `INSERT ... ON CONFLICT` pattern on ProviderUsageCounter keyed `(provider, purpose, utc_date)`; no lost writes under concurrency
-- [ ] **ID-06**: `purpose` field on ProviderBudget separates `identification` and `care_guide` budgets; care_guide exhaustion NEVER affects identification
-- [ ] **ID-07**: Provider router falls over to next configured provider on unavailability; logs rejection reason per provider (`cap_hit`, `cost_ceiling_reached`, `breaker_open`); internal reasons persisted in `Identification.failure_reason` but surfaced to client only as `provider_unavailable` 503
-- [ ] **ID-08**: Circuit breaker trips after N consecutive provider failures in window, half-opens after cooldown, closes on success; state managed in-memory as optimization only (DB budget gate is authoritative)
-- [ ] **ID-09**: Operator alert email dispatched via Resend when a ProviderUsageCounter reaches 80% of daily cap; latched via `alert_80_sent_at` so it fires once per counter row; idempotent on `(provider, purpose, utc_date)`
-- [ ] **ID-10**: Vercel function budget — total wall-clock 50s, per-call 30s; router tries next fallback only if remaining budget ≥10s, else short-circuits `provider_unavailable`
-- [ ] **ID-11**: Backend timeout → `timeout` 504; Identification row persisted `status=failed`, `failure_reason=timeout`, visible in history
-- [ ] **ID-12**: Malformed / empty provider response counted as provider failure (`failure_reason=invalid_response`), increments breaker counter, falls over to next provider for current request
-- [ ] **ID-13**: User-initiated manual correction stored in `Identification.manual_correction`; Species resolved by name match if possible, else NULL and flagged for later
-- [ ] **ID-14**: Identification history screen lists every attempt (success + failure) with `status`, `failure_reason`, thumbnails, results returned, selected result; detail view offers "re-associate with catalog entry"
-- [ ] **ID-15**: OpenAI-compat vision fallback uses a JSON-schema-constrained response that forces self-reported confidence 0..1 so the `min_confidence` filter is meaningful; fallback results labeled visibly differently from Plant ID results ("confiança estimada pela IA")
-- [ ] **ID-16**: Identify screen shows a static pre-capture guide (leaf + flower + whole plant + "Mais fotos melhoram a precisão") before camera picker opens
+- [ ] **SUB-01**: New signup creates Subscription `status=trialing` with `trial_end_date` from signup time (AC-SUB-001)
+- [ ] **SUB-02**: Signup without partner code → `trial_end_date = created_at + 14d`, `trial_source=organic` (AC-SUB-002)
+- [ ] **SUB-03**: Signup with valid partner code → `trial_end_date = created_at + 30d`, `trial_source=partner`, `partner_code` recorded (AC-SUB-003)
+- [ ] **SUB-04**: Signup with unknown/inactive code → `invalid_partner_code` inline error, user clears to proceed with 14-day trial (AC-SUB-004)
+- [ ] **SUB-05**: Organic trialing user inside window can enter a valid partner code in Settings → `trial_end_date = created_at + 30d`, clock NOT reset (AC-SUB-005)
+- [ ] **SUB-06**: Partner trialing user cannot stack a second partner code; rejected; `trial_end_date` unchanged (AC-SUB-006)
+- [ ] **SUB-07**: Deactivating a PartnerStore does NOT affect already-established trials (AC-SUB-007)
+- [ ] **SUB-08**: Trial ends with valid payment method → Stripe webhook transitions status to `active` (AC-SUB-008)
+- [ ] **SUB-09**: Trial ends without valid PM → status → `expired`; read-only catalog mode (AC-SUB-009)
+- [ ] **SUB-10**: Active subscription renewal charge fails → status → `past_due`; payment-failed email dispatched via Resend (AC-SUB-010)
+- [ ] **SUB-11**: Past_due recovered via retry/manual payment → status → `active` (AC-SUB-011)
+- [ ] **SUB-12**: Past_due exhausting 4-retry/7-day dunning → status → `canceled` (AC-SUB-012)
+- [ ] **SUB-13**: User cancels from Settings → `cancel_at_period_end=true`; UI confirms access-ends date; full access until `current_period_end` (AC-SUB-013)
+- [ ] **SUB-14**: Canceled subscription reaching `current_period_end` → status → `expired` (AC-SUB-014)
+- [ ] **SUB-15**: Canceled/expired non-deleted account with valid PM can reactivate as a NEW subscription in `active` (AC-SUB-015)
+- [ ] **SUB-16**: Sub not in trialing/active → catalog/photos/journal/care guides viewable, identification → `subscription_required` 402, reminders paused, mutations → `read_only_mode` 402, Settings fully accessible; persistent read-only banner shown (AC-SUB-016)
+- [ ] **SUB-17**: `Subscription.status` mutated only by webhook handler; no client-callable route mutates status directly (AC-SUB-017)
+- [ ] **SUB-18**: Stripe delivering same `event_id` twice → only one `BillingEvent` row via UNIQUE constraint; second delivery is no-op returning 200 (AC-SUB-018)
+- [ ] **SUB-19**: Bad Stripe webhook signature → `webhook_signature_invalid` 401, no BillingEvent, logged to Sentry critical (AC-SUB-019)
+- [ ] **SUB-20**: End-to-end Stripe webhook path: verify signature → insert BillingEvent → enqueue `billing.webhook.received` to Inngest → `billing/process-webhook` transitions state + emits `subscription.status_changed` + triggers dunning email via Resend (AC-SUB-020, §12)
+- [ ] **SUB-21**: `BillingProvider` adapter interface (`create_customer`, `start_subscription`, `cancel_subscription`, `reactivate_subscription`, `update_payment_method`, `get_subscription`, `handle_webhook`) — business logic never touches Stripe SDK directly (§12)
+- [ ] **SUB-22**: Stripe Checkout accepts card + Pix as payment methods (§12)
+- [ ] **SUB-23**: Settings → Subscription & billing screen shows current plan + status, renewal/trial-end date, PM (last 4 / Pix indicator), update PM button, partner code input (ONLY while trialing AND wall-clock < trial_end_date), cancel, reactivate (when canceled/expired), billing history (§16)
 
-### Catalog ("Meu Jardim")
+### COST — Per-user caps + per-provider ceilings + breakers
 
-Maps to PRD §7, AC-CAT-001 through AC-CAT-010.
+- [ ] **COST-01**: `IdentificationLimit` returns `daily_cap=5`, `period_cap=75` for tier `trial`; window = `[trial_start_date, trial_end_date]` (AC-COST-001)
+- [ ] **COST-02**: `IdentificationLimit` returns `daily_cap=15`, `period_cap=200` for tier `paid`; window = `[current_period_start, current_period_end]` (AC-COST-002)
+- [ ] **COST-03**: Cap check executes BEFORE any `ProviderUsageCounter` increment or provider call; over-cap requests never reach a provider (AC-COST-003)
+- [ ] **COST-04**: Provider counter reaching 80% of `daily_cost_cap_cents` dispatches an operator alert email via Resend (AC-COST-004)
+- [ ] **COST-05**: Provider counter at daily ceiling → provider marked unavailable rest of UTC day; router skips it; fallover engaged (AC-COST-005)
+- [ ] **COST-06**: Per-provider ceilings keyed `(provider, purpose)` — `identification` and `care_guide` are independent budgets/counters; care_guide exhaustion never affects identification (AC-COST-006, §6, §8)
+- [ ] **COST-07**: Only `provider_unavailable` surfaces to clients; internal reasons (`cost_ceiling_reached`, `breaker_open`) persisted in `Identification.failure_reason` but never returned (AC-COST-007)
+- [ ] **COST-08**: Circuit breaker per provider: opens after N consecutive failures within window, half-open after cooldown, close on success; trips logged with `breaker_open` (AC-COST-008, §6)
+- [ ] **COST-09**: Two concurrent identification requests to the same provider → `ProviderUsageCounter` increments serialized atomically; no lost writes (AC-COST-009)
+- [ ] **COST-10**: Operator updates to `IdentificationLimit` or `ProviderBudget` in DB take effect on next request past in-memory cache TTL; no redeploy (AC-COST-010)
 
-- [ ] **CAT-01**: User can add a plant from the identification flow (name + photo prefilled, `species_id` set, `Identification.plant_id` set on confirm)
-- [ ] **CAT-02**: User can add a plant manually with name + ≥1 photo required; optional nickname, location, acquisition_date, notes; `species_id` NULL; PhotoEntry created for initial photo
-- [ ] **CAT-03**: Plant profile shows cover + thumbnail gallery, name + nickname (editable inline), room, acquisition_date, notes, care card link (if CareGuide exists), active reminders, photo journal, ID history link, delete in overflow
-- [ ] **CAT-04**: Room/location picker combines quick-select of previously-used locations + defaults (`sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro`) + free text that becomes reusable
-- [ ] **CAT-05**: Photo journal — user can add a photo with optional note per plant; entries shown reverse-chronological; each entry is a PhotoEntry row
-- [ ] **CAT-06**: Catalog grid: 2 cols ≤375px, 3 cols 600–899px, 4 cols ≥900px; cards are 4:5 portrait with cover + name + nickname + location
-- [ ] **CAT-07**: Sort options name A-Z / Z-A / acquisition_date newest (default) / oldest / location; null dates sort last; sort persists for session
-- [ ] **CAT-08**: Delete plant cascades PhotoEntry + Reminder rows; storage objects scheduled for deletion; `Identification.plant_id` set NULL but Identification row preserved
-- [ ] **CAT-09**: Empty-state Home (zero plants) shows full-bleed primary CTA "Identifique sua primeira planta" + camera button, plus secondary "Adicionar manualmente" link — and nothing else (no tasks, no notifications, no nav clutter)
-- [ ] **CAT-10**: Alt text on images is generated programmatically from context (plant name + nickname for catalog cards, plant + date for journal entries, provider common name for identification thumbnails); never empty or filename-based
+### LGPD — Data rights, deletion grace, consent
 
-### Species & Care Guides
+- [ ] **LGPD-01**: Data export request creates `DataExportRequest status=pending`; Inngest `iam/generate-export` generates a zip containing `data.json` (all user records) + `photos/` directory (originals); uploaded to `data-exports` bucket; status → ready, `download_url` signed time-limited (AC-LGPD-001)
+- [ ] **LGPD-02**: Export ready → "data export ready" email dispatched via Resend with signed URL (AC-LGPD-002)
+- [ ] **LGPD-03**: Deletion request creates `DataDeletionRequest` with `grace_period_ends_at = now + 7d`; `User.deletion_requested_at` set; confirmation email sent; account suspended immediately (AC-LGPD-003)
+- [ ] **LGPD-04**: Inside 7-day grace, only cancel-deletion + read-only LGPD endpoints reachable; other requests → `deletion_in_progress` 403 (AC-LGPD-004)
+- [ ] **LGPD-05**: Cancellation during grace sets `DataDeletionRequest.status=cancelled`; Inngest function `iam/process-deletion` wakes on `grace_period_ends_at`, observes cancellation, exits without deleting; account returns to normal access (AC-LGPD-005)
+- [ ] **LGPD-06**: Grace elapsed without cancellation → function resumes, hard-deletes photos, plants, ID history, reminder logs, consent rows (except minimal deletion-audit record); "deletion complete" email sent (AC-LGPD-006)
+- [ ] **LGPD-07**: Hard-deleted account reflected in next full backup cycle within 30 days (AC-LGPD-007)
+- [ ] **LGPD-08**: Consent revocation from Settings records in ConsentLog; existing catalog access preserved; only affected processing activity blocked going forward (AC-LGPD-008)
+- [ ] **LGPD-09**: Successful identification captures `consent_version` of the policy active at request time (AC-LGPD-009)
+- [ ] **LGPD-10**: Privacy policy version bump flagged material for an activity → on next use of that activity, a new consent prompt appears before proceeding; new `policy_version` recorded on grant (AC-LGPD-011)
+- [ ] **LGPD-11**: `iam/process-deletion` uses `step.sleepUntil(grace_period_ends_at)` with `grace_period_ends_at` embedded in the event payload (not fetched at wake time) — survives cancellation races (§13, stack notes)
+- [ ] **LGPD-12**: Privacy policy + ToS published and versioned before launch; DPO contact info surfaced in privacy policy + Settings (§13)
+- [ ] **LGPD-13**: Sentry breadcrumbs scrub `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; drop request bodies on identification routes; `Sentry.setUser({ id })` only (§13, §21)
+- [ ] **LGPD-14**: Settings Privacy & LGPD panel: "Exportar meus dados", "Excluir minha conta" (confirm modal → 7-day grace), manage consents (per-consent toggle), privacy policy link, ToS link, DPO contact (§16)
 
-Maps to PRD §8, AC-CARE-001 through AC-CARE-010.
+### NOTIF — Email + push notifications
 
-- [ ] **CARE-01**: Curated care-guide corpus of ≥200 domestic species loaded into `Species` + `CareGuide` tables in pt-BR before launch (launch blocker, founder-owned); fields: watering, light, soil, temperature range, humidity, toxicity, difficulty, seasonal tips (SH), compatibility notes
-- [ ] **CARE-02**: Care card renders all 7 fields + seasonal tips + compatibility block when present; visual icons per dimension; Sage icons, never used as state graphic
-- [ ] **CARE-03**: Toxicity badge composition — filled rounded-rect in Urgent Poppy/Blossom, paw+child icon (18px filled), literal text "Tóxico para pets e crianças", 3px diagonal striped accent border on left edge of care card (survives scroll), disclaimer "Informação gerada por IA — confirme com um veterinário" directly below, `role="alert"` SR announcement reading full phrase, first-reveal-per-session warning haptic
-- [ ] **CARE-04**: Toxicity badge and disclaimer appear at TOP of care card AND plant profile; color is never the sole signal (redundant icon + text + striped border always present)
-- [ ] **CARE-05**: First-ever care-guide view shows a one-time toxicity-AI disclaimer modal; acknowledgement persisted in `User.toxicity_disclaimer_acknowledged_at`; not shown again
-- [ ] **CARE-06**: Plant with missing CareGuide hides the care card section entirely; `Species.flag_reason=missing_care_guide`, `flag_status=open`, `identification_count` incremented; rest of plant profile still works
-- [ ] **CARE-07**: `identification.succeeded` for a species with no CareGuide (or missing fields) triggers `care-guide/augment` Inngest function, which calls `CareGuideProvider.augment()`, upserts CareGuide `source=augmented`, bumps version, sets `Species.flag_status=resolved` + `resolved_by="augmentation"` + `resolved_at`, emits `care_guide.augmented`; identification response NOT delayed
-- [ ] **CARE-08**: Augmented care guides ALWAYS render with a persistent "Gerado por IA" Trust Teal chip at top of the care card; never removed for `source=augmented` rows
-- [ ] **CARE-09**: Care-guide augmentation uses a separate `(provider, purpose=care_guide)` budget row; exhaustion pauses augmentation and logs `cost_ceiling_reached` without touching the identification budget or existing CareGuide rows
+- [ ] **NOTIF-01**: `notifications/send-email` Inngest function handles all transactional email via Resend: verification, password reset, trial ending (T-3d, T-1d), trial expired, payment failed (dunning 1–4), subscription canceled, reactivation confirmation, account deletion requested, account deletion completed, data export ready, 80% provider cost ceiling alert (§20)
+- [ ] **NOTIF-02**: React Email templates for each transactional message, pt-BR copy, brand-aligned (§20)
+- [ ] **NOTIF-03**: Per-device `PushSubscription` keyed `(user_id, device_id)`; logout revokes only that device's subscription (§14)
+- [ ] **NOTIF-04**: `notifications/send-push` via `web-push` + VAPID; VAPID keys generated once per env (§15)
+- [ ] **NOTIF-05**: Notification preferences: global mute + per-plant mute; global across devices (§14, §15)
+- [ ] **NOTIF-06**: Trial ending notifier: daily Inngest cron fires `trial.ending` at T-3d and T-1d relative to `trial_end_date` (§3)
 
-### Reminders
+### OBS — Observability + metrics
 
-Maps to PRD §9, AC-REM-001 through AC-REM-016.
+- [ ] **OBS-01**: Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GitHub Actions (Turbopack requirement); PII scrubbing rules enforced (§21, stack notes)
+- [ ] **OBS-02**: PostHog EU cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD residency compliant (§21)
+- [ ] **OBS-03**: PostHog event taxonomy implemented: `signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested` (§20)
+- [ ] **OBS-04**: Scheduled SQL rollups via Inngest cron over `Identification` table → dashboards for confidence distribution, manual correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, augmentation cost (§21, §22)
+- [ ] **OBS-05**: Alerts: Sentry on new issues + error-rate spikes, 80% provider ceiling → Resend operator email, Stripe webhook signature failure → Sentry critical + operator email, Inngest function failure after retries exhausted → Sentry (§21)
 
-- [ ] **REM-01**: User creates a reminder ONLY from a plant profile; no prompt or suggestion on plants without reminders
-- [ ] **REM-02**: Reminder types: watering, fertilization; frequency prefilled from CareGuide if available, always editable
-- [ ] **REM-03**: `User.notification_time_local` defaults to `09:00`, editable in Settings, applies to ALL reminders for that user — no per-reminder override
-- [ ] **REM-04**: `advance_rule` defaults to `from_scheduled` and is editable per reminder (`from_scheduled` = next = previous scheduled + frequency; `from_acted` = next = done timestamp + frequency)
-- [ ] **REM-05**: `next_due_at` stored in UTC and computed at create/advance from `User.notification_time_local + User.timezone`; no per-request tz math at fire time
-- [ ] **REM-06**: User can mark a reminder done in-app — writes `ReminderLog action=done`, advances `next_due_at` per `advance_rule`
-- [ ] **REM-07**: User can snooze a reminder (1h / 3h / tomorrow) in-app — writes `ReminderLog action=snoozed` + `snooze_until`; snooze affects only the current occurrence, next occurrence after Done is unaffected
-- [ ] **REM-08**: `from_scheduled` reminder snoozed then later marked done — `next_due_at` computed from ORIGINAL scheduled date + frequency, not from snooze time or done time
-- [ ] **REM-09**: Overdue reminders visually distinct from upcoming; no escalation, no auto-mute, no auto-complete, no visual-weight change as they age
-- [ ] **REM-10**: Home surfaces the due + overdue list for today grouped by "Hoje" — this list IS the source of truth (no separate notification center); derived live from `Reminder` + `ReminderLog`
-- [ ] **REM-11**: Reminder scheduling + delivery PAUSED while subscription is not in `trialing`/`active`; `next_due_at` NOT advanced; resume on return to `trialing`/`active`
-- [ ] **REM-12**: Changing `User.timezone` in Settings does NOT retroactively shift already-scheduled reminders; only future computations use the new tz
-- [ ] **REM-13**: Reminders management screen lists reminders grouped by plant; each entry shows plant name, type, frequency, next due, advance_rule; edit/delete per entry; create form has type + frequency (prefilled) + advance_rule (default from_scheduled); header shows current global notification time with "Change in Settings" link
+### UI — Screens, design system, accessibility
 
-### Push Notifications
+- [ ] **UI-01**: Global design tokens implementation — Paper Cream / Night Cream palettes (light + dark), Source Serif 4 + Plus Jakarta Sans typography, Lucide icons (§17)
+- [ ] **UI-02**: Dark mode via `color-scheme: light dark` following system pref with manual override in Settings; every screen designed and reviewed in both variants (§17)
+- [ ] **UI-03**: Global focus ring: 3px Canopy @ 40% opacity, 2px offset, 8px corner radius; tab order matches visual reading order; focus moves to main content region on route change (§17, §18)
+- [ ] **UI-04**: Home screen — empty (zero plants): full-bleed "Identifique sua primeira planta" CTA + camera button + "Adicionar manualmente" text link; nothing else (§16)
+- [ ] **UI-05**: Home screen — default (≥1 plant): "Hoje" section listing reminders due + overdue, quick "Identificar planta" action, Catalog nav (§16)
+- [ ] **UI-06**: Identify screen — picker with capture guide, loading, results (top 3 cards), no-results, cap reached, provider unavailable, offline, read-only paywall, first-time consent modal (§16)
+- [ ] **UI-07**: Catalog grid responsive breakpoints (2/3/4 cols at 375/600/900) with card: 4:5 photo + name + nickname + location; sort control (§16)
+- [ ] **UI-08**: Plant profile screen — cover + thumbnail gallery, inline-edit name/nickname, room, acquisition_date, notes, care card (or hidden), active reminders, photo journal preview, ID history link, delete overflow; augmented / no-care / read-only variants (§16)
+- [ ] **UI-09**: Care guide screen — visual icons per dimension, toxicity badge prominent at top, first-view toxicity modal, "Gerado por IA" chip when augmented, seasonal tips, compatibility block (§16, §17)
+- [ ] **UI-10**: Reminders management screen per §16 + first-reminder push-permission prompt (§16)
+- [ ] **UI-11**: Photo journal screen — per-plant chronological list with add entry flow; read-only variant (§16)
+- [ ] **UI-12**: Identification history screen — per-user list with thumbnails, results, selected/manual/failed status; detail view with re-associate action (§16)
+- [ ] **UI-13**: Settings screen — account, notifications, subscription & billing, privacy & LGPD, needs attention (sync failures), app info sections (§16)
+- [ ] **UI-14**: Bottom navigation: 4 items (Home, Catálogo, Identificar, Perfil), 28px Lucide + label always, Canopy active indicator bar, 56px + safe-area padding, per-tab scroll preservation (§17)
+- [ ] **UI-15**: Confidence ladder: 3 states (high ≥70%, medium 40–69%, low threshold–39%) with redundant signals (bar, segments, percentage, SR label) (§17, §18)
+- [ ] **UI-16**: Toxicity badge composition (non-negotiable 7-part spec): filled rounded-rect, 18px paw+child icon, literal text, 3px diagonal striped accent border, disclaimer line, SR `role="alert"` full phrase, haptic warning on first reveal per session (§17, §18)
+- [ ] **UI-17**: Skeletal shimmer loading (never circular spinners) with 300ms delay threshold and 120ms fade-in for faster ops; static block + 80ms fade under reduced motion (§17)
+- [ ] **UI-18**: Empty states — composed invitations with Sage line-art illustration + Source Serif headline + Calm Slate hint + exactly one Canopy primary CTA (§17)
+- [ ] **UI-19**: Error states — inline + calm, never full-screen red wall; cause + recovery copy; retry path always exposed (§17)
+- [ ] **UI-20**: Spring-physics motion (120 stiffness / 18 damping / 1 mass), capture-button 1.00→1.03 tactile bounce, 3.2s breathing loop on empty Home CTA, 60ms cascade on list reveal; reduced-motion fallbacks defined for every motion (§17)
+- [ ] **UI-21**: Safe areas: `min-h-[100dvh]`, `env(safe-area-inset-*)` everywhere, no `h-screen`, no horizontal scroll except Home "Today's tasks" strip (§17)
+- [ ] **UI-22**: Accessibility — color never sole signal; image alt text from context (plant name + nickname); live regions for async state; modal focus trap; decorative illustrations `accessibility hidden`; haptics only on critical events (§18)
+- [ ] **UI-23**: `next-intl` day-one integration, `<html lang="pt-BR">`, `date-fns-tz` for server-rendered user-local times, all strings via i18n layer (no hardcoded copy), `Intl.*` with pt-BR for numbers/dates/currency (§17, stack notes)
+- [ ] **UI-24**: Persistent banners — offline ("Você está offline..."), read-only ("Sua assinatura expirou..."), discard summary post-sync toast (§16)
+- [ ] **UI-25**: Design system guardrails enforced: no emoji, no pure black/white, no gradient text, no glassmorphism/neumorphism, no Inter/generic serifs, no centered hero stacks, no fabricated metrics (§17)
 
-Maps to PRD §15, AC-REM-004, AC-REM-013, AC-REM-016.
+### INFRA — Tech stack, repo layout, DB, CI/CD, security
 
-- [ ] **PUSH-01**: Web Push via `web-push` + VAPID; VAPID key pair generated once per environment, persisted as env var
-- [ ] **PUSH-02**: Push-permission browser prompt shown ONLY on save of the first reminder ever; never at signup, first visit, or first identify
-- [ ] **PUSH-03**: Per-device `PushSubscription` row keyed `(user_id, device_id)`; logout revokes only the current device's subscription
-- [ ] **PUSH-04**: `reminders/dispatch` Inngest cron runs every 5 minutes; emits `daily_reminder_summary.due` ONCE per user per day at the user's `notification_time_local` ONLY when at least one reminder is due or overdue; suppressed entirely when subscription is not in `trialing`/`active`
-- [ ] **PUSH-05**: `notifications/send-push` Inngest function fans out the daily nudge to every active `PushSubscription` for the user; push payload carries NO Done/Snooze controls and NO per-plant detail — tapping deep-links to Home
-- [ ] **PUSH-06**: Push-service 410 Gone or 404 Not Found for an endpoint → `PushSubscription` row DELETED in the same Inngest step (reactive self-healing, no cron prune)
-- [ ] **PUSH-07**: User with no push permission OR all devices offline sees the same due/overdue list on Home next app open; no missed-push backlog entity
-- [ ] **PUSH-08**: Notification preferences — global mute (suppresses daily nudge entirely) and per-plant mute (excludes that plant's reminders from the due/overdue count used to decide nudge firing); both are GLOBAL across devices, not per-device
-
-### Offline Sync
-
-Maps to PRD §10, AC-OFF-001 through AC-OFF-008.
-
-- [ ] **OFF-01**: Each mutating action gets a client-generated UUID used as `Idempotency-Key`; server dedupes; replays return original result
-- [ ] **OFF-02**: Offline queue lives in IndexedDB; survives app close/reopen; replayed in ascending client-timestamp order on reconnect
-- [ ] **OFF-03**: New identifications BLOCKED while offline with a clear message (cloud-only); cached catalog + care guides browsable; photo adds + reminder-done actions queued
-- [ ] **OFF-04**: Queued actions targeting a plant deleted server-side dropped en masse; single discard summary toast on next app open → tappable → modal listing discarded actions grouped by type with original client timestamps
-- [ ] **OFF-05**: Field edit on stale data — last-write-wins by SERVER timestamp; no merge UI
-- [ ] **OFF-06**: Reminder-done queued for a reminder/plant gone on server dropped silently (no error shown)
-- [ ] **OFF-07**: Queued action failing sync 5 times writes an `OfflineSyncFailure` row and is removed from active queue
-- [ ] **OFF-08**: Settings "Needs attention" list shows OfflineSyncFailure rows with retry/discard per item
-
-### Subscription & Billing
-
-Maps to PRD §12, AC-SUB-001 through AC-SUB-020.
-
-- [ ] **SUB-01**: `BillingProvider` adapter interface (`create_customer`, `start_subscription`, `cancel_subscription`, `reactivate_subscription`, `update_payment_method`, `get_subscription`, `handle_webhook`); business logic never calls Stripe SDKs directly
-- [ ] **SUB-02**: Account creation creates a Subscription row `status=trialing` with `trial_start_date=now`; organic signup → `trial_end_date=now+14d`, `trial_source=organic`; valid partner code at signup → `trial_end_date=now+30d`, `trial_source=partner`, `partner_code` recorded
-- [ ] **SUB-03**: Invalid/unknown/inactive partner code at signup returns `invalid_partner_code` inline error; user clears to proceed with 14-day trial; absent code → 14-day trial
-- [ ] **SUB-04**: Late partner-code entry in Settings accepted ONLY while `Subscription.status=trialing` AND wall-clock STRICTLY before `trial_end_date`; valid late code → `trial_end_date = created_at + 30 days` in ONE write; never stacks; never resets the clock; once trial_end_date passed (even by 1s), code rejected
-- [ ] **SUB-05**: Deactivating a PartnerStore post-grant does NOT affect already-established trials
-- [ ] **SUB-06**: Stripe Checkout collects card-only payment method for MVP (Pix deferred to v1.1 per SUMMARY decision); single product `folhario_monthly`, single price (value TBD, launch blocker)
-- [ ] **SUB-07**: Stripe webhook handler `POST /api/v1/webhooks/stripe` synchronously (1) verifies signature → fail returns `webhook_signature_invalid` 401, no BillingEvent, Sentry critical, no Inngest enqueue; (2) inserts `BillingEvent` with UNIQUE constraint on `event_id` — violation = dedup, return 200 no-op; (3) enqueues `billing.webhook.received` to Inngest — then returns 200. Handler response <200ms
-- [ ] **SUB-08**: Inngest `billing/process-webhook` is idempotent on `event_id`, does the state transition, emits `subscription.status_changed`, triggers dunning/trial emails via Resend
-- [ ] **SUB-09**: Subscription state machine honors PRD §12 transitions: trialing→active, trialing→expired, active→past_due, past_due→active, past_due→canceled, active→canceled, canceled→expired, canceled/expired→active (reactivation)
-- [ ] **SUB-10**: Webhook is authoritative for `Subscription.status`; no client-callable route mutates status directly
-- [ ] **SUB-11**: Dunning — Stripe configured for 4 retries over 7 days; email per failed attempt with PM update link via Resend; recovered → active; exhausted → canceled → read-only catalog
-- [ ] **SUB-12**: User cancels from Settings → `cancel_at_period_end=true`; UI confirms `current_period_end` date; full access until that date; status → canceled, then expired at period end
-- [ ] **SUB-13**: User reactivates from Settings while account exists (including 7-day deletion grace); reactivating after `expired` starts a NEW subscription in `active`
-- [ ] **SUB-14**: `billing/trial-ending-notifier` daily cron emits `trial.ending` at T-3 and T-1 days before `trial_end_date`; Resend sends trial-ending email
-- [ ] **SUB-15**: Subscription status not in `trialing`/`active` → read-only catalog mode: plants/photos/journal/care guides VIEWABLE; identify returns `subscription_required` 402 with paywall UI; reminders paused; mutations return `read_only_mode` 402; Settings FULLY accessible (payment update, reactivate, export, delete)
-- [ ] **SUB-16**: Persistent top banner in read-only mode: "Sua assinatura expirou. Reative para identificar e receber lembretes." → links to Settings billing
-- [ ] **SUB-17**: Settings billing section shows current plan + status, renewal/trial-end date, payment method, partner-code input (only while trialing AND before trial_end_date), cancel, reactivate, billing history
-
-### Screens & UX
-
-Maps to PRD §16, §17, §18.
-
-- [ ] **UX-01**: All screens constrained to tablet-width on desktop, centered, background fills sides — no wide-screen layouts; mobile-first single-column with 20px outer gutters
-- [ ] **UX-02**: Unverified-email gate shows a full-screen blocker in place of the app shell — "Verifique seu e-mail para começar." + resend-verification button + logout link; cleared the instant verification completes
-- [ ] **UX-03**: Persistent offline banner ("Você está offline. Algumas ações serão sincronizadas quando a conexão voltar.") shown whenever network offline
-- [ ] **UX-04**: LGPD consent modal and push-permission prompt are contextual, triggered only when the gated action is attempted for the first time; never at signup or first visit
-- [ ] **UX-05**: Identify capture button is a circular 72px Canopy fill with Ivory camera glyph floating above the capture-guide illustration — the only non-rounded-rectangle shape in the app
-- [ ] **UX-06**: Loading states use skeletal shimmer matching final geometry (never circular spinners); skeleton renders only after 300ms delay; faster operations skip shimmer and fade content in over 120ms; `prefers-reduced-motion` disables shimmer
-- [ ] **UX-07**: Empty states compose: soft Sage line-art illustration + Source Serif 4 headline + Calm/Lantern Slate supporting hint + exactly one Canopy primary action; tailored composition per empty state (Home, Catalog, Reminders, ID History), never generic shell reused
-- [ ] **UX-08**: Error states are inline + calm (never full-screen red walls); network identification failure shows Sage cloud-off icon + Forest Ink headline ("Não consegui conectar agora.") + Slate supporting line CAUSE+RECOVERY + Canopy "Tentar de novo" primary button
-- [ ] **UX-09**: All form inputs validate on BLUR (not keystroke); semantic types + correct `autocomplete` tokens; error copy = CAUSE + RECOVERY; submit auto-focuses first invalid field with `role="alert"` / `aria-live="polite"`; forms >3 fields auto-save draft locally
-- [ ] **UX-10**: Confidence ladder in identification results combines 4 signals: colored bar, filled segment count, numeric % label, SR announcement ("Confiança <alta|média|baixa>, <n>%"); color is never the sole signal
-- [ ] **UX-11**: Spring-physics motion (stiffness 120, damping 18, mass 1); enter ~240ms, exit ~180ms; capture button press is the ONE tactile bounce in the system; empty-home capture-button breathing loop is the ONLY perpetual micro-interaction; `prefers-reduced-motion` disables all motion beyond 120ms linear crossfade
-- [ ] **UX-12**: Dark mode is a hand-tuned "veranda at dusk" palette (Night Cream family), NOT inverted greyscale; every screen designed and reviewed in both variants
-
-### Accessibility
-
-Maps to PRD §18.
-
-- [ ] **A11Y-01**: WCAG 2.1 AA audit is a ship blocker — not aspirational; every interactive element has sufficient contrast, redundant state cues, and labeled SR role
-- [ ] **A11Y-02**: Browser zoom + Dynamic Type / Android font-scale honored to the LARGEST setting; fixed-height containers grow to fit — clipping is a bug
-- [ ] **A11Y-03**: Haptics — capture button tap = light impact, toxicity first-reveal per session = warning, first plant added / streak milestone = success (once), destructive confirm = medium impact; transient errors get NO haptic
-- [ ] **A11Y-04**: Live regions announce async state changes (identification results, sync completion, discard summary) via `aria-live="polite"` or `role="alert"` as appropriate
-- [ ] **A11Y-05**: Decorative illustrations (empty-state line art, veranda scenes) marked `aria-hidden` / `accessibility hidden`
-
-### Observability
-
-Maps to PRD §21, §22.
-
-- [ ] **OBS-01**: Sentry release tagged with git SHA on every production deploy; source maps uploaded from CI; breadcrumbs scrub `Authorization`, `Cookie`, `email`, `password`, `photo_url`; request bodies dropped on identification routes; users never identified by email
-- [ ] **OBS-02**: PostHog EU events emitted for `signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested`; each mapped to ≥1 §22 metric
-- [ ] **OBS-03**: Scheduled SQL rollups via Inngest cron over `Identification` surface per-provider confidence distribution, manual-correction rate, success rate, latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day
-- [ ] **OBS-04**: Alerting — Sentry → email on new issues + error-rate spikes; 80% provider ceiling → Resend operator email; Stripe webhook signature failure → Sentry critical + operator email; Inngest function failure after retries exhausted → Sentry
-- [ ] **OBS-05**: PostHog funnel measures the core-value metric: signup → email verification → first identification within 2 minutes; target ≥60% of verified users
-
-### Testing
-
-Maps to PRD §19.
-
-- [ ] **TEST-01**: Unit layer (Vitest) covers backend business logic (use cases, domain logic, state machines) and pure frontend functions
-- [ ] **TEST-02**: Backend integration layer runs HTTP handlers, repositories, and provider adapters against a REAL `postgres:16` database with migrations applied; DB mocking is NOT permitted; external providers use recorded fixtures or vendor test modes
-- [ ] **TEST-03**: Playwright E2E suite exercises every primary screen's happy path + documented failure states (cap-reached, provider-unavailable, offline queue discard, augmented care-guide badge, read-only catalog mode); runs against the deployed Vercel preview URL (not local dev server)
-- [ ] **TEST-04**: Integration tests assert cap-enforcement atomicity — two concurrent requests at the boundary produce exactly one success + one cap_hit, with exactly one counter increment
-
-### Security
-
-Maps to PRD §21.
-
-- [ ] **SEC-01**: JWT verified in middleware on every `/api/v1/*` except the public allowlist (signup, login, OAuth callbacks, Stripe webhook)
-- [ ] **SEC-02**: RLS enabled on all user-owned tables; service-role key used server-side only, never exposed to client bundles
-- [ ] **SEC-03**: Standard security headers (HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) via Next.js middleware
-- [ ] **SEC-04**: Email-verification gate enforced on every gated endpoint (checked in middleware, not per-handler) so new routes cannot accidentally bypass the gate
-- [ ] **SEC-05**: Stripe webhook signature verified on every request; failures logged as Sentry critical with NO BillingEvent row written
-
----
+- [ ] **INFRA-01**: Next.js 16 App Router project scaffolded with React 19, TS strict (+ `noUncheckedIndexedAccess`), pt-BR locale default, PWA via `@serwist/next` (stack)
+- [ ] **INFRA-02**: Repo layout per PRD §2 — `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/` (§2)
+- [ ] **INFRA-03**: Route handlers under `/api/v1` are thin: validate → use-case → HTTP map; no Drizzle in handlers (§2)
+- [ ] **INFRA-04**: Drizzle ORM + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn-pooler compatibility; single shared `db/client.ts` (stack)
+- [ ] **INFRA-05**: Drizzle schema + migrations for all entities in §4 (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription)
+- [ ] **INFRA-06**: Supabase Storage buckets created (private): `plant-photos`, `plant-thumbnails`, `data-exports`; `StorageAdapter` interface with signed URL helpers (§2)
+- [ ] **INFRA-07**: Supabase Auth behind `AuthAdapter`; JWT verification in Next middleware on every `/api/v1/*` except public endpoints (§21)
+- [ ] **INFRA-08**: RLS enabled on all user-owned tables as defense in depth; service-role key server-only (§21)
+- [ ] **INFRA-09**: Zod validation at route-handler body/query boundaries; `drizzle-zod` for DB-schema-derived Zod (stack)
+- [ ] **INFRA-10**: Inngest `serve()` handler at `/api/inngest/route.ts`; all async functions registered: `care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push` (§3)
+- [ ] **INFRA-11**: Vercel hosting configured; Vercel git integration DISABLED (stack)
+- [ ] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:16-alpine` service container with Drizzle migrations seeded, build (§20)
+- [ ] **INFRA-13**: `deploy-preview.yml`: apply migrations to Supabase branch DB per PR → `vercel pull` → `vercel build` → `vercel deploy --prebuilt` → Playwright against returned preview URL → comment URL on PR (§20)
+- [ ] **INFRA-14**: `deploy-production.yml`: apply migrations to prod Supabase (manual approval gate for destructive) → `vercel deploy --prebuilt --prod` → create Sentry release + upload source maps → sync Inngest functions (§20)
+- [ ] **INFRA-15**: `deploy-preview-cleanup.yml`: delete Supabase branch DB + remove Vercel preview alias on PR close (§20)
+- [ ] **INFRA-16**: `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers to prevent accidental spend in preview (§20)
+- [ ] **INFRA-17**: All env vars from PRD §20 table configured in Vercel + GitHub secrets; none committed, none logged (§20)
+- [ ] **INFRA-18**: Standard security headers via Next.js middleware (CSP, HSTS, X-Frame-Options, etc.) (§21)
+- [ ] **INFRA-19**: Image pipeline — client-side compression to ≤1MB + EXIF/GPS strip → upload → thumbnail generation on upload → originals preserved for ID accuracy (§11)
+- [ ] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
+- [ ] **INFRA-21**: Pagination implemented as opaque cursor `?cursor=&limit=`, default 50 / max 200, `next_cursor` in response; clients never parse cursors (§5)
+- [ ] **INFRA-22**: Idempotency-Key support on mutating endpoints; client UUID is the key for offline queue actions (§5, §10)
+- [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
+- [ ] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
+- [ ] **INFRA-25**: Launch-blocker checklist surfaced in repo (pricing TBD, NFS-e strategy, DPO appointment, privacy policy + ToS authoring, ≥200 care guides) tracked separately from phases (§24)
 
 ## v2 Requirements
 
-Deferred — tracked but not in the current MVP roadmap.
+Deferred to post-MVP. Tracked but not in current roadmap.
 
-### Disease Diagnosis
+### AUTH-v2
+- **AUTH-v2-01**: Change-email flow
+- **AUTH-v2-02**: Logout-all-devices (global JWT revocation)
 
-- **DIAG-01**: User can photograph a diseased plant and receive top-N possible diagnoses with recommended actions
-- **DIAG-02**: Diagnoses always labeled as AI-estimated with "consulte um especialista" disclaimer
+### BILL-v2
+- **BILL-v2-01**: NFS-e emission integration (NFE.io, eNotas, Omie, or manual municipal portal)
+- **BILL-v2-02**: Annual billing tier
+- **BILL-v2-03**: Stripe Pix Automático mandate flow with 3-day pre-debit window modeled in subscription state (`trialing → processing → active`)
 
-### Pix & Brazilian Payments
+### ID-v2
+- **ID-v2-01**: PlantNet tertiary provider fallback
+- **ID-v2-02**: LLM-provider-aware confidence calibration (vision LLMs don't return calibrated scores)
+- **ID-v2-03**: Quality-flag feedback loop (use `manual_correction` + `flag_reason` data)
 
-- **PIX-01**: Pix Automático (recurring Pix) supported as a second payment method with mandate flow + 3-day pre-debit notification window
-- **PIX-02**: `Subscription.status` state machine extended with `processing` state to model Pix pre-debit window
-- **PIX-03**: CPF collected at Pix checkout (not at signup)
-- **NFSE-01**: NFS-e (Brazilian electronic service invoice) issued automatically per paid charge via third-party provider (NFE.io / eNotas / accounting-partner integration)
+### REM-v2
+- **REM-v2-01**: Travel-aware reminder shifting
+- **REM-v2-02**: Per-reminder notification time override
 
-### Advanced Auth
+### CARE-v2
+- **CARE-v2-01**: Editor review queue for augmented care guides
+- **CARE-v2-02**: User-contributed care guide notes
 
-- **AUTH2-01**: User can change their account email with re-verification
-- **AUTH2-02**: User can log out from all devices (global JWT invalidation)
-- **AUTH2-03**: OAuth provider set expanded (Apple, Facebook)
-- **AUTH2-04**: Two-factor authentication (TOTP)
+### NOTIF-v2
+- **NOTIF-v2-01**: Configurable push reminder cadence (beyond single daily nudge)
+- **NOTIF-v2-02**: Email digest of weekly care activity
 
-### Admin & Ops
+### PLATFORM-v2
+- **PLATFORM-v2-01**: Native mobile app (iOS/Android) via adapter-backed shared business logic
+- **PLATFORM-v2-02**: Wide-screen desktop experience (beyond tablet-width centered)
+- **PLATFORM-v2-03**: Additional locales (en-US, es-MX, etc.) — i18n layer is already in place
 
-- **ADM-01**: Admin web UI for tuning IdentificationLimit, ProviderBudget, and reviewing flagged Species (replaces direct DB writes)
-- **ADM-02**: Review queue for augmented care guides with editorial override
-- **ADM-03**: Per-user storage quota enforcement
-
-### Advanced Reminders
-
-- **REM2-01**: Plant-specific notification time overrides
-- **REM2-02**: Travel-aware timezone handling (hold reminders while user is traveling)
-- **REM2-03**: Additional reminder types (repotting, pruning, misting)
-
-### Social & Sharing
-
-- **SOC-01**: Share plant profile via link
-- **SOC-02**: Friends feed with public plant catalogs
-
-### Content Expansion
-
-- **CONT2-01**: Curated care-guide corpus expanded beyond 200 species to 500+
-- **CONT2-02**: Video content per care guide
-- **CONT2-03**: Regional seasonal tips per BR state
-
----
+### ANALYTICS-v2
+- **ANALYTICS-v2-01**: PostHog session replay
+- **ANALYTICS-v2-02**: Cohort dashboards beyond identification-quality rollups
 
 ## Out of Scope
 
-Explicitly excluded from MVP. Documented to prevent scope creep.
+Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
-|---|---|
-| Freemium tier | Dilutes the <2-min-to-value promise; pays LGPD + provider cost without recovery; single paid tier by design |
-| Anonymous accounts | Trial requires real account to tie Subscription state and consent logs |
-| Real-time chat / social | Outside core loop (identify → catalog → care → remind); MVP focus |
-| Native iOS/Android apps (MVP) | PWA ships first; native later; all architectural decisions keep the native door open |
-| On-device / offline plant identification | Cloud-only; accuracy + latency of on-device models don't hit beginner expectations |
-| Disease diagnosis | Every competitor ships this; deferred to v2 with explicit rationale to protect scope discipline and the <2-min promise |
-| Change-email flow | Post-MVP; reduces credential-management surface in v1 |
-| Logout-all-devices | Post-MVP; per-device tokens already independently revocable |
-| Editor review queue for augmented care guides | Would block value; persistent "Gerado por IA" badge keeps provenance honest without human gating |
-| Admin UI for caps/budgets | MVP tunes via direct DB writes; operator alert emails handle visibility |
-| Wide-screen / desktop-optimized layouts | Tablet-width on desktop is the shape; mobile-first; no wide-screen design debt |
-| Per-reminder notification times | All reminders fire at `User.notification_time_local`; per-reminder times add UX complexity without demand |
-| Travel-aware timezone handling | Changing tz in Settings affects future computations only; traveling users aren't tending plants |
-| Suggestions / prompts to create reminders | User-initiated from plant profile only; no nagging |
-| Done/Snooze controls inside push payload | Push is a nudge to open the app; Home is the source of truth |
-| Pix Automático recurring billing | Deferred to v1.1; adds a `processing` subscription state, CPF capture, and 3-day pre-debit window; card-only first |
-| NFS-e issuance (in-app) | Deferred to v1.1; Stripe doesn't emit BR fiscal receipts; manual or third-party for MVP, pre-launch blocker owned by founder |
-| GPS / location-based features | LGPD data minimization; EXIF GPS stripped client-side |
-| Per-user storage limits (MVP) | Monitored later; premature optimization |
-| Stock photo empty states | Banned; all illustrations custom Sage line art |
-| Locales beyond pt-BR (MVP) | i18n layer built day one but only pt-BR strings ship; brand/content focus |
-| Emojis in UI copy | Banned brand guardrail; Lucide icons only |
-| Inter font / generic serifs | Banned; Source Serif 4 + Plus Jakarta Sans only |
-| Forced onboarding tour | Banned (anti-pattern); inline "saiba mais" expansion within consent/push modals allowed |
-| Dark patterns on cancel/delete | Banned; 7-day grace + clear disclosure on deletion |
-| Auto-escalation / shaming on overdue reminders | Banned; overdue stays visually distinct but doesn't change weight as it ages |
-| Fake confidence scores | Banned; honest AI is non-negotiable |
-| Hiding AI provenance | Banned; augmented care guides permanently badged "Gerado por IA" |
-| Session replay (PostHog) | OFF in MVP; LGPD + minimization posture |
-| PostHog on server (identifying users by email) | Banned; SSR events use pseudonymous distinct_id |
-| Dark-mode-as-inverted-greyscale | Banned; "veranda at dusk" hand-tuned palette only |
-| Custom mouse cursors | Banned interaction anti-pattern |
-| Confetti / pulsing / floating UI | Banned beyond capture-button breathing loop |
-| Sidebar nav (mobile or desktop) | Bottom nav only; Folhário is one shape across devices |
-
-
----
+|---------|--------|
+| Freemium gating on identification | Single paid tier; trial is the free experience |
+| Anonymous use | Trial requires account; consent + LGPD gates depend on user identity |
+| Real-time chat / community / social | Not a social app; reminders are the retention engine |
+| Video posts or video care guides | Images only — storage/bandwidth + AI accuracy focus |
+| On-device identification ML | Cloud-only per PRD §6; accuracy gap vs Plant.id too large |
+| Editor review queue for augmented guides | Badge + disclaimer satisfy honesty; review queue is v2 complexity |
+| Per-reminder notification time | Single `User.notification_time_local` is simpler and sufficient |
+| Per-reminder push actions (Done/Snooze on push payload) | Push is one daily nudge; actions live in-app |
+| Travel-aware reminder shifts | Tz change does not retroactively shift; traveling user isn't tending plants |
+| Per-user storage limits (MVP) | Trust first, measure later |
+| Admin UI for cost caps / tier limits | Runtime tuning via direct DB writes only |
+| Confetti / bouncing / emoji / floating chatbot / circular spinner | Banned by design system |
+| Sidebar navigation | Bottom-nav only; max 5 items |
+| Inter / generic serifs / gradient text / glassmorphism / neumorphism | Banned by design system |
+| Pure black `#000000` / pure white | Use Forest Ink / Paper Cream |
+| Raw cron / `setInterval` for durable sleeps | Inngest `step.sleepUntil` only |
+| BullMQ / Redis queues | Extra infra for MVP scale; forbidden by PRD |
+| Drizzle inside route handlers | Data access lives inside repositories only |
+| Server sessions | Per-device JWT only, independently revocable |
+| Broad per-endpoint rate limiting | Only narrow per-IP throttle on public auth endpoints in MVP |
+| Vercel git integration | Disabled; all deploys from GitHub Actions |
+| `Sentry.setUser({ email })` | Leaks PII into Sentry; use `{ id }` only |
+| Change-email, logout-all-devices | Explicitly deferred to post-MVP |
+| Dark-mode palette via greyscale inversion | Veranda-at-dusk variant designed separately |
+| Pre-verified email skip for email+password accounts | Verification gate is mandatory before first identification |
+| Non-pt-BR locales at launch | pt-BR only; i18n layer is in place for future additions |
+| Fake AI confidence numbers / hidden AI provenance | Non-negotiable from PRD §1 |
+| Custom mouse cursors, hover-dependent interactions | Accessibility + anti-slop |
 
 ## Traceability
 
-Populated by `/gsd-roadmap` on 2026-04-14. All v1 requirements map to exactly one phase.
+Which phases cover which requirements. Populated by `gsd-roadmapper` during roadmap creation.
 
 | Requirement | Phase | Status |
-|---|---|---|
-| FDN-01 | 1. Foundation | Pending |
-| FDN-02 | 1. Foundation | Pending |
-| FDN-03 | 1. Foundation | Pending |
-| FDN-04 | 1. Foundation | Pending |
-| FDN-05 | 1. Foundation | Pending |
-| FDN-06 | 1. Foundation | Pending |
-| FDN-07 | 1. Foundation | Pending |
-| FDN-08 | 1. Foundation | Pending |
-| FDN-09 | 1. Foundation | Pending |
-| FDN-10 | 1. Foundation | Pending |
-| FDN-11 | 1. Foundation | Pending |
-| FDN-12 | 1. Foundation | Pending |
-| FDN-13 | 1. Foundation | Pending |
-| FDN-14 | 1. Foundation | Pending |
-| FDN-15 | 1. Foundation | Pending |
-| AUTH-01 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-02 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-03 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-04 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-05 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-06 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-07 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-08 | 2. IAM (Auth + LGPD) | Pending |
-| AUTH-09 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-01 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-02 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-03 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-04 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-05 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-06 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-07 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-08 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-09 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-10 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-11 | 2. IAM (Auth + LGPD) | Pending |
-| LGPD-12 | 2. IAM (Auth + LGPD) | Pending |
-| IMG-01 | 4. Catalog + Offline | Pending |
-| IMG-02 | 4. Catalog + Offline | Pending |
-| IMG-03 | 4. Catalog + Offline | Pending |
-| IMG-04 | 4. Catalog + Offline | Pending |
-| IMG-05 | 4. Catalog + Offline | Pending |
-| ID-01 | 6. Identification | Pending |
-| ID-02 | 6. Identification | Pending |
-| ID-03 | 6. Identification | Pending |
-| ID-04 | 6. Identification | Pending |
-| ID-05 | 6. Identification | Pending |
-| ID-06 | 6. Identification | Pending |
-| ID-07 | 6. Identification | Pending |
-| ID-08 | 6. Identification | Pending |
-| ID-09 | 6. Identification | Pending |
-| ID-10 | 6. Identification | Pending |
-| ID-11 | 6. Identification | Pending |
-| ID-12 | 6. Identification | Pending |
-| ID-13 | 6. Identification | Pending |
-| ID-14 | 6. Identification | Pending |
-| ID-15 | 6. Identification | Pending |
-| ID-16 | 6. Identification | Pending |
-| CAT-01 | 4. Catalog + Offline | Pending |
-| CAT-02 | 4. Catalog + Offline | Pending |
-| CAT-03 | 4. Catalog + Offline | Pending |
-| CAT-04 | 4. Catalog + Offline | Pending |
-| CAT-05 | 4. Catalog + Offline | Pending |
-| CAT-06 | 4. Catalog + Offline | Pending |
-| CAT-07 | 4. Catalog + Offline | Pending |
-| CAT-08 | 4. Catalog + Offline | Pending |
-| CAT-09 | 4. Catalog + Offline | Pending |
-| CAT-10 | 4. Catalog + Offline | Pending |
-| CARE-01 | 5. Species & Care | Pending |
-| CARE-02 | 5. Species & Care | Pending |
-| CARE-03 | 5. Species & Care | Pending |
-| CARE-04 | 5. Species & Care | Pending |
-| CARE-05 | 5. Species & Care | Pending |
-| CARE-06 | 5. Species & Care | Pending |
-| CARE-07 | 5. Species & Care | Pending |
-| CARE-08 | 5. Species & Care | Pending |
-| CARE-09 | 5. Species & Care | Pending |
-| REM-01 | 7. Reminders & Notifications | Pending |
-| REM-02 | 7. Reminders & Notifications | Pending |
-| REM-03 | 7. Reminders & Notifications | Pending |
-| REM-04 | 7. Reminders & Notifications | Pending |
-| REM-05 | 7. Reminders & Notifications | Pending |
-| REM-06 | 7. Reminders & Notifications | Pending |
-| REM-07 | 7. Reminders & Notifications | Pending |
-| REM-08 | 7. Reminders & Notifications | Pending |
-| REM-09 | 7. Reminders & Notifications | Pending |
-| REM-10 | 7. Reminders & Notifications | Pending |
-| REM-11 | 7. Reminders & Notifications | Pending |
-| REM-12 | 7. Reminders & Notifications | Pending |
-| REM-13 | 7. Reminders & Notifications | Pending |
-| PUSH-01 | 7. Reminders & Notifications | Pending |
-| PUSH-02 | 7. Reminders & Notifications | Pending |
-| PUSH-03 | 7. Reminders & Notifications | Pending |
-| PUSH-04 | 7. Reminders & Notifications | Pending |
-| PUSH-05 | 7. Reminders & Notifications | Pending |
-| PUSH-06 | 7. Reminders & Notifications | Pending |
-| PUSH-07 | 7. Reminders & Notifications | Pending |
-| PUSH-08 | 7. Reminders & Notifications | Pending |
-| OFF-01 | 4. Catalog + Offline | Pending |
-| OFF-02 | 4. Catalog + Offline | Pending |
-| OFF-03 | 4. Catalog + Offline | Pending |
-| OFF-04 | 4. Catalog + Offline | Pending |
-| OFF-05 | 4. Catalog + Offline | Pending |
-| OFF-06 | 4. Catalog + Offline | Pending |
-| OFF-07 | 4. Catalog + Offline | Pending |
-| OFF-08 | 4. Catalog + Offline | Pending |
-| SUB-01 | 3. Billing | Pending |
-| SUB-02 | 3. Billing | Pending |
-| SUB-03 | 3. Billing | Pending |
-| SUB-04 | 3. Billing | Pending |
-| SUB-05 | 3. Billing | Pending |
-| SUB-06 | 3. Billing | Pending |
-| SUB-07 | 3. Billing | Pending |
-| SUB-08 | 3. Billing | Pending |
-| SUB-09 | 3. Billing | Pending |
-| SUB-10 | 3. Billing | Pending |
-| SUB-11 | 3. Billing | Pending |
-| SUB-12 | 3. Billing | Pending |
-| SUB-13 | 3. Billing | Pending |
-| SUB-14 | 3. Billing | Pending |
-| SUB-15 | 3. Billing | Pending |
-| SUB-16 | 3. Billing | Pending |
-| SUB-17 | 3. Billing | Pending |
-| UX-01 | 1. Foundation | Pending |
-| UX-02 | 2. IAM (Auth + LGPD) | Pending |
-| UX-03 | 4. Catalog + Offline | Pending |
-| UX-04 | 2. IAM (Auth + LGPD) | Pending |
-| UX-05 | 6. Identification | Pending |
-| UX-06 | 1. Foundation | Pending |
-| UX-07 | 1. Foundation | Pending |
-| UX-08 | 1. Foundation | Pending |
-| UX-09 | 1. Foundation | Pending |
-| UX-10 | 6. Identification | Pending |
-| UX-11 | 1. Foundation | Pending |
-| UX-12 | 1. Foundation | Pending |
-| A11Y-01 | 8. Hardening + Launch | Pending |
-| A11Y-02 | 1. Foundation | Pending |
-| A11Y-03 | 1. Foundation | Pending |
-| A11Y-04 | 1. Foundation | Pending |
-| A11Y-05 | 1. Foundation | Pending |
-| OBS-01 | 1. Foundation | Pending |
-| OBS-02 | 1. Foundation | Pending |
-| OBS-03 | 6. Identification | Pending |
-| OBS-04 | 8. Hardening + Launch | Pending |
-| OBS-05 | 8. Hardening + Launch | Pending |
-| TEST-01 | 1. Foundation | Pending |
-| TEST-02 | 1. Foundation | Pending |
-| TEST-03 | 1. Foundation | Pending |
-| TEST-04 | 6. Identification | Pending |
-| SEC-01 | 2. IAM (Auth + LGPD) | Pending |
-| SEC-02 | 1. Foundation | Pending |
-| SEC-03 | 1. Foundation | Pending |
-| SEC-04 | 2. IAM (Auth + LGPD) | Pending |
-| SEC-05 | 3. Billing | Pending |
+|-------------|-------|--------|
+| (populated by roadmapper) | | |
 
-**Coverage (post-roadmap):**
-- v1 requirements: 153 total (across 16 categories — FDN 15 + AUTH 9 + LGPD 12 + IMG 5 + ID 16 + CAT 10 + CARE 9 + REM 13 + PUSH 8 + OFF 8 + SUB 17 + UX 12 + A11Y 5 + OBS 5 + TEST 4 + SEC 5)
-- Mapped to phases: 153 / 153 ✓
-- Orphans: 0
-- Duplicates: 0
-
-> Note: `/gsd-new-project` instructions referenced 138 items; the authoritative REQUIREMENTS.md file ships 153 v1 items. Phase mapping reflects the actual file contents and the full 153 items are covered by the 8-phase roadmap.
-
-### Phase distribution summary
-
-| Phase | Requirements | Count |
-|---|---|---|
-| 1. Foundation | FDN-01..15, TEST-01..03, SEC-02, SEC-03, OBS-01, OBS-02, UX-01, UX-06..09, UX-11, UX-12, A11Y-02..05 | 33 |
-| 2. IAM (Auth + LGPD) | AUTH-01..09, LGPD-01..12, SEC-01, SEC-04, UX-02, UX-04 | 25 |
-| 3. Billing | SUB-01..17, SEC-05 | 18 |
-| 4. Catalog + Offline | CAT-01..10, IMG-01..05, OFF-01..08, UX-03 | 24 |
-| 5. Species & Care | CARE-01..09 | 9 |
-| 6. Identification | ID-01..16, UX-05, UX-10, TEST-04, OBS-03 | 20 |
-| 7. Reminders & Notifications | REM-01..13, PUSH-01..08 | 21 |
-| 8. Hardening + Launch | A11Y-01, OBS-04, OBS-05 | 3 |
-| **Total** | | **153** |
+**Coverage:**
+- v1 requirements: 196 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 25)
+- Mapped to phases: 0 (pending roadmap)
+- Unmapped: 196 ⚠️ (pending roadmap)
 
 ---
-
 *Requirements defined: 2026-04-14*
-*Source: docs/CAVE-PRD.md + .planning/research/SUMMARY.md*
-*Last updated: 2026-04-14 after roadmap traceability mapping*
+*Last updated: 2026-04-14 after initialization from docs/CAVE-PRD.md*

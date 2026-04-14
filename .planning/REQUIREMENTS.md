@@ -333,38 +333,193 @@ Explicitly excluded from MVP. Documented to prevent scope creep.
 | Confetti / pulsing / floating UI | Banned beyond capture-button breathing loop |
 | Sidebar nav (mobile or desktop) | Bottom nav only; Folhário is one shape across devices |
 
+
 ---
 
 ## Traceability
 
-Populated during roadmap creation. All v1 requirements must map to exactly one phase.
+Populated by `/gsd-roadmap` on 2026-04-14. All v1 requirements map to exactly one phase.
 
 | Requirement | Phase | Status |
 |---|---|---|
-| FDN-01..15 | TBD | Pending |
-| AUTH-01..09 | TBD | Pending |
-| LGPD-01..12 | TBD | Pending |
-| IMG-01..05 | TBD | Pending |
-| ID-01..16 | TBD | Pending |
-| CAT-01..10 | TBD | Pending |
-| CARE-01..09 | TBD | Pending |
-| REM-01..13 | TBD | Pending |
-| PUSH-01..08 | TBD | Pending |
-| OFF-01..08 | TBD | Pending |
-| SUB-01..17 | TBD | Pending |
-| UX-01..12 | TBD | Pending |
-| A11Y-01..05 | TBD | Pending |
-| OBS-01..05 | TBD | Pending |
-| TEST-01..04 | TBD | Pending |
-| SEC-01..05 | TBD | Pending |
+| FDN-01 | 1. Foundation | Pending |
+| FDN-02 | 1. Foundation | Pending |
+| FDN-03 | 1. Foundation | Pending |
+| FDN-04 | 1. Foundation | Pending |
+| FDN-05 | 1. Foundation | Pending |
+| FDN-06 | 1. Foundation | Pending |
+| FDN-07 | 1. Foundation | Pending |
+| FDN-08 | 1. Foundation | Pending |
+| FDN-09 | 1. Foundation | Pending |
+| FDN-10 | 1. Foundation | Pending |
+| FDN-11 | 1. Foundation | Pending |
+| FDN-12 | 1. Foundation | Pending |
+| FDN-13 | 1. Foundation | Pending |
+| FDN-14 | 1. Foundation | Pending |
+| FDN-15 | 1. Foundation | Pending |
+| AUTH-01 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-02 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-03 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-04 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-05 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-06 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-07 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-08 | 2. IAM (Auth + LGPD) | Pending |
+| AUTH-09 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-01 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-02 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-03 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-04 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-05 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-06 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-07 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-08 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-09 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-10 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-11 | 2. IAM (Auth + LGPD) | Pending |
+| LGPD-12 | 2. IAM (Auth + LGPD) | Pending |
+| IMG-01 | 4. Catalog + Offline | Pending |
+| IMG-02 | 4. Catalog + Offline | Pending |
+| IMG-03 | 4. Catalog + Offline | Pending |
+| IMG-04 | 4. Catalog + Offline | Pending |
+| IMG-05 | 4. Catalog + Offline | Pending |
+| ID-01 | 6. Identification | Pending |
+| ID-02 | 6. Identification | Pending |
+| ID-03 | 6. Identification | Pending |
+| ID-04 | 6. Identification | Pending |
+| ID-05 | 6. Identification | Pending |
+| ID-06 | 6. Identification | Pending |
+| ID-07 | 6. Identification | Pending |
+| ID-08 | 6. Identification | Pending |
+| ID-09 | 6. Identification | Pending |
+| ID-10 | 6. Identification | Pending |
+| ID-11 | 6. Identification | Pending |
+| ID-12 | 6. Identification | Pending |
+| ID-13 | 6. Identification | Pending |
+| ID-14 | 6. Identification | Pending |
+| ID-15 | 6. Identification | Pending |
+| ID-16 | 6. Identification | Pending |
+| CAT-01 | 4. Catalog + Offline | Pending |
+| CAT-02 | 4. Catalog + Offline | Pending |
+| CAT-03 | 4. Catalog + Offline | Pending |
+| CAT-04 | 4. Catalog + Offline | Pending |
+| CAT-05 | 4. Catalog + Offline | Pending |
+| CAT-06 | 4. Catalog + Offline | Pending |
+| CAT-07 | 4. Catalog + Offline | Pending |
+| CAT-08 | 4. Catalog + Offline | Pending |
+| CAT-09 | 4. Catalog + Offline | Pending |
+| CAT-10 | 4. Catalog + Offline | Pending |
+| CARE-01 | 5. Species & Care | Pending |
+| CARE-02 | 5. Species & Care | Pending |
+| CARE-03 | 5. Species & Care | Pending |
+| CARE-04 | 5. Species & Care | Pending |
+| CARE-05 | 5. Species & Care | Pending |
+| CARE-06 | 5. Species & Care | Pending |
+| CARE-07 | 5. Species & Care | Pending |
+| CARE-08 | 5. Species & Care | Pending |
+| CARE-09 | 5. Species & Care | Pending |
+| REM-01 | 7. Reminders & Notifications | Pending |
+| REM-02 | 7. Reminders & Notifications | Pending |
+| REM-03 | 7. Reminders & Notifications | Pending |
+| REM-04 | 7. Reminders & Notifications | Pending |
+| REM-05 | 7. Reminders & Notifications | Pending |
+| REM-06 | 7. Reminders & Notifications | Pending |
+| REM-07 | 7. Reminders & Notifications | Pending |
+| REM-08 | 7. Reminders & Notifications | Pending |
+| REM-09 | 7. Reminders & Notifications | Pending |
+| REM-10 | 7. Reminders & Notifications | Pending |
+| REM-11 | 7. Reminders & Notifications | Pending |
+| REM-12 | 7. Reminders & Notifications | Pending |
+| REM-13 | 7. Reminders & Notifications | Pending |
+| PUSH-01 | 7. Reminders & Notifications | Pending |
+| PUSH-02 | 7. Reminders & Notifications | Pending |
+| PUSH-03 | 7. Reminders & Notifications | Pending |
+| PUSH-04 | 7. Reminders & Notifications | Pending |
+| PUSH-05 | 7. Reminders & Notifications | Pending |
+| PUSH-06 | 7. Reminders & Notifications | Pending |
+| PUSH-07 | 7. Reminders & Notifications | Pending |
+| PUSH-08 | 7. Reminders & Notifications | Pending |
+| OFF-01 | 4. Catalog + Offline | Pending |
+| OFF-02 | 4. Catalog + Offline | Pending |
+| OFF-03 | 4. Catalog + Offline | Pending |
+| OFF-04 | 4. Catalog + Offline | Pending |
+| OFF-05 | 4. Catalog + Offline | Pending |
+| OFF-06 | 4. Catalog + Offline | Pending |
+| OFF-07 | 4. Catalog + Offline | Pending |
+| OFF-08 | 4. Catalog + Offline | Pending |
+| SUB-01 | 3. Billing | Pending |
+| SUB-02 | 3. Billing | Pending |
+| SUB-03 | 3. Billing | Pending |
+| SUB-04 | 3. Billing | Pending |
+| SUB-05 | 3. Billing | Pending |
+| SUB-06 | 3. Billing | Pending |
+| SUB-07 | 3. Billing | Pending |
+| SUB-08 | 3. Billing | Pending |
+| SUB-09 | 3. Billing | Pending |
+| SUB-10 | 3. Billing | Pending |
+| SUB-11 | 3. Billing | Pending |
+| SUB-12 | 3. Billing | Pending |
+| SUB-13 | 3. Billing | Pending |
+| SUB-14 | 3. Billing | Pending |
+| SUB-15 | 3. Billing | Pending |
+| SUB-16 | 3. Billing | Pending |
+| SUB-17 | 3. Billing | Pending |
+| UX-01 | 1. Foundation | Pending |
+| UX-02 | 2. IAM (Auth + LGPD) | Pending |
+| UX-03 | 4. Catalog + Offline | Pending |
+| UX-04 | 2. IAM (Auth + LGPD) | Pending |
+| UX-05 | 6. Identification | Pending |
+| UX-06 | 1. Foundation | Pending |
+| UX-07 | 1. Foundation | Pending |
+| UX-08 | 1. Foundation | Pending |
+| UX-09 | 1. Foundation | Pending |
+| UX-10 | 6. Identification | Pending |
+| UX-11 | 1. Foundation | Pending |
+| UX-12 | 1. Foundation | Pending |
+| A11Y-01 | 8. Hardening + Launch | Pending |
+| A11Y-02 | 1. Foundation | Pending |
+| A11Y-03 | 1. Foundation | Pending |
+| A11Y-04 | 1. Foundation | Pending |
+| A11Y-05 | 1. Foundation | Pending |
+| OBS-01 | 1. Foundation | Pending |
+| OBS-02 | 1. Foundation | Pending |
+| OBS-03 | 6. Identification | Pending |
+| OBS-04 | 8. Hardening + Launch | Pending |
+| OBS-05 | 8. Hardening + Launch | Pending |
+| TEST-01 | 1. Foundation | Pending |
+| TEST-02 | 1. Foundation | Pending |
+| TEST-03 | 1. Foundation | Pending |
+| TEST-04 | 6. Identification | Pending |
+| SEC-01 | 2. IAM (Auth + LGPD) | Pending |
+| SEC-02 | 1. Foundation | Pending |
+| SEC-03 | 1. Foundation | Pending |
+| SEC-04 | 2. IAM (Auth + LGPD) | Pending |
+| SEC-05 | 3. Billing | Pending |
 
-**Coverage (pre-roadmap):**
-- v1 requirements: 138 total (across 16 categories)
-- Mapped to phases: 0 (populated by roadmapper)
-- Unmapped: 138 ⚠️
+**Coverage (post-roadmap):**
+- v1 requirements: 153 total (across 16 categories — FDN 15 + AUTH 9 + LGPD 12 + IMG 5 + ID 16 + CAT 10 + CARE 9 + REM 13 + PUSH 8 + OFF 8 + SUB 17 + UX 12 + A11Y 5 + OBS 5 + TEST 4 + SEC 5)
+- Mapped to phases: 153 / 153 ✓
+- Orphans: 0
+- Duplicates: 0
+
+> Note: `/gsd-new-project` instructions referenced 138 items; the authoritative REQUIREMENTS.md file ships 153 v1 items. Phase mapping reflects the actual file contents and the full 153 items are covered by the 8-phase roadmap.
+
+### Phase distribution summary
+
+| Phase | Requirements | Count |
+|---|---|---|
+| 1. Foundation | FDN-01..15, TEST-01..03, SEC-02, SEC-03, OBS-01, OBS-02, UX-01, UX-06..09, UX-11, UX-12, A11Y-02..05 | 33 |
+| 2. IAM (Auth + LGPD) | AUTH-01..09, LGPD-01..12, SEC-01, SEC-04, UX-02, UX-04 | 25 |
+| 3. Billing | SUB-01..17, SEC-05 | 18 |
+| 4. Catalog + Offline | CAT-01..10, IMG-01..05, OFF-01..08, UX-03 | 24 |
+| 5. Species & Care | CARE-01..09 | 9 |
+| 6. Identification | ID-01..16, UX-05, UX-10, TEST-04, OBS-03 | 20 |
+| 7. Reminders & Notifications | REM-01..13, PUSH-01..08 | 21 |
+| 8. Hardening + Launch | A11Y-01, OBS-04, OBS-05 | 3 |
+| **Total** | | **153** |
 
 ---
 
 *Requirements defined: 2026-04-14*
 *Source: docs/CAVE-PRD.md + .planning/research/SUMMARY.md*
-*Last updated: 2026-04-14 after initial definition*
+*Last updated: 2026-04-14 after roadmap traceability mapping*

@@ -1,198 +1,215 @@
-# Roadmap: Folhário MVP
+# Roadmap: Folhário MVP v1
 
 ## Overview
 
-Folhário is a pt-BR plant identification + care-guide + reminder PWA for Brazilian beginners. The MVP journey goes from an empty greenfield repo to a shippable PWA where a verified user can, in under two minutes, photograph an unknown plant, see an honest top-3 identification, file it in "Meu Jardim" with a care guide, and schedule a watering reminder — all under LGPD compliance, WCAG 2.1 AA, a single paid tier with a 14/30-day trial, and atomic per-provider cost caps. Phases are derived from the DDD bounded contexts (IAM, Catalog, Species & Care, Identification, Reminders, Billing, Notifications) plus the cross-cutting Foundation and Launch phases that every context depends on or converges into. Phase 3 (Billing), Phase 4 (Catalog) and Phase 5 (Species & Care) are parallelizable — they all depend on IAM but not on each other's writes. The curated ≥200 pt-BR care-guide corpus runs as a founder-owned content track in parallel with engineering and is a hard launch blocker surfaced in Phase 8.
-
-**Milestone:** v1.0 MVP (8 phases)
-**Granularity:** Standard (parallelization enabled)
-**Source of truth:** `docs/CAVE-PRD.md` (CAVE-PRD dated 2026-04-12)
+Folhário is a Brazilian plant-identification + care-guide + reminder PWA whose core promise is "identified, cataloged, with care guidance in under 2 minutes from email verification." The journey from empty repo to launch goes: first lay down deploy/data foundations (Phases 1-2), then the design system and app shell (Phase 3), then unlock the verified-account gate (Phase 4), then build the catalog so there's something to identify INTO (Phase 5), then the identification flow itself with its architectural cost controls (Phase 6), then render care guides — the retention hook's supporting content (Phase 7), then close the retention loop with reminders and the single daily push nudge (Phase 8), then harden the offline queue that every mutating flow assumed (Phase 9), then wire the billing state machine that gates mutations across the whole app (Phase 10), then land LGPD data rights with the 7-day deletion grace via Inngest durable sleep (Phase 11), and finally the observability rollups and launch-blocker sign-off (Phase 12). Every phase ships observable end-to-end behavior; no horizontal-layer phases.
 
 ## Phases
 
 **Phase Numbering:**
-- Integer phases (1..8): Planned MVP milestone work
-- Decimal phases (e.g., 3.1): Reserved for urgent insertions post-planning
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Foundation** - Scaffold + CI/CD + PWA shell + design system + testing + observability infra
-- [ ] **Phase 2: IAM (Auth + LGPD)** - Signup, verification, OAuth, consent ledger, data export, 7-day deletion grace
-- [ ] **Phase 3: Billing** - Stripe card-only checkout, webhook idempotency, trial, dunning, read-only catalog mode
-- [ ] **Phase 4: Catalog + Offline** - Meu Jardim, photo journal, image pipeline, offline queue, multi-device sync
-- [ ] **Phase 5: Species & Care** - Species table, curated corpus loader, care card, runtime AI augmentation, toxicity signals
-- [ ] **Phase 6: Identification** - Provider abstraction, atomic caps, top-3 UI, LGPD identification consent, manual fallback
-- [ ] **Phase 7: Reminders & Notifications** - Water/fertilize reminders, daily push nudge, email dispatch, permission lifecycle
-- [ ] **Phase 8: Hardening + Launch** - WCAG audit pass, NFS-e path, DPO/policy publication, prod env, observability dashboards
+Decimal phases appear between their surrounding integers in numeric order.
 
-**Parallel content track:** ≥200 curated pt-BR care guides (founder-owned, launch blocker, consumed by Phase 5).
+- [ ] **Phase 1: Foundation & CI/CD** - Next 16 + Serwist scaffold, GitHub-Actions-only pipeline with Supabase branching, observability baseline
+- [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, Inngest wiring, image pipeline, API conventions
+- [ ] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings
+- [ ] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Resend transactional-email backbone
+- [ ] **Phase 5: Catalog — Meu Jardim** - Manual plant add, plant profile, photo journal, location picker, offline-browsable catalog
+- [ ] **Phase 6: Identification Flow & Cost Controls** - Plant.id + OpenAI-compat adapters, per-user caps, per-provider ceilings, breakers, LGPD transfer consent, confidence ladder
+- [ ] **Phase 7: Species, Care Guides & Augmentation** - Curated launch corpus rendering, toxicity badge spec, Inngest care-guide augmentation with "Gerado por IA" chip
+- [ ] **Phase 8: Reminders & Single Daily Push Nudge** - Reminder creation/done/snooze, `reminders/dispatch` cron, deferred push permission, self-healing PushSubscription
+- [ ] **Phase 9: Offline Queue & Sync Resilience** - IndexedDB queue replayer, Idempotency-Key dedupe, discard-summary, OfflineSyncFailure surface
+- [ ] **Phase 10: Billing, Trials & Read-Only Mode** - Stripe adapter (card + Pix), webhook-driven state machine, partner codes, dunning 4×7d, subscription-gated mutations
+- [ ] **Phase 11: LGPD Data Rights & 7-Day Deletion Grace** - Export ZIP + deletion via Inngest `step.sleepUntil`, consent revocation, Privacy panel, DPO contact
+- [ ] **Phase 12: Observability Rollups & Launch Readiness** - PostHog event taxonomy, identification-quality SQL rollups, launch-blocker checklist sign-off
 
 ## Phase Details
 
-### Phase 1: Foundation
-**Goal**: Every following phase inherits a correct-by-construction substrate — Supavisor-safe DB client, DDD-lite context skeleton, green CI with real-Postgres integration, PWA shell with pt-BR i18n, design system primitives, observability wrappers with PII scrub — so no later phase relitigates cross-cutting invariants.
+### Phase 1: Foundation & CI/CD
+**Goal**: A deployable Next 16 skeleton whose every PR flows through GitHub-Actions-driven test → preview → merge → production with observability and secrets in place before any feature code ships.
 **Depends on**: Nothing (first phase)
-**Requirements**: FDN-01, FDN-02, FDN-03, FDN-04, FDN-05, FDN-06, FDN-07, FDN-08, FDN-09, FDN-10, FDN-11, FDN-12, FDN-13, FDN-14, FDN-15, TEST-01, TEST-02, TEST-03, SEC-02, SEC-03, OBS-01, OBS-02, UX-01, UX-06, UX-07, UX-08, UX-09, UX-11, UX-12, A11Y-02, A11Y-03, A11Y-04, A11Y-05
+**Requirements**: INFRA-01, INFRA-02, INFRA-11, INFRA-12, INFRA-13, INFRA-14, INFRA-15, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, OBS-01, OBS-02, OBS-05, LGPD-13
 **Success Criteria** (what must be TRUE):
-  1. A developer can clone the repo, run `pnpm install && pnpm test` and see Vitest unit + real-Postgres integration tests pass against a disposable `postgres:16` container with migrations applied.
-  2. A GitHub PR provisions a Supabase branch DB, deploys a Vercel preview, and runs Playwright against the preview URL — and Vercel's git integration is demonstrably OFF (deploy only via GitHub Actions).
-  3. An unauthenticated visitor can load the PWA at its Vercel preview URL, see pt-BR strings rendered through `next-intl`, install the app to their home screen (manifest + service worker), receive the app-update toast on a new SW version, and see the bottom nav shell (Home/Catálogo/Identificar/Perfil) respecting `env(safe-area-inset-*)` on iOS.
-  4. Sentry `beforeSend` scrubs `email`, `Authorization`, `Cookie`, `photo_url`, and identification request bodies — verified by an integration test that throws with a PII-bearing payload and asserts the captured event carries none of it — and PostHog EU is initialized with session replay OFF.
-  5. A design-system Storybook / gallery page renders the Paper Cream + Canopy Green light palette and the "veranda at dusk" dark palette, Source Serif 4 + Plus Jakarta Sans variable fonts, Lucide 1.5px-stroke icons, the 3px Canopy focus ring, and the shared empty-state / error-state / form-validation / skeletal-shimmer primitives — all honoring `prefers-reduced-motion`.
+  1. An empty Next 16 App Router app with TS strict + pt-BR locale + `@serwist/next` PWA wiring builds locally and on CI, with the bounded-context folder layout from PRD §2 in place.
+  2. Opening a PR runs lint + typecheck + Vitest unit + Vitest integration (against a `postgres:16-alpine` service container) + Playwright (against a `vercel deploy --prebuilt` preview URL bound to a per-PR Supabase branch DB), and closing the PR cleans up the branch DB + preview alias.
+  3. Merging to `main` deploys to production via `vercel deploy --prebuilt --prod`, creates a Sentry release tagged with git SHA, uploads Turbopack source maps post-build, and syncs Inngest functions — with Vercel git integration confirmed OFF.
+  4. A deliberately thrown error in any environment appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes; PostHog EU client + `posthog-node` server are connected and a ping event lands in the EU project.
+  5. The closed error-code registry enum exists as a single importable source, standard security headers (CSP, HSTS, X-Frame-Options) apply to every response, and the `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers so preview cannot accidentally burn real provider credit.
 **Plans**: TBD
-**UI hint**: yes
+**UI hint**: no
 
-### Phase 2: IAM (Auth + LGPD)
-**Goal**: A Brazilian beginner can create an account, verify their email (which starts the <2-min first-value clock), grant granular LGPD consent on a Contract basis at signup and Consent basis per-purpose later, export their data, and request account deletion with a durable 7-day grace that cancels cleanly — all without any later context being able to accidentally bypass the email-verification gate.
+### Phase 2: Data Layer & Bounded Contexts
+**Goal**: Every entity from PRD §4 exists in Postgres with Drizzle migrations applied, auth/storage/inngest adapters are wired behind their interfaces, and route handlers have the conventions (Zod, Idempotency-Key, cursor pagination, RLS) needed for feature phases to write thin use-cases without reinventing plumbing.
 **Depends on**: Phase 1
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, LGPD-01, LGPD-02, LGPD-03, LGPD-04, LGPD-05, LGPD-06, LGPD-07, LGPD-08, LGPD-09, LGPD-10, LGPD-11, LGPD-12, SEC-01, SEC-04, UX-02, UX-04
+**Requirements**: INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, INFRA-08, INFRA-09, INFRA-10, INFRA-19, INFRA-21, INFRA-22, INFRA-24
 **Success Criteria** (what must be TRUE):
-  1. A new user can sign up with email + password (age ≥13 confirmed, ToS + privacy policy accepted, timezone captured from the browser, optional partner code applied), sees a full-screen "Verifique seu e-mail" blocker (UX-02) served by middleware — not per-handler — until verification completes, then lands in the authenticated shell with a per-device JWT.
-  2. A user can sign in with Google OAuth and is treated as pre-verified; a user can reset their password (unauthed, always 200) via a single-use hashed Resend token with 1h expiry; a user can change password from Settings; OAuth-only accounts see no change-password control.
-  3. ConsentLog contains two distinct records after the first identification attempt — `tos_privacy_policy` (Contract basis, recorded at signup) and `identification_third_party` (Consent basis, recorded from the blocking Art. 33 modal) — and revoking `identification_third_party` in Settings blocks future identification with `consent_required` 403 but leaves catalog view intact (LGPD-04 integration test).
-  4. A user can request an LGPD data export from Settings, receive a "pronto" email via Resend, and download a zip containing `data.json` + original `photos/` via a time-limited signed URL; a user can request account deletion, see the 7-day grace disclosure modal, cancel within the window and resume normal access, OR let it lapse and see the Inngest `iam/process-deletion` function wake from `step.sleepUntil` and hard-delete their data (verified in integration against a 15-second sleep override).
-  5. Settings exposes DPO contact, privacy policy link, and ToS link (content fields may be TBD pre-launch, page structure ships), and middleware blocks every non-allowlisted `/api/v1/*` request lacking a valid JWT OR lacking verified email.
+  1. Drizzle schema + migrations for all 19 entities (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription) are applied to a fresh DB from `drizzle-kit`, with RLS enabled on every user-owned table.
+  2. A single shared `db/client.ts` exports a Drizzle client built on `postgres-js` with `{ prepare: false }` against the Supavisor txn pooler, and integration tests fail loudly if any route handler imports Drizzle directly (repositories only).
+  3. `AuthAdapter`, `StorageAdapter` (with `plant-photos`, `plant-thumbnails`, `data-exports` private buckets + signed-URL helpers), and the Inngest `serve()` handler at `/api/inngest/route.ts` registering every async function (`care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push`) boot without errors and are exercised by integration tests.
+  4. A smoke `/api/v1/*` route handler validates body with a `drizzle-zod`-derived Zod schema, enforces JWT verification via Next middleware, returns cursor-paginated responses (`?cursor=&limit=`, default 50 / max 200, opaque `next_cursor`), and dedupes POSTs by `Idempotency-Key` header.
+  5. A client-side image pipeline (compression ≤1MB + EXIF/GPS strip) uploads through the storage adapter and the server-side upload endpoint rejects any image carrying GPS EXIF with `validation_failed`; `ConsentLog` + policy-version + legal-basis registry seed data is loaded into every environment.
 **Plans**: TBD
-**UI hint**: yes
+**UI hint**: no
 
-### Phase 3: Billing
-**Goal**: A verified user can enter paid status through Stripe card checkout, a `trialing` state opens on account creation (14 days organic, 30 days with a valid partner code at signup OR before `trial_end_date` in Settings), the Stripe webhook is sub-200ms and idempotent, and any lapse drops the catalog to read-only mode without holding data hostage.
+### Phase 3: Design System & App Shell
+**Goal**: A PWA-installable app shell renders with the full Paper Cream / Night Cream design system, bottom-nav, dark mode, motion, pt-BR strings, and accessibility guardrails — so every later feature phase just drops composed screens into already-finished chrome.
 **Depends on**: Phase 2
-**Requirements**: SUB-01, SUB-02, SUB-03, SUB-04, SUB-05, SUB-06, SUB-07, SUB-08, SUB-09, SUB-10, SUB-11, SUB-12, SUB-13, SUB-14, SUB-15, SUB-16, SUB-17, SEC-05
+**Requirements**: UI-01, UI-02, UI-03, UI-14, UI-17, UI-18, UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-25, OFF-09, OFF-10
 **Success Criteria** (what must be TRUE):
-  1. On account creation a Subscription row lands in `status=trialing` with `trial_end_date = now + 14d` (organic) or `now + 30d` (valid partner code); a user can complete Stripe Checkout with a card and transition to `active`; a user can cancel from Settings, see the `current_period_end` date, retain full access until then, and reactivate from Settings (including during the 7-day deletion grace).
-  2. The Stripe webhook endpoint (a) rejects bad signatures with `webhook_signature_invalid` 401 and writes NO BillingEvent, (b) inserts a BillingEvent row with a UNIQUE constraint violation returning 200 on replay, (c) enqueues to Inngest — all in under 200ms — and the `billing/process-webhook` Inngest function is the ONLY path that mutates `Subscription.status`, verified by an integration test that replays the same `event_id` twice and asserts one state transition.
-  3. A user whose subscription leaves `trialing`/`active` sees a persistent top banner ("Sua assinatura expirou...") linking to Settings billing, can still view plants/photos/journal/care guides, gets `subscription_required` 402 on identify, `read_only_mode` 402 on mutations, reminders paused, AND full Settings access (payment update, reactivate, export, delete).
-  4. Dunning (4 retries over 7 days) fires a Resend-delivered payment-failed email per attempt with a PM update link; recovered → active; exhausted → canceled → read-only; the `billing/trial-ending-notifier` cron emits T-3 and T-1 trial-ending emails.
-  5. Late partner-code entry in Settings is accepted ONLY while `status=trialing` AND wall-clock strictly before `trial_end_date`, sets `trial_end_date = created_at + 30d` in ONE write, never stacks, never resets the clock — verified by an integration test that attempts a late code 1 second after `trial_end_date` and asserts rejection.
+  1. A visitor installs the PWA (manifest with all icon sizes, `display: standalone`, theme color matching brand, viewport allowing user scaling), launches it from the home screen, and sees the Paper Cream light theme — or the Night Cream dark theme if system prefers dark — with Source Serif 4 headings, Plus Jakarta Sans body, Lucide icons, and every string fetched through `next-intl` with `<html lang="pt-BR">`.
+  2. Keyboard users can tab through the bottom-nav (4 items: Home, Catálogo, Identificar, Perfil; 28px Lucide + labels always, Canopy active bar, 56px + safe-area padding, per-tab scroll preservation) with a 3px Canopy-at-40% focus ring 2px offset, tab order matching visual order, and route changes moving focus to main content.
+  3. Loading states render as skeletal shimmers (never circular spinners) with a 300ms threshold and 120ms fade-in, reducing to static blocks + 80ms fade under `prefers-reduced-motion`; the capture-button 1.00→1.03 bounce, 3.2s breathing loop on empty CTA, and 60ms cascade on list reveal all honor reduced motion.
+  4. Placeholder screens demonstrate every composed primitive: empty state (Sage line-art + Source Serif headline + Calm Slate hint + single Canopy CTA), inline calm error (never full-screen red wall, cause + recovery copy, retry path exposed), persistent offline banner, safe-area-respecting `min-h-[100dvh]` layout with no horizontal scroll, and strings piped through the i18n layer with `dd/MM/yyyy` dates, 24h times, and `R$ 29,90` currency.
+  5. When a new service worker version is detected, a non-blocking bottom toast "Nova versão disponível" + "Atualizar" appears, tapping triggers `skipWaiting` + reload, and the app never auto-reloads mid-session; a design-system lint confirms absence of emoji, pure black/white, gradient text, glassmorphism, neumorphism, Inter, and generic serifs.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 4: Catalog + Offline
-**Goal**: A user can build "Meu Jardim" — add plants manually or from an identification (deferred until Phase 6), view plant profiles with photo journal and room picker, and keep working offline with a queue that survives app close/reopen, replays with client-UUID idempotency, and resolves conflicts without merge UIs.
-**Depends on**: Phase 2 (User + JWT); parallelizable with Phase 3 and Phase 5
-**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04, CAT-05, CAT-06, CAT-07, CAT-08, CAT-09, CAT-10, IMG-01, IMG-02, IMG-03, IMG-04, IMG-05, OFF-01, OFF-02, OFF-03, OFF-04, OFF-05, OFF-06, OFF-07, OFF-08, UX-03
+### Phase 4: IAM — Auth, Verification, Consent
+**Goal**: A Brazilian beginner can sign up with email+password or Google, confirm age ≥13, accept T&C + privacy policy, receive + click a pt-BR verification email from Resend, and land in the app shell with the verification gate lifted — and the Settings shell exists with an "Account" section so profile basics and password change work end-to-end.
+**Depends on**: Phase 3
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, AUTH-11, AUTH-12, AUTH-13, AUTH-14, AUTH-15, NOTIF-01, NOTIF-02, UI-13
 **Success Criteria** (what must be TRUE):
-  1. A user can add a plant manually (name + ≥1 photo required, optional nickname/location/acquisition_date/notes), see the client-side compression + EXIF-GPS strip (server rejects any GPS-bearing upload as `validation_failed`), view the plant profile with cover + gallery + inline-editable nickname + room picker (quick-select + defaults + free-text-becomes-reusable), and see the catalog grid respect the 2/3/4-column breakpoints with 4:5 portrait cards and context-generated alt text.
-  2. A user can add a dated photo journal entry per plant with an optional note; entries render reverse-chronological as PhotoEntry rows; deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, and preserves Identification rows with `plant_id=NULL`.
-  3. A user who goes offline sees the persistent "Você está offline..." banner (UX-03), can browse their cached catalog + care guides, queues photo adds and edits to IndexedDB with client-UUID Idempotency-Key headers, and on reconnect replays them in ascending client-timestamp order — server dedupes and returns original results on replay (OFF-01 integration test).
-  4. Queued actions targeting a plant deleted server-side are dropped en masse with a single tappable summary toast on next app open listing discarded actions by type; field-edit conflicts resolve last-write-wins by SERVER timestamp; reminder-done for a gone-remote reminder drops silently.
-  5. An action that fails sync 5 times writes an `OfflineSyncFailure` row, is removed from the active queue, and surfaces in a Settings "Needs attention" list with per-item retry/discard.
+  1. A new user submits the signup form with email+password, confirms age ≥13, accepts T&C + privacy policy (ConsentLog row recorded against the active `policy_version`), optionally enters a partner code, and their browser's `Intl.DateTimeFormat().resolvedOptions().timeZone` is captured into `User.timezone`; a `Subscription` row is created `status=trialing`; a verification email arrives in pt-BR via Resend (rendered from a React Email template); until they click the link, any gated endpoint returns `email_unverified` 403 and the app shell is replaced by a full-screen blocker "Verifique seu e-mail para começar." with resend-verification + logout links.
+  2. A Google-OAuth signup treats the user as pre-verified — no verification email sent, gated endpoints reachable immediately — while the email+password user who clicks the verification link has `User.email_verified_at` set, the blocker cleared, and the "value <2 min" clock started.
+  3. Returning users log in with email+password via per-device JWT (no server sessions), log out of the current device (revoking that JWT and its push subscription only), request a password reset from a public endpoint that always returns 200 (no enumeration) and — when the email exists — receive a Resend email with a single-use hashed token expiring in 1h that lets them set a new password while existing JWTs remain valid.
+  4. From `Settings → Account`, an email+password user changes their password with current + new (wrong current → `invalid_credentials` 401); OAuth-only accounts see the change-password UI hidden and the endpoint rejects with `forbidden`; the Settings shell renders with placeholder sections for Notifications, Subscription & billing, Privacy & LGPD, Needs attention, and App info that later phases will fill.
+  5. The signup, login, and OAuth callback endpoints enforce a narrow per-IP attempt throttle returning `rate_limited` 429 when tripped, independent of the target account and without consuming the failure budget on successful logins, and `notifications/send-email` Inngest function is wired to Resend with pt-BR React Email templates for verification + password-reset as the first consumers (later phases add templates).
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 5: Species & Care
-**Goal**: A plant profile can display a seven-field pt-BR care guide (curated where available, runtime-augmented where not — always with a persistent "Gerado por IA" badge when augmented), and toxicity warnings always present icon + color + text + striped border + SR alert + haptic together so color is never the sole signal.
-**Depends on**: Phase 2 (User); parallelizable with Phase 3 and Phase 4
-**Requirements**: CARE-01, CARE-02, CARE-03, CARE-04, CARE-05, CARE-06, CARE-07, CARE-08, CARE-09
+### Phase 5: Catalog — Meu Jardim
+**Goal**: A verified user can manually add plants, see them as a responsive 2/3/4-column grid sorted by acquisition date, open a plant profile with photo journal + location picker + delete, and browse a previously-loaded catalog offline — producing the "something to identify INTO" that Phase 6 needs.
+**Depends on**: Phase 4
+**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04, CAT-05, CAT-06, CAT-07, CAT-08, CAT-09, CAT-10, CAT-11, OFF-08, UI-04, UI-07, UI-08, UI-11
 **Success Criteria** (what must be TRUE):
-  1. The curated pt-BR care-guide corpus (≥200 domestic species, founder-owned track — content shipped pre-launch) is loaded into `Species` + `CareGuide` tables via a repeatable import pipeline, and a plant whose `species_id` is curated renders the full 7-field care card (watering, light, soil, temperature, humidity, toxicity, difficulty) plus seasonal tips (SH) and compatibility block when present.
-  2. An `identification.succeeded` event for a species with missing or incomplete CareGuide triggers the `care-guide/augment` Inngest function which calls the `CareGuideProvider.augment()` adapter, upserts CareGuide with `source=augmented`, and the care card thereafter renders a permanent "Gerado por IA" Trust Teal chip — identification response NEVER blocks on augmentation (integration test asserts <500ms response even with augmentation queued).
-  3. A toxic-species care card renders the full redundant-signal composition: Urgent Poppy filled rounded-rect badge, paw+child filled icon, literal "Tóxico para pets e crianças" text, 3px diagonal striped accent on the left edge, `role="alert"` SR announcement reading the full phrase, and a warning haptic on first-reveal-per-session — verified by an axe-core + manual audit checklist item.
-  4. The first-ever care-guide view per user shows a one-time toxicity-AI disclaimer modal, persists acknowledgement in `User.toxicity_disclaimer_acknowledged_at`, and never shows it again; missing-CareGuide plants hide the care card entirely while flagging `Species.flag_reason=missing_care_guide` and incrementing `identification_count`.
-  5. Care-guide augmentation consumes a separate `(provider, purpose=care_guide)` budget row; exhausting it logs `cost_ceiling_reached` and pauses augmentation WITHOUT touching the identification budget or existing CareGuide rows — verified by an integration test that maxes the care_guide budget and asserts subsequent identification still succeeds.
+  1. A user with zero plants sees the full-bleed Home empty state "Identifique sua primeira planta" with a camera button + "Adicionar manualmente" text link (the camera button is wired to the Phase 6 placeholder route), and the Catalog tab shows "Sua estante ainda está esperando a primeira planta." with a single Canopy CTA.
+  2. "Adicionar manualmente" creates a Plant with name + ≥1 photo (species_id null) and an initial PhotoEntry; missing name or photo returns `validation_failed` with field highlighting and no row persisted; the new plant appears in the catalog grid which is responsive at 2 cols ≤375px, 3 cols 600-899px, 4 cols ≥900px and defaults to `acquisition_date` DESC (null dates last).
+  3. A plant profile opens with cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link placeholder, and a delete overflow; the location picker shows the user's prior locations as quick-select plus defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` plus free text that becomes reusable next time.
+  4. A user adds a new photo-journal entry with an optional note (creating a `PhotoEntry` linked to the plant), and the photo journal screen lists entries reverse-chronologically; a sort control offers name A-Z, name Z-A, date newest, date oldest, location, and the selection persists for the session.
+  5. Deleting a plant cascades its PhotoEntry + Reminder rows, schedules its storage objects for deletion, sets `Identification.plant_id` NULL while preserving the history row, and a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 6: Identification
-**Goal**: A verified user with granted identification consent can upload 1..N photos, receive an honest top-3 result ladder under a combined 50s Vercel budget, see caps enforced atomically before any provider call, and always have a manual-entry fallback when providers fail or caps hit — so the core <2-min value moment is honest, fast, and never broken by a runaway bill.
-**Depends on**: Phase 2 (Consent), Phase 3 (Subscription tier for cap), Phase 4 (Catalog for prefill), Phase 5 (Species ref, augmentation trigger)
-**Requirements**: ID-01, ID-02, ID-03, ID-04, ID-05, ID-06, ID-07, ID-08, ID-09, ID-10, ID-11, ID-12, ID-13, ID-14, ID-15, ID-16, UX-05, UX-10, TEST-04, OBS-03
+### Phase 6: Identification Flow & Cost Controls
+**Goal**: A verified, trial-active user opens the Identify screen, snaps or picks 1-N photos, accepts the first-time LGPD Art. 33 third-party transfer consent, and — within the 50s function budget — receives ≤3 honest top-3 results with confidence-ladder UI, selects one, and lands in their catalog with a Plant+Species linked; meanwhile the platform enforces per-user caps, per-provider daily ceilings, atomic counters, and a circuit breaker so a runaway provider can never blow the $5/day budget.
+**Depends on**: Phase 5
+**Requirements**: IDENT-01, IDENT-02, IDENT-03, IDENT-04, IDENT-05, IDENT-06, IDENT-07, IDENT-08, IDENT-09, IDENT-10, IDENT-11, IDENT-12, IDENT-13, IDENT-14, IDENT-15, IDENT-16, IDENT-17, IDENT-18, IDENT-19, IDENT-20, IDENT-21, COST-01, COST-02, COST-03, COST-04, COST-05, COST-06, COST-07, COST-08, COST-09, COST-10, LGPD-09, UI-06, UI-12, UI-15
 **Success Criteria** (what must be TRUE):
-  1. A user on their first-ever identification sees the blocking LGPD consent modal disclosing Plant.id + OpenAI-compat providers and Art. 33 international transfer; denying keeps them out of the provider call path; granting writes the `identification_third_party` ConsentLog row and proceeds — no provider call ever happens without that row present.
-  2. From the Identify tab a user sees the static pre-capture guide (leaf + flower + whole plant + "Mais fotos melhoram a precisão"), taps the 72px Canopy circular capture button (UX-05, the only non-rounded-rectangle shape in the app and the one tactile bounce in the system), uploads 1..N photos, and sees the top-3 result ladder with the 4-signal confidence presentation (colored bar + segment count + numeric % + SR announcement — UX-10) with OpenAI-compat fallback results visibly labeled "confiança estimada pela IA".
-  3. Two concurrent identification requests at the per-user daily cap boundary produce exactly one success and one `cap_hit` 429, with exactly one ProviderUsageCounter increment and zero orphan Identification rows (TEST-04 atomicity integration test against real Postgres via the `INSERT ... ON CONFLICT ... WHERE counter + cost <= cap RETURNING *` pattern); zero-results-above-threshold persists an Identification row and shows retake + manual-entry fallback UI (ID-03).
-  4. A `provider_unavailable` 503 (circuit breaker open, cost ceiling reached, or wall-clock budget exhausted) always offers the manual-entry fallback; an 80% provider-ceiling breach fires a Resend operator alert email exactly once per `(provider, purpose, utc_date)` row via the `alert_80_sent_at` latch — verified by an integration test that simulates two 80%-trip passes and asserts one email.
-  5. The Identification history screen lists every attempt (success + failure with `failure_reason`), the re-associate-with-catalog-entry detail view works end-to-end, and an Inngest cron SQL rollup (OBS-03) populates per-provider confidence distribution, manual-correction rate, cap-hit rate, and latency p50/p95/p99 into a queryable metrics table.
+  1. A verified trialing user on Identify with no prior consent sees the LGPD consent modal disclosing Plant.id + OpenAI-compat providers and Art. 33 international transfer; granting records a ConsentLog and capturing `consent_version` is persisted on every subsequent `Identification` row; denying or revoking returns `consent_required` 403 with no provider call and no Identification row.
+  2. With consent, the capture guide (leaf + flower + whole plant + "Mais fotos melhoram a precisão") is visible, the user uploads 1-N EXIF/GPS-stripped photos ≤1MB each (server rejects any with GPS as `validation_failed`), and `POST /v1/identifications` returns ≤3 results above `ProviderBudget.min_confidence` ordered desc via the `IdentificationProvider` adapter (Plant.id primary, OpenAI-compat fallback), persists `Identification status=success` with provider/model/latency/consent_version/photo_urls, emits `identification.succeeded`, and the user selects a result to create a Plant linked to Species with name pre-filled and `Identification.plant_id` FK set.
+  3. The confidence ladder renders three states (high ≥70%, medium 40-69%, low threshold-39%) with redundant signals (bar + segments + percentage + SR label), zero-results shows "could not identify" + retake guidance (with the Identification row still persisted for history), and the identification-history screen lists every success/timeout/provider_unavailable attempt with status + failure_reason plus a re-associate-with-catalog link.
+  4. Per-user caps are enforced BEFORE any `ProviderUsageCounter` increment or provider call: a trialing user over 5/day or 75/period sees `cap_hit` 429 with a reset time and a manual-entry link (no retry button); an active user over 15/day or 200/period sees `cap_hit` 429; two concurrent requests to the same provider serialize atomically with zero lost writes; the 80% ceiling triggers an operator Resend alert; operator DB tuning of `IdentificationLimit` or `ProviderBudget` takes effect on next request past cache TTL.
+  5. When Plant.id hits its $5/day ceiling or trips its circuit breaker, the router skips it (logging internal `cost_ceiling_reached` / `breaker_open`) and fallovers to OpenAI-compat with ≥10s remaining budget (else short-circuits `provider_unavailable`); the `care_guide` provider budget is independent from `identification` so exhausting one never starves the other; clients only ever see `provider_unavailable` 503, `timeout` 504, `cap_hit` 429, `consent_required` 403, `validation_failed`, or `subscription_required` 402 — internal reasons never leak; offline identify shows "Identificação requer conexão à internet." and read-only-mode shows the "Reative sua assinatura para identificar novas plantas." paywall modal.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 7: Reminders & Notifications
-**Goal**: A user can create watering + fertilization reminders from a plant profile (never suggested), receive exactly ONE daily push nudge per user-day (never per-reminder) at their `notification_time_local`, never see a push permission prompt except on first-reminder save, and get email dispatch for trial-ending / payment-failed / deletion-confirmation via a single Notifications fan-out layer.
-**Depends on**: Phase 2 (User tz), Phase 4 (Plants), Phase 5 (CareGuide frequency prefill), Phase 6 (identification-driven plants)
-**Requirements**: REM-01, REM-02, REM-03, REM-04, REM-05, REM-06, REM-07, REM-08, REM-09, REM-10, REM-11, REM-12, REM-13, PUSH-01, PUSH-02, PUSH-03, PUSH-04, PUSH-05, PUSH-06, PUSH-07, PUSH-08
+### Phase 7: Species, Care Guides & Augmentation
+**Goal**: Every identified plant links to a care guide — either from the ≥200 founder-curated launch corpus or, for missing species, from a post-identification Inngest augmentation that lands with a persistent "Gerado por IA" badge — and every toxicity signal renders with the non-negotiable 7-part composition + mandatory vet disclaimer.
+**Depends on**: Phase 6
+**Requirements**: CARE-01, CARE-02, CARE-03, CARE-04, CARE-05, CARE-06, CARE-07, CARE-08, CARE-09, CARE-10, UI-09, UI-16
 **Success Criteria** (what must be TRUE):
-  1. A user can create a watering or fertilization reminder ONLY from a plant profile (no prompts, no suggestions), with frequency prefilled from CareGuide when available, `advance_rule` defaulting to `from_scheduled`, and the global `User.notification_time_local` (default 09:00, editable in Settings) applying to every reminder — never per-reminder override.
-  2. A `from_scheduled` reminder snoozed to "tomorrow" and later marked done computes the next `next_due_at` from the ORIGINAL scheduled date + frequency (not the snooze or done time) — verified by an integration test; marking done advances per `advance_rule`; Home's "Hoje" list is the source of truth, derived live, with overdue visually distinct but not escalating.
-  3. The `reminders/dispatch` Inngest cron runs every 5 minutes and emits `daily_reminder_summary.due` exactly ONCE per user per day at their local notification time WHEN at least one reminder is due/overdue AND subscription is in `trialing`/`active` — suppressed otherwise; the `notifications/send-push` function fans out a single push per device with NO Done/Snooze controls, deep-linking to Home.
-  4. The push-permission browser prompt fires ONLY on save of the first-ever reminder (never at signup, first visit, or first identify); granting creates a per-device `PushSubscription` row keyed `(user_id, device_id)`; logout revokes only the current device; a push-service 410/404 DELETES the subscription row in the same Inngest step (reactive self-healing, zero cron prune).
-  5. Global mute and per-plant mute both take effect globally across devices; React Email pt-BR templates for trial-ending, payment-failed, and deletion-confirmation dispatch via the `notifications/send-email` Inngest function and Resend — verified by a Playwright E2E that creates a first reminder, sees the permission prompt, and a fake-dispatch integration test that asserts the daily nudge fires exactly once.
+  1. A plant whose Species has a published CareGuide (curated or augmented) opens a care card rendering all 7 fields — watering, light, soil, temperature, humidity, toxicity, difficulty — plus seasonal tips and compatibility block, with Calm Slate secondary text and the photography-first atmosphere from PRD §17.
+  2. The toxicity badge renders the non-negotiable 7-part spec on every surface where toxicity appears (top of care card, top of plant profile): filled rounded-rect, 18px paw+child Lucide icon, literal text, 3px diagonal striped accent border, disclaimer "Informação gerada por IA — confirme com um veterinário" on the same viewport, SR `role="alert"` full phrase, and a haptic warning on first reveal per session; the first-ever care-guide view shows the one-time toxicity disclaimer modal persisted via `User.toxicity_disclaimer_acknowledged_at`.
+  3. A plant whose Species has no CareGuide hides the care card section but keeps every other plant-profile feature; `Species.flag_reason=missing_care_guide`, `flag_status=open`, and `identification_count` is incremented on each match.
+  4. An `identification.succeeded` event for a species missing a care guide triggers `care-guide/augment` via `CareGuideProvider.augment`, upserts a `CareGuide source=augmented` row with bumped version, sets `Species.flag_status=resolved`, emits `care_guide.augmented`, and the user sees the new card on next view with a persistent Trust Teal "Gerado por IA" chip at top that never disappears; the identification response itself is not delayed by augmentation.
+  5. When the `ProviderBudget` row for `purpose=care_guide` is at/above its daily ceiling, the augment function exits without a provider call, logs internal `cost_ceiling_reached`, and leaves the CareGuide untouched — while the `purpose=identification` budget for the same provider is unaffected; the founder-curated ≥200-species launch corpus is loaded into the database and surfaces on matched identifications (LAUNCH BLOCKER: corpus authoring is tracked separately in the launch-blocker checklist, not as a dev task in this phase).
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 8: Hardening + Launch
-**Goal**: Every pre-launch blocker identified in research (NFS-e path, DPO appointed + policy published, WCAG 2.1 AA audit pass, Plant.id paid balance, production VAPID keys, Resend domain verification, production env vars, first-value funnel wired) is resolved, observability dashboards are live, and the final end-to-end pass against a production-equivalent preview is green.
-**Depends on**: Phases 1-7
-**Requirements**: A11Y-01, OBS-04, OBS-05
+### Phase 8: Reminders & Single Daily Push Nudge
+**Goal**: A user creates a watering or fertilization reminder from a plant profile, the Home "Hoje" section becomes the authoritative due/overdue list, and — the first time they create a reminder — the browser push permission is surfaced so the `reminders/dispatch` cron can emit exactly ONE daily nudge per user at their `notification_time_local` when anything is due, fanned out across every active PushSubscription with 410/404 self-healing.
+**Depends on**: Phase 7
+**Requirements**: REM-01, REM-02, REM-03, REM-04, REM-05, REM-06, REM-07, REM-08, REM-09, REM-10, REM-11, REM-12, REM-13, REM-14, REM-15, REM-16, REM-17, REM-18, REM-19, REM-20, REM-21, NOTIF-03, NOTIF-04, NOTIF-05, UI-05, UI-10
 **Success Criteria** (what must be TRUE):
-  1. A WCAG 2.1 AA audit pass is documented and signed off — every interactive element has sufficient contrast, redundant state cues, SR-labeled role, focus-ring compliance, browser zoom + Dynamic Type honoring, and axe-core CI checks green across every Playwright E2E screen (A11Y-01 ship-blocker gate).
-  2. The NFS-e issuance path is committed and implemented (third-party vendor integration OR manual SLA OR on-request-only policy), the DPO (Encarregado) contact is published in Settings, the privacy policy + ToS are published in pt-BR at stable URLs linked from signup and Settings, and the Stripe live price in BRL is set and wired.
-  3. Production VAPID keys are generated and persisted, Resend domain is verified, Plant.id account has a paid credit balance, Supabase Pro plan and Inngest Hobby plan are active, and production env vars are set in Vercel (no branch/preview secrets leaking to prod).
-  4. Sentry dashboards alert on new issues and error-rate spikes; Resend operator alerts fire on 80% provider ceiling breach, Stripe signature failure, and Inngest function failure-after-retries (OBS-04); the PostHog EU "first-value funnel" (signup → email verification → first identification within 2 minutes) is wired and emits the `identification_started`, `identification_succeeded`, and `plant_added` events against the ≥60%-of-verified-users target (OBS-05).
-  5. A final Playwright E2E pass against the production-equivalent preview URL exercises every primary screen's happy path AND documented failure states (cap-reached, provider-unavailable, offline queue discard, augmented care-guide badge, read-only catalog mode) green.
+  1. On a plant profile with zero reminders, no prompt or suggestion to create one is shown (respecting "reminders never nagged"); opening "Criar lembrete" lets the user pick type (watering/fertilization), frequency (prefilled from care guide if available), and advance_rule (default `from_scheduled`, persisted when untouched), and submitting it creates the very first reminder which triggers the browser-native push permission prompt (never surfaced at signup, first visit, or first identify).
+  2. The Home "Hoje" section is the authoritative due/overdue list derived live from Reminder + ReminderLog — overdue reminders appear in a visually distinct section that does NOT auto-mute, auto-complete, or change visual weight as they age — and the Reminders management screen lists reminders grouped by plant with edit/delete, showing current global notification time with a "Change in Settings" link.
+  3. A new user has `notification_time_local=09:00` by default and can edit it in Settings → Notifications with global mute + per-plant mute (global across devices); `next_due_at` is computed at create/advance (UTC) from `notification_time_local` + `User.timezone`, the dispatcher queries by UTC only (no per-request tz math at fire time), and changing `User.timezone` does NOT retroactively shift already-scheduled reminders.
+  4. At the user's `notification_time_local` the `reminders/dispatch` Inngest cron emits exactly ONE `daily_reminder_summary.due` event when ≥1 reminder is due/overdue (zero due → no event, no nudge), and `notifications/send-push` fans out a single daily nudge via `web-push` + VAPID to every active `PushSubscription` keyed `(user_id, device_id)` — the payload carries no Done/Snooze, and tapping it deep-links to Home; a 410/404 response from the push service deletes that PushSubscription row in the same step.
+  5. Tapping Done on device A writes a `ReminderLog action=done` (never reachable from the push payload), device B clears it on next sync, `next_due_at` advances per `advance_rule` (`from_scheduled` = previous scheduled + frequency regardless of snooze/late-done; `from_acted` = done timestamp + frequency); Snooze offers 1h/3h/tomorrow writing `snoozed` + `snooze_until`; subscription not in trialing/active pauses dispatch without advancing `next_due_at` and resumes on return; no push permission OR all devices offline means no nudge delivered and no missed-push backlog.
 **Plans**: TBD
 **UI hint**: yes
+
+### Phase 9: Offline Queue & Sync Resilience
+**Goal**: Every mutating flow shipped in Phases 5-8 (plant add, photo-journal add, reminder create/done/snooze, profile edits) tolerates airplane mode by queueing in IndexedDB, replays exactly-once after reconnect via `Idempotency-Key = client UUID`, handles stale rows with last-write-wins, drops actions targeting server-deleted plants with a single discard-summary toast, and surfaces 5-attempt failures in Settings → Needs attention.
+**Depends on**: Phase 8
+**Requirements**: OFF-01, OFF-02, OFF-03, OFF-04, OFF-05, OFF-06, OFF-07
+**Success Criteria** (what must be TRUE):
+  1. A user goes offline, performs several mutations (add plant, add photo-journal entry, mark reminder done, snooze another), closes the browser/app, reopens it while still offline, and sees the queued actions preserved in IndexedDB; going online replays them in ascending client-timestamp order and each action lands exactly once (replaying the same client UUID returns the original result via server-side `Idempotency-Key` dedupe).
+  2. A queued field edit on a row that changed server-side resolves last-write-wins by server timestamp with no merge UI, and the conflict is invisible to the user.
+  3. A queued action targeting a plant that was deleted server-side is dropped silently along with every other queued action for that plant; on next app open a single discard-summary toast appears, tappable to a modal grouping discarded actions by type with client timestamps (read-only).
+  4. A queued action failing sync 5 times creates an `OfflineSyncFailure` row, is removed from the active queue, and appears in Settings → Needs attention with per-entry retry and discard controls.
+  5. The Idempotency-Key mutation-dedupe contract from Phase 2 is verified to apply uniformly across every mutating endpoint touched by Phases 4-8, and integration tests cover duplicate replay, ordered replay, deleted-target drop, stale-row LWW, and 5-attempt failure paths against real Postgres.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 10: Billing, Trials & Read-Only Mode
+**Goal**: Stripe Checkout (card + Pix) lands behind a `BillingProvider` adapter, the webhook-only state machine moves subscriptions through `trialing → active → past_due → canceled / expired` with 4×7d dunning, partner-code trials (14d organic / 30d partner) work correctly, Settings → Subscription & billing surfaces plan/PM/billing history/cancel/reactivate/partner code, and subscription-not-in-trialing/active flips the app into read-only mode (catalog readable, mutations → `read_only_mode` 402, identification → `subscription_required` 402, reminders paused).
+**Depends on**: Phase 9
+**Requirements**: SUB-01, SUB-02, SUB-03, SUB-04, SUB-05, SUB-06, SUB-07, SUB-08, SUB-09, SUB-10, SUB-11, SUB-12, SUB-13, SUB-14, SUB-15, SUB-16, SUB-17, SUB-18, SUB-19, SUB-20, SUB-21, SUB-22, SUB-23, NOTIF-06
+**Success Criteria** (what must be TRUE):
+  1. A new signup without a partner code gets `Subscription status=trialing`, `trial_end_date = created_at + 14d`, `trial_source=organic`; with a valid partner code → 30d + `trial_source=partner` + `partner_code` recorded; unknown/inactive code → `invalid_partner_code` inline error that the user clears to proceed with 14d; an organic trialing user inside-window can enter a valid partner code in Settings to extend to `created_at + 30d` (clock NOT reset); a partner trialing user cannot stack a second code and deactivating a PartnerStore does not affect already-established trials; a T-3d and T-1d `trial.ending` Inngest cron fires the right Resend emails.
+  2. Trial ends with a valid PM → Stripe webhook transitions status to `active`; without PM → `expired` + read-only; an active renewal charge failure → `past_due` + payment-failed Resend email; past_due recovered → `active`; past_due exhausting 4-retry / 7-day dunning → `canceled`; user-cancel from Settings → `cancel_at_period_end=true` with UI confirming access-ends date (full access until `current_period_end`); canceled reaching `current_period_end` → `expired`; a canceled/expired non-deleted account with valid PM can reactivate as a NEW subscription in `active`; `Subscription.status` mutates ONLY via webhook handler.
+  3. The Stripe webhook path is: verify signature (bad → `webhook_signature_invalid` 401, no BillingEvent, Sentry critical) → insert BillingEvent (UNIQUE(event_id) → duplicate deliveries are no-op 200) → enqueue `billing.webhook.received` → `billing/process-webhook` Inngest function transitions state + emits `subscription.status_changed` + triggers dunning email via Resend; every Stripe SDK call lives inside the `BillingProvider` adapter (`create_customer`, `start_subscription`, `cancel_subscription`, `reactivate_subscription`, `update_payment_method`, `get_subscription`, `handle_webhook`) and business logic never touches the Stripe SDK directly.
+  4. A user in Stripe Checkout can pay with card or Pix and subsequently sees Settings → Subscription & billing with: current plan + status, renewal/trial-end date, PM (last-4 for card / Pix indicator), update-PM button, partner-code input (ONLY while trialing AND wall-clock < trial_end_date), cancel button, reactivate button (when canceled/expired), and billing history.
+  5. A subscription not in `trialing`/`active` flips the app into read-only mode: catalog/photos/journal/care guides remain viewable; identification returns `subscription_required` 402 with the paywall modal from Phase 6; every other mutation returns `read_only_mode` 402; reminders/dispatch sends no pushes and does not advance `next_due_at`; Settings is fully accessible; a persistent read-only banner is shown — and a user reactivating with a valid PM returns all of this to normal.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 11: LGPD Data Rights & 7-Day Deletion Grace
+**Goal**: A user can export every record + original photo as a zip, request account deletion with a 7-day grace window implemented via Inngest `step.sleepUntil` (cancellation races handled by embedding `grace_period_ends_at` in the event payload), revoke consents without losing catalog access, and access the Privacy & LGPD panel with DPO contact — fulfilling Art. 18 data rights and the deletion-grace ship blocker.
+**Depends on**: Phase 10
+**Requirements**: LGPD-01, LGPD-02, LGPD-03, LGPD-04, LGPD-05, LGPD-06, LGPD-07, LGPD-08, LGPD-10, LGPD-11, LGPD-12, LGPD-14
+**Success Criteria** (what must be TRUE):
+  1. From Settings → Privacy & LGPD, a user taps "Exportar meus dados" → a `DataExportRequest status=pending` row is created → `iam/generate-export` Inngest function builds a zip containing `data.json` (all the user's records) + a `photos/` directory (originals) → uploads it to the `data-exports` bucket → sets status to `ready` with a signed `download_url` (time-limited) → a "data export ready" pt-BR Resend email lands in the user's inbox with the signed URL.
+  2. From the same panel, "Excluir minha conta" opens a confirm modal that — on confirmation — creates a `DataDeletionRequest` with `grace_period_ends_at = now + 7d`, sets `User.deletion_requested_at`, sends the confirmation email, and suspends the account immediately: inside grace, only cancel-deletion and read-only LGPD endpoints are reachable and every other request returns `deletion_in_progress` 403.
+  3. A cancellation during grace sets `DataDeletionRequest.status=cancelled`; the `iam/process-deletion` Inngest function — which was durably asleep via `step.sleepUntil(grace_period_ends_at)` with `grace_period_ends_at` EMBEDDED in the event payload (not fetched at wake time, surviving cancellation races) — wakes, observes the cancellation, exits without deleting, and the account returns to normal access.
+  4. Grace elapsed without cancellation → the function resumes, hard-deletes the user's photos + plants + ID history + reminder logs + consent rows (preserving a minimal deletion-audit record), sends a "deletion complete" email via Resend, and the deletion is reflected in the next full backup cycle within 30 days.
+  5. Consent revocation from the panel records a `ConsentLog` row, preserves existing catalog access, blocks only the affected processing activity going forward, and if the privacy policy version bumps and flags material change for an activity, the next use of that activity triggers a fresh consent prompt whose grant records the new `policy_version`; the published privacy policy + ToS are live, versioned, and the DPO contact is visible both in the privacy policy and in the Settings Privacy & LGPD panel alongside links to both policies.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 12: Observability Rollups & Launch Readiness
+**Goal**: Every PostHog event from the PRD taxonomy fires from the right place across all contexts, identification-quality SQL rollups run via Inngest cron and surface confidence/correction/latency/error/cap-hit/breaker/augment metrics, and the launch-blocker checklist (pricing, NFS-e, DPO, privacy policy, ≥200 care guides) is explicitly signed off before go-live.
+**Depends on**: Phase 11
+**Requirements**: OBS-03, OBS-04, INFRA-25
+**Success Criteria** (what must be TRUE):
+  1. The PostHog event taxonomy is wired end-to-end and every event from the PRD list (`signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested`) is observed in the PostHog EU project during an end-to-end test run, fired from the correct layer (client vs `posthog-node` server for Inngest-emitted events).
+  2. Scheduled SQL rollups via Inngest cron over the `Identification` table populate dashboards for confidence distribution, manual-correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, and augmentation cost — and a single dashboard view surfaces them together.
+  3. The launch-blocker checklist — (1) BRL monthly pricing, (2) NFS-e issuance strategy, (3) DPO appointment, (4) privacy policy + ToS published, (5) ≥200 curated care guides — is surfaced in the repo (e.g. `.planning/LAUNCH-BLOCKERS.md`) with each item explicitly checked off before production deploy, and the `IDENTIFICATION_PROVIDER_MODE` env var is set to real providers in production only.
+  4. A full end-to-end Playwright run against the production-preview URL executes the <2-min core loop (signup → verify → consent → identify → catalog → care guide → reminder → push permission) and all 12 phases' acceptance criteria are green.
+**Plans**: TBD
+**UI hint**: no
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 ‖ 4 ‖ 5 → 6 → 7 → 8
-
-Phases 3, 4, and 5 are parallelizable — they all depend on Phase 2 (IAM) but not on each other's writes. Execution order across the triplet is not strict; the roadmap records them sequentially for numbering but they may be planned and executed in parallel per `config.json` `parallelization=true`.
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
-| 2. IAM (Auth + LGPD) | 0/TBD | Not started | - |
-| 3. Billing | 0/TBD | Not started | - |
-| 4. Catalog + Offline | 0/TBD | Not started | - |
-| 5. Species & Care | 0/TBD | Not started | - |
-| 6. Identification | 0/TBD | Not started | - |
-| 7. Reminders & Notifications | 0/TBD | Not started | - |
-| 8. Hardening + Launch | 0/TBD | Not started | - |
+| 1. Foundation & CI/CD | 0/TBD | Not started | - |
+| 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
+| 3. Design System & App Shell | 0/TBD | Not started | - |
+| 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
+| 5. Catalog — Meu Jardim | 0/TBD | Not started | - |
+| 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |
+| 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |
+| 8. Reminders & Single Daily Push Nudge | 0/TBD | Not started | - |
+| 9. Offline Queue & Sync Resilience | 0/TBD | Not started | - |
+| 10. Billing, Trials & Read-Only Mode | 0/TBD | Not started | - |
+| 11. LGPD Data Rights & 7-Day Deletion Grace | 0/TBD | Not started | - |
+| 12. Observability Rollups & Launch Readiness | 0/TBD | Not started | - |
 
-## Coverage
+## Launch-Blocker Dependencies (Not Phase Tasks)
 
-**Total v1 requirements:** 153 (REQUIREMENTS.md as of 2026-04-14 — FDN 15 + AUTH 9 + LGPD 12 + IMG 5 + ID 16 + CAT 10 + CARE 9 + REM 13 + PUSH 8 + OFF 8 + SUB 17 + UX 12 + A11Y 5 + OBS 5 + TEST 4 + SEC 5)
+These are founder-owned prerequisites that must land before production launch but are NOT dev tasks within any phase:
 
-> Note: the initialization instructions stated 138 items; the authoritative REQUIREMENTS.md file ships 153 v1 items across 16 categories. Coverage below reflects the actual file contents.
+1. **BRL monthly pricing decided** — required before Stripe live mode (Phase 10 uses test-mode pricing until this is set)
+2. **NFS-e issuance strategy** — Stripe does not issue Brazilian service invoices; decide manual municipal portal vs NFE.io/eNotas/Omie/Enotas integration (Phase 10 lands without NFS-e; integration is v2 unless strategy chosen pre-launch)
+3. **DPO (Encarregado) appointed** — contact published in privacy policy + Settings before first identification lands in production
+4. **Privacy policy + ToS authored and published** — required before the Phase 4 consent flow ships to real users
+5. **≥200 curated pt-BR care guides published** — founder-owned content; Phase 7 renders them but authoring is separate (CARE-09 is tracked here, not as a Phase 7 dev task)
 
-**Mapped:** 153 / 153 ✓
-**Orphans:** 0
-**Duplicates:** 0
-
-| Phase | Requirements | Count |
-|-------|--------------|-------|
-| 1. Foundation | FDN-01..15, TEST-01, TEST-02, TEST-03, SEC-02, SEC-03, OBS-01, OBS-02, UX-01, UX-06, UX-07, UX-08, UX-09, UX-11, UX-12, A11Y-02, A11Y-03, A11Y-04, A11Y-05 | 33 |
-| 2. IAM (Auth + LGPD) | AUTH-01..09, LGPD-01..12, SEC-01, SEC-04, UX-02, UX-04 | 25 |
-| 3. Billing | SUB-01..17, SEC-05 | 18 |
-| 4. Catalog + Offline | CAT-01..10, IMG-01..05, OFF-01..08, UX-03 | 24 |
-| 5. Species & Care | CARE-01..09 | 9 |
-| 6. Identification | ID-01..16, UX-05, UX-10, TEST-04, OBS-03 | 20 |
-| 7. Reminders & Notifications | REM-01..13, PUSH-01..08 | 21 |
-| 8. Hardening + Launch | A11Y-01, OBS-04, OBS-05 | 3 |
-| **Total** | | **153** |
-
-### Cross-cutting distribution rationale
-
-- **UX** split by surface: UX-01/06/07/08/09/11/12 are design-system primitives → Phase 1; UX-02 (unverified-email gate) + UX-04 (consent/push modal shell) → Phase 2; UX-03 (offline banner) → Phase 4; UX-05 (capture button) + UX-10 (confidence ladder) → Phase 6.
-- **A11Y** split: A11Y-02 (zoom / Dynamic Type), A11Y-03 (haptic system), A11Y-04 (live regions), A11Y-05 (decorative-image rules) are infrastructure → Phase 1; A11Y-01 (WCAG audit ship-blocker gate) → Phase 8 because the audit is a cross-phase verification, not a feature.
-- **OBS** split: OBS-01 (Sentry PII-scrubbed) + OBS-02 (PostHog init) are Foundation → Phase 1; OBS-03 (ID quality SQL rollups) → Phase 6 because it reads only Identification data; OBS-04 (alerting wiring consolidation) + OBS-05 (first-value funnel) → Phase 8.
-- **TEST** split: TEST-01/02/03 (unit + real-Postgres integration + Playwright harness) → Phase 1; TEST-04 (cap atomicity concurrency) → Phase 6 because the atomic cap pattern is Identification-specific.
-- **SEC** split: SEC-01 (JWT middleware) + SEC-04 (email-verification middleware) → Phase 2; SEC-02 (RLS) + SEC-03 (security headers) → Phase 1; SEC-05 (Stripe webhook signature) → Phase 3.
-
-### Parallel content track (outside the numbered phases)
-
-- **Curated ≥200 pt-BR care guides (CARE-01 content)** — founder-owned, drafted throughout engineering phases, loaded into Phase 5 via the curated-import pipeline, final QA in Phase 8 as a launch blocker. Not an engineering phase; reflected here so it is never confused with CareGuideProvider runtime augmentation (which IS engineered in Phase 5).
-
-### Decisions already resolved (carried from SUMMARY.md — not re-litigated in this roadmap)
-
-- Card-only billing for MVP; Pix Automático deferred to v1.1 (PIX-01..03 in v2 section of REQUIREMENTS.md)
-- Disease diagnosis deferred to v2 (DIAG-01..02 in v2 section)
-- Supabase Auth custom-token flow with React Email for voice consistency (Phase 2)
-- Vision-LLM confidence calibration via JSON schema forcing self-reported confidence (ID-15, Phase 6)
-- Email-verification resend throttle is narrow per-email + per-IP (AUTH-08, Phase 2)
-- Contextual help allowed only as inline expansion within consent/push modals (Phase 2 constraint on UX-04)
-
----
-
-*Roadmap created: 2026-04-14*
-*Source: PROJECT.md + REQUIREMENTS.md + research/SUMMARY.md + research/ARCHITECTURE.md + research/PITFALLS.md + research/STACK.md*
+Phase 12 gates production deploy on all five being checked off.

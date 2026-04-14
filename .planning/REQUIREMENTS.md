@@ -323,13 +323,223 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| AUTH-01 | Phase 4 | Pending |
+| AUTH-02 | Phase 4 | Pending |
+| AUTH-03 | Phase 4 | Pending |
+| AUTH-04 | Phase 4 | Pending |
+| AUTH-05 | Phase 4 | Pending |
+| AUTH-06 | Phase 4 | Pending |
+| AUTH-07 | Phase 4 | Pending |
+| AUTH-08 | Phase 4 | Pending |
+| AUTH-09 | Phase 4 | Pending |
+| AUTH-10 | Phase 4 | Pending |
+| AUTH-11 | Phase 4 | Pending |
+| AUTH-12 | Phase 4 | Pending |
+| AUTH-13 | Phase 4 | Pending |
+| AUTH-14 | Phase 4 | Pending |
+| AUTH-15 | Phase 4 | Pending |
+| IDENT-01 | Phase 6 | Pending |
+| IDENT-02 | Phase 6 | Pending |
+| IDENT-03 | Phase 6 | Pending |
+| IDENT-04 | Phase 6 | Pending |
+| IDENT-05 | Phase 6 | Pending |
+| IDENT-06 | Phase 6 | Pending |
+| IDENT-07 | Phase 6 | Pending |
+| IDENT-08 | Phase 6 | Pending |
+| IDENT-09 | Phase 6 | Pending |
+| IDENT-10 | Phase 6 | Pending |
+| IDENT-11 | Phase 6 | Pending |
+| IDENT-12 | Phase 6 | Pending |
+| IDENT-13 | Phase 6 | Pending |
+| IDENT-14 | Phase 6 | Pending |
+| IDENT-15 | Phase 6 | Pending |
+| IDENT-16 | Phase 6 | Pending |
+| IDENT-17 | Phase 6 | Pending |
+| IDENT-18 | Phase 6 | Pending |
+| IDENT-19 | Phase 6 | Pending |
+| IDENT-20 | Phase 6 | Pending |
+| IDENT-21 | Phase 6 | Pending |
+| CAT-01 | Phase 5 | Pending |
+| CAT-02 | Phase 5 | Pending |
+| CAT-03 | Phase 5 | Pending |
+| CAT-04 | Phase 5 | Pending |
+| CAT-05 | Phase 5 | Pending |
+| CAT-06 | Phase 5 | Pending |
+| CAT-07 | Phase 5 | Pending |
+| CAT-08 | Phase 5 | Pending |
+| CAT-09 | Phase 5 | Pending |
+| CAT-10 | Phase 5 | Pending |
+| CAT-11 | Phase 5 | Pending |
+| CARE-01 | Phase 7 | Pending |
+| CARE-02 | Phase 7 | Pending |
+| CARE-03 | Phase 7 | Pending |
+| CARE-04 | Phase 7 | Pending |
+| CARE-05 | Phase 7 | Pending |
+| CARE-06 | Phase 7 | Pending |
+| CARE-07 | Phase 7 | Pending |
+| CARE-08 | Phase 7 | Pending |
+| CARE-09 | Phase 7 | Pending |
+| CARE-10 | Phase 7 | Pending |
+| REM-01 | Phase 8 | Pending |
+| REM-02 | Phase 8 | Pending |
+| REM-03 | Phase 8 | Pending |
+| REM-04 | Phase 8 | Pending |
+| REM-05 | Phase 8 | Pending |
+| REM-06 | Phase 8 | Pending |
+| REM-07 | Phase 8 | Pending |
+| REM-08 | Phase 8 | Pending |
+| REM-09 | Phase 8 | Pending |
+| REM-10 | Phase 8 | Pending |
+| REM-11 | Phase 8 | Pending |
+| REM-12 | Phase 8 | Pending |
+| REM-13 | Phase 8 | Pending |
+| REM-14 | Phase 8 | Pending |
+| REM-15 | Phase 8 | Pending |
+| REM-16 | Phase 8 | Pending |
+| REM-17 | Phase 8 | Pending |
+| REM-18 | Phase 8 | Pending |
+| REM-19 | Phase 8 | Pending |
+| REM-20 | Phase 8 | Pending |
+| REM-21 | Phase 8 | Pending |
+| OFF-01 | Phase 9 | Pending |
+| OFF-02 | Phase 9 | Pending |
+| OFF-03 | Phase 9 | Pending |
+| OFF-04 | Phase 9 | Pending |
+| OFF-05 | Phase 9 | Pending |
+| OFF-06 | Phase 9 | Pending |
+| OFF-07 | Phase 9 | Pending |
+| OFF-08 | Phase 5 | Pending |
+| OFF-09 | Phase 3 | Pending |
+| OFF-10 | Phase 3 | Pending |
+| SUB-01 | Phase 10 | Pending |
+| SUB-02 | Phase 10 | Pending |
+| SUB-03 | Phase 10 | Pending |
+| SUB-04 | Phase 10 | Pending |
+| SUB-05 | Phase 10 | Pending |
+| SUB-06 | Phase 10 | Pending |
+| SUB-07 | Phase 10 | Pending |
+| SUB-08 | Phase 10 | Pending |
+| SUB-09 | Phase 10 | Pending |
+| SUB-10 | Phase 10 | Pending |
+| SUB-11 | Phase 10 | Pending |
+| SUB-12 | Phase 10 | Pending |
+| SUB-13 | Phase 10 | Pending |
+| SUB-14 | Phase 10 | Pending |
+| SUB-15 | Phase 10 | Pending |
+| SUB-16 | Phase 10 | Pending |
+| SUB-17 | Phase 10 | Pending |
+| SUB-18 | Phase 10 | Pending |
+| SUB-19 | Phase 10 | Pending |
+| SUB-20 | Phase 10 | Pending |
+| SUB-21 | Phase 10 | Pending |
+| SUB-22 | Phase 10 | Pending |
+| SUB-23 | Phase 10 | Pending |
+| COST-01 | Phase 6 | Pending |
+| COST-02 | Phase 6 | Pending |
+| COST-03 | Phase 6 | Pending |
+| COST-04 | Phase 6 | Pending |
+| COST-05 | Phase 6 | Pending |
+| COST-06 | Phase 6 | Pending |
+| COST-07 | Phase 6 | Pending |
+| COST-08 | Phase 6 | Pending |
+| COST-09 | Phase 6 | Pending |
+| COST-10 | Phase 6 | Pending |
+| LGPD-01 | Phase 11 | Pending |
+| LGPD-02 | Phase 11 | Pending |
+| LGPD-03 | Phase 11 | Pending |
+| LGPD-04 | Phase 11 | Pending |
+| LGPD-05 | Phase 11 | Pending |
+| LGPD-06 | Phase 11 | Pending |
+| LGPD-07 | Phase 11 | Pending |
+| LGPD-08 | Phase 11 | Pending |
+| LGPD-09 | Phase 6 | Pending |
+| LGPD-10 | Phase 11 | Pending |
+| LGPD-11 | Phase 11 | Pending |
+| LGPD-12 | Phase 11 | Pending |
+| LGPD-13 | Phase 1 | Pending |
+| LGPD-14 | Phase 11 | Pending |
+| NOTIF-01 | Phase 4 | Pending |
+| NOTIF-02 | Phase 4 | Pending |
+| NOTIF-03 | Phase 8 | Pending |
+| NOTIF-04 | Phase 8 | Pending |
+| NOTIF-05 | Phase 8 | Pending |
+| NOTIF-06 | Phase 10 | Pending |
+| OBS-01 | Phase 1 | Pending |
+| OBS-02 | Phase 1 | Pending |
+| OBS-03 | Phase 12 | Pending |
+| OBS-04 | Phase 12 | Pending |
+| OBS-05 | Phase 1 | Pending |
+| UI-01 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Pending |
+| UI-03 | Phase 3 | Pending |
+| UI-04 | Phase 5 | Pending |
+| UI-05 | Phase 8 | Pending |
+| UI-06 | Phase 6 | Pending |
+| UI-07 | Phase 5 | Pending |
+| UI-08 | Phase 5 | Pending |
+| UI-09 | Phase 7 | Pending |
+| UI-10 | Phase 8 | Pending |
+| UI-11 | Phase 5 | Pending |
+| UI-12 | Phase 6 | Pending |
+| UI-13 | Phase 4 | Pending |
+| UI-14 | Phase 3 | Pending |
+| UI-15 | Phase 6 | Pending |
+| UI-16 | Phase 7 | Pending |
+| UI-17 | Phase 3 | Pending |
+| UI-18 | Phase 3 | Pending |
+| UI-19 | Phase 3 | Pending |
+| UI-20 | Phase 3 | Pending |
+| UI-21 | Phase 3 | Pending |
+| UI-22 | Phase 3 | Pending |
+| UI-23 | Phase 3 | Pending |
+| UI-24 | Phase 3 | Pending |
+| UI-25 | Phase 3 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 2 | Pending |
+| INFRA-04 | Phase 2 | Pending |
+| INFRA-05 | Phase 2 | Pending |
+| INFRA-06 | Phase 2 | Pending |
+| INFRA-07 | Phase 2 | Pending |
+| INFRA-08 | Phase 2 | Pending |
+| INFRA-09 | Phase 2 | Pending |
+| INFRA-10 | Phase 2 | Pending |
+| INFRA-11 | Phase 1 | Pending |
+| INFRA-12 | Phase 1 | Pending |
+| INFRA-13 | Phase 1 | Pending |
+| INFRA-14 | Phase 1 | Pending |
+| INFRA-15 | Phase 1 | Pending |
+| INFRA-16 | Phase 1 | Pending |
+| INFRA-17 | Phase 1 | Pending |
+| INFRA-18 | Phase 1 | Pending |
+| INFRA-19 | Phase 2 | Pending |
+| INFRA-20 | Phase 1 | Pending |
+| INFRA-21 | Phase 2 | Pending |
+| INFRA-22 | Phase 2 | Pending |
+| INFRA-23 | Phase 1 | Pending |
+| INFRA-24 | Phase 2 | Pending |
+| INFRA-25 | Phase 12 | Pending |
 
 **Coverage:**
 - v1 requirements: 196 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 25)
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 196 ⚠️ (pending roadmap)
+- Mapped to phases: 196 (100%) ✓
+- Unmapped: 0
+
+**Per-phase totals:**
+- Phase 1 (Foundation & CI/CD): 16 — INFRA-01,02,11,12,13,14,15,16,17,18,20,23 + OBS-01,02,05 + LGPD-13
+- Phase 2 (Data Layer): 12 — INFRA-03,04,05,06,07,08,09,10,19,21,22,24
+- Phase 3 (Design System): 15 — UI-01,02,03,14,17,18,19,20,21,22,23,24,25 + OFF-09,10
+- Phase 4 (IAM): 18 — AUTH-01..15 + NOTIF-01,02 + UI-13
+- Phase 5 (Catalog): 16 — CAT-01..11 + OFF-08 + UI-04,07,08,11
+- Phase 6 (Identification + Cost): 35 — IDENT-01..21 + COST-01..10 + LGPD-09 + UI-06,12,15
+- Phase 7 (Care Guides): 12 — CARE-01..10 + UI-09,16
+- Phase 8 (Reminders): 26 — REM-01..21 + NOTIF-03,04,05 + UI-05,10
+- Phase 9 (Offline Queue): 7 — OFF-01..07
+- Phase 10 (Billing): 24 — SUB-01..23 + NOTIF-06
+- Phase 11 (LGPD): 12 — LGPD-01..08,10,11,12,14
+- Phase 12 (Observability + Launch): 3 — OBS-03,04 + INFRA-25
+- **Total: 196 ✓**
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after initialization from docs/CAVE-PRD.md*
+*Last updated: 2026-04-14 after roadmap creation by gsd-roadmapper*

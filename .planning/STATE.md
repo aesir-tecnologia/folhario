@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** A beginner in Brazil goes from "I have no idea what this plant is" to "identified, cataloged, with care guidance" in under 2 minutes from email verification — honestly, without jargon, without fake confidence scores, and without hiding AI provenance.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 1 — Foundation & CI/CD
 
 ## Current Position
 
-Phase: 1 of 8 (Foundation)
+Phase: 1 of 12 (Foundation & CI/CD)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
-Last activity: 2026-04-14 — Roadmap created from REQUIREMENTS.md + research/SUMMARY.md
+Last activity: 2026-04-14 — Roadmap created from REQUIREMENTS.md (196 v1 requirements → 12 phases, fine granularity)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -27,14 +27,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 0 | — | — |
-| 2. IAM (Auth + LGPD) | 0 | — | — |
-| 3. Billing | 0 | — | — |
-| 4. Catalog + Offline | 0 | — | — |
-| 5. Species & Care | 0 | — | — |
-| 6. Identification | 0 | — | — |
-| 7. Reminders & Notifications | 0 | — | — |
-| 8. Hardening + Launch | 0 | — | — |
+| — | — | — | — |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -46,14 +39,12 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table. Recent decisions affecting current work:
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
 
-- Card-only billing for MVP; Pix Automático deferred to v1.1
-- Disease diagnosis deferred to v2 (explicit rationale)
-- Supabase Auth uses custom-token flow with React Email for brand voice consistency
-- Vision-LLM confidence calibration via JSON schema forcing self-reported confidence (ID-15)
-- Phases 3, 4, 5 are parallelizable (all depend on Phase 2 but not on each other)
-- Curated ≥200 pt-BR care guides is a founder-owned content track (launch blocker, not an engineering phase)
+- Phase 1: Next 16 App Router + Serwist (not next-pwa), GitHub Actions as sole deploy pipeline (Vercel git integration OFF)
+- Phase 1: Drizzle + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn pooler (stack lock-in from CLAUDE.md)
+- Phase 1: Inngest for all async (no raw cron, no BullMQ) — enables `step.sleepUntil` for Phase 11's 7-day LGPD grace
 
 ### Pending Todos
 
@@ -61,15 +52,23 @@ None yet.
 
 ### Blockers/Concerns
 
-Pre-launch blockers tracked in ROADMAP.md Phase 8 and research/SUMMARY.md:
-- Pricing TBD in BRL (Stripe price object prerequisite)
-- NFS-e issuance path decision (vendor vs manual vs on-request)
-- DPO appointed + privacy policy + ToS published in pt-BR
-- Supabase Pro + Inngest Hobby plan activation
-- Plant.id paid balance, VAPID keys, Resend domain verification
+Launch-blocker dependencies tracked in ROADMAP.md "Launch-Blocker Dependencies" section — not dev tasks, but Phase 12 gates production deploy on all five:
+1. BRL monthly pricing (blocks Phase 10 live mode)
+2. NFS-e issuance strategy (Phase 10 ships without; post-launch gap for Brazilian fiscal compliance)
+3. DPO appointment (blocks Phase 4 consent flow going live)
+4. Privacy policy + ToS authoring (blocks Phase 4 consent flow going live)
+5. ≥200 curated care guides (Phase 7 dev ships empty; launch needs the corpus)
+
+## Deferred Items
+
+Items acknowledged and carried forward from previous milestone close:
+
+| Category | Item | Status | Deferred At |
+|----------|------|--------|-------------|
+| *(none)* | | | |
 
 ## Session Continuity
 
 Last session: 2026-04-14
-Stopped at: ROADMAP.md + STATE.md written; REQUIREMENTS.md traceability updated
+Stopped at: Roadmap created; ready to plan Phase 1
 Resume file: None

@@ -20,150 +20,111 @@ Reminders are the retention engine; without the <2-min first-value moment there'
 
 ### Active
 
-<!-- Current scope. Building toward v1 MVP. All hypotheses until shipped. -->
+<!-- Current scope. Building toward these. Full list lives in REQUIREMENTS.md. -->
 
-- [ ] Email+password and Google OAuth signup with LGPD-compliant consent flow
-- [ ] Email-verification gate for email+password accounts before any mutation
-- [ ] Cloud plant identification via provider abstraction (Plant ID + OpenAI-compat fallback, top-3 results ranked by confidence)
-- [ ] Per-user and per-provider cost caps enforced BEFORE provider dispatch (daily + period, DB-driven)
-- [ ] LGPD consent gate for first-ever identification (Art. 33 international transfer disclosure)
-- [ ] "Meu Jardim" catalog with plant profiles, photo journal, room/location picker, sort options
-- [ ] Curated care-guide corpus (≥200 domestic species, pt-BR) shipped pre-launch
-- [ ] Runtime AI-augmented care guides with persistent "Gerado por IA" badge (async, off critical path)
-- [ ] Toxicity warnings with mandatory redundant signals (icon + color + text + striped border + SR alert + haptic)
-- [ ] Watering and fertilization reminders with `from_scheduled`/`from_acted` advance rules
-- [ ] Single daily push nudge per user (never per-reminder), permission deferred to first reminder creation
-- [ ] Multi-device sync with per-device JWT and independent `PushSubscription` revocation
-- [ ] Offline queue (photos, reminder-done, edits) with client-UUID idempotency and conflict resolution
-- [ ] Stripe subscription (card + Pix), single monthly tier, 14-day organic / 30-day partner trial
-- [ ] Read-only catalog mode when subscription not in trialing/active (no data held hostage)
-- [ ] Stripe webhook handler (signature verify → BillingEvent insert → Inngest enqueue, idempotent on event_id)
-- [ ] LGPD data export (JSON + original photos zip via signed URL)
-- [ ] LGPD 7-day-grace account deletion using Inngest `step.sleepUntil`
-- [ ] Per-consent revocation in Settings (never breaks catalog view access)
-- [ ] Password reset (unauthed) and change password (authed)
-- [ ] Partner code flow (signup + late-entry in Settings, strictly before `trial_end_date`)
-- [ ] Age-gate ≥13 confirmation at signup (Art. 14)
-- [ ] PWA shell with service worker, manifest, installable, app-update toast
-- [ ] Image handling: client-side compression, EXIF/GPS stripping (defense in depth server reject)
-- [ ] Design system — Folhário "Sunlit morning on a Brazilian veranda": Paper Cream + Canopy Green palette, Source Serif 4 + Plus Jakarta Sans, Lucide icons, light + dark variants, WCAG 2.1 AA
-- [ ] Bottom-nav-only navigation (4 tabs: Home, Catálogo, Identificar, Perfil), tablet-width on desktop
-- [ ] i18n layer from day one (pt-BR only at launch, no hardcoded strings)
-- [ ] Testing: Vitest unit + real-Postgres integration + Playwright E2E against preview URL
-- [ ] CI/CD via GitHub Actions with Supabase branch DBs per PR (Vercel git integration OFF)
-- [ ] Observability: Sentry (PII-scrubbed) + PostHog EU + scheduled SQL rollups for ID quality
+- [ ] **Identify → catalog → care guide → remind** core loop working end-to-end on mobile PWA in pt-BR
+- [ ] **First-value <2 min** from email verification (verified → photo → identified → in catalog)
+- [ ] **Honest AI** — confidence ladder with redundant signals, "Gerado por IA" persistent badge on augmented care guides, no fake precision numbers
+- [ ] **Toxicity safety** — icon + colored badge + text + striped border + SR alert + mandatory vet disclaimer
+- [ ] **Bounded-context backend** (IAM, Catalog, Species & Care, Identification, Reminders, Billing, Notifications) with Inngest events for async
+- [ ] **Cloud-only identification** via Plant ID primary + OpenAI-compatible vision fallback, per-user and per-provider cost caps enforced before dispatch
+- [ ] **≥200 curated pt-BR care guides** (founder-owned, launch blocker) + runtime augmentation for missing species
+- [ ] **Single-tier monthly subscription** via Stripe (card + Pix), 14-day organic trial / 30-day partner trial, dunning 4×7d
+- [ ] **LGPD compliance** — Art. 7 legal basis, Art. 18 rights (export, delete, consent revocation), Art. 33 international transfer consent, 7-day deletion grace via Inngest durable sleep
+- [ ] **Single daily nudge** push model (never per-reminder), permission deferred until first reminder creation, self-healing PushSubscription rows on 410/404
+- [ ] **Offline queue** — cached catalog browsable, photo/reminder actions queued with client-UUID idempotency, drop-with-summary on server-side plant deletion
+- [ ] **WCAG 2.1 AA** ship blocker — every state combines redundant cues, color never sole signal, 3px global focus ring, prefers-reduced-motion honored
+- [ ] **Design system** from PRD §17 — Paper Cream / Night Cream palette, Source Serif 4 + Plus Jakarta Sans, Lucide icons, bottom-nav only, asymmetric hero, spring-physics motion
+- [ ] **CI/CD pipeline** — Vercel git integration OFF, all deploys from GitHub Actions, Supabase branch DB per PR, Playwright against preview URL, real Postgres for integration tests
+- [ ] **Resend transactional email** for verification, reset, trial ending, payment failures, deletion, export-ready, operator cost alerts
 
 ### Out of Scope
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
-- Freemium tier — single paid tier is the business model; free users dilute the <2-min promise
-- Native iOS/Android apps (MVP) — PWA ships first; native after validation. All decisions keep the native door open
-- On-device / offline plant identification — cloud-only; latency + accuracy require real models
-- Real-time chat / social — outside core loop (identify → catalog → care → remind)
-- Anonymous accounts — trial requires a real account to tie subscription state
-- Change-email flow — post-MVP, reduces credential-management surface for v1
-- Logout-all-devices — post-MVP, per-device tokens are independently revocable already
-- Editor review queue for augmented care guides — augmented guides go live immediately with persistent "Gerado por IA" badge; review queue adds latency without proven value
-- Admin UI for caps/budgets — MVP tunes via direct DB writes; operator alert emails handle visibility
-- Wide-screen desktop layouts — tablet-width on desktop, bg fill sides. Mobile-first is the shape
-- Per-reminder notification times — all reminders fire at `User.notification_time_local`; per-reminder times add UX complexity without demand
-- Travel-aware timezone handling — changing tz in Settings affects future computations only; traveling users aren't tending plants
-- Suggestions/prompts to create reminders — user-initiated from plant profile only, no nagging
-- Done/Snooze controls inside push payload — push is a nudge to open the app; Home is the source of truth
-- GPS / location-based features — LGPD minimization, EXIF GPS stripped client-side
-- Per-user storage limits — MVP, monitored later
-- Stock photo empty states — all illustrations custom Sage line art
-- Locales beyond pt-BR (MVP) — i18n layer built day one, but only pt-BR strings ship
-- Emojis in UI copy — banned in brand guardrails; Lucide icons only
-- Inter font and generic serifs — banned; Source Serif 4 + Plus Jakarta Sans only
-- Freemium/onboarding tour dark patterns — banned
-- Dark-mode-as-inverted-greyscale — dark palette is "veranda at dusk", hand-tuned
+- **Freemium gating** — single paid tier only; no identify-limit wall on signup
+- **Anonymous use** — trial requires an account; identification behind email verification + consent
+- **Change-email / logout-all-devices** — deferred post-MVP (password reset and change-password ship; global revocation does not)
+- **Travel-aware reminders** — `User.timezone` change does NOT retroactively shift scheduled reminders (assumed: traveling user isn't tending plants)
+- **Per-reminder notification time** — all reminders for a user fire at a single `User.notification_time_local`
+- **Per-reminder push actions** — push is a single daily nudge; Done/Snooze live in-app only
+- **On-device identification model** — cloud-only; no local ML
+- **Editor review queue for augmented care guides** — augmented rows go live immediately with a persistent "Gerado por IA" badge
+- **Real-time chat / community / social** — not a social app
+- **Video posts / video care guides** — images only
+- **Native mobile app at launch** — PWA first; native door kept open via adapter boundaries
+- **Dark-mode palette via inversion** — veranda-at-dusk palette designed separately; no auto-invert
+- **Sidebar navigation** — bottom-nav only, max 5 items, MVP uses 4
+- **Hover-dependent interaction** — hover is decorative amplification only
+- **Freemium dark patterns** on cancel/delete flows
+- **Third-party storage limits per user** in MVP
+- **Admin UI for cost caps / tier limits** — runtime tuning via direct DB writes only
+- **Confetti / bouncing / emoji / floating chatbot / spinner** — banned by design system
+- **Inter / generic serifs / gradient text / glassmorphism / neumorphism** — banned by design system
+- **Server sessions** — per-device JWT only
+- **Raw cron / BullMQ / Redis queues** — Inngest only for durable scheduling and sleeps
+- **Drizzle inside route handlers** — data access lives inside repositories only
+- **Pure black `#000000` / pure white** — use Forest Ink / Paper Cream
+- **Broad per-endpoint rate limiting** in MVP — only a narrow per-IP throttle on public auth endpoints
+- **Vercel git integration** — disabled; all deploys from GitHub Actions
 
 ## Context
 
-**Source of truth:** `docs/CAVE-PRD.md` (CAVE-PRD — Folhário MVP, dated 2026-04-12). That document merges PRD, acceptance criteria, behavior spec, data model, API contract, high-level design, screens, user flows, UX goals, accessibility, and design system. Every ambiguity is resolved there; anything not in the PRD is either open question (§25) or deferred.
+Greenfield project, single-founder-plus-Claude build. Targeted at a culturally-specific audience (Brazilian pt-BR beginners), so locale, currency formatting, LGPD compliance, and local payment methods (Pix) are first-class, not afterthoughts.
 
-**Greenfield repo.** No source code exists yet — only `.planning/`, `docs/`, and tooling configs. Working directory is `/Users/machado/Projects/folhario`.
+**Architectural north stars:**
+- Adapter boundaries at every external dependency (identification providers, care-guide providers, billing provider, auth, storage, push) so any vendor can be swapped without touching business logic. Drizzle inside repositories only; Supabase JS confined to auth/storage adapters.
+- Bounded contexts (DDD-lite) per `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/`. Cross-context communication is Inngest events for async + thin read-only query services for sync reads.
+- Stack is pinned in `CLAUDE.md` Technology Stack section against live npm versions as of 2026-04-14 (Next 16.2.3, React 19.2.5, Drizzle 0.45.2, Inngest 4.2.1, Serwist 9.5.7, Stripe 22.0.1, Resend 6.11.0, Sentry 10.48.0, PostHog 1.368.0, next-intl 4.9.1, Vitest 4.1.4, Playwright 1.59.1). That document also enumerates "what NOT to use" (next-pwa, Prisma, `{ prepare: true }` with Supavisor txn pooler, `pg` driver, `setInterval`, `BullMQ`, `Sentry.setUser({ email })`, `date-fns` without `date-fns-tz`, Vercel Git integration).
 
-**Hemisphere + locale:** Southern hemisphere, pt-BR only at launch, IANA timezones captured at signup.
+**Single source of truth:** `docs/CAVE-PRD.md` — a 1352-line merged doc covering product, bounded contexts, full data model, API rules, identification flow, catalog, care guides, reminders, offline & sync, image handling, auth & subscription, LGPD, multi-device, push, screens, design system, accessibility, testing, environments/CI, security, metrics, acceptance criteria (keyed AC-AUTH/ID/CAT/CARE/REM/OFF/SUB/COST/LGPD), launch blockers, open questions, and glossary. REQUIREMENTS.md derives 1:1 from the PRD's AC groups.
 
-**Domain background:**
-- BR plant-parent beginners are the target. Voice is "knowledgeable friend, not textbook." No Latin without common name. No jargon.
-- LGPD (Brazilian GDPR equivalent) is load-bearing: international-transfer consent (Art. 33), age-gate ≥13 (Art. 14), data rights (Art. 18), 7-day deletion grace, DPO (Encarregado) mandatory.
-- Plant ID providers (Plant ID, OpenAI-compatible vision) are the identification backend; there is no editorial corpus we author. Curated care guides come from founder + PlantNet open data + RHS/Embrapa + LLM-assisted drafting.
-- Toxicity data is safety-critical — redundant signals required. Disclaimer "Informação gerada por IA — confirme com um veterinário" always visible.
-
-**Technical environment:**
-- Next.js App Router + React + TS, App Router Route Handlers under `/api/v1`
-- Supabase (Postgres via Supavisor txn pooler, Auth, Storage) with RLS as defense in depth
-- Drizzle ORM inside repositories only (no Drizzle in handlers)
-- Inngest for async, cron, and durable `step.sleepUntil` (used for 7-day deletion grace)
-- Resend (transactional email, React Email templates)
-- Sentry (errors + traces, source maps from CI, heavy PII scrubbing)
-- PostHog EU cloud (product analytics)
-- Vercel hosting, deploys from GitHub Actions ONLY (git integration disabled)
-- Stripe (card + Pix), webhook signature verified + idempotent BillingEvent insert → Inngest async processing
-- Web Push via `web-push` + VAPID, dispatched from Inngest
-- Vitest unit + real-Postgres integration + Playwright E2E against preview URL
-
-**Bounded contexts (DDD):** IAM, Catalog, Species & Care, Identification, Reminders, Billing, Notifications. Cross-context communication via Inngest events (async) or thin read-only query services (sync reads). Repo layout: `src/contexts/{context}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/`.
-
-**Voice & brand:** "Sunlit morning on a Brazilian veranda." Warm, humanist, tactile. Photography-first (user's plant photos are hero). NOT clinical, NOT minty wellness, NEVER textbook. Paper Cream + Canopy Green. Source Serif 4 + Plus Jakarta Sans. Lucide icons, 1.5px stroke, rounded caps. Spring-physics motion, not easing curves. One perpetual micro-interaction in the whole app (empty-home capture button breathing loop).
-
-**Non-negotiables** (from PRD §1):
-1. Value <2 min from email verification (the core promise)
-2. Toxicity warnings always redundant + disclaimed
-3. Honest AI (show confidence %, mark augmented guides)
-4. i18n day one (no hardcoded strings, pt-BR only ships)
-5. Never hold data hostage (read-only catalog mode)
-6. Push permission ONLY on first reminder creation
-7. Cap-hit + provider-unavailable always offer manual entry
-8. Mobile-first PWA, tablet-width on desktop
-9. WCAG 2.1 AA = ship blocker
+**Launch blockers (tracked separately in PRD §24):**
+1. Subscription pricing (BRL monthly) — required before Stripe live mode
+2. NFS-e (Brazilian service-invoice) issuance strategy — Stripe does not issue these; decide third-party integration or manual pre-launch
+3. DPO (Encarregado) appointment — contact published in privacy policy + Settings before first identification
+4. Privacy policy + ToS authoring and publication — before consent flow ships
+5. ≥200 curated care guides — founder-owned corpus
 
 ## Constraints
 
-- **Tech stack**: Next.js App Router + React + TS + PWA — Single codebase for web/PWA now, native later; same repo houses frontend and API route handlers
-- **Tech stack**: Supabase (Postgres + Auth + Storage) with Drizzle ORM in repositories only — RLS as defense in depth, adapters allow future swap
-- **Tech stack**: Inngest for all async work — events, cron, durable sleep (7-day grace). No raw cron, no BullMQ
-- **Tech stack**: Vercel + GitHub Actions only — Vercel git integration DISABLED so tests/migrations/deploys share one pipeline
-- **Locale**: pt-BR only at launch — i18n layer mandatory day one, but only pt-BR strings ship
-- **Platform**: Mobile-first PWA, tablet-width on desktop (bg fills sides) — No wide-screen design, bottom-nav only, max 5 tabs (MVP uses 4)
-- **Accessibility**: WCAG 2.1 AA = ship blocker — Every state combines redundant cues, color never sole signal, focus ring global 3px, `prefers-reduced-motion` honored
-- **Compliance (LGPD)**: DPO appointed + privacy policy published before first identification — Art. 33 consent before first upload, Art. 18 data rights, 7-day deletion grace, ANPD breach notification
-- **Performance**: Vercel function budgets for identification — total wall-clock 50s, per-call cap 30s, fallover requires ≥10s remaining budget
-- **Performance**: Images compressed client-side to ≤1MB, EXIF/GPS stripped client-side (server rejects GPS-bearing uploads as defense in depth)
-- **Budget**: Per-provider daily cost ceilings enforced in DB + atomic counters — default $5/day each for Plant ID + OpenAI-compat; operator alert email at 80%
-- **Content**: ≥200 curated care guides shipped before MVP launch (founder-owned, LAUNCH BLOCKER)
-- **Payments**: Single monthly tier, Stripe (card + Pix), 14-day organic / 30-day partner trial — Pricing TBD is a LAUNCH BLOCKER
-- **Security**: Per-device JWT, no server sessions, narrow per-IP throttle on public auth endpoints — only place `rate_limited` 429 is emitted in MVP
-- **Data**: Timestamps ISO-8601 UTC with `Z`; exception: `User.notification_time_local` as `HH:MM` in `User.timezone` — `next_due_at` computed at create/advance, not at fire time
+- **Tech stack**: Next.js 16 App Router + React 19 + TS, PWA via `@serwist/next` — Single codebase for web/PWA now, native later; route handlers under `/api/v1` in same deploy.
+- **Tech stack**: Supabase Postgres via Supavisor transaction-mode pooler, Drizzle ORM inside repositories only, `postgres-js` driver with `{ prepare: false }` mandatory — RLS as defense in depth; adapters keep auth/storage swappable.
+- **Tech stack**: Inngest for all async work — events, cron, durable `step.sleepUntil` — no raw cron, no BullMQ. Free-tier `sleepUntil` cap is 7 days (exact size of LGPD deletion grace window); upgrade if budget allows headroom.
+- **Tech stack**: Vercel hosting, deploys from GitHub Actions ONLY. Vercel git integration DISABLED so tests, migrations, and deploys share one pipeline. Preview env per PR with Supabase branch DB.
+- **Locale**: pt-BR only at launch — `next-intl` mandatory day one, `<html lang="pt-BR">`, `date-fns-tz` for server-rendered user-local times, numbers/currency via `Intl.*` with `pt-BR` (`R$ 29,90`, `dd/MM/yyyy`, 24h).
+- **Platform**: Mobile-first PWA, tablet-width centered on desktop (bg fills sides). No wide-screen design. Bottom-nav only, max 5 tabs (MVP uses 4).
+- **Accessibility**: WCAG 2.1 AA = ship blocker — every state combines redundant cues, color never sole signal, focus ring global 3px Canopy @ 40% opacity offset 2px, `prefers-reduced-motion` honored, reading order matches visual order.
+- **Compliance (LGPD)**: DPO appointed + privacy policy published before first identification — Art. 33 consent before first upload, Art. 18 data rights (export, correction, deletion, portability, consent revocation), 7-day deletion grace via Inngest durable sleep, ANPD breach notification within Art. 48 timeframes.
+- **Performance**: Vercel function budgets for identification — total wall-clock 50s, per-call cap 30s, fallover requires ≥10s remaining budget, else short-circuit `provider_unavailable`.
+- **Performance**: Images compressed client-side to ≤1MB, EXIF/GPS stripped client-side (server rejects GPS-bearing uploads as defense in depth `validation_failed`).
+- **Budget**: Per-provider daily cost ceilings enforced in DB + atomic counters — default USD 5/day each for Plant ID + OpenAI-compat; operator alert email via Resend at 80%. Cap check executes BEFORE any `ProviderUsageCounter` increment or provider call.
+- **Content**: ≥200 curated care guides shipped before MVP launch (founder-owned, LAUNCH BLOCKER).
+- **Payments**: Single monthly tier, Stripe (card + Pix), 14-day organic / 30-day partner trial — Pricing TBD is a LAUNCH BLOCKER. `BillingProvider` adapter allows future swap to Pagar.me / Mercado Pago / Iugu.
+- **Security**: Per-device JWT, no server sessions, narrow per-IP throttle on public auth endpoints — only place `rate_limited` 429 is emitted in MVP. Standard security headers via Next.js middleware. RLS on all user-owned tables, service-role key server-side only.
+- **Data**: Timestamps ISO-8601 UTC with `Z`; exception: `User.notification_time_local` as `HH:MM` in `User.timezone`. `next_due_at` computed at create/advance, not at fire time.
+- **Error codes**: Closed registry in PRD §5 — no ad-hoc error codes. `cost_ceiling_reached` and `breaker_open` are INTERNAL-only and surface as `provider_unavailable` to clients.
+- **Observability**: Sentry (release = git SHA, source maps uploaded post-build from CI because Turbopack requires it), PostHog EU cloud (LGPD residency), SQL rollups via Inngest cron for identification quality metrics. `Sentry.setUser({ id })` only — never email.
 
 ## Key Decisions
 
-<!-- Decisions locked in by the PRD. Add new decisions throughout lifecycle. -->
-
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| PWA first, native later | Faster to ship, cheaper, installable on both platforms. Every architectural decision keeps the native door open (provider abstraction, per-device tokens, offline queue, IANA timezones). | — Pending |
-| Single paid tier, no freemium | Freemium dilutes the <2-min-to-value promise and pays the LGPD + provider-cost bill without recovery. 14/30-day trial provides try-before-buy. | — Pending |
-| Cloud-only plant identification | Accuracy + latency of on-device models don't hit beginner expectations. Provider abstraction allows swap. | — Pending |
-| DDD bounded contexts with Inngest events | Keeps cross-context coupling async; read models stay thin query services; enables future context-level splitting. | — Pending |
-| Inngest `step.sleepUntil` for 7-day deletion grace | Durable, no cron scanning, simpler failure semantics than DB-polling jobs. | — Pending |
-| Provider abstractions for identification, care-guide augmentation, billing | Allows swap (Pagar.me/Iugu for billing, alternate ID providers) without touching business logic. | — Pending |
-| pt-BR only at launch (with i18n layer day one) | Brazilian beginner audience is the wedge; multi-locale is scope creep. i18n layer is cheap if built day one, expensive if retrofitted. | — Pending |
-| Email-verification gate on email+password accounts | Anti-spam + the <2-min clock starts at verification (not signup) so the first-value metric is honest. | — Pending |
-| Push permission deferred to first reminder creation | Users who never create a reminder never see a permission prompt. Prevents the "signup → immediate permission denial" trap that kills later prompts. | — Pending |
-| Augmented care guides go live immediately, permanent "Gerado por IA" badge | Editor review queue would block value. Persistent badge keeps AI provenance honest. | — Pending |
-| Stripe webhook = insert BillingEvent then enqueue Inngest | Signature verify + unique `event_id` constraint gives idempotency; heavy state transitions run async and can be retried safely. | — Pending |
-| Vercel git integration OFF, deploys from GitHub Actions only | One pipeline owns tests, migrations, and deploy. No "deployed without CI" class of bugs. | — Pending |
-| Real-Postgres integration tests (no DB mocking) | Mocks hide schema, migration, and query bugs. Ephemeral Supabase branch DBs make this cheap. | — Pending |
-| Tablet-width on desktop with bottom nav (no sidebar) | Folhário is ONE shape across devices. Mobile first, desktop is just centered tablet. No wide-screen design debt. | — Pending |
-| Toxicity: icon + color + text + striped border + SR alert + haptic | Color alone is a WCAG fail and a safety fail. Redundant signals are the only approved treatment. | — Pending |
-| Honey Amber / Terracotta / Urgent Poppy / Overdue Rust / Trust Teal as SEMANTIC signals only | Accent discipline keeps Canopy Green as the brand anchor; prevents slide into "just to add warmth" color slop. | — Pending |
-| Daily nudge push is ONE per user-day, never per-reminder | Prevents permission-withdrawal spiral. Home is the source of truth; push is a nudge to open the app. | — Pending |
-| Never hold data hostage: read-only catalog mode on billing lapse | View access preserved (plants, photos, journal, care guides), only mutations + identification blocked. Ethical baseline + churn softener. | — Pending |
+| Next 16 App Router + Serwist (not next-pwa) | `next-pwa` abandoned; Serwist is the official successor referenced in Next.js PWA guide | — Pending |
+| Drizzle ORM (not Prisma) + `postgres-js` + `{ prepare: false }` | Cold-start weight + Supavisor txn-pooler friction disqualify Prisma; prepared statements break with pooled connections | — Pending |
+| Inngest (not Trigger.dev / raw cron / BullMQ) | First-class Vercel integration, mature durable `sleepUntil` for 7d LGPD grace, simple mental model | — Pending |
+| Stripe (card + Pix) behind `BillingProvider` adapter | Start with Stripe for DX and Pix Automático support, keep option to swap to Pagar.me/Mercado Pago if NFS-e integration forces it | — Pending |
+| Plant ID primary + OpenAI-compat fallback (not PlantNet / vision-LLM only) | Kindwise benchmark: Plant.id top-1 error 12% vs vision-LLM 58%. Gap is load-bearing for <2-min promise. | — Pending |
+| Single daily nudge push (not per-reminder) | Respects user attention; Home screen is source of truth; simplifies multi-device fanout; self-healing on 410/404 | — Pending |
+| Email verification gate before first identification | The "value <2 min" clock starts at verification, not signup. Keeps consent + LGPD gates coherent. | — Pending |
+| Push permission deferred to first reminder creation | Never at signup, first visit, or first identify — non-negotiable from PRD §1 | — Pending |
+| Per-user caps + per-provider ceilings + circuit breaker, DB-tunable | Runtime-tunable without redeploy; atomic counters prevent lost writes; breakers isolate bad providers | — Pending |
+| Bounded contexts with Inngest events for async | DDD-lite; cross-context reads via thin query services only; each context owns its aggregates | — Pending |
+| Real Postgres for integration tests (no DB mocking) | Mocks mask schema/migration/query bugs; dedicated test DB per run, migrations applied as in production | — Pending |
+| pt-BR locale via `next-intl` day one | Even though only pt-BR ships, i18n layer is mandatory — no hardcoded strings | — Pending |
+| Veranda-at-dusk dark mode (not inverted greyscale) | Design discipline — palette designed in both modes from scratch | — Pending |
+| Bottom-nav only, asymmetric hero, Source Serif 4 + Plus Jakarta Sans | Anti-generic brand identity; humanist pt-BR diacritic rendering; banned: Inter, generic serifs, gradient text, glass/neuro-morphism | — Pending |
+| Vercel git integration OFF, all deploys from GitHub Actions | Tests + migrations + deploys share one pipeline — no split-brain | — Pending |
 
 ## Evolution
 
@@ -183,4 +144,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after initialization from `docs/CAVE-PRD.md`*
+*Last updated: 2026-04-14 after initialization from docs/CAVE-PRD.md*

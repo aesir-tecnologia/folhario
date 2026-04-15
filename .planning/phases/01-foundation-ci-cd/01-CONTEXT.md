@@ -137,7 +137,30 @@ None — this is a greenfield repository. No `src/`, no `package.json`, no prior
 
 </deferred>
 
+<clarifications>
+## Clarifications (2026-04-14, post-research)
+
+Research uncovered a contradiction and surfaced open questions that were resolved by the user before planning. These OVERRIDE the original decisions where they conflict.
+
+### D-19 OVERRIDE — Sentry source-map upload
+- **Original lock:** Explicit `sentry-cli sourcemaps upload` step in `deploy-production.yml` citing Turbopack compatibility risk.
+- **New lock:** Use `@sentry/nextjs@10.48.x` `withSentryConfig` **native Turbopack post-build upload**. `@sentry/nextjs` 10.13+ on Next 15.4+ supports Turbopack natively; project is on `@sentry/nextjs@10.48.0` + `next@16.2.3`, so the Turbopack compatibility concern in the original D-19 is obsolete.
+- **Consequence for plans:** No separate `sentry-cli` CI step. Sentry upload config lives in `next.config.ts` via `withSentryConfig({ widenClientFileUpload: true, sourcemaps: { disable: false } })`. `SENTRY_AUTH_TOKEN` still required as a repo secret. Releases still tagged with `$GITHUB_SHA`. Source maps still upload for both preview AND production per the D-19 "Specific Ideas" rationale (symbolicated preview errors).
+
+### D-27 — Wave 0 operator provisioning checklist (NEW)
+- Phase 1 includes a non-autonomous Wave 0 `01-operator-checklist-PLAN.md` that gates all automatable work. It captures: (1) create Sentry project + get DSN + SENTRY_AUTH_TOKEN; (2) create PostHog EU project + get POSTHOG_KEY + POSTHOG_HOST; (3) create Supabase project with branching enabled + get SUPABASE_ACCESS_TOKEN + project ref; (4) create Vercel project and **confirm Git integration is OFF** + get VERCEL_TOKEN + ORG_ID + PROJECT_ID; (5) create Inngest project + get INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY; (6) install all of the above as GitHub Actions secrets matching PRD §20 env var table; (7) install Node 22 LTS locally (`nvm install 22`) and enable Corepack (`corepack enable`) so pnpm resolves.
+- Plan is marked `autonomous: false` — executor blocks until user types "done".
+
+### D-28 — Postgres service container image (NEW)
+- CI `postgres` service container is **`postgres:17-alpine`** (not `postgres:16-alpine` as originally referenced in ROADMAP success criterion wording). Matches Supabase's current default Postgres version for new projects in 2026. Roadmap language will be treated as illustrative; the authoritative version is this clarification. Integration test DB lifecycle (D-14) otherwise unchanged.
+
+### D-29 — Deliberate-error endpoint lifecycle (NEW)
+- `GET /api/v1/_test/throw` (D-24 smoke target) **persists beyond Phase 1**, gated on `IDENTIFICATION_PROVIDER_MODE=stub` AND `VERCEL_ENV=preview`. The handler short-circuits with 404 in any other environment combination. Rationale: future phases can re-run the Sentry scrub smoke against any preview PR at any time without rebuilding the test harness. No deletion task at phase end.
+
+</clarifications>
+
 ---
 
 *Phase: 01-foundation-ci-cd*
 *Context gathered: 2026-04-14 (power mode)*
+*Clarifications added: 2026-04-14 (post-research, pre-planning)*

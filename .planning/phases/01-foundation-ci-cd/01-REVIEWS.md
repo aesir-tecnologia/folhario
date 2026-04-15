@@ -1,6 +1,6 @@
 ---
 phase: 1
-reviewers: [claude]
+reviewers: [claude, opencode]
 reviewed_at: 2026-04-14T00:00:00Z
 plans_reviewed:
   - 01-01-PLAN.md
@@ -100,26 +100,105 @@ The plan is well-scoped, the TDD discipline reduces integration risk significant
 
 ---
 
+## OpenCode Review
+
+### Summary
+
+Phase 1 is comprehensively specced with strong TDD discipline, well-researched patterns, and correct security/LGPD defaults. The 18-plan structure is sound, dependencies are mostly correct, and the D-19 OVERRIDE and D-28 clarifications are properly propagated. Significant risks exist around the Supabase branching API surface, the database URL vs pooler URL mix in CI, and the lack of a deterministic Sentry e2e assertion in Playwright. All are mitigable without re-planning.
+
+### Strengths
+
+- **TDD discipline is well-applied.** Plans 05–09 use RED→GREEN patterns with isolated pure-function unit tests that are fast, deterministic, and CI-friendly. Scrubber, PostHog config, and security-header tests are particularly strong.
+- **D-19 OVERRIDE is consistently propagated.** Plans 11, 14, 15, 17 all correctly identify that `withSentryConfig` native upload replaces the explicit `sentry-cli` step. `grep` acceptance criteria explicitly exclude `sentry-cli` from all workflow files.
+- **D-28 (postgres:17-alpine) is correctly applied.** `ci.yml` plan 14 uses the clarified image; `16-alpine` does not appear.
+- **LGPD-13 PII scrubbing is multi-layered.** Pure scrubber functions unit-testable in plan 07, wired to all three Sentry init files, with `sendDefaultPii: false` + `Sentry.setUser({ id })` enforced. Playwright smoke fires the route but does NOT query Sentry's API for scrub verification — coverage correctly owned by plan 07 (unit) + plan 18 (manual dashboard).
+- **D-14 rollback pattern is documented and enforced.** The sentinel-throw `client.begin` pattern with `TX_ROLLBACK_SENTINEL` is explicitly locked in the integration setup and verified in acceptance criteria.
+- **Serwist `disable: process.env.NODE_ENV === 'development'`** correctly prevents dev SW registration from breaking HMR (Pitfall 6).
+- **D-29 double guard is correct.** `mode !== 'stub' || vercelEnv !== 'preview'` returns 404 for all non-preview, non-stub combinations including unset env. The unit test covers all four branches.
+- **Branch protection setup is delegated to a human-operable `gh api` document** (plan 17 Task 2) rather than making it a code artifact.
+- **next-intl plugin is wired in Task 11.1** (not delegated to a prose note in Task 11.2), preventing the "executor stops after 11.1 and produces a broken build" failure mode.
+
+### Concerns
+
+**HIGH**
+
+- **DATABASE_URL = DATABASE_POOL_URL in CI masks Supavisor behavior (Plan 14).** Plan 14 Task 1 sets both env vars to the same local postgres URL. `drizzle-kit migrate` runs against `DATABASE_URL` — fine, it hits the local postgres container. But `client.ts` (plan 10) uses `DATABASE_POOL_URL` at runtime; when `DATABASE_POOL_URL === DATABASE_URL` locally, runtime uses a direct connection, not the pooler. This masks the `{ prepare: false }` + Supavisor pattern correctness. If the local Docker postgres behaves differently from Supavisor (session mode vs txn mode), the CI integration tests do not exercise the production runtime path. **Mitigation:** Plan 10's acceptance criteria should note this trade-off explicitly; Phase 2 should add a Supavisor-compatible test target.
+
+**MEDIUM**
+
+- **Supabase branching API surface (Plans 15 and 16).** Plans 15 and 16 reference `supabase branches create pr-{N} --experimental`. The `--experimental` flag reflects a moving interface. If the Supabase CLI changes the flag surface before Phase 1 ships, both `deploy-preview.yml` and `deploy-preview-cleanup.yml` will fail. Additionally, plan 15's branch creation uses `|| true` which swallows real failures (invalid token, network error). **Mitigation:** pin the `supabase` CLI to a verified version rather than `latest`; validate the branch creation exit code separately from the "branch already exists" case.
+
+- **Sentry release verification is non-blocking (Plan 17).** Plan 17's "Verify Sentry release" step uses `continue-on-error: true` and only emits a `::warning::` if the release has 0 artifacts. A failed upload silently passes the deploy. **Mitigation:** add a second step that fails the job if `ARTIFACT_COUNT` is 0 AND `SENTRY_AUTH_TOKEN` is non-empty (avoid false failures when token is absent locally).
+
+- **Playwright smoke does not verify Sentry ingest (Plan 13).** The smoke asserts the HTTP status of `GET /api/v1/_test/throw` and relies on plan 07 unit tests + plan 18 manual dashboard verification for scrub coverage. If the Sentry DSN is wrong or the SDK fails to initialize silently, the smoke passes green while Sentry receives nothing. **Mitigation:** add a lightweight Sentry API poll in CI that queries `sentry.io/api/0/issues/` for the event after firing the test route, or rely exclusively on the plan 07 `beforeSend` unit tests (which are strong enough to own this coverage).
+
+- **`test.extend` fixture spin loop is fragile (Plan 13).** The `sql.begin` + sentinel-throw + `while (!capturedTxDb)` microtask spin pattern works but could theoretically race in slow CI environments. A more robust pattern resolves a `Promise` with the `txDb` handle rather than spinning. **Mitigation:** add an explanatory comment on the `while` loop preventing future "simplification" that breaks the pattern.
+
+- **`deploy-preview-cleanup.yml` uses `continue-on-error: true` on both steps.** This means the workflow always succeeds even if branch deletion fails for the wrong reason (invalid token, wrong project ref). **Mitigation:** capture and echo the `supabase branches delete` exit code to `$GITHUB_OUTPUT` even on failure so the workflow summary shows the attempt outcome.
+
+**LOW**
+
+- **`next.config.ts` type assertion may need `as NextConfig`.** The `withSerwistInit`, `withSentryConfig`, and `createNextIntlPlugin` wrappers may require `as NextConfig` on the final export for TypeScript to accept them; `satisfies NextConfig` may not work through multiple wrappers. Verify at build time.
+- **`eslint-config-next@16.2.3` may not exist.** `eslint-config-next` minor versions don't always align 1:1 with Next.js patch versions. Fall back to `eslint-config-next@latest` at scaffold time if the pinned version doesn't resolve.
+
+### Suggestions
+
+1. **Add a local dev parity note in `.env.example`** that `DATABASE_POOL_URL === DATABASE_URL` is intentional for local Docker development (no Supavisor locally). Phase 2 should add a `docker-compose.yml` with Supavisor for local parity testing.
+2. **Pin `supabase` CLI version in `deploy-preview.yml`** to the current verified version rather than `latest` to prevent a future Supabase CLI breaking the workflow unexpectedly.
+3. **Add a cleanup step that echoes the exit code** after `supabase branches delete` so failures are visible in the workflow log even when `continue-on-error: true`.
+4. **Add `postinstall: husky install` to `package.json`** so developers who run `pnpm install` get hooks set up automatically; the `prepare` script doesn't run in CI with `--frozen-lockfile`.
+5. **Add `SENTRY_AUTH_TOKEN` empty-check in the Sentry verify step (Plan 17)** to avoid a false warning when the token is absent in local dev runs.
+6. **Specify the Inngest sync mechanism in Plan 17** — one sentence naming the CLI command and confirming `INNGEST_SIGNING_KEY` is required as a GH secret.
+7. **Add a lightweight API contract test for the health route** that hits `http://localhost:3000/api/v1/health` via HTTP (not module import) to test the full HTTP stack — not required Phase 1, but useful before Phase 2.
+
+### Risk Assessment
+
+**MEDIUM**
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Supabase branching API drift | MEDIUM | Pin CLI version; verify `--experimental` flag at plan-writing time |
+| DATABASE_POOL_URL in CI masks Supavisor behavior | MEDIUM → HIGH | Acceptable Phase 1; Phase 2 needs Supavisor-compatible test target |
+| Sentry upload non-blocking `continue-on-error` | MEDIUM | Add artifact-count check that fails job when token present but count = 0 |
+| Sentry e2e ingest not automated | MEDIUM | Plan 07 `beforeSend` unit tests own this coverage; plan 18 manual check closes the gap |
+| Integration test fixture spin loop | MEDIUM | Works in practice; add explanatory comment |
+| `next.config.ts` type cast | LOW | Verify at build time; fix with `as NextConfig` if needed |
+| `eslint-config-next` version mismatch | LOW | Fall back to `@latest`; verify at scaffold time |
+
+The phase is well-grounded in research and the patterns from 01-RESEARCH.md are correctly applied. The TDD plans (05–09) are the strongest part of the deliverable. The main risks are CI infrastructure integration points (Supabase branching, Sentry upload verification) that are inherently harder to test deterministically without the actual external services.
+
+---
+
 ## Consensus Summary
 
-Single reviewer session. Consensus summary reflects Claude's findings directly.
+Two reviewers: Claude (separate session) and OpenCode.
 
 ### Agreed Strengths
 
-- Wave structure with non-autonomous gates at Wave 0 and Wave 5 is sound
-- TDD on all infra modules (Plans 05–09) is the right call
-- D-17 opt-out-by-default for PostHog correctly handles LGPD from day one
-- Drizzle URL separation (DATABASE_URL migrations / DATABASE_POOL_URL runtime) correctly models Supavisor
-- D-29 double-gate on the deliberate-error endpoint is sufficient and well-reasoned
+- **TDD discipline on Plans 05–09** — both reviewers independently called this the strongest part of the deliverable
+- **Wave structure with non-autonomous gates** at Wave 0 and Wave 5 is sound and prevents the "secrets missing on first run" failure mode
+- **D-29 double-gate** (`IDENTIFICATION_PROVIDER_MODE=stub` AND `VERCEL_ENV=preview`) is sufficient and well-reasoned
+- **D-19 OVERRIDE correctly propagated** through Plans 11, 14, 15, 17 — both reviewers confirmed consistency
+- **LGPD/PostHog opt-out-by-default** (D-17) correctly handles the compliance requirement from day one
+- **Drizzle URL separation** (DATABASE_URL for migrations / DATABASE_POOL_URL for runtime) correctly models Supavisor
 
 ### Agreed Concerns
 
-1. **(HIGH)** Turbopack + `@serwist/next` production build path is unverified — need a build smoke step in Plan 11 that asserts the SW asset emits
-2. **(HIGH)** D-19 OVERRIDE (native Turbopack source-map upload via `withSentryConfig`) is unverified — needs a compatibility check in Wave 0 or Plan 07 with a documented fallback
-3. **(HIGH)** D-24 Sentry PII scrubbing cannot be confirmed by Playwright alone — needs a `beforeSend` unit test in Plan 07 asserting all six fields are stripped from synthetic events
-4. **(MEDIUM)** PostHog smoke assertion contradicts D-17 opt-out default — needs clarification that the assertion targets server-side `posthog-node` init, not client-side capture
-5. **(MEDIUM)** deploy-preview.yml missing `concurrency:` group — rapid pushes can race on Supabase branch creation
+1. **(HIGH — both)** Sentry PII scrubbing cannot be verified end-to-end by Playwright alone. **Fix:** add a `beforeSend` unit test in Plan 07 that strips all six fields from a synthetic event. This is the single most actionable finding from both reviewers.
+
+2. **(HIGH — Claude / MEDIUM → HIGH — OpenCode)** Sentry source-map upload reliability. Claude flags the D-19 OVERRIDE assumption as unverified; OpenCode flags the `continue-on-error: true` making upload failure silent. **Fix:** (a) verify `@sentry/nextjs@10.48.x` + Turbopack source-map upload works on a throwaway build, and (b) add an artifact-count check in Plan 17 that fails the job when the token is present but upload produced zero artifacts.
+
+3. **(MEDIUM — both)** `DATABASE_POOL_URL` in CI (postgres:17-alpine) does not exercise the Supavisor path. **Fix:** document in Plan 10 that `{ prepare: false }` is unconditional (not pooler-detected); note the parity gap in `.env.example`; defer Supavisor-compatible CI target to Phase 2.
+
+4. **(MEDIUM — both)** Supabase branch creation in deploy-preview.yml uses `|| true` / `--experimental` with no pin and no failure-mode distinction. **Fix:** pin the Supabase CLI version and separate "branch already exists" from genuine failures.
+
+5. **(MEDIUM — both, different angles)** PostHog smoke assertion is ambiguous. Claude notes it contradicts D-17 opt-out default; OpenCode notes the scrub verification is delegated to unit tests + manual check. **Fix:** clarify in Plan 13 that the assertion targets server-side `posthog-node` initialization, not a client-side capture event.
 
 ### Divergent Views
 
-N/A — single reviewer.
+- **Turbopack + `@serwist/next` production build (Claude HIGH, OpenCode did not flag).** Claude considers the unverified Turbopack production SW emission path a HIGH risk requiring an explicit build smoke in Plan 11. OpenCode reviewed the same plan and did not flag it — suggesting the D-26 no-op shell + Serwist disable-in-dev pattern may be sufficient. **Recommendation:** add the Plan 11 build smoke step as a low-cost precaution regardless; it takes one acceptance criterion to add.
+
+- **Integration test `while`-spin fixture (OpenCode MEDIUM, Claude did not flag).** OpenCode flagged the `sql.begin` + `while (!capturedTxDb)` pattern as potentially fragile. Claude accepted the D-14 rollback pattern without concern. **Recommendation:** add the explanatory comment OpenCode suggests; refactoring to `Promise`-based resolution is a nice-to-have, not a blocker.
+
+- **`/api/inngest` hello-world function scope (Claude MEDIUM, OpenCode did not flag).** Claude considers it borderline out-of-scope per the "no Inngest function registration in Phase 1" decision. OpenCode reviewed the plan and accepted it. **Recommendation:** trim to `serve([])` with no function body, consistent with the scope boundary.
+

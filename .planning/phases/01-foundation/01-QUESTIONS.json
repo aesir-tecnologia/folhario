@@ -1,0 +1,847 @@
+{
+  "phase": "01-foundation",
+  "phase_number": "1",
+  "phase_name": "Foundation",
+  "phase_goal": "A Next 16 skeleton a developer can run locally end-to-end (pnpm dev against local Supabase Docker) with Sentry + PostHog wired and verified, security headers applied, closed error-code registry in place, and ci.yml running lint + typecheck + Vitest unit + integration + local-build Playwright smoke. No Vercel, no preview URLs, no deploy workflows, no Inngest yet.",
+  "generated_at": "2026-04-22T00:00:00Z",
+  "stats": {
+    "total": 30,
+    "answered": 29,
+    "chat_more": 5,
+    "remaining": 1
+  },
+  "canonical_refs": [
+    "docs/CAVE-PRD.md §2 (Tech Stack + repo layout)",
+    "docs/CAVE-PRD.md §5 (Error code registry — CLOSED)",
+    "docs/CAVE-PRD.md §13 (LGPD — Sentry PII scrubbing)",
+    "docs/CAVE-PRD.md §19 (Testing — zero DB mocking)",
+    "docs/CAVE-PRD.md §20 (Environments + CI/CD + env vars + local dev commands)",
+    "docs/CAVE-PRD.md §21 (Security checklist + Observability)",
+    "CLAUDE.md (stack lock-in — Next 16.2.3, React 19.2.5, Serwist 9.5.7, Sentry 10.48.0, PostHog 1.368.0, next-intl 4.9.1, Vitest 4.1.4, Playwright 1.59.1)",
+    ".planning/PROJECT.md (constraints)",
+    ".planning/REQUIREMENTS.md (INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02,05 + LGPD-13)",
+    ".planning/ROADMAP.md §Phase 1 (goal + 5 success criteria)"
+  ],
+  "prior_decisions": [
+    "Stack locked in CLAUDE.md: Next 16 App Router + React 19 + TS strict + @serwist/next PWA",
+    "Package manager: pnpm (goal says 'pnpm dev')",
+    "Local DB: Supabase CLI Docker stack (supabase start / supabase db reset)",
+    "Observability: Sentry (release=git SHA, source maps post-build) + PostHog US cloud",
+    "Error codes: closed registry from PRD §5 — no ad-hoc codes",
+    "Locale: pt-BR only, next-intl day one, <html lang='pt-BR'>",
+    "Testing: Vitest unit + integration against real Postgres (no mocking), Playwright smoke",
+    "Inngest/Resend/Stripe deferred to their first-consumer phases (4, 10) — NOT onboarded here",
+    "Vercel hosting + deploy pipeline deferred to Phase 12 — NOT set up here (ci.yml only)"
+  ],
+  "sections": [
+    {
+      "id": "tooling-scaffold",
+      "title": "Tooling & Scaffold",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Node version pin",
+          "context": "Next 16 requires Node ≥18.18; stack lock doesn't specify. Developer + CI must agree on version. .nvmrc + engines field keeps everyone aligned.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Node 22 LTS (.nvmrc + engines)",
+              "description": "Current LTS as of 2026. Future-proof. Some ecosystem lag possible."
+            },
+            {
+              "id": "b",
+              "label": "Node 20 LTS (.nvmrc + engines)",
+              "description": "Previous LTS, widely deployed. Mature npm ecosystem. Supported until 2026-04."
+            },
+            {
+              "id": "c",
+              "label": "No pin, document minimum in README",
+              "description": "Lightweight. Drift risk between local and CI."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "make sure you create the .nvmrc file locally",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "pnpm version activation",
+          "context": "pnpm is the chosen package manager. Version pinning keeps CI + devs lockstep on lockfile format. Corepack is shipped with Node.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Corepack + packageManager field",
+              "description": "Node-native: `packageManager: pnpm@9.x.y` in package.json; Corepack auto-installs matching version. No extra tool to install."
+            },
+            {
+              "id": "b",
+              "label": "Global pnpm, documented minimum",
+              "description": "README tells dev to `npm i -g pnpm@9`. Simple but manual."
+            },
+            {
+              "id": "c",
+              "label": "Volta for the whole toolchain",
+              "description": "Volta pins Node + pnpm + eslint together. Extra install step but strongest reproducibility."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Linter & formatter",
+          "context": "Next 16 ships with an ESLint flat-config by default. Formatter choice is independent. Biome is a faster all-in-one alternative.",
+          "options": [
+            {
+              "id": "a",
+              "label": "ESLint (Next flat config) + Prettier",
+              "description": "Mainstream, huge plugin ecosystem, works with every IDE out of the box. Two tools to configure."
+            },
+            {
+              "id": "b",
+              "label": "Biome (lint + format single tool)",
+              "description": "Fast (Rust), single config. Smaller rule coverage vs ESLint, fewer plugins."
+            },
+            {
+              "id": "c",
+              "label": "ESLint + typescript-eslint strict + Prettier",
+              "description": "Adds strict TS lint ruleset on top of option a. Catches more bugs, slower lint runs, more churn."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-04",
+          "title": "Git hooks & commit linting",
+          "context": "Hooks enforce format/lint pre-commit so bad code never lands. Commit linting enforces Conventional Commits for changelog/SemVer automation.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Husky + lint-staged (no commitlint)",
+              "description": "Pre-commit format + lint on staged files only. Commit style loose."
+            },
+            {
+              "id": "b",
+              "label": "Husky + lint-staged + commitlint",
+              "description": "Enforces Conventional Commits. Good for automated release notes; friction for ad-hoc commits."
+            },
+            {
+              "id": "c",
+              "label": "simple-git-hooks + lint-staged",
+              "description": "Lighter than Husky (no runtime dep), same outcome for pre-commit."
+            },
+            {
+              "id": "d",
+              "label": "No hooks, rely on CI",
+              "description": "Less friction locally. Bad code gets caught in CI instead of at commit time."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Task runner / script convention",
+          "context": "Multi-step dev commands (start Supabase + app, reset DB, run test suites) benefit from named shortcuts. npm scripts are universal but verbose for orchestrated flows.",
+          "options": [
+            {
+              "id": "a",
+              "label": "npm scripts only",
+              "description": "Zero new deps. `pnpm dev`, `pnpm test`, `pnpm db:reset` — all in package.json scripts."
+            },
+            {
+              "id": "b",
+              "label": "npm scripts + justfile",
+              "description": "Just (Rust task runner) for multi-step flows; pnpm scripts call `just`. Cleaner for complex recipes."
+            },
+            {
+              "id": "c",
+              "label": "npm scripts + turbo",
+              "description": "Turbo adds build caching + task orchestration. Overkill for a single package but forward-looking if you split into packages."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "typescript-code-style",
+      "title": "TypeScript & Code Style",
+      "questions": [
+        {
+          "id": "Q-06",
+          "title": "TS strictness flags",
+          "context": "INFRA-01 locks `strict: true` and `noUncheckedIndexedAccess`. Additional flags surface more subtle bugs at the cost of some friction.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Locked minimum only",
+              "description": "`strict` + `noUncheckedIndexedAccess`. Simplest, minimal friction."
+            },
+            {
+              "id": "b",
+              "label": "+ exactOptionalPropertyTypes + noImplicitOverride",
+              "description": "Catches `undefined` vs missing-property mix-ups and accidental override mistakes."
+            },
+            {
+              "id": "c",
+              "label": "+ exactOptional + noImplicitOverride + noPropertyAccessFromIndexSignature",
+              "description": "Strictest reasonable set. Forces `obj['foo']` over `obj.foo` for dynamic indexes — noisier but surfaces unchecked access."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Path aliases in tsconfig",
+          "context": "PRD §2 mandates src/contexts/... + src/shared/.... Aliases determine how imports read.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single alias `@/*` → `src/*`",
+              "description": "Next.js default. Imports look like `import { x } from '@/contexts/iam/...'`. Simplest config."
+            },
+            {
+              "id": "b",
+              "label": "Per-root aliases `@contexts/*` + `@shared/*`",
+              "description": "Explicit per-root. Imports read as `import { x } from '@contexts/iam/...'`. Highlights the architectural split."
+            },
+            {
+              "id": "c",
+              "label": "Both",
+              "description": "`@/*` for general + `@contexts/*`, `@shared/*` for named roots. Flexible but more to maintain."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-08",
+          "title": "Barrel files per context",
+          "context": "`index.ts` re-exports can enable `import { User } from '@contexts/iam'` — but too many barrels cause cycles and hurt tree-shaking.",
+          "options": [
+            {
+              "id": "a",
+              "label": "No barrels — direct imports everywhere",
+              "description": "Avoids cycles, best tree-shaking. Imports are longer (`.../domain/user.ts`). Safest."
+            },
+            {
+              "id": "b",
+              "label": "Barrel at context root only",
+              "description": "Each context exports its public API via `src/contexts/iam/index.ts`. Cross-context imports go through the barrel; intra-context imports stay direct."
+            },
+            {
+              "id": "c",
+              "label": "Barrels at every layer",
+              "description": "domain/index.ts + application/index.ts etc. Most ergonomic imports; highest cycle risk."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "folder-structure-errors",
+      "title": "Folder Structure & Error Registry",
+      "questions": [
+        {
+          "id": "Q-09",
+          "title": "Bounded-context scaffold depth at Phase 1",
+          "context": "PRD §2 locks 7 contexts × 5 layers + 5 shared subdirs = 40 folders. Phase 2 fills db/adapters; Phases 4+ fill feature code. What ships at Phase 1?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Empty folders with .gitkeep only",
+              "description": "Just establish the shape so later phases have landing zones. Smallest footprint."
+            },
+            {
+              "id": "b",
+              "label": "Folders + README.md per context",
+              "description": "Each context README describes aggregates, emits, consumes (copied from PRD §3). Serves as an onboarding + guardrail doc."
+            },
+            {
+              "id": "c",
+              "label": "Folders + README + layer-marker stub files",
+              "description": "Adds e.g. `domain/_layer.md` explaining what belongs in this layer. Strongest guardrail; more files to maintain."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "Error-code registry shape",
+          "context": "PRD §5 defines 20 error codes as the CLOSED set. INFRA-20 requires this as a single importable source of truth. Every route handler imports from it.",
+          "options": [
+            {
+              "id": "a",
+              "label": "TypeScript `enum`",
+              "description": "`export enum ErrorCode { Unauthenticated = 'unauthenticated', ... }`. Familiar. Has known runtime/emit quirks in TS."
+            },
+            {
+              "id": "b",
+              "label": "`as const` object + string-literal union",
+              "description": "`export const ErrorCode = { ... } as const; export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode]`. Tree-shakeable, ESM-friendly, no enum footguns."
+            },
+            {
+              "id": "c",
+              "label": "Discriminated union per code",
+              "description": "Each code paired with its required detail shape. Richer typing; much more verbose; overkill for a flat registry."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-11",
+          "title": "Error response body shape",
+          "context": "Clients need a consistent shape. PRD §5 gives codes + HTTP statuses but no JSON shape. Phase 6's confidence ladder, Phase 9's offline queue, Phase 10's paywall all consume this shape.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`{ error: { code, message, details? } }`",
+              "description": "Nested error object. Common REST convention. Leaves top-level for success fields."
+            },
+            {
+              "id": "b",
+              "label": "`{ code, message, details? }`",
+              "description": "Flat. Distinguishes success vs error by HTTP status + presence of `code`. Simpler client-side."
+            },
+            {
+              "id": "c",
+              "label": "RFC 7807 problem+json",
+              "description": "`{ type, title, status, code, detail, instance? }`. Standards-based. More verbose; most tooling compatible."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-12",
+          "title": "Location of the error-code registry",
+          "context": "Every context will import this. Location signals whether it's config, infra, or telemetry.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`src/shared/errors/{registry.ts, response.ts}`",
+              "description": "Own top-level module. Clear purpose: error codes + HTTP mapping."
+            },
+            {
+              "id": "b",
+              "label": "`src/shared/config/errors.ts`",
+              "description": "Co-located with other config (env, feature flags). Smaller module surface."
+            },
+            {
+              "id": "c",
+              "label": "`src/shared/telemetry/errors.ts`",
+              "description": "Bundled with Sentry filter config so the scrub rules + registry live together."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "pwa-i18n",
+      "title": "PWA & Internationalization",
+      "questions": [
+        {
+          "id": "Q-13",
+          "title": "Serwist setup depth at Phase 1",
+          "context": "@serwist/next locked. Phase 3 (Design System) ships the full offline shell + app-update toast + installable manifest. What does Phase 1 need to prove?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Skeleton — registered SW, no precache, no offline page",
+              "description": "Proves Serwist builds + registers. Nothing functional yet. Least churn for Phase 3 to rewrite."
+            },
+            {
+              "id": "b",
+              "label": "Basic — fallback /offline route + precache of `/`",
+              "description": "Minimal offline works today. Phase 3 themes + expands the precache. Intermediate risk of churn."
+            },
+            {
+              "id": "c",
+              "label": "Full runtime caching rules ready",
+              "description": "Everything Phase 3 would need. Risks Phase 1 making calls about caching strategy before the design system exists."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-14",
+          "title": "Web app manifest at Phase 1",
+          "context": "Full manifest (icons, theme colors, screenshots) lands in Phase 3 with the Paper Cream design system. Phase 1 needs at least enough for Serwist to not complain.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Minimal placeholder (name, display, theme_color)",
+              "description": "`{ name, short_name, display: 'standalone', theme_color: '#000001' }` — no icons. Phase 3 rewrites. Smallest footprint."
+            },
+            {
+              "id": "b",
+              "label": "Full structure, placeholder assets",
+              "description": "All icon slots filled with placeholder PNGs (e.g. solid color). Phase 3 swaps assets, not manifest structure. Less churn."
+            },
+            {
+              "id": "c",
+              "label": "No manifest at Phase 1",
+              "description": "Defer entirely to Phase 3. Serwist still builds (manifest is declarative), but installability is deferred."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "next-intl routing strategy",
+          "context": "pt-BR only at launch. PLATFORM-v2-03 (additional locales) is deferred but the i18n layer is mandatory day one.",
+          "options": [
+            {
+              "id": "a",
+              "label": "No locale prefix (single-locale mode)",
+              "description": "URLs stay clean: `/catalog` not `/pt-BR/catalog`. When v2 adds locales, migration requires URL redesign."
+            },
+            {
+              "id": "b",
+              "label": "`as-needed` prefix (default locale hidden)",
+              "description": "pt-BR served at root, future locales get `/en-US/...`. next-intl's recommended default. No URL migration when adding locales."
+            },
+            {
+              "id": "c",
+              "label": "Always prefix (`/pt-BR/...`)",
+              "description": "Most explicit. Uglier URLs now; zero migration risk later."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "local-supabase-dev",
+      "title": "Local Supabase Dev Environment",
+      "questions": [
+        {
+          "id": "Q-16",
+          "title": "Supabase CLI version pinning",
+          "context": "Local dev (INFRA-26) and future Phase 12 CI share the CLI. Drift between versions can break the local stack or branch-DB workflow.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Pin via `supabase/config.toml` + README install cmd",
+              "description": "supabase CLI itself isn't in npm by default; config.toml declares expected version. Developers install matching. Phase 12 CI uses same pin via brew/download."
+            },
+            {
+              "id": "b",
+              "label": "npm devDependency (`supabase` package)",
+              "description": "`pnpm supabase ...` runs via the project's locked version. Everyone matches the lockfile automatically. The `supabase` npm package is the official wrapper."
+            },
+            {
+              "id": "c",
+              "label": "No pin — use whatever's globally installed",
+              "description": "Simplest. Breaks on drift. Not recommended."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "DB seed convention at Phase 1",
+          "context": "`supabase db reset` runs migrations + seed. No migrations yet (Phase 2 lands the schema). Phase 1 just needs the seed contract to exist.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Empty `supabase/seed.sql` stub with comment",
+              "description": "File exists so `supabase db reset` works; Phase 2 adds schema + seed rows. Lowest Phase 1 effort."
+            },
+            {
+              "id": "b",
+              "label": "Per-context seed files composed into master",
+              "description": "`supabase/seed/{iam,catalog,...}.sql` sourced from `supabase/seed.sql`. Forward-looking structure; Phase 1 writes empty files."
+            },
+            {
+              "id": "c",
+              "label": "No seed file at Phase 1",
+              "description": "Defer entirely to Phase 2. `supabase db reset` works without a seed file."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-18",
+          "title": "How the app reads local Supabase URLs",
+          "context": "`supabase start` outputs the local DB URL, anon key, service role key. App needs DATABASE_URL + NEXT_PUBLIC_SUPABASE_URL/ANON_KEY + SUPABASE_SERVICE_ROLE_KEY in `.env.local`.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Manual — README documents copying from `supabase status` into `.env.local`",
+              "description": "One-time setup step per machine. Fragile if local Supabase rotates keys."
+            },
+            {
+              "id": "b",
+              "label": "Automated script `scripts/sync-supabase-env.sh`",
+              "description": "Parses `supabase status` and writes `.env.local`. Devs run once per fresh-start. Scripted = reproducible."
+            },
+            {
+              "id": "c",
+              "label": "`supabase gen` or `supabase init` CLI-native flow",
+              "description": "Use whatever the Supabase CLI itself provides for env sync. Depends on CLI version features."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "observability-verification",
+      "title": "Observability — Sentry + PostHog",
+      "questions": [
+        {
+          "id": "Q-19",
+          "title": "Local-dev Sentry strategy",
+          "context": "CONFLICT to resolve: PRD §20 table says Sentry 'disabled' locally. But Phase 1 success criterion 4 says 'a deliberately thrown error in the local app appears in Sentry'. Same conflict applies to PostHog (Q-20).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Disabled locally; verification only in CI Playwright smoke",
+              "description": "CI sets SENTRY_DSN pointing to a `folhario-dev` project; Playwright triggers the error, asserts the event lands. Local dev never pings Sentry. Strictly matches PRD §20."
+            },
+            {
+              "id": "b",
+              "label": "Enabled locally in a shared `folhario-dev` project",
+              "description": "Devs can eyeball their own scrubbing + breadcrumbs. Noisier project; easier to catch regressions."
+            },
+            {
+              "id": "c",
+              "label": "Opt-in local via SENTRY_ENABLED_LOCAL=true env",
+              "description": "Default off (matches PRD §20). Flip when verifying scrubbing or debugging. Best of both."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-20",
+          "title": "Local-dev PostHog strategy",
+          "context": "Same conflict. Phase 1 success criterion 4 says client + posthog-node server pings must fire and be verified by Playwright smoke.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Disabled locally; CI-only verification",
+              "description": "Mirrors Q-19a. CI feeds POSTHOG_API_KEY for a dev project; Playwright asserts the capture network call."
+            },
+            {
+              "id": "b",
+              "label": "Enabled locally in `folhario-dev` project",
+              "description": "Dev events pollute the project but give instant feedback."
+            },
+            {
+              "id": "c",
+              "label": "Opt-in local via POSTHOG_ENABLED_LOCAL=true",
+              "description": "Default off, flip on demand. Pairs naturally with Q-19c."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-21",
+          "title": "PostHog autocapture setting",
+          "context": "Autocapture records $pageview, $click, $rageclick automatically — can include button text, input values, form field names. PRD §20 defines an explicit event taxonomy. LGPD-13 bans PII in telemetry.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Disable autocapture — explicit events only",
+              "description": "Only the PRD §20 taxonomy events fire. Smallest payload, safest LGPD stance, less debugging data."
+            },
+            {
+              "id": "b",
+              "label": "Enable autocapture with strict masking",
+              "description": "`mask_all_text: true`, `mask_all_element_attributes: true`, `disable_session_recording: true`. Get the click graph without content. Some config complexity."
+            },
+            {
+              "id": "c",
+              "label": "Enable autocapture default",
+              "description": "Richest data. Highest LGPD risk — may capture form inputs / plant names / notes. Not recommended."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-22",
+          "title": "Sentry PII scrubbing implementation",
+          "context": "LGPD-13 + PRD §13.7: scrub `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; DROP request bodies on `/api/v1/identifications/*`; `Sentry.setUser({ id })` only. This needs to be bulletproof — Playwright smoke verifies it.",
+          "options": [
+            {
+              "id": "a",
+              "label": "SDK built-ins (`denyUrls` + `sendDefaultPii: false`) + minimal `beforeSend`",
+              "description": "Leans on Sentry's default scrubbing. Adds beforeSend hook only for the identification-route body drop. Simplest."
+            },
+            {
+              "id": "b",
+              "label": "Centralized custom scrubber module + beforeSend + beforeBreadcrumb",
+              "description": "`src/shared/telemetry/sentry-scrub.ts` owns all regex + route matching. Unit-testable. Pairs with Q-12."
+            },
+            {
+              "id": "c",
+              "label": "Server-side data scrubbing (Sentry dashboard config)",
+              "description": "Config in Sentry Project Settings → Data Scrubbing. Easy to tune via UI. Not in repo → not code-reviewable, hard to audit."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "security-headers",
+      "title": "Security Headers Middleware",
+      "questions": [
+        {
+          "id": "Q-23",
+          "title": "CSP strategy at Phase 1",
+          "context": "INFRA-18 / PRD §21: standard security headers via Next.js middleware. PRD lists CSP in the checklist but doesn't specify a policy. CSP is the single biggest security header and the trickiest to get right.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Strict CSP with per-request nonce",
+              "description": "`script-src 'nonce-{random}' 'strict-dynamic'`. Next.js supports this pattern in middleware. Highest security. May require dev-mode exceptions for Sentry widget, PostHog toolbar."
+            },
+            {
+              "id": "b",
+              "label": "Report-only CSP with loose policy",
+              "description": "`Content-Security-Policy-Report-Only` to a Sentry endpoint. Collect violations without breaking anything; tighten iteratively."
+            },
+            {
+              "id": "c",
+              "label": "Skip CSP at Phase 1",
+              "description": "Ship HSTS + XFO + nosniff + Referrer-Policy + Permissions-Policy. CSP lands later when app surface is concrete. Leaves a gap in PRD §21."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "CSP is a bitch! defer to as late as possible",
+          "status": "answered"
+        },
+        {
+          "id": "Q-24",
+          "title": "Header set at Phase 1",
+          "context": "Beyond CSP (Q-23), PRD §21 says 'standard security headers'. Minimum viable vs full defence-in-depth set.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Minimum — HSTS + X-Frame-Options DENY + X-Content-Type-Options nosniff",
+              "description": "Three most impactful headers. Ship quickly."
+            },
+            {
+              "id": "b",
+              "label": "Full set — HSTS + XFO + nosniff + Referrer-Policy + Permissions-Policy",
+              "description": "Adds `Referrer-Policy: strict-origin-when-cross-origin` + `Permissions-Policy` denying unused features (mic, geolocation, etc., camera kept for Phase 6 identify). Best practice."
+            },
+            {
+              "id": "c",
+              "label": "Full set + CSP",
+              "description": "Option b plus CSP (pairs with Q-23a or Q-23b). Most defense-in-depth."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "defer this to the very end if possible",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "ci-pipeline",
+      "title": "CI Pipeline Design",
+      "questions": [
+        {
+          "id": "Q-25",
+          "title": "Postgres image for integration tests",
+          "context": "CONFLICT to resolve: Phase 1 success criterion 3 specifies `postgres:17-alpine`. INFRA-12 says `postgres:16-alpine`. PRD §20 says `postgres:16`. Supabase local stack runs Postgres 15 by default. CI should match production — Supabase prod is Postgres 15/16 depending on project age.",
+          "options": [
+            {
+              "id": "a",
+              "label": "postgres:17-alpine (match ROADMAP success criterion)",
+              "description": "Current stable. Roadmap wins the tie. Diverges from INFRA-12 + Supabase local stack."
+            },
+            {
+              "id": "b",
+              "label": "postgres:16-alpine (match INFRA-12 + PRD)",
+              "description": "Aligns with requirements doc + PRD. Closer to Supabase managed versions. Requires ROADMAP success-criterion edit."
+            },
+            {
+              "id": "c",
+              "label": "Match local Supabase exactly (currently 15)",
+              "description": "CI mirrors `supabase start` version. Requires bumping both when Supabase CLI upgrades."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "local supabase uses postgres 17 too. make sure to lock the version locally. also make sure to only enable the needed features.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-26",
+          "title": "Playwright browsers in CI smoke",
+          "context": "Folhário is PWA-first → primary users: mobile Chrome (Android), mobile Safari/WebKit (iOS). Adding browsers multiplies CI minutes + flake surface.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Chromium only",
+              "description": "Fastest CI. Covers ~70% of BR mobile traffic + most desktop. Misses iOS WebKit quirks."
+            },
+            {
+              "id": "b",
+              "label": "Chromium + WebKit",
+              "description": "Catches iOS-specific PWA issues (manifest quirks, IndexedDB subtleties). Skips Firefox (<5% BR share)."
+            },
+            {
+              "id": "c",
+              "label": "All three (Chromium + WebKit + Firefox)",
+              "description": "Most thorough. Slower CI, more flake. Overkill for MVP smoke."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-27",
+          "title": "What does the Phase 1 Playwright smoke actually assert?",
+          "context": "Success criterion 4 says Playwright verifies: (1) deliberate error → Sentry with scrubbing, (2) PostHog ping from client + server. How does this work without a full app?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Dedicated `/__diag` page + `/api/v1/_diagnostics/ping`",
+              "description": "Throwaway diagnostics routes that trigger Sentry.captureException + posthog.capture client-side + posthog-node capture server-side. Playwright intercepts transport calls. Clean separation of concerns."
+            },
+            {
+              "id": "b",
+              "label": "Use the home page + a hidden dev-only button",
+              "description": "Button visible only when `NEXT_PUBLIC_DIAGNOSTICS_MODE=true`. Avoids permanent diagnostics routes in the app surface."
+            },
+            {
+              "id": "c",
+              "label": "Assert via network interception only",
+              "description": "Playwright loads `/`, mocks window.fetch/XHR to Sentry/PostHog endpoints, asserts calls happen. No app-side code needed. Indirect — tests the mock, not the integration."
+            }
+          ],
+          "answer": null,
+          "chat_more": "I don't know, you figure it out",
+          "status": "chat-more"
+        },
+        {
+          "id": "Q-28",
+          "title": "CI caching + concurrency",
+          "context": "Re-running CI across PR pushes should be fast. Caching + concurrency cancellation matter.",
+          "options": [
+            {
+              "id": "a",
+              "label": "pnpm store + Playwright browsers cached via actions/cache",
+              "description": "Standard pattern. Saves 60-120s per run. Invalidated on lockfile change."
+            },
+            {
+              "id": "b",
+              "label": "Option a + GitHub Actions concurrency group per PR",
+              "description": "Cancels previous in-flight runs when a new commit is pushed to the same PR. Saves CI minutes."
+            },
+            {
+              "id": "c",
+              "label": "Minimal caching; no concurrency cancellation",
+              "description": "Simpler config. Slower CI, more minutes burned."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "env-management",
+      "title": "Env Management",
+      "questions": [
+        {
+          "id": "Q-29",
+          "title": "Typed env validation",
+          "context": "PRD §20 table has 20+ env vars. Missing or mistyped vars surface as runtime crashes deep in the stack. Fail-fast-at-boot is cheap insurance.",
+          "options": [
+            {
+              "id": "a",
+              "label": "@t3-oss/env-nextjs + Zod schemas",
+              "description": "Splits server/client vars via NEXT_PUBLIC_ prefix. Validates at boot. Well-maintained. Extra dep."
+            },
+            {
+              "id": "b",
+              "label": "Custom `src/shared/config/env.ts` with Zod",
+              "description": "No extra dep — use the Zod you already have for route bodies. Full control."
+            },
+            {
+              "id": "c",
+              "label": "Raw `process.env` with runtime assertions",
+              "description": "Cheapest. No static types for vars. Fragile."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-30",
+          "title": ".env.example scope at Phase 1",
+          "context": ".env.example is the developer-onboarding artifact. Including vars for services not yet wired up can confuse or invite misuse.",
+          "options": [
+            {
+              "id": "a",
+              "label": "All PRD §20 vars with dummy values",
+              "description": "Forward-looking; new contributors see the full surface. May tempt someone to wire up unimplemented services."
+            },
+            {
+              "id": "b",
+              "label": "Only Phase 1 vars (Supabase, Sentry, PostHog, IDENTIFICATION_PROVIDER_MODE)",
+              "description": "Clean — matches what's actually wired. Requires updates each phase that adds services."
+            },
+            {
+              "id": "c",
+              "label": "No .env.example; README documents instead",
+              "description": "README table is more expressive (add 'when', 'server-only' columns). No file to diff-review when vars change."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}

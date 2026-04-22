@@ -15,10 +15,10 @@ Check each box as you complete the step. Reply "done" to the executor when every
 - [ ] Project slug -> repo secret `SENTRY_PROJECT`
 - [ ] Auth token (scopes: project:read, project:releases, org:read) -> repo secret `SENTRY_AUTH_TOKEN`
 
-## PostHog EU
-- [ ] Project created at **eu.posthog.com** (NOT us.posthog.com)
+## PostHog US
+- [ ] Project created at **us.posthog.com** (NOT eu.posthog.com) — per OBS-02: US cloud chosen for lower latency from Brazil; LGPD Art. 33 international transfer basis documented via PostHog SCCs
 - [ ] Project API key -> repo secret `NEXT_PUBLIC_POSTHOG_KEY`
-- [ ] Host value `https://eu.posthog.com` -> repo secret `NEXT_PUBLIC_POSTHOG_HOST`
+- [ ] Host value `https://us.i.posthog.com` -> repo secret `NEXT_PUBLIC_POSTHOG_HOST`
 
 ## Supabase (with branching)
 - [ ] Project created at supabase.com

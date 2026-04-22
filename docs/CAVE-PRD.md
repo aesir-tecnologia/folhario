@@ -52,7 +52,7 @@ Voice: knowledgeable friend, not textbook. Simple words. No jargon. No Latin wit
 | Async | Inngest (events + cron + durable `step.sleepUntil`) |
 | Email | Resend, React Email templates |
 | Errors | Sentry (Next.js SDK + source maps from CI) |
-| Analytics | PostHog EU cloud |
+| Analytics | PostHog US cloud (LGPD Art. 33 transfer basis via PostHog SCCs) |
 | Push | `web-push` + VAPID, dispatched from Inngest |
 | Hosting | Vercel, deploys from GitHub Actions ONLY (git integration disabled) |
 | Testing | Vitest + Playwright. Real Postgres for integration |
@@ -1090,7 +1090,7 @@ Runtime → Vercel Project Environment Variables per environment. CI-only → Gi
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID` | Stripe | server / server / all |
 | `RESEND_API_KEY` / `RESEND_FROM_ADDRESS` | Resend | server / all |
 | `SENTRY_DSN` / `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | Sentry | all / CI / CI / CI |
-| `POSTHOG_API_KEY` / `POSTHOG_HOST` | PostHog | all (`POSTHOG_HOST=https://eu.posthog.com`) |
+| `POSTHOG_API_KEY` / `POSTHOG_HOST` | PostHog | all (`POSTHOG_HOST=https://us.i.posthog.com`) |
 | `PLANTID_API_KEY` | Plant ID | server |
 | `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` | LLM | server |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web Push | all / server / server |

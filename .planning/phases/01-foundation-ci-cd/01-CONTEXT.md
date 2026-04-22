@@ -45,7 +45,7 @@ A deployable Next 16 skeleton whose every PR flows through GitHub-Actions-driven
 - **D-19:** Sentry source maps are uploaded via **`sentry-cli sourcemaps upload` in an explicit `deploy-production.yml` step**, after `vercel build` and before `vercel deploy --prebuilt --prod`. Releases tagged with `$GITHUB_SHA`. `@sentry/nextjs` auto-upload is NOT used (Turbopack compatibility risk). Preview deploys also upload source maps so preview errors are symbolicated.
 
 ### Security Headers & Error Registry
-- **D-20:** CSP is **report-only in preview environments** for at least the first week after Phase 1 ships, **enforced in production** from day 1 using a `default-src 'self'` baseline with explicit allowlists for `sentry.io` (ingest), `eu.posthog.com`, `*.supabase.co`, `api.stripe.com`, and future provider endpoints. Violation reports go to a Sentry transport. No nonce-based scripts in Phase 1.
+- **D-20:** CSP is **report-only in preview environments** for at least the first week after Phase 1 ships, **enforced in production** from day 1 using a `default-src 'self'` baseline with explicit allowlists for `sentry.io` (ingest), `us.i.posthog.com`, `us-assets.i.posthog.com`, `*.supabase.co`, `api.stripe.com`, and future provider endpoints. Violation reports go to a Sentry transport. No nonce-based scripts in Phase 1.
 - **D-21:** HSTS = **`max-age=15552000` (6 months), `includeSubDomains`, NO preload**. Conservative choice — lets us walk back if domain structure changes. Upgrade to 1y + preload in a later phase once the apex is stable.
 - **D-22:** Frame embedding **denied entirely**: `Content-Security-Policy: frame-ancestors 'none'` + `X-Frame-Options: DENY`. Folhário does not embed its own routes in iframes.
 - **D-23:** Error code registry is a **`as const` object + union type** in `src/shared/errors/codes.ts`. Shape: `export const ErrorCode = { EmailUnverified: 'email_unverified', ConsentRequired: 'consent_required', ... } as const; export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];`. Phase 1 seeds the closed registry from PRD §5 including internal-only codes (`cost_ceiling_reached`, `breaker_open`) which route handlers MUST map to `provider_unavailable` before returning to clients. Zod runtime validation wraps this constant via `z.enum(Object.values(ErrorCode))` when needed.
@@ -80,7 +80,7 @@ A deployable Next 16 skeleton whose every PR flows through GitHub-Actions-driven
 - `.planning/ROADMAP.md` §"Phase 1: Foundation & CI/CD" — success criteria the phase plan must back into
 
 ### Global constraints
-- `CLAUDE.md` §Constraints — stack lock-ins (Drizzle + `postgres-js` + `{ prepare: false }`, Inngest, Serwist not next-pwa, Vercel git integration OFF, Sentry release=SHA, PostHog EU, next-intl mandatory, pt-BR, LGPD scrubbing fields)
+- `CLAUDE.md` §Constraints — stack lock-ins (Drizzle + `postgres-js` + `{ prepare: false }`, Inngest, Serwist not next-pwa, Vercel git integration OFF, Sentry release=SHA, PostHog US (LGPD Art. 33 transfer basis via SCCs), next-intl mandatory, pt-BR, LGPD scrubbing fields)
 - `.planning/PROJECT.md` §"Key Decisions" — locked tech choices with rationale
 
 ### Specific topics
@@ -148,7 +148,7 @@ Research uncovered a contradiction and surfaced open questions that were resolve
 - **Consequence for plans:** No separate `sentry-cli` CI step. Sentry upload config lives in `next.config.ts` via `withSentryConfig({ widenClientFileUpload: true, sourcemaps: { disable: false } })`. `SENTRY_AUTH_TOKEN` still required as a repo secret. Releases still tagged with `$GITHUB_SHA`. Source maps still upload for both preview AND production per the D-19 "Specific Ideas" rationale (symbolicated preview errors).
 
 ### D-27 — Wave 0 operator provisioning checklist (NEW)
-- Phase 1 includes a non-autonomous Wave 0 `01-operator-checklist-PLAN.md` that gates all automatable work. It captures: (1) create Sentry project + get DSN + SENTRY_AUTH_TOKEN; (2) create PostHog EU project + get POSTHOG_KEY + POSTHOG_HOST; (3) create Supabase project with branching enabled + get SUPABASE_ACCESS_TOKEN + project ref; (4) create Vercel project and **confirm Git integration is OFF** + get VERCEL_TOKEN + ORG_ID + PROJECT_ID; (5) create Inngest project + get INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY; (6) install all of the above as GitHub Actions secrets matching PRD §20 env var table; (7) install Node 22 LTS locally (`nvm install 22`) and enable Corepack (`corepack enable`) so pnpm resolves.
+- Phase 1 includes a non-autonomous Wave 0 `01-operator-checklist-PLAN.md` that gates all automatable work. It captures: (1) create Sentry project + get DSN + SENTRY_AUTH_TOKEN; (2) create PostHog US project + get POSTHOG_KEY + POSTHOG_HOST; (3) create Supabase project with branching enabled + get SUPABASE_ACCESS_TOKEN + project ref; (4) create Vercel project and **confirm Git integration is OFF** + get VERCEL_TOKEN + ORG_ID + PROJECT_ID; (5) create Inngest project + get INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY; (6) install all of the above as GitHub Actions secrets matching PRD §20 env var table; (7) install Node 22 LTS locally (`nvm install 22`) and enable Corepack (`corepack enable`) so pnpm resolves.
 - Plan is marked `autonomous: false` — executor blocks until user types "done".
 
 ### D-28 — Postgres service container image (NEW)

@@ -10,7 +10,7 @@ Phase 1 is a greenfield, zero-feature foundation phase. It proves a deployable N
 
 The stack is 100% locked by `CONTEXT.md` and `CLAUDE.md`. This research confirms that **every locked decision is still implementable with current library versions**, surfaces **one important contradiction** between CONTEXT.md D-19 and current Sentry Next.js docs (the explicit `sentry-cli sourcemaps upload` step is no longer required — `withSentryConfig` handles post-build upload natively for Turbopack as of `@sentry/nextjs@10.13.0+` and `next@15.4.1+`, and we are on `10.48.0` / `16.2.3`), and surfaces **one important simplification** from Next.js 16's release notes (Turbopack is now the default — `next build --turbopack` flag is unnecessary).
 
-**Primary recommendation:** Scaffold with `pnpm dlx create-next-app@16.2.3 --ts --app --no-src-dir=false --no-tailwind --no-eslint=false --import-alias "@/*"` (or hand-author `package.json` — there's nothing magical in the scaffold output), then layer on: `@serwist/next@9.5.7`, `next-intl@4.9.1` in single-locale no-routing mode, `drizzle-orm@0.45.2` + `drizzle-kit@0.31.10` + `postgres@3.4.9` with `{ prepare: false }`, `@sentry/nextjs@10.48.0` with `withSentryConfig` native source map upload (NOT explicit sentry-cli), `posthog-js@1.369.0` client with `opt_out_capturing_by_default: true` + `posthog-node@5.29.2` server with EU host, `inngest@4.2.2` serving from `/api/inngest/route.ts`, and middleware-based CSP + HSTS + X-Frame-Options. All four GitHub Actions workflows (ci, deploy-preview, deploy-production, deploy-preview-cleanup) use the `pnpm/action-setup` + `actions/setup-node@v4` + Vercel CLI + Supabase CLI toolchain.
+**Primary recommendation:** Scaffold with `pnpm dlx create-next-app@16.2.3 --ts --app --no-src-dir=false --no-tailwind --no-eslint=false --import-alias "@/*"` (or hand-author `package.json` — there's nothing magical in the scaffold output), then layer on: `@serwist/next@9.5.7`, `next-intl@4.9.1` in single-locale no-routing mode, `drizzle-orm@0.45.2` + `drizzle-kit@0.31.10` + `postgres@3.4.9` with `{ prepare: false }`, `@sentry/nextjs@10.48.0` with `withSentryConfig` native source map upload (NOT explicit sentry-cli), `posthog-js@1.369.0` client with `opt_out_capturing_by_default: true` + `posthog-node@5.29.2` server with US host, `inngest@4.2.2` serving from `/api/inngest/route.ts`, and middleware-based CSP + HSTS + X-Frame-Options. All four GitHub Actions workflows (ci, deploy-preview, deploy-production, deploy-preview-cleanup) use the `pnpm/action-setup` + `actions/setup-node@v4` + Vercel CLI + Supabase CLI toolchain.
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -46,7 +46,7 @@ The stack is 100% locked by `CONTEXT.md` and `CLAUDE.md`. This research confirms
   - **⚠️ RESEARCH NOTE — see "State of the Art" section:** As of `@sentry/nextjs@10.13.0+` on `next@15.4.1+`, `withSentryConfig` natively supports Turbopack post-build source map upload. D-19's motivation ("Turbopack compatibility risk") no longer holds. Flagged for the planner; the planner should either (a) honor D-19 as explicitly locked and accept the duplicate work, or (b) surface a mini-discussion point asking the user whether to switch to the native path.
 
 **Security Headers & Error Registry**
-- **D-20:** CSP is **report-only in preview** for at least the first week after Phase 1 ships, **enforced in production** day 1 using `default-src 'self'` + explicit allowlists for `sentry.io`, `eu.posthog.com`, `*.supabase.co`, `api.stripe.com`. Violation reports to a Sentry transport. No nonce-based scripts in Phase 1.
+- **D-20:** CSP is **report-only in preview** for at least the first week after Phase 1 ships, **enforced in production** day 1 using `default-src 'self'` + explicit allowlists for `sentry.io`, `us.i.posthog.com`, `*.supabase.co`, `api.stripe.com`. Violation reports to a Sentry transport. No nonce-based scripts in Phase 1.
 - **D-21:** HSTS = **`max-age=15552000` (6 months), `includeSubDomains`, NO preload**.
 - **D-22:** Frame embedding **denied entirely**: `Content-Security-Policy: frame-ancestors 'none'` + `X-Frame-Options: DENY`.
 - **D-23:** Error code registry is a **`as const` object + union type** in `src/shared/errors/codes.ts`. Seeds closed registry from PRD §5 including internal-only codes (`cost_ceiling_reached`, `breaker_open`).
@@ -99,7 +99,7 @@ The stack is 100% locked by `CONTEXT.md` and `CLAUDE.md`. This research confirms
 | INFRA-20 | Closed error code registry implemented as single source; no ad-hoc codes | Code Examples > `src/shared/errors/codes.ts` with full PRD §5 registry |
 | INFRA-23 | Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking | Standard Stack; Validation Architecture |
 | OBS-01 | Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GH Actions (Turbopack requirement); PII scrubbing enforced | Standard Stack; Code Examples > Sentry init with `beforeSend` + `beforeBreadcrumb` scrubbing; version `@sentry/nextjs@10.48.0` supports native Turbopack post-build upload [CITED: docs.sentry.io/platforms/javascript/guides/nextjs/sourcemaps] |
-| OBS-02 | PostHog EU cloud integrated (client + server via `posthog-node`); LGPD residency compliant | Standard Stack; Code Examples > PostHog client init with `api_host: 'https://eu.posthog.com'` + server `posthog-node` |
+| OBS-02 | PostHog US cloud integrated (client + server via `posthog-node`); LGPD Art. 33 transfer basis (PostHog SCCs) compliant | Standard Stack; Code Examples > PostHog client init with `api_host: 'https://us.i.posthog.com'` + server `posthog-node` |
 | OBS-05 | Alerts: Sentry on new issues + error-rate spikes | Sentry alert config is dashboard-side (no code); Phase 1 only wires connectivity |
 | LGPD-13 | Sentry scrubs `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; drop request bodies on `/api/v1/identifications/*`; `Sentry.setUser({ id })` only | Code Examples > `beforeSend` / `beforeBreadcrumb` scrubbing function with D-24 smoke assertion |
 
@@ -138,7 +138,7 @@ The stack is 100% locked by `CONTEXT.md` and `CLAUDE.md`. This research confirms
 | `drizzle-kit` | 0.31.10 | Migration runner (`drizzle-kit generate`, `drizzle-kit migrate`) | [VERIFIED: npm registry] D-12 canonical migration runner |
 | `postgres` | 3.4.9 | `postgres-js` driver | [VERIFIED: npm registry] CLAUDE.md mandate `{ prepare: false }` for Supavisor txn pooler [CITED: drizzle-team/drizzle-orm-docs Context7 — ConnectSupabase] |
 | `@sentry/nextjs` | 10.48.0 | Error tracking + source maps | [VERIFIED: npm registry] `@sentry/nextjs@10.13.0+` supports native Turbopack post-build source map upload on `next@15.4.1+` [CITED: docs.sentry.io/platforms/javascript/guides/nextjs/sourcemaps] |
-| `posthog-js` | 1.369.0 | Product analytics client | [VERIFIED: npm registry] EU host via `api_host: 'https://eu.posthog.com'`; `opt_out_capturing_by_default: true` for LGPD consent [CITED: posthog/posthog-js Context7] |
+| `posthog-js` | 1.369.0 | Product analytics client | [VERIFIED: npm registry] US host via `api_host: 'https://us.i.posthog.com'`; `opt_out_capturing_by_default: true` for LGPD consent [CITED: posthog/posthog-js Context7] |
 | `posthog-node` | 5.29.2 | Server-side analytics for Inngest-emitted events | [VERIFIED: npm registry] Phase 1 wires connectivity; Phase 2+ emits taxonomy events |
 | `inngest` | 4.2.2 | Durable async framework; Phase 1 wires `/api/inngest` serve handler with hello-world fn only | [VERIFIED: npm registry] CLAUDE.md mandate; `inngest/next` adapter [CITED: inngest/inngest-js Context7] |
 | `zod` | 4.3.6 | Runtime schema validation; seed registry validation only in Phase 1; route handlers use Zod starting Phase 2 | [VERIFIED: npm registry] standard pairing with Drizzle via `drizzle-zod` |
@@ -246,8 +246,8 @@ pnpm add -D vercel@51.2.1
                      │  │ postgres-js    │  │         └──────────────────────┘
                      │  │ {prepare:false}│  │
                      │  └───────┬────────┘  │         ┌──────────────────────┐
-                     │          │           │         │  PostHog EU cloud    │
-                     │          ▼           │         │  (eu.posthog.com)    │
+                     │          │           │         │  PostHog US cloud    │
+                     │          ▼           │         │  (us.i.posthog.com)    │
                      │   Supavisor txn pool │         │  gated on consent    │
                      └──────────┬───────────┘         └──────────▲───────────┘
                                 │                                │
@@ -596,8 +596,8 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
   'connect-src': [
     "'self'",
     'https://*.sentry.io',
-    'https://eu.posthog.com',
-    'https://eu-assets.i.posthog.com',
+    'https://us.i.posthog.com',
+    'https://us-assets.i.posthog.com',
     'https://*.supabase.co',
     'wss://*.supabase.co',
     'https://api.stripe.com',
@@ -901,7 +901,7 @@ The only "state" Phase 1 *creates* is:
 - The GitHub repo secrets (listed in `## Environment Availability` below) — these must be seeded by the human operator before the first CI run.
 - The Supabase project (must exist with branching enabled before `deploy-preview.yml` can run).
 - The Vercel project (must exist with git integration DISABLED — this is a manual dashboard step).
-- The Sentry project and PostHog EU project (must exist for DSN/API key to issue).
+- The Sentry project and PostHog US project (must exist for DSN/API key to issue).
 
 These are listed as "Launch-Blocker Dependencies" in the Open Questions section.
 
@@ -1044,7 +1044,7 @@ export async function GET(req: Request) {
 |--------------|------------------|--------------|--------|
 | `next build --turbopack` flag required | Turbopack is default in Next 16; `--turbopack` is a no-op | Next.js 16 release | `package.json` scripts use `next build` (not `next build --turbopack`) [CITED: vercel/next.js upgrade-v16.mdx via Context7] |
 | Explicit `sentry-cli sourcemaps upload` step in CI to handle Turbopack | `withSentryConfig` natively uploads source maps after Turbopack build (`useRunAfterProductionCompileHook` / default with `@sentry/nextjs@10.13.0+` + `next@15.4.1+`) | `@sentry/nextjs@10.13.0` (2025) | **Contradicts CONTEXT.md D-19.** We're on `@sentry/nextjs@10.48.0` and `next@16.2.3` — the native path is available and is what the official docs recommend. The planner should surface this to the user as a mini-question. [CITED: docs.sentry.io/platforms/javascript/guides/nextjs/sourcemaps] |
-| PostHog default `capture_pageview: 'history_change'` + autocapture on | PostHog `autocapture: false` + explicit named events + consent-gated opt-in | D-17/D-18 decision + LGPD residency | Lower event volume, predictable taxonomy, clean LGPD posture |
+| PostHog default `capture_pageview: 'history_change'` + autocapture on | PostHog `autocapture: false` + explicit named events + consent-gated opt-in | D-17/D-18 decision + LGPD Art. 33 transfer basis (PostHog SCCs) | Lower event volume, predictable taxonomy, clean LGPD posture |
 | next-intl middleware-based locale detection | `next-intl` single-locale static `getRequestConfig` | D-25 (product decision) | No `[locale]` URL segment; future second locale is a bounded refactor |
 | `next-pwa` (shadowwalker) | `@serwist/next` | Serwist became the maintained Workbox fork (~2023); Next 16 compatibility lags in next-pwa | CLAUDE.md lock; Serwist only supported choice for Next 16 App Router |
 | Sentry v8 build-time source map upload during webpack build | Sentry v10 post-build upload (works uniformly for webpack-15.4.1+ AND Turbopack) | `@sentry/nextjs@10.x` | Simpler mental model; same API for both bundlers |
@@ -1067,7 +1067,7 @@ export async function GET(req: Request) {
 | A6 | Node 22 LTS (D-02) is supported by the `vercel` runtime at build time | Standard Stack | Low — Node 22 is supported across Vercel's official Node runtimes; verify at deploy time |
 | A7 | `postgres:16-alpine` is sufficient for Phase 1 integration tests (matches Supabase's default Postgres 16) | Validation Architecture | Low — Supabase runs Postgres 15.x-17.x depending on project age; `postgres:16-alpine` is a safe middle ground |
 | A8 | The exact Sentry version on which `useRunAfterProductionCompileHook` is mandatory vs implicit | State of the Art | Low — `@sentry/nextjs@10.48.0` documents both forms work; planner should use the explicit opt-in to be safe |
-| A9 | CSP allowlist for PostHog EU includes both `eu.posthog.com` and `eu-assets.i.posthog.com` | Code Examples > middleware | Medium — PostHog has ingest vs asset hostnames; the exact set should be verified against PostHog's current docs at plan time |
+| A9 | CSP allowlist for PostHog US includes both `us.i.posthog.com` and `us-assets.i.posthog.com` | Code Examples > middleware | Medium — PostHog has ingest vs asset hostnames; the exact set should be verified against PostHog's current docs at plan time |
 | A10 | Vercel git integration being OFF is a one-time manual dashboard toggle that cannot be automated via CLI | Phase Requirements INFRA-11 | Low — this is a known Vercel dashboard-only setting; document in Phase 1 runbook |
 
 **Empty-table escape:** Not applicable — assumptions above are real and the planner should weigh them.
@@ -1079,7 +1079,7 @@ export async function GET(req: Request) {
    - What's unclear: Did the user know about the native path when they locked D-19, or was their information stale?
    - Recommendation: Planner should flag this as a single-question mini-discussion before planning writes tasks. If the user says "keep D-19 as-is," the plan implements the explicit sentry-cli step exactly as specified. If the user switches, the plan is simpler (one less CI step) and uses `withSentryConfig` native upload.
 
-2. **Does the human operator need to pre-create the Supabase project, Vercel project, Sentry project, and PostHog EU project before Phase 1's first CI run?**
+2. **Does the human operator need to pre-create the Supabase project, Vercel project, Sentry project, and PostHog US project before Phase 1's first CI run?**
    - What we know: Yes — all four services must have a project existing and secrets issued before CI can consume them.
    - What's unclear: Has this been done? CONTEXT.md mentions "Supabase project must exist with branching enabled" in the integration points section but doesn't confirm status.
    - Recommendation: Plan should include a Wave 0 "operator setup" task that is a checklist (not a code task) for the human to tick off before Wave 1 runs. If this is already done, the task is a no-op verification.
@@ -1089,10 +1089,10 @@ export async function GET(req: Request) {
    - What's unclear: Which version is the Folhário Supabase project on?
    - Recommendation: Pick the version matching the actual Supabase project. If 17.x is the Supabase version, use `postgres:17-alpine` in CI for parity.
 
-4. **Exact CSP allowlist strings for PostHog EU, Sentry ingest, and Stripe.**
-   - What we know: The allowlist needs to include PostHog EU ingest + assets hosts, Sentry ingest host, Stripe API host, Supabase project host.
-   - What's unclear: PostHog specifically has been migrating between `eu.posthog.com` and `eu-assets.i.posthog.com` hosts; exact strings should be pulled from PostHog's current EU hostname list at plan time.
-   - Recommendation: Plan task includes "curl + grep PostHog docs for current EU hostnames before writing the CSP constant."
+4. **Exact CSP allowlist strings for PostHog US, Sentry ingest, and Stripe.**
+   - What we know: The allowlist needs to include PostHog US ingest + assets hosts, Sentry ingest host, Stripe API host, Supabase project host.
+   - What's unclear: PostHog specifically has been migrating between `us.i.posthog.com` and `us-assets.i.posthog.com` hosts; exact strings should be pulled from PostHog's current US hostname list at plan time.
+   - Recommendation: Plan task includes "curl + grep PostHog docs for current US hostnames before writing the CSP constant."
 
 5. **Where does the CSP violation report endpoint forward to?**
    - What we know: D-20 says "Violation reports go to a Sentry transport."
@@ -1117,7 +1117,7 @@ export async function GET(req: Request) {
 | Vercel CLI | CI only (`deploy-preview.yml`, `deploy-production.yml`) | ✗ Not installed globally | — | Install per-CI-run via `pnpm add -D vercel@51.2.1` — NO global install needed, runs via `pnpm exec vercel …` |
 | Git | All version control | ✓ (repo is already initialized) | — | — |
 | Sentry project + DSN + auth token | OBS-01 | ⚠ Unknown | — | **Blocks first CI run until human creates project.** See Open Question 2. |
-| PostHog EU project + API key | OBS-02 | ⚠ Unknown | — | **Blocks first CI run until human creates project.** See Open Question 2. |
+| PostHog US project + API key | OBS-02 | ⚠ Unknown | — | **Blocks first CI run until human creates project.** See Open Question 2. |
 | Supabase project + branching enabled | INFRA-13, INFRA-15 | ⚠ Unknown | — | **Blocks first CI run until human enables branching.** See Open Question 2. |
 | Vercel project + git integration OFF | INFRA-11 | ⚠ Unknown | — | **Blocks first CI run until human creates project and toggles git integration OFF.** See Open Question 2. |
 | Inngest account + signing key | INFRA-10 (serve handler only in Phase 1) | ⚠ Unknown | — | Phase 1 only needs the serve handler to boot with a hello-world fn; full sync happens in `deploy-production.yml` once keys are issued. |
@@ -1169,7 +1169,7 @@ Each Phase 1 success-criterion invariant maps to a concrete validation signal. A
 | SC-4 part b / LGPD-13 | Scrubbed fields absent from the issue payload | e2e | Same Playwright test asserts Sentry event body (via issues API) contains `[Filtered]` where `email`/`password`/`photo_url`/`token`/`Authorization`/`Cookie` would appear, and `trace_id` IS present (control) | ❌ Wave 0 |
 | SC-4 part c / LGPD-13 | `Sentry.setUser({ id })` only — no email | unit | Unit test imports `sentry.client.config.ts` + `sentry.server.config.ts`, intercepts a mock `Sentry.init` call, asserts `sendDefaultPii: false` and that `beforeSend` strips `event.user.email` | ❌ Wave 0 |
 | SC-4 part d / LGPD-13 | Request bodies dropped on `/api/v1/identifications/*` | unit | Unit test calls the `beforeSend` function with a synthetic event whose `request.url` matches `/api/v1/identifications/abc` and a populated `request.data`, asserts the returned event has `request.data === undefined` | ❌ Wave 0 |
-| SC-4 part e / OBS-02 | PostHog EU client + `posthog-node` server are connected | e2e + unit | Unit: PostHog client factory asserted to use `api_host: 'https://eu.posthog.com'` + `opt_out_capturing_by_default: true`. E2E: smoke fires a ping event via server-side `posthog-node` from a health endpoint, asserts HTTP 200 to `eu.posthog.com` (mocked via Playwright route() OR verified via PostHog events API) | ❌ Wave 0 |
+| SC-4 part e / OBS-02 | PostHog US client + `posthog-node` server are connected | e2e + unit | Unit: PostHog client factory asserted to use `api_host: 'https://us.i.posthog.com'` + `opt_out_capturing_by_default: true`. E2E: smoke fires a ping event via server-side `posthog-node` from a health endpoint, asserts HTTP 200 to `us.i.posthog.com` (mocked via Playwright route() OR verified via PostHog events API) | ❌ Wave 0 |
 | SC-5 part a / INFRA-20, D-23 | Closed error-code registry exists as single importable source | unit | Unit test imports `ErrorCode` from `@/shared/errors/codes`, asserts all 21 codes from PRD §5 present, asserts `typeof ErrorCode` is `'object'` (not TS `enum`), asserts `INTERNAL_ONLY_CODES.has('cost_ceiling_reached')` + `INTERNAL_ONLY_CODES.has('breaker_open')` | ❌ Wave 0 |
 | SC-5 part b / INFRA-18, D-20–D-22 | Standard security headers apply to every response | e2e | Playwright smoke: `page.goto('/')` then assert `response.headers()` contains `content-security-policy-report-only` (preview) or `content-security-policy` (prod), `strict-transport-security`, `x-frame-options: DENY`, `x-content-type-options: nosniff` | ❌ Wave 0 |
 | SC-5 part c / INFRA-16 | `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real | unit | Unit: import `env.ts`, parse `IDENTIFICATION_PROVIDER_MODE='real'`, parse `='stub'`, parse missing (rejects). Also: unit test for `/api/v1/_test/throw` route handler asserts 404 when `IDENTIFICATION_PROVIDER_MODE !== 'stub'` and 500 (thrown) when it is | ❌ Wave 0 |
@@ -1242,7 +1242,7 @@ The following directives from `CLAUDE.md` are treated with the same authority as
 - **pt-BR only at launch — `next-intl` mandatory day one, `<html lang="pt-BR">`** — locked in Pattern 2
 - **Standard security headers via Next.js middleware** — locked in Pattern 6
 - **Sentry (release = git SHA, source maps uploaded post-build from CI because Turbopack requires it), `Sentry.setUser({ id })` only — never email** — locked in Pattern 5; research flags that `sentry-cli` is no longer required (native Turbopack support now exists) but the "post-build from CI" requirement is still satisfied either way
-- **PostHog EU cloud (LGPD residency)** — locked in Standard Stack
+- **PostHog US cloud (LGPD Art. 33 transfer basis (PostHog SCCs))** — locked in Standard Stack
 - **Error codes: Closed registry in PRD §5 — no ad-hoc error codes. `cost_ceiling_reached` and `breaker_open` are INTERNAL-only and surface as `provider_unavailable` to clients** — locked in Pattern 7
 - **Security: narrow per-IP throttle on public auth endpoints — only place `rate_limited` 429 is emitted in MVP** — not Phase 1 scope (Phase 4), but `rate_limited` is in the error-code registry Phase 1 seeds
 - **Timestamps ISO-8601 UTC with `Z`** — not Phase 1 scope, but noted for schema conventions (Phase 2)
@@ -1261,7 +1261,7 @@ CLAUDE.md is consistent with CONTEXT.md and with this research. The only frictio
 - **Context7** `/getsentry/sentry-javascript` — `beforeSend`/`beforeBreadcrumb` scrubbing; v9 migration notes on source map defaults; `Sentry.setUser` pattern
 - **Context7** `/websites/sentry_io_platforms` — Turbopack source map upload via `withSentryConfig` (`@sentry/nextjs@10.13.0+` + `next@15.4.1+`)
 - **Context7** `/inngest/inngest-js` — `serve` from `inngest/next` for App Router
-- **Context7** `/posthog/posthog-js` — `opt_out_capturing_by_default` + EU host + `opt_in_capturing(...)` pattern
+- **Context7** `/posthog/posthog-js` — `opt_out_capturing_by_default` + US host + `opt_in_capturing(...)` pattern
 - **Context7** `/microsoft/playwright.dev` — GitHub Actions `deployment_status` workflow + `PLAYWRIGHT_TEST_BASE_URL`
 - **Context7** `/supabase/cli` — `supabase branches create/delete` commands
 - **Context7** `/websites/vercel` — `vercel deploy --prebuilt` + GitHub Actions deploy pattern; security headers conformance rules
@@ -1279,7 +1279,7 @@ CLAUDE.md is consistent with CONTEXT.md and with this research. The only frictio
 ### Tertiary (LOW confidence — flagged for plan-time verification)
 
 - Exact Supabase branching CLI flag surface (`--experimental`) — flagged in Assumptions Log A3 and Open Question 2
-- Exact current PostHog EU hostnames for CSP allowlist — flagged in Open Question 4
+- Exact current PostHog US hostnames for CSP allowlist — flagged in Open Question 4
 - TypeScript 5.x minor version pinned by `create-next-app@16` — flagged in Assumptions Log A1
 
 ## Metadata

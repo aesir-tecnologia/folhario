@@ -515,12 +515,12 @@
         {
           "id": "Q-20",
           "title": "CSP (Content-Security-Policy) posture",
-          "context": "INFRA-18 says 'standard security headers'. CSP is the hardest to get right. Strict nonce-based CSP breaks some Next features (inline bootstrap scripts). Report-only mode lets you observe before enforcing. `connect-src` must allow Sentry, PostHog EU, Supabase URLs.",
+          "context": "INFRA-18 says 'standard security headers'. CSP is the hardest to get right. Strict nonce-based CSP breaks some Next features (inline bootstrap scripts). Report-only mode lets you observe before enforcing. `connect-src` must allow Sentry, PostHog US, Supabase URLs.",
           "options": [
             {
               "id": "a",
               "label": "Strict nonce-based CSP, enforced from day 1",
-              "description": "Next 16 supports nonce generation in middleware. Highest security. Some friction with third-party scripts. Allowlist PostHog EU, Sentry, Supabase upfront."
+              "description": "Next 16 supports nonce generation in middleware. Highest security. Some friction with third-party scripts. Allowlist PostHog US, Sentry, Supabase upfront."
             },
             {
               "id": "b",

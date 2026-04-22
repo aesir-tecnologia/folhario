@@ -242,6 +242,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
 - [ ] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
 - [ ] **INFRA-25**: Launch-blocker checklist surfaced in repo (pricing TBD, NFS-e strategy, DPO appointment, privacy policy + ToS authoring, ≥200 care guides) tracked separately from phases (§24)
+- [ ] **INFRA-26**: Local dev environment: `supabase start` launches local Postgres + Auth + Storage + Studio in Docker; `supabase db reset` rebuilds from migrations; developer can run the full app locally against this stack without cloud Supabase (§20)
 
 ## v2 Requirements
 
@@ -466,8 +467,8 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | NOTIF-06 | Phase 10 | Pending |
 | OBS-01 | Phase 1 | Pending |
 | OBS-02 | Phase 1 | Pending |
-| OBS-03 | Phase 12 | Pending |
-| OBS-04 | Phase 12 | Pending |
+| OBS-03 | Phase 13 | Pending |
+| OBS-04 | Phase 13 | Pending |
 | OBS-05 | Phase 1 | Pending |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
@@ -503,12 +504,12 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-07 | Phase 2 | Pending |
 | INFRA-08 | Phase 2 | Pending |
 | INFRA-09 | Phase 2 | Pending |
-| INFRA-10 | Phase 2 | Pending |
-| INFRA-11 | Phase 1 | Pending |
+| INFRA-10 | Phase 4 | Pending |
+| INFRA-11 | Phase 12 | Pending |
 | INFRA-12 | Phase 1 | Pending |
-| INFRA-13 | Phase 1 | Pending |
-| INFRA-14 | Phase 1 | Pending |
-| INFRA-15 | Phase 1 | Pending |
+| INFRA-13 | Phase 12 | Pending |
+| INFRA-14 | Phase 12 | Pending |
+| INFRA-15 | Phase 12 | Pending |
 | INFRA-16 | Phase 1 | Pending |
 | INFRA-17 | Phase 1 | Pending |
 | INFRA-18 | Phase 1 | Pending |
@@ -518,18 +519,19 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-22 | Phase 2 | Pending |
 | INFRA-23 | Phase 1 | Pending |
 | INFRA-24 | Phase 2 | Pending |
-| INFRA-25 | Phase 12 | Pending |
+| INFRA-25 | Phase 13 | Pending |
+| INFRA-26 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 196 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 25)
-- Mapped to phases: 196 (100%) ✓
+- v1 requirements: 197 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 26)
+- Mapped to phases: 197 (100%) ✓
 - Unmapped: 0
 
 **Per-phase totals:**
-- Phase 1 (Foundation & CI/CD): 16 — INFRA-01,02,11,12,13,14,15,16,17,18,20,23 + OBS-01,02,05 + LGPD-13
-- Phase 2 (Data Layer): 12 — INFRA-03,04,05,06,07,08,09,10,19,21,22,24
+- Phase 1 (Foundation): 13 — INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02,05 + LGPD-13
+- Phase 2 (Data Layer): 11 — INFRA-03,04,05,06,07,08,09,19,21,22,24
 - Phase 3 (Design System): 15 — UI-01,02,03,14,17,18,19,20,21,22,23,24,25 + OFF-09,10
-- Phase 4 (IAM): 18 — AUTH-01..15 + NOTIF-01,02 + UI-13
+- Phase 4 (IAM): 19 — AUTH-01..15 + INFRA-10 + NOTIF-01,02 + UI-13
 - Phase 5 (Catalog): 16 — CAT-01..11 + OFF-08 + UI-04,07,08,11
 - Phase 6 (Identification + Cost): 35 — IDENT-01..21 + COST-01..10 + LGPD-09 + UI-06,12,15
 - Phase 7 (Care Guides): 12 — CARE-01..10 + UI-09,16
@@ -537,9 +539,11 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 - Phase 9 (Offline Queue): 7 — OFF-01..07
 - Phase 10 (Billing): 24 — SUB-01..23 + NOTIF-06
 - Phase 11 (LGPD): 12 — LGPD-01..08,10,11,12,14
-- Phase 12 (Observability + Launch): 3 — OBS-03,04 + INFRA-25
-- **Total: 196 ✓**
+- Phase 12 (Deploy Pipeline): 4 — INFRA-11,13,14,15
+- Phase 13 (Observability + Launch): 3 — OBS-03,04 + INFRA-25
+- **Total: 197 ✓**
 
 ---
 *Requirements defined: 2026-04-14*
 *Last updated: 2026-04-14 after roadmap creation by gsd-roadmapper*
+*Rescoped: 2026-04-22 — Phase 1 trimmed to local-dev foundation; Inngest setup folded into Phase 4 (first async consumer); deploy pipeline extracted to new Phase 12; old Phase 12 renumbered to Phase 13; new INFRA-26 added for local Supabase dev*

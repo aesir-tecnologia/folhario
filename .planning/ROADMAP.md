@@ -38,7 +38,17 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Opening a PR runs `ci.yml`: lint + typecheck + Vitest unit + Vitest integration (against a `postgres:17-alpine` service container) + `next build` + a Playwright smoke against `next start` on the CI runner. No deploy, no preview URL.
   4. A deliberately thrown error in the local app appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes; a PostHog ping event fires from both the client and `posthog-node` server and lands in the PostHog US project — both verified automatically by the Playwright smoke.
   5. The closed error-code registry enum exists as a single importable source, standard security headers (CSP, HSTS, X-Frame-Options) apply to every response, and the `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers so any future environment cannot accidentally burn real provider credit.
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+- [ ] 01-01-PLAN.md -- Repo tooling bootstrap
+- [ ] 01-02-PLAN.md -- Scaffold + TDD error registry + TDD Zod env
+- [ ] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
+- [ ] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
+- [ ] 01-05-PLAN.md -- TDD Sentry scrub (LGPD-13) + three init files
+- [ ] 01-06-PLAN.md -- Hand-rolled PostHog providers
+- [ ] 01-07-PLAN.md -- Diagnostics routes + 4 Playwright E2E specs
+- [ ] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md INFRA-12 amendment
 **UI hint**: no
 
 ### Phase 2: Data Layer & Bounded Contexts

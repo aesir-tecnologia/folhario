@@ -1,6 +1,6 @@
 ---
 phase: 1
-reviewers: [claude]
+reviewers: [claude, codex]
 reviewed_at: 2026-04-23T00:00:00Z
 plans_reviewed:
   - 01-01-PLAN.md
@@ -11,12 +11,9 @@ plans_reviewed:
   - 01-06-PLAN.md
   - 01-07-PLAN.md
   - 01-08-PLAN.md
-caveat: |
-  /gsd-review was invoked with --claude from inside Claude Code. The claude CLI
-  spawned a SEPARATE SESSION (fresh context, no access to this planning
-  conversation) so it is somewhat adversarial — but same model family means
-  less divergence than a Gemini/Codex cross-review would provide. Future
-  reviews should include --gemini and/or --codex when those CLIs are installed.
+caveats:
+  - Claude CLI ran from inside Claude Code in a SEPARATE SESSION (fresh context, no access to this planning conversation). Same model family means less divergence than Gemini/Codex would provide.
+  - Codex CLI (codex-cli 0.122.0) ran with --sandbox read-only and is a genuinely different model family. Treat Claude + Codex as approximate cross-model consensus.
 ---
 
 # Cross-AI Plan Review — Phase 1
@@ -105,21 +102,153 @@ None of these are blockers; all are resolvable with 30–60 minutes of pre-execu
 
 ---
 
+## Codex Review
+
+## Summary
+
+Phase 1 is well-scoped and mostly coherent: the plans establish a usable foundation, the wave ordering is mostly sane, and the landmines are explicitly carried through (`proxy.ts`, `sendDefaultPii: false`, hand-rolled PostHog). The main problem is not lack of detail but a few contract mismatches between the roadmap success criteria and the implementation plans. In particular, the current plans do not fully prove the server-side observability path automatically in CI, and the security-header approach does not satisfy the stated "every response" requirement. There are also a couple of planning inconsistencies that will create avoidable execution friction.
+
+## Strengths
+
+- The phase boundary is disciplined. Phase 1 stays focused on local runnable foundation, CI, basic observability wiring, and guards against accidental provider spend.
+- Landmine handling is strong:
+  - `01-03-PLAN.md` correctly switches to `src/proxy.ts` and names the export `proxy` (L-1).
+  - `01-05-PLAN.md` correctly sticks with `sendDefaultPii: false` and avoids the unreleased `dataCollection` API (L-2).
+  - `01-06-PLAN.md` correctly forbids `@posthog/next` and uses raw `posthog-js` / `posthog-node` (L-3).
+- `01-02-PLAN.md` is the best-designed plan in the set. The error registry and env validation are contract-first, test-first, and give later phases a stable base.
+- Security thinking is generally good for ASVS L1:
+  - Sentry scrub rules are centralized in one module.
+  - Diagnostics routes are gated by environment and additionally hidden from crawlers.
+  - Internal error codes are redacted before crossing the client boundary.
+- CI composition in `01-08-PLAN.md` is pragmatic and intentionally excludes deploy concerns and source-map upload, which matches the stated phase boundary.
+- The plans consistently distinguish what is automated vs what requires human verification. That is useful and realistic for Docker- and dashboard-dependent setup.
+
+## Concerns
+
+- **HIGH**: `01-07-PLAN.md` does not actually satisfy Roadmap Success Criterion 4.
+  - The roadmap says the Sentry error and both client + server PostHog pings are "verified automatically by the Playwright smoke."
+  - `01-07-PLAN.md` explicitly concedes that Playwright cannot assert the server-side Sentry envelope or the server-side PostHog event and falls back to client-only assertions plus manual dashboard inspection.
+  - `01-08-PLAN.md` keeps that gap by moving server verification to a human checkpoint.
+  - Result: the phase as planned does not fully achieve the success criterion it claims to close.
+
+- **HIGH**: `01-03-PLAN.md` / `01-07-PLAN.md` do not meet the "security headers apply to every response" contract.
+  - `src/proxy.ts` in `01-03-PLAN.md` excludes `/api/*`, `_next`, and all static assets via the matcher.
+  - That means `/api/v1/_diagnostics/ping`, `/manifest.webmanifest`, `/sw.js`, and `robots.txt` will not get the headers from `proxy.ts`.
+  - `01-07-PLAN.md` only tests headers on `GET /`.
+  - This is materially weaker than both the roadmap wording and the requirement phrasing.
+
+- **HIGH**: The env-module design in `01-02-PLAN.md` is unsafe for client imports.
+  - `src/shared/config/env.ts` exports both `serverEnv` and `clientEnv`, and it parses `serverEnv` at module load.
+  - `01-06-PLAN.md` imports `clientEnv` into `src/shared/telemetry/posthog-client.ts`, which is used from a client component.
+  - That couples browser code to server-only env parsing and risks build/runtime issues. At minimum it creates an unnecessary shared boundary; in the worst case it breaks client bundling or leaks assumptions into the client graph.
+  - This should be split into server-only and client-only env modules.
+
+- **MEDIUM**: `next-env.d.ts` handling is internally inconsistent.
+  - `01-01-PLAN.md` adds `next-env.d.ts` to `.gitignore`.
+  - `01-03-PLAN.md` lists `next-env.d.ts` under `files_modified`, creates it manually, and verifies its existence.
+  - If it is intentionally ignored, it should not be treated like a tracked artifact. If it is intended to be tracked, it should not be ignored.
+  - This is a clear planning inconsistency that will confuse execution and summaries.
+
+- **MEDIUM**: `01-01-PLAN.md` has inconsistent env-var counts.
+  - It says `.env.example` contains 18 variables.
+  - The listed keys total 19.
+  - `01-02-PLAN.md` then switches to 19.
+  - This will cause flaky verification or pointless churn.
+
+- **MEDIUM**: `OBS-05` is declared as Phase 1 scope but not actually implemented in these plans.
+  - The roadmap and requirement list include `OBS-05`.
+  - `01-05-PLAN.md` mentions alerting, but the actual alert rules and operator-email path are deferred.
+  - `01-08-PLAN.md` does not provision or verify alerting.
+  - If the intent is "partial groundwork only," the requirement mapping should say that explicitly, otherwise this phase claims more than it ships.
+
+- **MEDIUM**: `01-04-PLAN.md` adds `postgres@3` as a dev dependency, but the architectural posture implies it will become a runtime dependency almost immediately.
+  - This is not wrong for Phase 1, but it creates avoidable dependency churn one phase later.
+  - If the repo is already establishing the canonical DB driver choice, there is little value in classifying it as dev-only first.
+
+- **LOW**: The plan set is over-specified in places that do not materially reduce risk.
+  - Example: several plans prescribe exact file contents, exact commands, exact summary formats, and commit shapes.
+  - That increases maintenance cost when one upstream package or convention changes.
+  - The TDD plans justify some of this, but the execute plans could be a bit looser.
+
+- **LOW**: The roadmap excerpt says "Plans: 8 plans" but only lists 7 plan filenames.
+  - The review packet includes `01-08-PLAN.md`, so the roadmap list is stale.
+  - Minor, but it signals traceability drift.
+
+## Suggestions
+
+- Split env handling before implementation:
+  - `src/shared/config/server-env.ts`
+  - `src/shared/config/client-env.ts`
+  - Keep parsing isolated to the side that owns the variables.
+  - Make client telemetry modules import only the client env module.
+
+- Change the security-header strategy so it actually covers all required responses.
+  - Keep locale handling in `src/proxy.ts` if needed.
+  - Move headers to `next.config.ts headers()` or otherwise ensure pages, API routes, and static file responses all get them.
+  - Then expand `tests/e2e/security-headers.spec.ts` to cover `/`, `/api/v1/_diagnostics/ping`, and one static asset like `/manifest.webmanifest`.
+
+- Rework observability verification so server-side transport is automatically testable in CI.
+  - Best option: point Sentry/PostHog server traffic at a local mock collector during Playwright runs, then assert both client and server payloads from that collector.
+  - If that is too much for Phase 1, downgrade the roadmap success criterion now instead of pretending it is automated.
+
+- Fix the `next-env.d.ts` contradiction.
+  - Either remove it from `.gitignore` and track it intentionally, or stop listing it as a tracked artifact and let Next generate it locally/CI-only.
+
+- Normalize the `.env.example` key count across `01-01-PLAN.md` and `01-02-PLAN.md`.
+  - Pick 19 and make every verify block use the same number.
+
+- Reconcile `OBS-05` with what is actually shipping.
+  - Either remove it from Phase 1, or explicitly define the Phase 1 deliverable as "Sentry foundation only; alert rules deferred."
+  - Right now the traceability is overstated.
+
+- Simplify the CI/human split in `01-08-PLAN.md`.
+  - The workflow should be the acceptance gate.
+  - External dashboard inspection is useful, but if it is required to declare success, the phase is not truly CI-verified.
+
+## Risk Assessment
+
+**Overall risk: MEDIUM**
+
+The phase is close to executable and the sequencing is mostly sound, but there are two substantive gaps against the stated acceptance bar: automatic verification of server-side observability, and security headers on "every response." Those are not cosmetic issues; they affect whether the phase truly meets Roadmap Success Criteria 4 and 5. The rest of the concerns are fixable planning inconsistencies rather than architectural failures, so I would not rate the phase as high risk, but I would not start implementation without tightening those contracts first.
+
+---
+
 ## Consensus Summary
 
-Only one reviewer (Claude CLI, separate session) was invoked this round. Treat this as a single-source review rather than cross-model consensus. For multi-model consensus, re-run with `--gemini` and/or `--codex` once those CLIs are installed.
+Two reviewers: **Claude CLI** (separate session, same model family) + **Codex CLI** (different model family). Treat overlap as approximate cross-model consensus.
 
-### Agreed Strengths
+### Agreed Strengths (both reviewers)
 
-*(single-reviewer — strengths listed in the Claude Review above)*
+- **Landmine compliance:** L-1 `proxy.ts` export, L-2 `sendDefaultPii: false`, L-3 no `@posthog/next` — both reviewers verified the verification-level grep gates.
+- **Load-bearing LGPD-13 TDD in Plan 05:** both called out the scrub contract as correctly encoded in tests before implementation.
+- **Scoped phase boundary:** both recognized the phase stays focused on local-dev foundation without drifting into deploy/Drizzle/Inngest/Stripe scope.
+- **CI composition:** both flagged Plan 08's intentional exclusion of source-map upload as correct for Phase 1.
 
-### Agreed Concerns
+### Agreed Concerns (both reviewers, HIGH)
 
-*(single-reviewer — concerns listed in the Claude Review above)*
+1. **SC-4 server-side transport not auto-verified by Playwright.** Plans 07 + 08 concede server-originated Sentry/PostHog events require dashboard checks. Roadmap wording says "both verified automatically." This is the headline gap — user decision needed.
+2. **OBS-05 silent deferral.** Phase 1 claims OBS-05 (alert rules) as in-scope but no plan implements it. Must either add implementation tasks to Plan 05 OR log deferral in CONTEXT.md `## Deferred Ideas` with user sign-off.
 
-### Divergent Views
+### Divergent / Codex-only (not caught by Claude)
 
-*(not applicable with one reviewer)*
+- **HIGH — Security-header coverage gap:** Codex noticed `src/proxy.ts`'s matcher excludes `/api/*`, `_next`, and static assets. That means `/api/v1/_diagnostics/ping`, `/manifest.webmanifest`, `/sw.js`, and `robots.txt` get no headers, and Plan 07 only tests headers on `GET /`. Success Criterion #5 says "standard security headers apply to every response" — plans as written don't meet it. **User decision needed.**
+- **HIGH — Client-bundle env import risk:** Codex flagged that `src/shared/config/env.ts` parses `serverEnv` at module load but `01-06` imports `clientEnv` from the same module into a client component. Risk: breaks client bundling or leaks server-only parsing into the browser graph. Suggestion: split into `server-env.ts` + `client-env.ts`.
+- **MEDIUM — `next-env.d.ts` contradiction:** 01-01 `.gitignore`'s it, 01-03 manually creates it + lists in `files_modified`. Contradictory.
+- **MEDIUM — `.env.example` variable count drift:** 01-01 says 18 vars, 01-02 says 19. Fix: normalize both to one count.
+- **MEDIUM — `postgres@3` as devDependency in 01-04:** will become runtime dep in Phase 2; avoidable churn.
+
+### Divergent / Claude-only (not caught by Codex)
+
+- **HIGH — eslint-config-next@16 flat-config shape:** Claude flagged `[...next(), prettier]` syntax assumes a callable; v16 API may export array directly. Pre-flight spike needed.
+- **MEDIUM — Cross-plan file mutations not in `depends_on`:** vitest.config.ts (01-01→02), instrumentation.ts (01-03→05), layout.tsx (01-03→06), REQUIREMENTS.md (01-08). No single matrix surfaces this.
+- **MEDIUM — Wave 2 `pnpm build` race:** 01-03 depends on 01 only; should add 02 defensively.
+- **MEDIUM — Dependency version pins** may not exist (`typescript@6`, `eslint@10`, `lint-staged@16`, `@types/node@22`, `@commitlint/cli@20`).
+- **MEDIUM — Plan 07 Sentry E2E CI-gated only** (local runs pass trivially with 0 envelopes).
+- **MEDIUM — Plan 01 Task 4 commitlint verification** uses stateful `git stash` loop — replace with stateless `commitlint --stdin --strict`.
+- **MEDIUM — Playwright webServer probe at `/__diag`** — 404s between Plans 1–7.
+- **LOW — Plan 04 cloud-Supabase hostname guard missing.**
+- **LOW — Plan 05 `type: tdd` semantics:** only Task 1 is TDD; Tasks 2+3 are `type="auto"`. Consider splitting into 05a + 05b.
+- **LOW — Plan 08 `actions/checkout@v5` + `setup-node@v5`** — v5 of setup-node not yet released.
 
 ---
 
@@ -129,26 +258,33 @@ Ordered by severity and ease of fix — for use with `/gsd-plan-phase 1 --review
 
 ### Must resolve before execution
 
-1. **HIGH — OBS-05 deferral** — surface to user and either (a) add implementation tasks to Plan 05, or (b) log in CONTEXT.md `## Deferred Ideas` with explicit user sign-off. **User decision required.**
-2. **HIGH — eslint-config-next v16 flat-config shape** — spike: `pnpm create next-app@16.2.4 /tmp/next-check` and inspect generated `eslint.config.mjs`. Update Plan 01-01 Task 2 Step 2 import pattern if needed.
-3. **HIGH — SC-4 auto-verification gap** — user decision: (a) accept the documented limitation + amend ROADMAP SC-4 wording to split client (auto) vs server (dashboard check), OR (b) ship a CI-local HTTP relay spec (mitmproxy or mock ingest sidecar) that intercepts both client + server envelopes.
+1. **HIGH — SC-4 auto-verification gap (BOTH reviewers)** — user decision: (a) accept + amend ROADMAP SC-4 to split client (auto) vs server (dashboard), OR (b) add a CI-local HTTP mock collector spec (mitmproxy or local ingest sidecar) that intercepts both client + server envelopes.
+2. **HIGH — OBS-05 deferral (BOTH reviewers)** — either (a) add alert-rule implementation tasks to Plan 05, or (b) log in CONTEXT.md `## Deferred Ideas` with explicit user sign-off. **User decision required.**
+3. **HIGH — Security-header coverage (Codex)** — widen `proxy.ts` matcher OR move headers to `next.config.ts headers()` to cover `/`, `/api/*`, static assets (`/manifest.webmanifest`, `/sw.js`, `robots.txt`). Expand `tests/e2e/security-headers.spec.ts` accordingly. SC-5 ships at risk otherwise.
+4. **HIGH — Client/server env module split (Codex)** — split `src/shared/config/env.ts` into `server-env.ts` (parses server-only vars) + `client-env.ts` (parses only `NEXT_PUBLIC_*`). Update 01-02 Task 2 and 01-06 imports.
+5. **HIGH — eslint-config-next@16 flat-config shape (Claude)** — pre-flight spike: `pnpm create next-app@16.2.4 /tmp/next-check` and inspect generated `eslint.config.mjs`. Fix 01-01 Task 2 Step 2 import pattern if needed.
 
 ### Should resolve (low cost, high payoff)
 
-4. **MEDIUM — Plan 03 `depends_on: [01, 02]`** — defensive edge to prevent Wave 2 build race.
-5. **MEDIUM — File-ownership matrix** — add `01-FILE-MATRIX.md` or append to CONTEXT.md Integration Points listing cross-plan edits (vitest.config.ts, src/instrumentation.ts, src/app/layout.tsx, REQUIREMENTS.md).
-6. **MEDIUM — Plan 01 Task 4 Step 5 commitlint verification** — replace stash-based check with `echo "bad message" \| pnpm exec commitlint --stdin --strict`.
-7. **MEDIUM — Playwright webServer probe URL** — change `webServer.url` default from `/__diag` to `/` in Plan 01's playwright.config.ts; move stub-mode guard into route handlers only.
-8. **MEDIUM — Pin exact patch versions** — add a 01-01 sub-step that runs `npm view <pkg>@<major> version` and records resolved patches in 01-01-SUMMARY.md.
-9. **MEDIUM — Plan 07 local-mode Sentry assertion** — empty DSN → zero envelopes sanity check.
+6. **MEDIUM — `next-env.d.ts` contradiction (Codex)** — either track or ignore consistently; remove from 01-03 `files_modified` OR remove from 01-01 `.gitignore`.
+7. **MEDIUM — `.env.example` var-count drift (Codex)** — normalize 01-01 and 01-02 to the same count.
+8. **MEDIUM — Plan 03 `depends_on: [01, 02]` (Claude)** — defensive edge to prevent Wave 2 build race.
+9. **MEDIUM — File-ownership matrix (Claude)** — add `01-FILE-MATRIX.md` listing cross-plan edits (vitest.config.ts, src/instrumentation.ts, src/app/layout.tsx, REQUIREMENTS.md).
+10. **MEDIUM — Plan 01 Task 4 Step 5 commitlint (Claude)** — replace stash-based check with `echo "bad message" \| pnpm exec commitlint --stdin --strict`.
+11. **MEDIUM — Playwright webServer probe URL (Claude)** — change default from `/__diag` to `/`; move stub-mode guard into route handlers only.
+12. **MEDIUM — Pin exact patch versions (Claude)** — add 01-01 sub-step that runs `npm view <pkg>@<major> version` and records resolved patches.
+13. **MEDIUM — Plan 07 local-mode Sentry assertion (Claude)** — empty DSN → zero envelopes sanity check.
+14. **MEDIUM — `postgres@3` runtime-vs-dev (Codex)** — install as production dep in 01-04 to avoid Phase 2 churn.
 
 ### Nice to have
 
-10. **LOW — Plan 04 cloud-Supabase hostname guard** — refuse integration run against `supabase.co` URLs.
-11. **LOW — Plan 05 type semantics** — split into `05a tdd` + `05b execute` for cleaner frontmatter.
-12. **LOW — Plan 02 `.env.example` POSTHOG_HOST blank vs non-blank** — decide + align with secret-pattern test.
-13. **LOW — Plan 07 unused GET handler** on `/api/v1/_diagnostics/ping` — either exercise or drop.
-14. **LOW — Plan 08 actions/checkout@v5 + setup-node@v5 version availability** — verify at scaffold.
+15. **LOW — Plan 04 cloud-Supabase hostname guard (Claude)** — refuse integration run against `supabase.co` URLs.
+16. **LOW — Plan 05 type semantics (Claude)** — split into `05a tdd` + `05b execute` for cleaner frontmatter.
+17. **LOW — Plan 02 `.env.example` POSTHOG_HOST blank vs non-blank (Claude)** — decide + align with secret-pattern test.
+18. **LOW — Plan 07 unused GET handler (Claude)** on `/api/v1/_diagnostics/ping` — either exercise or drop.
+19. **LOW — Plan 08 `actions/checkout@v5` + `setup-node@v5` (Claude)** — verify v5 of setup-node is released at scaffold time (v4 is current stable).
+20. **LOW — ROADMAP Phase 1 plan list stale (Codex)** — shows 7 plan filenames but 8 exist. Update.
+21. **LOW — Plans over-specified in places (Codex)** — execute plans could be looser on exact commit shapes / summary formats.
 
 ---
 

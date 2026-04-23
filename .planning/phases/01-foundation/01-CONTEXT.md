@@ -2,6 +2,7 @@
 
 **Gathered:** 2026-04-22 (power mode)
 **Status:** Ready for planning
+**Revised:** 2026-04-23 — cross-AI reviews applied (`/gsd-plan-phase 1 --reviews`)
 
 <domain>
 ## Phase Boundary
@@ -10,7 +11,7 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 - TypeScript strict + pt-BR locale + `@serwist/next` PWA wiring
 - Bounded-context folder layout from PRD §2 established (empty)
 - Sentry + PostHog wired and **verified in CI only** (disabled locally)
-- Security headers applied via Next middleware
+- Security headers applied via `next.config.ts` `headers()` (every response)
 - Closed error-code registry from PRD §5 as a single importable source
 - `IDENTIFICATION_PROVIDER_MODE` env gate
 - `ci.yml` running lint + typecheck + Vitest unit + Vitest integration (Postgres service container) + `next build` + local-build Playwright smoke
@@ -66,18 +67,22 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 - **D-21:** PostHog autocapture **disabled**. Only the explicit PRD §20 taxonomy events fire. Smallest payload, safest LGPD stance.
 - **D-22:** Sentry PII scrubbing = **SDK built-ins (`denyUrls`, `sendDefaultPii: false`) + minimal `beforeSend` hook** that drops request bodies on `/api/v1/identifications/*`. Scrub rules cover `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`. `Sentry.setUser({ id })` only — never email.
 
-### Security Headers Middleware
+### Security Headers (revised 2026-04-23 per user decision 3)
 - **D-23:** **No CSP at Phase 1.** CSP deferred to a later phase (see Deferred Ideas). User directive: "CSP is a bitch — defer to as late as possible."
-- **D-24:** Header set = **minimum viable**: HSTS + `X-Frame-Options: DENY` + `X-Content-Type-Options: nosniff`. `Referrer-Policy` and `Permissions-Policy` deferred to a later hardening phase (see Deferred Ideas).
+- **D-24 (revised):** Header set = **minimum viable**: HSTS + `X-Frame-Options: DENY` + `X-Content-Type-Options: nosniff` + `Referrer-Policy: strict-origin-when-cross-origin` + minimal `Permissions-Policy`. **Headers are declared in `next.config.ts` `headers()` with `source: '/(.*)'` so they apply to EVERY response (pages, API routes, `/manifest.webmanifest`, `/sw.js`, `/robots.txt`).** Locale handling stays in `src/proxy.ts`; security headers DO NOT live there. Expanded wording resolves the cross-AI review consensus gap that proxy-based headers excluded `/api/*` and static assets.
 
 ### CI Pipeline Design
 - **D-25:** Integration tests run against **`postgres:17-alpine`** service container in `ci.yml`. Resolves the ROADMAP success-criterion-3 vs INFRA-12/PRD §20 conflict in favor of Postgres 17 to match local Supabase. **The version is pinned locally too** — the Supabase CLI devDependency (D-16) locks Postgres 17. **Requirement doc update needed:** INFRA-12 says `postgres:16-alpine`; update to `postgres:17-alpine`. Configure the service container with **only needed features** (no extensions beyond what Phase 2's Drizzle schema will require).
 - **D-26:** Playwright browsers = **Chromium only** in Phase 1 CI smoke. WebKit + Firefox can be added later when iOS-specific concerns emerge.
-- **D-27 (Claude's Discretion):** Phase 1 Playwright smoke asserts via **dedicated diagnostics routes** — a throwaway `/__diag` client page + `/api/v1/_diagnostics/ping` server route that together trigger `Sentry.captureException` and `posthog.capture` on both layers. Playwright intercepts outbound transport calls to Sentry + PostHog endpoints and asserts: (a) the events fire, (b) scrubbing removed the forbidden fields. Routes are gated to CI/preview via an env flag and never exposed in production. _(User instructed Claude to decide; this is the clean, testable approach.)_
+- **D-27 (Claude's Discretion):** Phase 1 Playwright smoke asserts via **dedicated diagnostics routes** — a throwaway `/__diag` client page + `/api/v1/_diagnostics/ping` server route that together trigger `Sentry.captureException` and `posthog.capture` on both layers. Playwright intercepts outbound transport calls to Sentry + PostHog endpoints and asserts: (a) client events fire, (b) scrubbing removed the forbidden fields. Routes are gated to CI/preview via an env flag and never exposed in production. _(User instructed Claude to decide; this is the clean, testable approach.)_
+- **D-27-a (added 2026-04-23 per user decision 1):** Server-side observability automatic proof lands as a **Vitest integration test** (`tests/integration/diagnostics-server-probe.integration.test.ts`) that imports the ping route handler directly as a function, mocks `posthog-node` + `@sentry/nextjs`, and asserts both spies were invoked. The Playwright smoke continues to validate the client transport; the integration test is the automatic server-side proof. Manual Sentry + PostHog dashboard verification is recorded with screenshot links in `01-08-SUMMARY.md` as belt-and-suspenders (not as the only signal).
 - **D-28:** CI caching + concurrency = **pnpm store cache + Playwright browser cache via `actions/cache`** + **GitHub Actions concurrency group per PR** (cancels superseded in-flight runs).
 
 ### Env Management
-- **D-29:** Typed env validation = **custom `src/shared/config/env.ts` with Zod**. No extra dep (Zod is already pulled in for route body validation via Phase 2). Fails fast at module load. Splits server vs client via `NEXT_PUBLIC_` prefix convention.
+- **D-29 (revised 2026-04-23 per reviews Action 4):** Typed env validation = **two separate modules** in `src/shared/config/`:
+  - `server-env.ts` parses server-only vars (DATABASE_URL, DATABASE_POOL_URL, SUPABASE_SERVICE_ROLE_KEY, SENTRY_AUTH_TOKEN/ORG/PROJECT, IDENTIFICATION_PROVIDER_MODE, …) with Zod.
+  - `client-env.ts` parses only `NEXT_PUBLIC_*` vars with Zod.
+  - Client modules (`src/shared/telemetry/posthog-client.ts`, any `"use client"` file) MUST import only from `./client-env` — never touch `server-env`. Prevents server-only env parsing from leaking into the client bundle.
 - **D-30:** `.env.example` = **all PRD §20 vars listed with dummy values**. Forward-looking onboarding artifact. Comments group vars by phase of first use so devs know which services are live.
 
 ### Claude's Discretion
@@ -85,7 +90,7 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 - Exact Node 22 patch version (lock the latest LTS patch available at Phase 1 start)
 - Exact pnpm version pinned in `packageManager` field (lock latest stable in the 9.x line)
 - Exact commitlint config (start from `@commitlint/config-conventional`; no custom rules yet)
-- Exact Zod schemas in `src/shared/config/env.ts` (shape derived from PRD §20 table, with server/client split)
+- Exact Zod schemas in `src/shared/config/{server,client}-env.ts` (shape derived from PRD §20 table, with server/client split)
 - The exact set of scripts in `package.json` (`dev`, `build`, `start`, `lint`, `typecheck`, `test`, `test:integration`, `test:e2e`, `db:start`, `db:reset`, `db:sync-env`, `supabase`, etc.)
 - Folder structure under `scripts/` for dev helpers
 
@@ -98,8 +103,8 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 
 ### Product + scope
 - `.planning/PROJECT.md` — Core value, constraints, key decisions, launch blockers
-- `.planning/REQUIREMENTS.md` — INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, OBS-05, LGPD-13
-- `.planning/ROADMAP.md` §Phase 1 — Goal + 5 success criteria
+- `.planning/REQUIREMENTS.md` — INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, LGPD-13 (OBS-05 deferred to Phase 13 per revised Deferred Ideas below)
+- `.planning/ROADMAP.md` §Phase 1 — Goal + 5 success criteria (SC-4 revised 2026-04-23 — see Deferred Ideas for rationale)
 - `CLAUDE.md` — Stack lock-in (Next 16.2.3, React 19.2.5, Serwist 9.5.7, Sentry 10.48.0, PostHog 1.368.0, next-intl 4.9.1, Vitest 4.1.4, Playwright 1.59.1)
 
 ### Repo layout + tech stack
@@ -130,15 +135,15 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 
 ### Reusable Assets
 - **`.env`** at repo root already contains slots for `NEXT_PUBLIC_SUPABASE_URL`, `SENTRY_*`, `INNGEST_*`, `VERCEL_*`, `IDENTIFICATION_PROVIDER_MODE`, `DATABASE_URL`/`DATABASE_POOL_URL`. Variable names match PRD §20 — `.env.example` per D-30 should mirror these names. Developer has already provisioned real credentials; scripts must never overwrite `.env` itself (sync only to `.env.local`).
-- **No pre-existing code** at `src/`, no `package.json`, no `tsconfig.json`. Phase 1 creates the repo scaffold from zero. `.gitignore` contains only `.DS_Store` — Phase 1 must extend it (`node_modules`, `.env.local`, `.next`, `coverage`, `playwright-report`, `test-results`, `.supabase`, etc.).
+- **No pre-existing code** at `src/`, no `package.json`, no `tsconfig.json`. Phase 1 creates the repo scaffold from zero. `.gitignore` contains only `.DS_Store` — Phase 1 must extend it (`node_modules`, `.env.local`, `.next`, `coverage`, `playwright-report`, `test-results`, `.supabase`, etc.). `next-env.d.ts` is NOT added to `.gitignore` and is NOT tracked — Next regenerates it automatically on every `next build` / `next dev` (per reviews Action 6).
 
 ### Established Patterns
 - **None yet** — this is the founding phase. Patterns established here propagate to every later phase.
 
 ### Integration Points
 - `src/shared/config/errors.ts` (D-10, D-12) — imported by every future route handler
-- `src/shared/config/env.ts` (D-29) — imported at boot by server + client entry points
-- Middleware at `src/middleware.ts` — security headers (D-24) + placeholder for Phase 2's JWT verification on `/api/v1/*`
+- `src/shared/config/server-env.ts` + `client-env.ts` (D-29 revised) — imported at boot by server + client entry points respectively; NEVER cross-imported
+- `src/proxy.ts` — LOCALE ROUTING ONLY (D-24 revised). Security headers declared in `next.config.ts` `headers()` so they apply to every response including `/api/*` and static assets.
 - `src/contexts/*/` empty dirs — Phase 2 fills `infrastructure/db` and `api/`; Phases 4+ fill feature code
 - `scripts/sync-supabase-env.sh` (D-18) — invoked via `pnpm db:sync-env`; other phases may add to `scripts/` as needed
 
@@ -151,8 +156,9 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 - **Postgres version lock parity** (user note on Q-25): local Supabase runs Postgres 17 → CI Postgres service container runs Postgres 17 → both pinned to the same major. "Enable only the needed features" on the CI service container — no Postgres extensions beyond what the Drizzle schema (Phase 2) demands. Phase 1 pins the service image but doesn't yet install extensions (there's no schema yet).
 - **Local dev never pings Sentry or PostHog** — this is a deliberate developer-experience choice. Devs who need to eyeball scrubbing can flip env vars on a per-session basis, but the committed `.env.local` template keeps them blank.
 - **Diagnostics routes are CI/preview-only** — `/__diag` and `/api/v1/_diagnostics/ping` must refuse to render in production (`IDENTIFICATION_PROVIDER_MODE !== 'stub'` OR equivalent guard) to avoid surface area leakage.
-- **`.env.example` mirrors PRD §20** — variable names must match exactly (case-sensitive) so copy-paste into real `.env` works.
+- **`.env.example` mirrors PRD §20** — variable names must match exactly (case-sensitive) so copy-paste into real `.env` works. Variable count normalized to **19** across all plans (Plans 01 and 02 previously disagreed; Plan 02 was canonical — per reviews Action 7).
 - **Zod for env validation** (not @t3-oss/env-nextjs) — aligns with D-29 "no extra dep" plus Zod will be reused for route body validation starting Phase 2.
+- **`eslint-config-next@16` flat-config shape** — pre-flight verify via `pnpm create next-app@16.2.4` output before Plan 01 Task 2 Step 0; commit a single comment `// verified from create-next-app@16.2.4 output` on line 1 of `eslint.config.mjs` documenting the verified import pattern (explicit exception to "no comments" rule per user decision + reviews Action 5).
 
 </specifics>
 
@@ -161,8 +167,10 @@ A Next 16 App Router skeleton that a developer can run **locally end-to-end** �
 
 Moved out of Phase 1 scope for later phases / hardening passes:
 
+- **OBS-05 — Sentry + PostHog alert rules** — **Deferred by user decision on 2026-04-23 during `/gsd-plan-phase 1 --reviews`.** Alert rules need real traffic to tune thresholds meaningfully, and Phase 1 ships only diagnostics smoke traffic. Moved to **Phase 13: Observability Rollups & Launch Readiness** where production telemetry drives rule definition. Phase 1's Plan 01-08 Task 2 amends `.planning/REQUIREMENTS.md` to re-map OBS-05 from Phase 1 to Phase 13.
+- **SC-4 "both verified automatically" wording** — original ROADMAP SC-4 claimed Playwright verifies both client and server envelopes automatically. Cross-AI review flagged that Playwright's `page.route` intercepts browser-context traffic only; server-originated envelopes are out of scope. **User decision on 2026-04-23:** amend SC-4 to split client-auto (Playwright) vs server-auto (Vitest integration test via D-27-a) vs manual dashboard (belt-and-suspenders in `01-08-SUMMARY.md`). Plan 01-08 edits ROADMAP.md SC-4 wording as part of its task set.
 - **CSP (Content Security Policy)** — explicitly deferred per user directive ("CSP is a bitch, defer to as late as possible"). Candidate landing spots: Phase 3 (once the design-system surface is known and inline styles/scripts are minimized) or a dedicated "security hardening" phase before launch. Should land in report-only mode first, then enforce.
-- **Expanded security headers** (`Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` denying camera/mic/geolocation except for Phase 6's identify route) — user note: "defer this to the very end if possible." Candidate: late-phase hardening pass before Phase 12 (Deploy Pipeline).
+- **Expanded security headers** beyond the D-24 (revised) set — user note: "defer this to the very end if possible." Candidate: late-phase hardening pass before Phase 12 (Deploy Pipeline).
 - **Playwright WebKit + Firefox** — Chromium-only at Phase 1. Add WebKit when iOS PWA install issues surface; add Firefox if usage data justifies.
 - **Full manifest with Paper Cream icon set** — Phase 3 (Design System).
 - **Functional offline shell + precache rules + app-update toast** — Phase 3 (Design System, per UI-17, UI-24, OFF-09, OFF-10).
@@ -179,3 +187,4 @@ Moved out of Phase 1 scope for later phases / hardening passes:
 
 *Phase: 01-foundation*
 *Context gathered: 2026-04-22 (power mode, 29/30 answered + 1 Claude's discretion)*
+*Context revised: 2026-04-23 — applied cross-AI reviews (SC-4 split, OBS-05 defer, security headers move, env split) + D-27-a + D-29 revised + file-matrix companion*

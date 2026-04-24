@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-01 (repo tooling scaffold)
-last_updated: "2026-04-24T01:55:29.478Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-01 complete; 5 commits; 15 files in play
+stopped_at: Completed Phase 1 Plan 01-02 (scaffold + error registry + split env)
+last_updated: "2026-04-24T02:10:00.000Z"
+last_activity: 2026-04-24 -- Phase 01 Plan 01-02 complete; 5 commits; 50 files in play
 progress:
   total_phases: 13
   completed_phases: 0
   total_plans: 9
-  completed_plans: 1
-  percent: 11
+  completed_plans: 2
+  percent: 22
 ---
 
 # Project State
@@ -26,30 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 — foundation — EXECUTING
-Plan: 2 of 9 (next)
+Plan: 3 of 9 (next)
 Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-01 complete; 5 commits; 15 files created/modified
+Last activity: 2026-04-24 -- Phase 01 Plan 01-02 complete; 5 commits; 50 files created/modified
 
-Progress: [█░░░░░░░░░] 11%
+Progress: [██░░░░░░░░] 22%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 1
-- Average duration: ~11 minutes
-- Total execution time: ~11 minutes
+- Total plans completed: 2
+- Average duration: ~11.5 minutes
+- Total execution time: ~23 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 1/9 | ~11 min | ~11 min |
+| 01 | 2/9 | ~23 min | ~11.5 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (~11 min)
-- Trend: —
+- Last 5 plans: 01-01 (~11 min), 01-02 (~12 min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -67,6 +67,10 @@ Recent decisions affecting current work:
 - Plan 01-01: Downgraded `typescript@6 → 5.9.3` and `eslint@10 → 9.39.4` to satisfy transitive peer-dep constraints (Rule 1 fixes during install); matches create-next-app upstream stack
 - Plan 01-01: `lint` script changed from `next lint` (Next 15 form) to `eslint` (Next 16 form; create-next-app@16.2.4 output confirmed)
 - Plan 01-01: `src/placeholder.ts` ships as a TS18003 workaround for empty src/; must be deleted once Plan 01-02 lands real modules
+- Plan 01-02: SPLIT env modules per D-29 revised; `src/shared/config/{server,client}-env.ts` with grep-verified module boundary; no combined `env.ts`
+- Plan 01-02: `src/placeholder.ts` deleted in Task 2 GREEN (bundled with `errors.ts` creation so `tsc --noEmit` never sees an empty `src/`)
+- Plan 01-02: `vitest.config.ts` gained root-level `setupFiles: ["tests/unit/setup-env.ts"]`; `extends: true` propagates into both projects
+- Plan 01-02: Zod `z.string().url()` kept as-is (deprecated in Zod 4.3.6 but functional; migration to top-level `z.url()` deferred — zero behavior delta)
 
 ### Pending Todos
 
@@ -92,6 +96,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T01:55:29.478Z
-Stopped at: Completed Phase 1 Plan 01-01 (repo tooling scaffold); ready to execute 01-02
-Resume file: .planning/phases/01-foundation/01-02-PLAN.md
+Last session: 2026-04-24T02:10:00.000Z
+Stopped at: Completed Phase 1 Plan 01-02 (scaffold + error registry + split env); ready to execute 01-03
+Resume file: .planning/phases/01-foundation/01-03-PLAN.md

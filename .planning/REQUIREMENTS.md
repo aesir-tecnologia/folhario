@@ -218,7 +218,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 ### INFRA — Tech stack, repo layout, DB, CI/CD, security
 
 - [ ] **INFRA-01**: Next.js 16 App Router project scaffolded with React 19, TS strict (+ `noUncheckedIndexedAccess`), pt-BR locale default, PWA via `@serwist/next` (stack)
-- [ ] **INFRA-02**: Repo layout per PRD §2 — `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/` (§2)
+- [x] **INFRA-02**: Repo layout per PRD §2 — `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/` (§2)
 - [ ] **INFRA-03**: Route handlers under `/api/v1` are thin: validate → use-case → HTTP map; no Drizzle in handlers (§2)
 - [ ] **INFRA-04**: Drizzle ORM + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn-pooler compatibility; single shared `db/client.ts` (stack)
 - [ ] **INFRA-05**: Drizzle schema + migrations for all entities in §4 (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription)
@@ -232,11 +232,11 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **INFRA-13**: `deploy-preview.yml`: apply migrations to Supabase branch DB per PR → `vercel pull` → `vercel build` → `vercel deploy --prebuilt` → Playwright against returned preview URL → comment URL on PR (§20)
 - [ ] **INFRA-14**: `deploy-production.yml`: apply migrations to prod Supabase (manual approval gate for destructive) → `vercel deploy --prebuilt --prod` → create Sentry release + upload source maps → sync Inngest functions (§20)
 - [ ] **INFRA-15**: `deploy-preview-cleanup.yml`: delete Supabase branch DB + remove Vercel preview alias on PR close (§20)
-- [ ] **INFRA-16**: `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers to prevent accidental spend in preview (§20)
-- [ ] **INFRA-17**: All env vars from PRD §20 table configured in Vercel + GitHub secrets; none committed, none logged (§20)
+- [x] **INFRA-16**: `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers to prevent accidental spend in preview (§20)
+- [x] **INFRA-17**: All env vars from PRD §20 table configured in Vercel + GitHub secrets; none committed, none logged (§20)
 - [ ] **INFRA-18**: Standard security headers via Next.js middleware (CSP, HSTS, X-Frame-Options, etc.) (§21)
 - [ ] **INFRA-19**: Image pipeline — client-side compression to ≤1MB + EXIF/GPS strip → upload → thumbnail generation on upload → originals preserved for ID accuracy (§11)
-- [ ] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
+- [x] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
 - [ ] **INFRA-21**: Pagination implemented as opaque cursor `?cursor=&limit=`, default 50 / max 200, `next_cursor` in response; clients never parse cursors (§5)
 - [ ] **INFRA-22**: Idempotency-Key support on mutating endpoints; client UUID is the key for offline queue actions (§5, §10)
 - [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
@@ -496,7 +496,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | UI-24 | Phase 3 | Pending |
 | UI-25 | Phase 3 | Pending |
 | INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Complete (01-02) |
 | INFRA-03 | Phase 2 | Pending |
 | INFRA-04 | Phase 2 | Pending |
 | INFRA-05 | Phase 2 | Pending |
@@ -510,11 +510,11 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-13 | Phase 12 | Pending |
 | INFRA-14 | Phase 12 | Pending |
 | INFRA-15 | Phase 12 | Pending |
-| INFRA-16 | Phase 1 | Pending |
-| INFRA-17 | Phase 1 | Pending |
+| INFRA-16 | Phase 1 | Complete (01-02) |
+| INFRA-17 | Phase 1 | Complete (01-02) |
 | INFRA-18 | Phase 1 | Pending |
 | INFRA-19 | Phase 2 | Pending |
-| INFRA-20 | Phase 1 | Pending |
+| INFRA-20 | Phase 1 | Complete (01-02) |
 | INFRA-21 | Phase 2 | Pending |
 | INFRA-22 | Phase 2 | Pending |
 | INFRA-23 | Phase 1 | Pending |

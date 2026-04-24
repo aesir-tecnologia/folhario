@@ -15,7 +15,6 @@ export function initPostHog(): void {
     disable_session_recording: true,
     persistence: "localStorage+cookie",
     person_profiles: "identified_only",
-    request_batching: false,
   });
 
   initialized = true;

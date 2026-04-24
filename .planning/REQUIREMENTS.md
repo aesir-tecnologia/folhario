@@ -185,7 +185,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [x] **OBS-02**: PostHog US cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD Art. 33 international transfer basis documented via PostHog SCCs (§21)
 - [ ] **OBS-03**: PostHog event taxonomy implemented: `signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested` (§20)
 - [ ] **OBS-04**: Scheduled SQL rollups via Inngest cron over `Identification` table → dashboards for confidence distribution, manual correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, augmentation cost (§21, §22)
-- [ ] **OBS-05**: Alerts: Sentry on new issues + error-rate spikes, 80% provider ceiling → Resend operator email, Stripe webhook signature failure → Sentry critical + operator email, Inngest function failure after retries exhausted → Sentry (§21)
+- [ ] **OBS-05**: Alerts: Sentry on new issues + error-rate spikes, 80% provider ceiling → Resend operator email, Stripe webhook signature failure → Sentry critical + operator email, Inngest function failure after retries exhausted → Sentry (§21). *(Deferred from Phase 1 → Phase 13 on 2026-04-23 per user decision; alert rules need real traffic to tune thresholds.)*
 
 ### UI — Screens, design system, accessibility
 
@@ -228,7 +228,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **INFRA-09**: Zod validation at route-handler body/query boundaries; `drizzle-zod` for DB-schema-derived Zod (stack)
 - [ ] **INFRA-10**: Inngest `serve()` handler at `/api/inngest/route.ts`; all async functions registered: `care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push` (§3)
 - [ ] **INFRA-11**: Vercel hosting configured; Vercel git integration DISABLED (stack)
-- [ ] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:16-alpine` service container with Drizzle migrations seeded, build (§20)
+- [x] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:17-alpine` service container with Drizzle migrations seeded, build (§20). *(Amended 2026-04-23 per Phase 1 D-25 — parity with local Supabase Postgres 17.)*
 - [ ] **INFRA-13**: `deploy-preview.yml`: apply migrations to Supabase branch DB per PR → `vercel pull` → `vercel build` → `vercel deploy --prebuilt` → Playwright against returned preview URL → comment URL on PR (§20)
 - [ ] **INFRA-14**: `deploy-production.yml`: apply migrations to prod Supabase (manual approval gate for destructive) → `vercel deploy --prebuilt --prod` → create Sentry release + upload source maps → sync Inngest functions (§20)
 - [ ] **INFRA-15**: `deploy-preview-cleanup.yml`: delete Supabase branch DB + remove Vercel preview alias on PR close (§20)
@@ -469,7 +469,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | OBS-02 | Phase 1 | Complete (Plans 01-06 + 01-07) |
 | OBS-03 | Phase 13 | Pending |
 | OBS-04 | Phase 13 | Pending |
-| OBS-05 | Phase 1 | Pending |
+| OBS-05 | Phase 13 | Pending (deferred from Phase 1 on 2026-04-23 per user decision) |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
@@ -506,7 +506,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-09 | Phase 2 | Pending |
 | INFRA-10 | Phase 4 | Pending |
 | INFRA-11 | Phase 12 | Pending |
-| INFRA-12 | Phase 1 | Pending |
+| INFRA-12 | Phase 1 | Complete (01-08) |
 | INFRA-13 | Phase 12 | Pending |
 | INFRA-14 | Phase 12 | Pending |
 | INFRA-15 | Phase 12 | Pending |
@@ -528,7 +528,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 - Unmapped: 0
 
 **Per-phase totals:**
-- Phase 1 (Foundation): 13 — INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02,05 + LGPD-13
+- Phase 1 (Foundation): 12 — INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02 + LGPD-13 *(OBS-05 deferred to Phase 13 on 2026-04-23)*
 - Phase 2 (Data Layer): 11 — INFRA-03,04,05,06,07,08,09,19,21,22,24
 - Phase 3 (Design System): 15 — UI-01,02,03,14,17,18,19,20,21,22,23,24,25 + OFF-09,10
 - Phase 4 (IAM): 19 — AUTH-01..15 + INFRA-10 + NOTIF-01,02 + UI-13
@@ -540,7 +540,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 - Phase 10 (Billing): 24 — SUB-01..23 + NOTIF-06
 - Phase 11 (LGPD): 12 — LGPD-01..08,10,11,12,14
 - Phase 12 (Deploy Pipeline): 4 — INFRA-11,13,14,15
-- Phase 13 (Observability + Launch): 3 — OBS-03,04 + INFRA-25
+- Phase 13 (Observability + Launch): 4 — OBS-03,04,05 + INFRA-25 *(OBS-05 added 2026-04-23 from Phase 1)*
 - **Total: 197 ✓**
 
 ---

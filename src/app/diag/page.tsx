@@ -9,6 +9,7 @@ export default function DiagPage() {
   useEffect(() => {
     initPostHog();
 
+    posthog.identify("diagnostics-smoke");
     posthog.capture("$diagnostics_client_ping", { source: "playwright-smoke" });
 
     Sentry.captureException(new Error("Playwright diagnostics client error"), {

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-06 (hand-rolled PostHog providers client + server + layout wiring)
-last_updated: "2026-04-24T03:06:00.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-06 complete; 2 feat commits (Task 1 providers + Task 2 layout); 3 files created, 1 modified; pnpm build green, 116 unit tests green
+stopped_at: Completed Phase 1 Plan 01-05b (three Sentry.init config files + instrumentation.ts cleanup)
+last_updated: "2026-04-24T03:17:30.000Z"
+last_activity: 2026-04-24 -- Phase 01 Plan 01-05b complete; 2 commits (feat Task 1 three init files + refactor Task 2 instrumentation.ts cleanup); 3 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with env stubs, 116 unit tests green; OBS-01 + LGPD-13 marked complete
 progress:
   total_phases: 13
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
-  percent: 66
+  completed_plans: 7
+  percent: 77
 ---
 
 # Project State
@@ -26,30 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 — foundation — EXECUTING
-Plan: 7 of 9 (next: 01-07 — diagnostics routes + 4 Playwright E2E specs that actually exercise the Sentry + PostHog providers shipped by 05a/05b/06)
+Plan: 8 of 9 (next: 01-07 — diagnostics routes + 4 Playwright E2E specs that actually exercise the Sentry + PostHog providers shipped by 05a/05b/06)
 Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-06 complete; 2 feat commits (Task 1 providers + Task 2 layout); 3 files created, 1 modified; pnpm build green, 116 unit tests green
+Last activity: 2026-04-24 -- Phase 01 Plan 01-05b complete; 2 commits (feat Task 1 three init files + refactor Task 2 instrumentation.ts cleanup); 3 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with env stubs, 116 unit tests green; OBS-01 + LGPD-13 marked complete
 
-Progress: [██████░░░░] 66%
+Progress: [███████░░░] 77%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
-- Average duration: ~12 minutes
-- Total execution time: ~71 minutes
+- Total plans completed: 7
+- Average duration: ~11 minutes
+- Total execution time: ~74 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 6/9 | ~71 min | ~12 min |
+| 01 | 7/9 | ~74 min | ~11 min |
 
 **Recent Trend:**
 
-- Last 6 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min)
-- Trend: Plan 01-06 was a clean two-task execution. One Rule 2 auto-add (idempotent `shutdownPostHog()` helper on the server singleton, explicitly green-lit by the plan's `<notes>` block and needed to hit the `min_lines: 20` artifact bar without padding). Zero TDD RED/GREEN cadence for this plan by design — plan ships telemetry infrastructure with no new unit-testable behavior in Phase 1 (the contract is "initialize" + "return singleton"; Plan 07 verifies behavior end-to-end via Playwright + Vitest integration per D-27-a). All 116 unit tests from prior plans still green (no regressions). `pnpm build --webpack` green with env stubs; `pnpm typecheck` exit 0.
+- Last 7 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min), 01-05b (~3 min)
+- Trend: Plan 01-05b was the fastest plan to date (~3 min) — pure wiring glue against an external SDK contract (Plan 05a already shipped the load-bearing logic). Two atomic commits: `feat(01-05b)` for the three Sentry.init files (server + edge + browser), `refactor(01-05b)` for instrumentation.ts cleanup. One Rule 1 auto-fix (three `as unknown as Sentry.{Runtime}Options[...]` type-casts on `beforeSend`/`beforeBreadcrumb` — pre-approved by the plan's `<action>` Step 4 conditional on TS2322 firing, which it did). Closed the LGPD-13 runtime-enforcement loop that Plan 05a shipped the module for, and cleared Plan 03's obsolete try/catch + @ts-expect-error guards from `src/instrumentation.ts` (T-05b-04 mitigation). `pnpm typecheck` exit 0, `pnpm build --webpack` exit 0 with env stubs, 116/116 unit tests passing (no regressions).
 
 *Updated after each plan completion*
 
@@ -97,6 +97,12 @@ Recent decisions affecting current work:
 - Plan 01-06: Added idempotent `shutdownPostHog()` helper to posthog-server.ts (Rule 2 auto-add — not in plan text but explicitly green-lit by plan `<notes>`). Caches instance → nulls module-level singleton BEFORE awaiting shutdown() so concurrent calls are safe; second call after singleton reset is a no-op. Prepares Phase 4+ Inngest graceful-drain paths and satisfied min_lines:20 without padding.
 - Plan 01-06: `src/app/posthog-provider.tsx` is a "use client" component (12 lines) that calls initPostHog() once inside useEffect([]). Layout.tsx stays a server component; PostHogProvider wraps children INSIDE NextIntlClientProvider. Plan 03's three invariants (`lang={locale}`, NextIntlClientProvider, /manifest.webmanifest) all grep-verified preserved.
 - Plan 01-06: OBS-02 NOT marked complete in REQUIREMENTS.md — providers are shipped but end-to-end verification (US-cloud project receives a ping from both layers) requires Plan 07's diagnostics routes + Playwright smoke. Treating OBS-02 as "contributed" here, parallel to Plan 05a's LGPD-13 posture. Plan 07 (or 08) marks OBS-02 complete.
+- Plan 01-05b: Three Sentry.init callsites (`src/sentry.server.config.ts`, `src/sentry.edge.config.ts`, `src/instrumentation-client.ts`) all shipped with `sendDefaultPii: false` (L-2/CVE-2025-65944), `beforeSend`/`beforeBreadcrumb` from Plan 05a's scrub module, and `dsn || undefined` + `enabled: Boolean(...)` empty-DSN disable (D-19). Browser init uses the v10 convention `instrumentation-client.ts` (NOT the legacy `sentry.client.config.ts` — verified via context7 on 2026-04-23); `src/sentry.client.config.ts` grep-verified absent as regression guard.
+- Plan 01-05b: Three type-casts required — `makeBeforeSend() as unknown as Sentry.{Node,Edge,Browser}Options["beforeSend"]` (and same for `beforeBreadcrumb`). Sentry's `BeforeSendCallback` is invariant on return (`ErrorEvent` vs Plan 05a's local `SentryEvent` with `User.id: string` — Sentry's `User.id: string | number` widens beyond our local type). Plan `<action>` Step 4 pre-approved casts conditional on TS2322 firing. Behavior preserved because scrub module never constructs fresh users, only deletes fields.
+- Plan 01-05b: `src/instrumentation.ts` cleaned of BOTH `try/catch` wrappers AND `@ts-expect-error` directives from Plan 03 (T-05b-04 mitigation — init failures now surface as real errors instead of being swallowed). Final file is 13 lines: conditional `await import` by `NEXT_RUNTIME` + `onRequestError = Sentry.captureRequestError` export.
+- Plan 01-05b: `onRouterTransitionStart = Sentry.captureRouterTransitionStart` exported from `instrumentation-client.ts` per Sentry v10 docs — Next 16 App Router auto-picks up this named export to instrument client navigation transitions. Safe to export when Sentry is disabled (no-op without init). Browser init also pins `replaysSessionSampleRate: 0` + `replaysOnErrorSampleRate: 0` as dual-trigger guard against accidental Replay activation (D-21 diagnostics-only posture).
+- Plan 01-05b: OBS-01 marked complete per plan frontmatter `requirements: [OBS-01]` despite REQUIREMENTS.md prose covering 4 sub-items. This plan delivers (1) Sentry SDK integrated + (4) PII scrubbing; sub-items (2) release tag = git SHA + (3) source-map upload post-build are Phase 12's responsibility per Plan 01-08's explicit defer (Pitfall 7: do NOT add source-map upload in Phase 1 ci.yml). Phase 12's deploy-production.yml work augments the same requirement without re-opening it.
+- Plan 01-05b: LGPD-13 marked complete — runtime enforcement across all three runtimes (server + edge + browser) now live via Plan 05a's scrub module mounted into all three Sentry.init callsites. Plan 05a SUMMARY explicitly deferred this marking to 05b (per its own threat model T-05a-01: "the scrub MODULE is verified here; the init-file WIRING that consumes it is verified in Plan 05b").
 
 ### Pending Todos
 
@@ -122,6 +128,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T03:06:00.000Z
-Stopped at: Completed Phase 1 Plan 01-06 (hand-rolled PostHog providers — client + server + layout wiring; 2 feat commits; 3 files created, 1 modified; pnpm build green, 116 unit tests green, pnpm typecheck exit 0); ready to execute 01-05b (three Sentry.init config files) or 01-07 (diagnostics routes) per the wave DAG
-Resume file: .planning/phases/01-foundation/01-05b-PLAN.md
+Last session: 2026-04-24T03:17:30.000Z
+Stopped at: Completed Phase 1 Plan 01-05b (three Sentry.init config files + instrumentation.ts cleanup; 2 commits — feat Task 1 + refactor Task 2; 3 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with env stubs, 116 unit tests green; OBS-01 + LGPD-13 marked complete); ready to execute 01-07 (diagnostics routes + 4 Playwright E2E specs that exercise Sentry + PostHog end-to-end)
+Resume file: .planning/phases/01-foundation/01-07-PLAN.md

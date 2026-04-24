@@ -167,7 +167,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **LGPD-10**: Privacy policy version bump flagged material for an activity → on next use of that activity, a new consent prompt appears before proceeding; new `policy_version` recorded on grant (AC-LGPD-011)
 - [ ] **LGPD-11**: `iam/process-deletion` uses `step.sleepUntil(grace_period_ends_at)` with `grace_period_ends_at` embedded in the event payload (not fetched at wake time) — survives cancellation races (§13, stack notes)
 - [ ] **LGPD-12**: Privacy policy + ToS published and versioned before launch; DPO contact info surfaced in privacy policy + Settings (§13)
-- [ ] **LGPD-13**: Sentry breadcrumbs scrub `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; drop request bodies on identification routes; `Sentry.setUser({ id })` only (§13, §21)
+- [x] **LGPD-13**: Sentry breadcrumbs scrub `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; drop request bodies on identification routes; `Sentry.setUser({ id })` only (§13, §21)
 - [ ] **LGPD-14**: Settings Privacy & LGPD panel: "Exportar meus dados", "Excluir minha conta" (confirm modal → 7-day grace), manage consents (per-consent toggle), privacy policy link, ToS link, DPO contact (§16)
 
 ### NOTIF — Email + push notifications
@@ -181,7 +181,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### OBS — Observability + metrics
 
-- [ ] **OBS-01**: Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GitHub Actions (Turbopack requirement); PII scrubbing rules enforced (§21, stack notes)
+- [x] **OBS-01**: Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GitHub Actions (Turbopack requirement); PII scrubbing rules enforced (§21, stack notes)
 - [ ] **OBS-02**: PostHog US cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD Art. 33 international transfer basis documented via PostHog SCCs (§21)
 - [ ] **OBS-03**: PostHog event taxonomy implemented: `signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested` (§20)
 - [ ] **OBS-04**: Scheduled SQL rollups via Inngest cron over `Identification` table → dashboards for confidence distribution, manual correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, augmentation cost (§21, §22)
@@ -457,7 +457,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | LGPD-10 | Phase 11 | Pending |
 | LGPD-11 | Phase 11 | Pending |
 | LGPD-12 | Phase 11 | Pending |
-| LGPD-13 | Phase 1 | Pending |
+| LGPD-13 | Phase 1 | Complete (Plans 01-05a + 01-05b) |
 | LGPD-14 | Phase 11 | Pending |
 | NOTIF-01 | Phase 4 | Pending |
 | NOTIF-02 | Phase 4 | Pending |
@@ -465,7 +465,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | NOTIF-04 | Phase 8 | Pending |
 | NOTIF-05 | Phase 8 | Pending |
 | NOTIF-06 | Phase 10 | Pending |
-| OBS-01 | Phase 1 | Pending |
+| OBS-01 | Phase 1 | Complete (Plan 01-05b; release tag + source-map upload deferred to Phase 12) |
 | OBS-02 | Phase 1 | Pending |
 | OBS-03 | Phase 13 | Pending |
 | OBS-04 | Phase 13 | Pending |

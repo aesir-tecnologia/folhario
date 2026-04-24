@@ -7,6 +7,11 @@ node_modules/
 .next/
 out/
 
+# serwist-generated service worker (build output)
+public/sw.js
+public/swe-worker-*.js
+public/workbox-*.js
+
 # ts incremental
 tsconfig.tsbuildinfo
 

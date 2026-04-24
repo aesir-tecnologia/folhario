@@ -13,7 +13,14 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
   });
 
   await page.goto("/diag");
-  await page.waitForTimeout(3000);
+
+  if (process.env.CI) {
+    await page
+      .waitForRequest(/\.i\.posthog\.com\/(e|batch|capture)/, { timeout: 8000 })
+      .catch(() => {});
+  } else {
+    await page.waitForTimeout(3000);
+  }
 
   const pingRes = await request.get("/api/v1/diagnostics/ping");
   expect(pingRes.status()).toBe(200);

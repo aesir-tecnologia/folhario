@@ -113,7 +113,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1. **Bump GitHub Actions to v5/v7 to escape Node 20 deprecation** (tooling) — `.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`
 
 ### Blockers/Concerns
 

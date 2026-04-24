@@ -1,5 +1,5 @@
 {
-  "model_profile": "quality",
+  "model_profile": "inherit",
   "commit_docs": true,
   "parallelization": false,
   "search_gitignored": false,
@@ -25,7 +25,7 @@
     "ai_integration_phase": true,
     "tdd_mode": true,
     "text_mode": false,
-    "research_before_questions": false,
+    "research_before_questions": true,
     "discuss_mode": "discuss",
     "skip_discuss": false,
     "code_review": true,
@@ -36,6 +36,7 @@
     "plan_bounce_script": null,
     "plan_bounce_passes": 2,
     "auto_prune_state": false,
+    "use_worktrees": true,
     "_auto_chain_active": false
   },
   "hooks": {

@@ -92,5 +92,10 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "playwright@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "posthog@claude-plugins-official": true
   }
 }

@@ -13,14 +13,7 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
   });
 
   await page.goto("/diag");
-
-  if (process.env.CI) {
-    await page
-      .waitForRequest(/\.i\.posthog\.com\/(e|batch|capture)/, { timeout: 8000 })
-      .catch(() => {});
-  } else {
-    await page.waitForTimeout(3000);
-  }
+  await page.waitForTimeout(1500);
 
   const pingRes = await request.get("/api/v1/diagnostics/ping");
   expect(pingRes.status()).toBe(200);
@@ -31,6 +24,10 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
   expect(() => new Date(body.timestamp)).not.toThrow();
 
   if (process.env.CI) {
+    await page.goto("about:blank");
+    await page
+      .waitForRequest(/\.i\.posthog\.com\/(e|batch|capture)/, { timeout: 5000 })
+      .catch(() => {});
     expect(posthogEvents.length).toBeGreaterThan(0);
     const joined = posthogEvents.join("\n");
     expect(joined, "client diagnostics event must appear in some PostHog payload").toContain(

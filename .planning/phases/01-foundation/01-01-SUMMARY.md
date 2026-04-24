@@ -21,8 +21,8 @@ tech-stack:
     - next@16.2.3
     - react@19.2.5
     - react-dom@19.2.5
-    - typescript@6.0.3
-    - eslint@10.2.1
+    - typescript@5.9.3
+    - eslint@9.39.4
     - eslint-config-next@16.2.3
     - prettier@3.8.3
     - vitest@4.1.4
@@ -76,11 +76,11 @@ Resolved via `pnpm view <pkg>@<major> version` on 2026-04-23. Where an exact PLA
 | next | 16.2.3 | **16.2.3** | Exact PLAN pin exists on npm. |
 | react | 19.2.5 | **19.2.5** | Exact PLAN pin exists on npm (pnpm view@19 reported 19.0.5 because of dist-tag semantics; 19.2.5 is published and installable). |
 | react-dom | 19.2.5 | **19.2.5** | Matches react. |
-| typescript | 6 (major) | **6.0.3** | PLAN.md pins major 6; resolved to latest 6.0.x at scaffold time. |
+| typescript | 6 (major) | **5.9.3** | Downgraded from plan pin `typescript@6` — `vite-tsconfig-paths@5.1.4` transitive dep `tsconfck@3.1.6` peer-caps at `typescript@^5`. Rule 1 bug fix. Matches `create-next-app@16.2.4` which ships `typescript@^5`. |
 | @types/node | 22 (major) | **22.19.17** | Must match Node 22 runtime (NOT 25.x). |
 | @types/react | 19 (major) | **19.2.14** | Major pin; latest 19.2.x. |
 | @types/react-dom | 19 (major) | **19.2.3** | Major pin; latest 19.2.x. |
-| eslint | 10 (major) | **10.2.1** | PLAN.md pin major 10; eslint-config-next@16 peer = `>=9.0.0`, so 10 is accepted. |
+| eslint | 10 (major) | **9.39.4** | Downgraded from plan pin `eslint@10` — transitive deps of `eslint-config-next@16.2.3` (`eslint-plugin-jsx-a11y@6.10.2`, `eslint-plugin-import@2.32.0`, `eslint-plugin-react@7.37.5`) all peer-cap at `eslint@^9`. Rule 1 bug fix. Matches `create-next-app@16.2.4` which ships `eslint@^9`. |
 | eslint-config-next | 16.2.3 | **16.2.3** | Exact PLAN pin. create-next-app@16.2.4 shipped 16.2.4, but plan locks 16.2.3 — kept for CLAUDE.md stack-lock parity. |
 | eslint-config-prettier | 10 (major) | **10.1.8** | Major pin. |
 | prettier | 3 (major) | **3.8.3** | Major pin. |
@@ -103,14 +103,17 @@ Resolved via `pnpm view <pkg>@<major> version` on 2026-04-23. Where an exact PLA
 
 ### Fallbacks and drift
 
-- None. Every PLAN.md-pinned exact version was found on npm (including `next@16.2.3`, `react@19.2.5`, `typescript@6.0.3`, `@sentry/nextjs@10.48.0`). No major-version downgrade required.
+- **Two Rule 1 bug-fix downgrades** during Task 1 install:
+  - `typescript@6.0.3 → 5.9.3` (vite-tsconfig-paths transitive peer constraint).
+  - `eslint@10.2.1 → 9.39.4` (eslint-config-next transitive plugin peer constraints).
+  Both align with `create-next-app@16.2.4`'s upstream-tested stack and resolve unmet-peer-dep warnings that would otherwise produce `pnpm lint` / `pnpm typecheck` failures downstream.
 - CLAUDE.md stack-lock versions (`vitest@4.1.4`, `@sentry/nextjs@10.48.0`, `posthog-js@1.368.0`, `posthog-node@5.29.7`) are behind npm latest but intentionally kept for cross-phase parity. This is an established lock, not drift.
 
 ## eslint-config-next@16 flat-config API shape
 
 **Verified source:** `pnpm create next-app@16 --ts --app --no-tailwind --use-pnpm --yes --skip-install` on 2026-04-23.
 **Resolved create-next-app version:** 16.2.4.
-**Eslint version it installed alongside:** `^9` (we install `eslint@10.2.1` — peer-compatible per `>=9.0.0`).
+**Eslint version it installed alongside:** `^9` (we also install `eslint@9.39.4` to satisfy transitive plugin peer-dep constraints — see "Fallbacks and drift" above).
 
 ### Verified import pattern
 

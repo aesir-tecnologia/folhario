@@ -38,13 +38,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Opening a PR runs `ci.yml`: lint + typecheck + Vitest unit + Vitest integration (against a `postgres:17-alpine` service container) + `next build` + a Playwright smoke against `next start` on the CI runner. No deploy, no preview URL.
   4. A deliberately thrown error in the local app appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes; a PostHog ping event fires from both the client and `posthog-node` server and lands in the PostHog US project — both verified automatically by the Playwright smoke.
   5. The closed error-code registry enum exists as a single importable source, standard security headers (CSP, HSTS, X-Frame-Options) apply to every response, and the `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers so any future environment cannot accidentally burn real provider credit.
-**Plans**: 8 plans
+**Plans**: 9 plans
 
 Plans:
 - [x] 01-01-PLAN.md -- Repo tooling bootstrap
 - [x] 01-02-PLAN.md -- Scaffold + TDD error registry + TDD Zod env
 - [x] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
-- [ ] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
+- [x] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
 - [ ] 01-05-PLAN.md -- TDD Sentry scrub (LGPD-13) + three init files
 - [ ] 01-06-PLAN.md -- Hand-rolled PostHog providers
 - [ ] 01-07-PLAN.md -- Diagnostics routes + 4 Playwright E2E specs
@@ -213,7 +213,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 1/9 | In progress | - |
+| 1. Foundation | 4/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |

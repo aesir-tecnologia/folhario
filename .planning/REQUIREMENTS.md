@@ -242,7 +242,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
 - [ ] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
 - [ ] **INFRA-25**: Launch-blocker checklist surfaced in repo (pricing TBD, NFS-e strategy, DPO appointment, privacy policy + ToS authoring, ≥200 care guides) tracked separately from phases (§24)
-- [ ] **INFRA-26**: Local dev environment: `supabase start` launches local Postgres + Auth + Storage + Studio in Docker; `supabase db reset` rebuilds from migrations; developer can run the full app locally against this stack without cloud Supabase (§20)
+- [x] **INFRA-26**: Local dev environment: `supabase start` launches local Postgres + Auth + Storage + Studio in Docker; `supabase db reset` rebuilds from migrations; developer can run the full app locally against this stack without cloud Supabase (§20)
 
 ## v2 Requirements
 
@@ -520,7 +520,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-23 | Phase 1 | Pending |
 | INFRA-24 | Phase 2 | Pending |
 | INFRA-25 | Phase 13 | Pending |
-| INFRA-26 | Phase 1 | Pending |
+| INFRA-26 | Phase 1 | Complete (01-04) |
 
 **Coverage:**
 - v1 requirements: 197 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 26)

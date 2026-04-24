@@ -12,12 +12,21 @@ fi
 OUT=.env.local
 TMP="$OUT.tmp"
 
-pnpm supabase status -o env \
+SUPABASE_BIN="./node_modules/.bin/supabase"
+if [ ! -x "$SUPABASE_BIN" ]; then
+  echo "ERROR: Supabase CLI not found at $SUPABASE_BIN. Run 'pnpm install' first." >&2
+  exit 3
+fi
+
+# Internal override-name keys for Supabase CLI 2.95: api.url, auth.anon_key,
+# auth.service_role_key, db.url (empirically verified). Direct binary used to
+# avoid pnpm script-banner contamination of the output file.
+"$SUPABASE_BIN" status -o env \
   --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
-  --override-name anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY \
-  --override-name service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+  --override-name auth.anon_key=NEXT_PUBLIC_SUPABASE_ANON_KEY \
+  --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
   --override-name db.url=DATABASE_URL \
-  > "$TMP"
+  > "$TMP" 2>/dev/null
 
 DB_URL=$(grep '^DATABASE_URL=' "$TMP" | head -n1 | cut -d= -f2-)
 if [ -z "$DB_URL" ]; then

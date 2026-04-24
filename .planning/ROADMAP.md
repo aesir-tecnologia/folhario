@@ -31,12 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Phase 1: Foundation
 **Goal**: A Next 16 skeleton that a developer can run locally end-to-end — `pnpm dev` against a local Supabase Docker stack — with Sentry + PostHog wired and verified, security headers applied, the closed error-code registry in place, and `ci.yml` running lint + typecheck + Vitest unit + integration + a local-build Playwright smoke. No Vercel, no preview URLs, no deploy workflows, no Inngest yet — those land in the phases that first need them.
 **Depends on**: Nothing (first phase)
-**Requirements**: INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, OBS-05, LGPD-13
+**Requirements**: INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, LGPD-13 *(OBS-05 deferred to Phase 13 on 2026-04-23 per user decision 2)*
 **Success Criteria** (what must be TRUE):
   1. An empty Next 16 App Router app with TS strict + pt-BR locale + `@serwist/next` PWA wiring builds locally and on CI, with the bounded-context folder layout from PRD §2 in place.
   2. `supabase start` launches a local Postgres + Auth + Storage + Studio stack in Docker; the app running via `pnpm dev` connects to it through a local `DATABASE_URL`; `supabase db reset` rebuilds the stack from migrations.
   3. Opening a PR runs `ci.yml`: lint + typecheck + Vitest unit + Vitest integration (against a `postgres:17-alpine` service container) + `next build` + a Playwright smoke against `next start` on the CI runner. No deploy, no preview URL.
-  4. A deliberately thrown error in the local app appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes; a PostHog ping event fires from both the client and `posthog-node` server and lands in the PostHog US project — both verified automatically by the Playwright smoke.
+  4. A deliberately thrown error in the local app appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes. A PostHog ping event fires from both the client and `posthog-node` server. Client-side envelopes are verified automatically by the Playwright smoke (Sentry transport + PostHog `$pageview` intercepted at the network layer). Server-side envelopes are verified in two ways: (a) an automated Vitest integration test (`tests/integration/diagnostics-server-probe.integration.test.ts`) that imports the server route handler directly, mocks `posthog-node` + `@sentry/nextjs`, and asserts `capture()` + `captureException()` were invoked; and (b) a manual dashboard check recorded in `01-08-SUMMARY.md` with screenshot links.
   5. The closed error-code registry enum exists as a single importable source, standard security headers (CSP, HSTS, X-Frame-Options) apply to every response, and the `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers so any future environment cannot accidentally burn real provider credit.
 **Plans**: 9 plans
 
@@ -49,7 +49,7 @@ Plans:
 - [x] 01-05b-PLAN.md -- Three Sentry.init files (server + edge + browser) + instrumentation.ts cleanup
 - [x] 01-06-PLAN.md -- Hand-rolled PostHog providers
 - [x] 01-07-PLAN.md -- Diagnostics routes + 5 Playwright E2E specs + Vitest server-probe
-- [ ] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md INFRA-12 amendment
+- [ ] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md + ROADMAP.md amendments (final plan)
 **UI hint**: no
 
 ### Phase 2: Data Layer & Bounded Contexts
@@ -198,7 +198,7 @@ Plans:
 ### Phase 13: Observability Rollups & Launch Readiness
 **Goal**: Every PostHog event from the PRD taxonomy fires from the right place across all contexts, identification-quality SQL rollups run via Inngest cron and surface confidence/correction/latency/error/cap-hit/breaker/augment metrics, and the launch-blocker checklist (pricing, NFS-e, DPO, privacy policy, ≥200 care guides) is explicitly signed off before go-live.
 **Depends on**: Phase 12
-**Requirements**: OBS-03, OBS-04, INFRA-25
+**Requirements**: OBS-03, OBS-04, OBS-05, INFRA-25 *(OBS-05 deferred from Phase 1 on 2026-04-23 per user decision; alert rules need real traffic to tune thresholds)*
 **Success Criteria** (what must be TRUE):
   1. The PostHog event taxonomy is wired end-to-end and every event from the PRD list (`signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested`) is observed in the PostHog US project during an end-to-end test run, fired from the correct layer (client vs `posthog-node` server for Inngest-emitted events).
   2. Scheduled SQL rollups via Inngest cron over the `Identification` table populate dashboards for confidence distribution, manual-correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, and augmentation cost — and a single dashboard view surfaces them together.

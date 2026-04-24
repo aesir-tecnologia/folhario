@@ -93,6 +93,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: anon
           IDENTIFICATION_PROVIDER_MODE: stub
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN_CI }}
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY_CI }}
+          NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
         run: pnpm build
 
       - name: Cache Playwright browsers

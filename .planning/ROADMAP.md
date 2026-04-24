@@ -48,7 +48,7 @@ Plans:
 - [x] 01-05a-PLAN.md -- TDD Sentry scrub module (LGPD-13 load-bearing)
 - [x] 01-05b-PLAN.md -- Three Sentry.init files (server + edge + browser) + instrumentation.ts cleanup
 - [x] 01-06-PLAN.md -- Hand-rolled PostHog providers
-- [ ] 01-07-PLAN.md -- Diagnostics routes + 4 Playwright E2E specs
+- [x] 01-07-PLAN.md -- Diagnostics routes + 5 Playwright E2E specs + Vitest server-probe
 - [ ] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md INFRA-12 amendment
 **UI hint**: no
 
@@ -214,7 +214,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 7/9 | In progress | - |
+| 1. Foundation | 8/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-05b (three Sentry.init config files + instrumentation.ts cleanup)
-last_updated: "2026-04-24T03:17:30.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-05b complete; 2 commits (feat Task 1 three init files + refactor Task 2 instrumentation.ts cleanup); 3 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with env stubs, 116 unit tests green; OBS-01 + LGPD-13 marked complete
+stopped_at: Completed Phase 1 Plan 01-07 (diagnostics routes + 5 Playwright E2E specs + Vitest server-probe)
+last_updated: "2026-04-24T03:37:30.000Z"
+last_activity: 2026-04-24 -- Phase 01 Plan 01-07 complete; 5 commits (feat Task 1 routes + test Task 2 security/pwa + test Task 3 Sentry/PostHog E2E + test Task 4 integration server-probe + fix rename __diag -> diag / _diagnostics -> diagnostics); 10 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with routes emitted (/diag + /api/v1/diagnostics/ping); pnpm exec vitest run 116 unit + 2 integration green; pnpm exec playwright test 8/8 green; INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 marked complete
 progress:
   total_phases: 13
   completed_phases: 0
   total_plans: 9
-  completed_plans: 7
-  percent: 77
+  completed_plans: 8
+  percent: 88
 ---
 
 # Project State
@@ -26,30 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 — foundation — EXECUTING
-Plan: 8 of 9 (next: 01-07 — diagnostics routes + 4 Playwright E2E specs that actually exercise the Sentry + PostHog providers shipped by 05a/05b/06)
+Plan: 9 of 9 (next: 01-08 — .github/workflows/ci.yml + REQUIREMENTS.md INFRA-12 amendment + ROADMAP.md SC-4 split-verification wording amendment + OBS-05 map to Phase 13)
 Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-05b complete; 2 commits (feat Task 1 three init files + refactor Task 2 instrumentation.ts cleanup); 3 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with env stubs, 116 unit tests green; OBS-01 + LGPD-13 marked complete
+Last activity: 2026-04-24 -- Phase 01 Plan 01-07 complete; 5 commits (feat Task 1 + 3 test commits + 1 rename-fix commit); 10 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with routes emitted; 116 unit + 2 integration + 8 Playwright E2E tests green; INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 marked complete
 
-Progress: [███████░░░] 77%
+Progress: [████████░░] 88%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: ~11 minutes
-- Total execution time: ~74 minutes
+- Total execution time: ~86 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 7/9 | ~74 min | ~11 min |
+| 01 | 8/9 | ~86 min | ~11 min |
 
 **Recent Trend:**
 
-- Last 7 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min), 01-05b (~3 min)
-- Trend: Plan 01-05b was the fastest plan to date (~3 min) — pure wiring glue against an external SDK contract (Plan 05a already shipped the load-bearing logic). Two atomic commits: `feat(01-05b)` for the three Sentry.init files (server + edge + browser), `refactor(01-05b)` for instrumentation.ts cleanup. One Rule 1 auto-fix (three `as unknown as Sentry.{Runtime}Options[...]` type-casts on `beforeSend`/`beforeBreadcrumb` — pre-approved by the plan's `<action>` Step 4 conditional on TS2322 firing, which it did). Closed the LGPD-13 runtime-enforcement loop that Plan 05a shipped the module for, and cleared Plan 03's obsolete try/catch + @ts-expect-error guards from `src/instrumentation.ts` (T-05b-04 mitigation). `pnpm typecheck` exit 0, `pnpm build --webpack` exit 0 with env stubs, 116/116 unit tests passing (no regressions).
+- Last 8 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min), 01-05b (~3 min), 01-07 (~12 min)
+- Trend: Plan 01-07 took ~12 min end-to-end including one significant Rule 1 fix: the plan prescribed `/__diag` and `/api/v1/_diagnostics/` URL paths but Next.js App Router's route-discovery filter (`node_modules/next/dist/esm/build/route-discovery.js:54` — `ignorePartFilter: part => part.startsWith('_')`) silently excluded both. Diagnosed from primary source, renamed folders via `git mv` to `/diag` + `/api/v1/diagnostics/`, updated 5 E2E specs + the integration test + `public/robots.txt` (the last is a Plan 03 file, scope-safe per FILE-MATRIX). Second Rule 1 fix: the `vi.mock("posthog-node")` factory needed `function MockPostHog() { ... }` constructor form rather than `vi.fn().mockImplementation(() => ({...}))` because arrow functions lack `[[Construct]]` and the route handler calls `new PostHog(...)`. All 8 Playwright tests + 2 integration tests + 116 unit tests green post-fix. 5 commits (4 task + 1 focused rename fix). SC-4 server-side automatic proof (D-27-a / user decision 1) shipped via the Vitest integration test — replaces prior "Playwright cannot intercept server-originated traffic" concession with an in-process function call + mocked SDK assertion.
 
 *Updated after each plan completion*
 
@@ -103,6 +103,13 @@ Recent decisions affecting current work:
 - Plan 01-05b: `onRouterTransitionStart = Sentry.captureRouterTransitionStart` exported from `instrumentation-client.ts` per Sentry v10 docs — Next 16 App Router auto-picks up this named export to instrument client navigation transitions. Safe to export when Sentry is disabled (no-op without init). Browser init also pins `replaysSessionSampleRate: 0` + `replaysOnErrorSampleRate: 0` as dual-trigger guard against accidental Replay activation (D-21 diagnostics-only posture).
 - Plan 01-05b: OBS-01 marked complete per plan frontmatter `requirements: [OBS-01]` despite REQUIREMENTS.md prose covering 4 sub-items. This plan delivers (1) Sentry SDK integrated + (4) PII scrubbing; sub-items (2) release tag = git SHA + (3) source-map upload post-build are Phase 12's responsibility per Plan 01-08's explicit defer (Pitfall 7: do NOT add source-map upload in Phase 1 ci.yml). Phase 12's deploy-production.yml work augments the same requirement without re-opening it.
 - Plan 01-05b: LGPD-13 marked complete — runtime enforcement across all three runtimes (server + edge + browser) now live via Plan 05a's scrub module mounted into all three Sentry.init callsites. Plan 05a SUMMARY explicitly deferred this marking to 05b (per its own threat model T-05a-01: "the scrub MODULE is verified here; the init-file WIRING that consumes it is verified in Plan 05b").
+- Plan 01-07: Diagnostics routes renamed from `/__diag` + `/api/v1/_diagnostics/` to `/diag` + `/api/v1/diagnostics/` — Next.js App Router's route-discovery filter (`node_modules/next/dist/esm/build/route-discovery.js:54` — `ignorePartFilter: part => part.startsWith('_')`) silently excludes any path segment starting with `_`. The plan's prescribed URLs violated this rule; the build emitted only `/` + `/_not-found` and all E2E specs returned 404. Renamed folders via `git mv`, updated 5 E2E specs + integration test + `public/robots.txt` Disallow entries. Defense-in-depth story unchanged (mode-gate + robots.txt still coherent).
+- Plan 01-07: `vi.mock("posthog-node")` requires function-constructor form `PostHog: function MockPostHog() { return { capture, shutdown } }` — NOT `PostHog: vi.fn().mockImplementation(() => ({...}))`. Arrow functions lack `[[Construct]]` and the route handler calls `new PostHog(...)`, raising `TypeError: not a constructor`. Named-function return-object pattern satisfies `[[Construct]]` and Vitest handles the object-return correctly.
+- Plan 01-07: SC-4 server-side automatic proof (D-27-a / user decision 1 / Action 13) shipped as `tests/integration/diagnostics-server-probe.integration.test.ts` — imports POST handler directly, mocks `posthog-node` + `@sentry/nextjs` via `vi.mock`, asserts `captureMock` invoked with event `$diagnostics_server_ping` AND `captureExceptionMock` invoked once. Second test flips `IDENTIFICATION_PROVIDER_MODE=real` + `vi.resetModules()` and asserts POST returns 404 (mode-gate regression guard). Replaces prior "Playwright cannot intercept server-originated traffic" concession with automatic CI proof.
+- Plan 01-07: Integration test imports via relative path `../../src/app/api/v1/diagnostics/ping/route` (not `@/...`) — `tsconfig.json` paths only declares `@contexts/*`, `@shared/*`, `@i18n/*`; no `@/*` alias exists. Relative path resolves identically via `vite-tsconfig-paths`.
+- Plan 01-07: Sentry envelope-count assertion in `diagnostics-sentry.spec.ts` is CI-gated (`if (process.env.CI) expect(...)`); PII-sentinel assertion is unconditional. The inverse `sentry-local-mode.spec.ts` uses `test.skip(!!process.env.CI, ...)` — runs only locally and asserts zero envelopes emitted under empty-DSN mode (Action 13). This split means local-mode developers running the suite don't get false failures when DSN is blank while still catching any accidental re-enable.
+- Plan 01-07: INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 all marked complete in REQUIREMENTS.md per plan frontmatter. OBS-01 + LGPD-13 were previously marked by Plan 05b; plan 07 re-confirms them end-to-end via the smoke suite. OBS-02 was contributed-not-completed by Plan 06; 07 closes the loop. INFRA-16 (env gate) + INFRA-18 (security headers every response) land here because their end-to-end Playwright verification is the authoritative proof.
+- Plan 01-07: Pre-existing `public/sw.js.map` missing from `.gitignore` (Plan 03 SUMMARY claimed it was added but only `public/sw.js` was). Logged to `.planning/phases/01-foundation/deferred-items.md` for Plan 01-08 or later housekeeping — out of Plan 07 scope.
 
 ### Pending Todos
 
@@ -128,6 +135,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T03:17:30.000Z
-Stopped at: Completed Phase 1 Plan 01-05b (three Sentry.init config files + instrumentation.ts cleanup; 2 commits — feat Task 1 + refactor Task 2; 3 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with env stubs, 116 unit tests green; OBS-01 + LGPD-13 marked complete); ready to execute 01-07 (diagnostics routes + 4 Playwright E2E specs that exercise Sentry + PostHog end-to-end)
-Resume file: .planning/phases/01-foundation/01-07-PLAN.md
+Last session: 2026-04-24T03:37:30.000Z
+Stopped at: Completed Phase 1 Plan 01-07 (diagnostics routes + 5 Playwright E2E specs + Vitest server-probe; 5 commits — feat Task 1 + test Task 2 + test Task 3 + test Task 4 + fix rename; 10 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with /diag + /api/v1/diagnostics/ping routes emitted; 116 unit + 2 integration + 8 Playwright E2E tests green; INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 marked complete); ready to execute 01-08 (.github/workflows/ci.yml + REQUIREMENTS.md INFRA-12 amendment + ROADMAP.md SC-4 wording split + OBS-05 map to Phase 13)
+Resume file: .planning/phases/01-foundation/01-08-PLAN.md

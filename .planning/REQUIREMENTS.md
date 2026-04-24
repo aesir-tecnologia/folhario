@@ -182,7 +182,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 ### OBS — Observability + metrics
 
 - [x] **OBS-01**: Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GitHub Actions (Turbopack requirement); PII scrubbing rules enforced (§21, stack notes)
-- [ ] **OBS-02**: PostHog US cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD Art. 33 international transfer basis documented via PostHog SCCs (§21)
+- [x] **OBS-02**: PostHog US cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD Art. 33 international transfer basis documented via PostHog SCCs (§21)
 - [ ] **OBS-03**: PostHog event taxonomy implemented: `signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested` (§20)
 - [ ] **OBS-04**: Scheduled SQL rollups via Inngest cron over `Identification` table → dashboards for confidence distribution, manual correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, augmentation cost (§21, §22)
 - [ ] **OBS-05**: Alerts: Sentry on new issues + error-rate spikes, 80% provider ceiling → Resend operator email, Stripe webhook signature failure → Sentry critical + operator email, Inngest function failure after retries exhausted → Sentry (§21)
@@ -466,7 +466,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | NOTIF-05 | Phase 8 | Pending |
 | NOTIF-06 | Phase 10 | Pending |
 | OBS-01 | Phase 1 | Complete (Plan 01-05b; release tag + source-map upload deferred to Phase 12) |
-| OBS-02 | Phase 1 | Pending |
+| OBS-02 | Phase 1 | Complete (Plans 01-06 + 01-07) |
 | OBS-03 | Phase 13 | Pending |
 | OBS-04 | Phase 13 | Pending |
 | OBS-05 | Phase 1 | Pending |

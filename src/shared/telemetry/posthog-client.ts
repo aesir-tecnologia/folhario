@@ -2,8 +2,15 @@ import posthog from "posthog-js";
 import { clientEnv } from "@shared/config/client-env";
 
 let initialized = false;
+let loaded = false;
+const loadedCallbacks: Array<() => void> = [];
 
-export function initPostHog(): void {
+export function initPostHog(onLoaded?: () => void): void {
+  if (onLoaded) {
+    if (loaded) onLoaded();
+    else loadedCallbacks.push(onLoaded);
+  }
+
   if (initialized) return;
   if (!clientEnv.NEXT_PUBLIC_POSTHOG_KEY) return;
 
@@ -15,7 +22,10 @@ export function initPostHog(): void {
     disable_session_recording: true,
     persistence: "localStorage+cookie",
     person_profiles: "identified_only",
-    debug: typeof window !== "undefined" && window.location.search.includes("ph_debug=1"),
+    loaded: () => {
+      loaded = true;
+      while (loadedCallbacks.length > 0) loadedCallbacks.shift()?.();
+    },
   });
 
   initialized = true;

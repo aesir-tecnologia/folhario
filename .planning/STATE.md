@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-05a (Sentry LGPD-13 scrub helpers via TDD RED->GREEN; REFACTOR skipped)
-last_updated: "2026-04-24T02:53:18.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-05a complete; 2 commits (RED + GREEN); 2 files created, 0 modified
+stopped_at: Completed Phase 1 Plan 01-06 (hand-rolled PostHog providers client + server + layout wiring)
+last_updated: "2026-04-24T03:06:00.000Z"
+last_activity: 2026-04-24 -- Phase 01 Plan 01-06 complete; 2 feat commits (Task 1 providers + Task 2 layout); 3 files created, 1 modified; pnpm build green, 116 unit tests green
 progress:
   total_phases: 13
   completed_phases: 0
   total_plans: 9
-  completed_plans: 5
-  percent: 55
+  completed_plans: 6
+  percent: 66
 ---
 
 # Project State
@@ -26,30 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 — foundation — EXECUTING
-Plan: 6 of 9 (next: 01-05b — three Sentry.init config files consuming the scrub helpers shipped by 05a)
+Plan: 7 of 9 (next: 01-07 — diagnostics routes + 4 Playwright E2E specs that actually exercise the Sentry + PostHog providers shipped by 05a/05b/06)
 Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-05a complete; 2 commits (RED + GREEN); 2 files created, 0 modified
+Last activity: 2026-04-24 -- Phase 01 Plan 01-06 complete; 2 feat commits (Task 1 providers + Task 2 layout); 3 files created, 1 modified; pnpm build green, 116 unit tests green
 
-Progress: [█████░░░░░] 55%
+Progress: [██████░░░░] 66%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: ~12 minutes
-- Total execution time: ~61 minutes
+- Total execution time: ~71 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 5/9 | ~61 min | ~12 min |
+| 01 | 6/9 | ~71 min | ~12 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min)
-- Trend: Plan 01-05a fastest to date — strict TDD with no REFACTOR needed. Two Rule 3 blockers at commit time (project lint `no-explicit-any` vs plan's `any`-heavy sample code + commitlint `subject-case` on "LGPD-13" leading upper-case) both resolved inline with no scope expansion. Unit test count grew 101→116 (+15). All acceptance criteria met; `pnpm typecheck` exit 0.
+- Last 6 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min)
+- Trend: Plan 01-06 was a clean two-task execution. One Rule 2 auto-add (idempotent `shutdownPostHog()` helper on the server singleton, explicitly green-lit by the plan's `<notes>` block and needed to hit the `min_lines: 20` artifact bar without padding). Zero TDD RED/GREEN cadence for this plan by design — plan ships telemetry infrastructure with no new unit-testable behavior in Phase 1 (the contract is "initialize" + "return singleton"; Plan 07 verifies behavior end-to-end via Playwright + Vitest integration per D-27-a). All 116 unit tests from prior plans still green (no regressions). `pnpm build --webpack` green with env stubs; `pnpm typecheck` exit 0.
 
 *Updated after each plan completion*
 
@@ -92,6 +92,11 @@ Recent decisions affecting current work:
 - Plan 01-05a: Commitlint `subject-case` rejected "LGPD-13" as a leading upper-case subject word — rephrased RED commit subject to lowercase-start ("add failing test for Sentry LGPD-13 ..."). Zero content change; commitlint flags only the first subject word.
 - Plan 01-05a: REFACTOR skipped — GREEN is 94 lines, zero duplication, single-responsibility helpers. Plan explicitly permitted `no refactor needed — GREEN is minimal` in the summary.
 - ROADMAP.md Phase 1 plan list has stale entry `01-05-PLAN.md` (pre-split) — actual files on disk are `01-05a-PLAN.md` + `01-05b-PLAN.md`. Left as-is; out of 05a's scope to fix retroactively. Progress row updated to 5/9.
+- Plan 01-06: Hand-rolled PostHog providers on raw posthog-js@1.368.0 + posthog-node@5.29.7 per L-3 — @posthog/next never installed. Both providers import from @shared/config/client-env ONLY per Action 4; NEXT_PUBLIC_POSTHOG_KEY is the same public write key on both sides (no server-only POSTHOG secret in PRD §20).
+- Plan 01-06: D-21 client posture shipped verbatim (autocapture:false, capture_pageview:false, capture_pageleave:false, disable_session_recording:true, person_profiles:"identified_only", persistence:"localStorage+cookie"). C-23 US-cloud default (api_host / host = "https://us.i.posthog.com" when NEXT_PUBLIC_POSTHOG_HOST unset) on BOTH client and server.
+- Plan 01-06: Added idempotent `shutdownPostHog()` helper to posthog-server.ts (Rule 2 auto-add — not in plan text but explicitly green-lit by plan `<notes>`). Caches instance → nulls module-level singleton BEFORE awaiting shutdown() so concurrent calls are safe; second call after singleton reset is a no-op. Prepares Phase 4+ Inngest graceful-drain paths and satisfied min_lines:20 without padding.
+- Plan 01-06: `src/app/posthog-provider.tsx` is a "use client" component (12 lines) that calls initPostHog() once inside useEffect([]). Layout.tsx stays a server component; PostHogProvider wraps children INSIDE NextIntlClientProvider. Plan 03's three invariants (`lang={locale}`, NextIntlClientProvider, /manifest.webmanifest) all grep-verified preserved.
+- Plan 01-06: OBS-02 NOT marked complete in REQUIREMENTS.md — providers are shipped but end-to-end verification (US-cloud project receives a ping from both layers) requires Plan 07's diagnostics routes + Playwright smoke. Treating OBS-02 as "contributed" here, parallel to Plan 05a's LGPD-13 posture. Plan 07 (or 08) marks OBS-02 complete.
 
 ### Pending Todos
 
@@ -117,6 +122,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T02:53:18.000Z
-Stopped at: Completed Phase 1 Plan 01-05a (Sentry LGPD-13 scrub helpers via TDD; 2 commits RED+GREEN; 15 unit tests); ready to execute 01-05b (three Sentry.init config files consuming the 05a helpers)
+Last session: 2026-04-24T03:06:00.000Z
+Stopped at: Completed Phase 1 Plan 01-06 (hand-rolled PostHog providers — client + server + layout wiring; 2 feat commits; 3 files created, 1 modified; pnpm build green, 116 unit tests green, pnpm typecheck exit 0); ready to execute 01-05b (three Sentry.init config files) or 01-07 (diagnostics routes) per the wave DAG
 Resume file: .planning/phases/01-foundation/01-05b-PLAN.md

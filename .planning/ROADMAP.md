@@ -46,7 +46,7 @@ Plans:
 - [x] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
 - [x] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
 - [ ] 01-05-PLAN.md -- TDD Sentry scrub (LGPD-13) + three init files
-- [ ] 01-06-PLAN.md -- Hand-rolled PostHog providers
+- [x] 01-06-PLAN.md -- Hand-rolled PostHog providers
 - [ ] 01-07-PLAN.md -- Diagnostics routes + 4 Playwright E2E specs
 - [ ] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md INFRA-12 amendment
 **UI hint**: no
@@ -213,7 +213,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 5/9 | In progress | - |
+| 1. Foundation | 6/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |

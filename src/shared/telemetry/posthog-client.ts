@@ -21,7 +21,7 @@ export function initPostHog(onLoaded?: () => void): void {
     capture_pageleave: false,
     disable_session_recording: true,
     persistence: "localStorage+cookie",
-    person_profiles: "identified_only",
+    person_profiles: "always",
     loaded: () => {
       console.log(
         "[posthog-client] loaded callback fired, draining",

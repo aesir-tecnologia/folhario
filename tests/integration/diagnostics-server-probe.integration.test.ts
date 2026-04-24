@@ -37,10 +37,10 @@ describe("D-27-a SC-4 server-side automatic proof", () => {
     captureExceptionMock.mockClear();
   });
 
-  it("POST /api/v1/_diagnostics/ping invokes posthog-node.capture and Sentry.captureException", async () => {
-    const mod = await import("../../src/app/api/v1/_diagnostics/ping/route");
+  it("POST /api/v1/diagnostics/ping invokes posthog-node.capture and Sentry.captureException", async () => {
+    const mod = await import("../../src/app/api/v1/diagnostics/ping/route");
     const res = await mod.POST(
-      new Request("http://localhost:3000/api/v1/_diagnostics/ping", {
+      new Request("http://localhost:3000/api/v1/diagnostics/ping", {
         method: "POST",
         body: JSON.stringify({}),
         headers: { "content-type": "application/json" },
@@ -62,9 +62,9 @@ describe("D-27-a SC-4 server-side automatic proof", () => {
     process.env.IDENTIFICATION_PROVIDER_MODE = "real";
     vi.resetModules();
     try {
-      const mod = await import("../../src/app/api/v1/_diagnostics/ping/route");
+      const mod = await import("../../src/app/api/v1/diagnostics/ping/route");
       const res = await mod.POST(
-        new Request("http://localhost:3000/api/v1/_diagnostics/ping", { method: "POST" }),
+        new Request("http://localhost:3000/api/v1/diagnostics/ping", { method: "POST" }),
       );
       expect(res.status).toBe(404);
     } finally {

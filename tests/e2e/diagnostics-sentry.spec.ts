@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 const FORBIDDEN_SENTINELS = ["scrub-me", "should-be-scrubbed", "should-be-scrubbed@example.com"];
 
-test("Sentry fires from /__diag and client scrubs PII from envelopes", async ({ page }) => {
+test("Sentry fires from /diag and client scrubs PII from envelopes", async ({ page }) => {
   const sentryPayloads: string[] = [];
 
   await page.route(/\.ingest\.sentry\.io\/.*\/envelope/, async (route) => {
@@ -11,7 +11,7 @@ test("Sentry fires from /__diag and client scrubs PII from envelopes", async ({ 
     await route.fulfill({ status: 200, body: "ok" });
   });
 
-  await page.goto("/__diag");
+  await page.goto("/diag");
 
   await page.waitForTimeout(3000);
 

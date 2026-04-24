@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("PostHog $diagnostics_client_ping fires + GET /api/v1/_diagnostics/ping returns {ok,env,timestamp}", async ({
+test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping returns {ok,env,timestamp}", async ({
   page,
   request,
 }) => {
@@ -12,10 +12,10 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/_diagnostics/ping ret
     await route.fulfill({ status: 200, body: "1" });
   });
 
-  await page.goto("/__diag");
+  await page.goto("/diag");
   await page.waitForTimeout(3000);
 
-  const pingRes = await request.get("/api/v1/_diagnostics/ping");
+  const pingRes = await request.get("/api/v1/diagnostics/ping");
   expect(pingRes.status()).toBe(200);
   const body = await pingRes.json();
   expect(body).toMatchObject({ ok: true });

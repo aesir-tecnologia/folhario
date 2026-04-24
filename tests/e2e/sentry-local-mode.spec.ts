@@ -10,7 +10,7 @@ test("Empty NEXT_PUBLIC_SENTRY_DSN produces zero Sentry envelope requests", asyn
     await route.fulfill({ status: 200, body: "ok" });
   });
 
-  await page.goto("/__diag");
+  await page.goto("/diag");
   await page.waitForTimeout(3000);
 
   expect(envelopeCount, "local mode must not emit Sentry envelopes").toBe(0);

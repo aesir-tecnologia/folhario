@@ -7,6 +7,9 @@ node_modules/
 .next/
 out/
 
+# ts incremental
+tsconfig.tsbuildinfo
+
 # test + coverage
 coverage/
 playwright-report/

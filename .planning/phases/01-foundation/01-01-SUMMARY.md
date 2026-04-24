@@ -160,7 +160,49 @@ This is a divergence from PLAN.md Task 2 Step 2 — both offered shapes there we
 
 ## Deviations from Plan
 
-Tracked during execution; populated in final write at plan end.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] typescript@6.0.3 → typescript@5.9.3 downgrade**
+- **Found during:** Task 1 install
+- **Issue:** `vite-tsconfig-paths@5.1.4` transitive dep `tsconfck@3.1.6` peer-caps at `typescript@^5`; installing TS 6 produces unmet peer-dep warnings.
+- **Fix:** `pnpm add -D typescript@5.9.3` (latest 5.x).
+- **Files modified:** `package.json`, `pnpm-lock.yaml`
+- **Commit:** Task 1 (see `a678522`)
+
+**2. [Rule 1 - Bug] eslint@10.2.1 → eslint@9.39.4 downgrade**
+- **Found during:** Task 1 install
+- **Issue:** `eslint-config-next@16.2.3` transitive deps (`eslint-plugin-jsx-a11y@6.10.2`, `eslint-plugin-import@2.32.0`, `eslint-plugin-react@7.37.5`) all peer-cap at `eslint@^9`; installing ESLint 10 produces unmet peer-dep warnings that would likely cause plugin resolution failures during `pnpm lint`.
+- **Fix:** `pnpm add -D eslint@9.39.4` (latest 9.x).
+- **Files modified:** `package.json`, `pnpm-lock.yaml`
+- **Commit:** Task 1 (see `a678522`)
+
+**3. [Rule 1 - Bug] `"lint": "next lint"` → `"lint": "eslint"`**
+- **Found during:** Task 2 verify
+- **Issue:** Next.js 16 removed the `next lint` subcommand; PLAN.md Task 1 Step 3 carried the outdated Next 15 script form. Running `pnpm lint` errored with `Invalid project directory provided, no such directory: /Users/machado/Projects/folhario/lint` (it tried to interpret `lint` as a positional path argument). Matches `create-next-app@16.2.4` which generates `"lint": "eslint"`.
+- **Fix:** Edited `package.json` `scripts.lint` to `"eslint"`.
+- **Files modified:** `package.json`
+- **Commit:** Task 2
+
+**4. [Rule 3 - Blocker] TS18003 "No inputs were found" on empty src/**
+- **Found during:** Task 2 verify (`pnpm typecheck`)
+- **Issue:** Plan 01-01 defines `tsconfig.json` but does not create any `.ts` files; `tsc` errors with TS18003 before Plan 01-02 lands its first files. PLAN.md acceptance criterion "`pnpm typecheck` exits 0 against an empty `src/`" is unsatisfiable as written with Next 16's tsconfig + empty workspace.
+- **Fix:** Created `src/placeholder.ts` containing `export {};` with a comment indicating it can be deleted by Plan 01-02/01-03 when the first real modules land. FILE-MATRIX-safe (no collision with any later plan's files).
+- **Files modified:** `src/placeholder.ts` (created)
+- **Commit:** Task 2
+
+**5. [Rule 3 - Blocker] ESLint picking up `.claude/` orchestrator scripts**
+- **Found during:** Task 2 verify (`pnpm lint`)
+- **Issue:** ESLint flat config, by default, scans the entire repo. `.claude/hooks/*.js` and `.claude/get-shit-done/bin/*.cjs` are CommonJS orchestration scripts using `require()`; they violate `@typescript-eslint/no-require-imports` rule bundled with `eslint-config-next/typescript`. These files are pre-existing GSD orchestrator infrastructure, not project code (Scope Boundary rule applies).
+- **Fix:** Extended `globalIgnores([...])` in `eslint.config.mjs` to exclude `.claude/**`, `.planning/**`, `.planning.bak-*/**`, `docs/**`, `supabase/**`, `gsd-review-*.md`.
+- **Files modified:** `eslint.config.mjs`
+- **Commit:** Task 2
+
+**6. [Rule 3 - Blocker] `tsconfig.tsbuildinfo` untracked artifact**
+- **Found during:** Task 2 verify (post-typecheck)
+- **Issue:** `tsc --noEmit` with `incremental: true` writes a `.tsbuildinfo` cache file to the repo root. It's a build artifact, not source.
+- **Fix:** Added `tsconfig.tsbuildinfo` to `.gitignore`.
+- **Files modified:** `.gitignore`
+- **Commit:** Task 2
 
 ## Self-Check
 

@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+coverage
+playwright-report
+test-results
+public/sw.js
+pnpm-lock.yaml
+.planning
+supabase/.branches
+supabase/.temp

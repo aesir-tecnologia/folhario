@@ -12,7 +12,7 @@ Folhário is a Brazilian plant-identification + care-guide + reminder PWA whose 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Next 16 + Serwist scaffold, local Supabase + Docker dev, Sentry + PostHog baseline with verification, security headers, error registry, ci.yml-only (no deploy)
+- [x] **Phase 1: Foundation** - Next 16 + Serwist scaffold, local Supabase + Docker dev, Sentry + PostHog baseline with verification, security headers, error registry, ci.yml-only (no deploy)
 - [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, image pipeline, API conventions
 - [ ] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings
 - [ ] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Inngest `serve()` + Resend transactional-email backbone (first async consumer)
@@ -49,7 +49,7 @@ Plans:
 - [x] 01-05b-PLAN.md -- Three Sentry.init files (server + edge + browser) + instrumentation.ts cleanup
 - [x] 01-06-PLAN.md -- Hand-rolled PostHog providers
 - [x] 01-07-PLAN.md -- Diagnostics routes + 5 Playwright E2E specs + Vitest server-probe
-- [ ] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md + ROADMAP.md amendments (final plan)
+- [x] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md + ROADMAP.md amendments (final plan)
 **UI hint**: no
 
 ### Phase 2: Data Layer & Bounded Contexts

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-07 (diagnostics routes + 5 Playwright E2E specs + Vitest server-probe)
-last_updated: "2026-04-24T03:37:30.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-07 complete; 5 commits (feat Task 1 routes + test Task 2 security/pwa + test Task 3 Sentry/PostHog E2E + test Task 4 integration server-probe + fix rename __diag -> diag / _diagnostics -> diagnostics); 10 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with routes emitted (/diag + /api/v1/diagnostics/ping); pnpm exec vitest run 116 unit + 2 integration green; pnpm exec playwright test 8/8 green; INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 marked complete
+stopped_at: Completed Phase 1 Plan 01-08 (ci.yml + REQUIREMENTS.md + ROADMAP.md amendments); Phase 1 COMPLETE (9/9)
+last_updated: "2026-04-24T21:05:00.000Z"
+last_activity: 2026-04-24 -- Phase 01 Plan 01-08 complete; CI run 24911496475 green in 2m43s (all 15 steps incl. Playwright smoke 7 passed + 1 expected skip); posthog-js client-capture known gap documented in 01-08-SUMMARY § 'Known gap' (soft-assert per SC-4 (b), dashboard authoritative); D-21 privacy posture restored (person_profiles 'identified_only'); v4-action deprecation todo captured; Phase 1 COMPLETE 9/9
 progress:
   total_phases: 13
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 9
-  completed_plans: 8
-  percent: 88
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -25,31 +25,31 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 
 ## Current Position
 
-Phase: 01 — foundation — EXECUTING
-Plan: 9 of 9 (next: 01-08 — .github/workflows/ci.yml + REQUIREMENTS.md INFRA-12 amendment + ROADMAP.md SC-4 split-verification wording amendment + OBS-05 map to Phase 13)
-Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-07 complete; 5 commits (feat Task 1 + 3 test commits + 1 rename-fix commit); 10 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with routes emitted; 116 unit + 2 integration + 8 Playwright E2E tests green; INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 marked complete
+Phase: 01 — foundation — COMPLETE
+Plan: 9 of 9 complete (Phase 1 closed; next: Phase 2 Data Layer & Bounded Contexts — Drizzle schema + Supabase adapters + image pipeline + API conventions)
+Status: Phase 01 COMPLETE — ready to begin Phase 02
+Last activity: 2026-04-24 -- Phase 01 Plan 01-08 complete; CI run 24911496475 green in 2m43s (all 15 steps including Playwright smoke 7 passed + 1 expected skip); posthog-js client-capture known gap documented in 01-08-SUMMARY § 'Known gap' (soft-assert per SC-4 (b), dashboard authoritative); D-21 privacy posture restored (person_profiles 'identified_only'); v4-action deprecation todo captured; Phase 1 COMPLETE 9/9; INFRA-12 marked complete alongside INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 from earlier plans
 
-Progress: [████████░░] 88%
+Progress: [██████████] 100% of Phase 1 (1/13 phases complete, 7.7% project-wide)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 8
-- Average duration: ~11 minutes
-- Total execution time: ~86 minutes
+- Total plans completed: 9
+- Average duration: ~10 minutes
+- Total execution time: ~92 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 8/9 | ~86 min | ~11 min |
+| 01 | 9/9 | ~92 min | ~10 min |
 
 **Recent Trend:**
 
-- Last 8 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min), 01-05b (~3 min), 01-07 (~12 min)
-- Trend: Plan 01-07 took ~12 min end-to-end including one significant Rule 1 fix: the plan prescribed `/__diag` and `/api/v1/_diagnostics/` URL paths but Next.js App Router's route-discovery filter (`node_modules/next/dist/esm/build/route-discovery.js:54` — `ignorePartFilter: part => part.startsWith('_')`) silently excluded both. Diagnosed from primary source, renamed folders via `git mv` to `/diag` + `/api/v1/diagnostics/`, updated 5 E2E specs + the integration test + `public/robots.txt` (the last is a Plan 03 file, scope-safe per FILE-MATRIX). Second Rule 1 fix: the `vi.mock("posthog-node")` factory needed `function MockPostHog() { ... }` constructor form rather than `vi.fn().mockImplementation(() => ({...}))` because arrow functions lack `[[Construct]]` and the route handler calls `new PostHog(...)`. All 8 Playwright tests + 2 integration tests + 116 unit tests green post-fix. 5 commits (4 task + 1 focused rename fix). SC-4 server-side automatic proof (D-27-a / user decision 1) shipped via the Vitest integration test — replaces prior "Playwright cannot intercept server-originated traffic" concession with an in-process function call + mocked SDK assertion.
+- Last 9 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min), 01-06 (~10 min), 01-05b (~3 min), 01-07 (~12 min), 01-08 (~6 min automated + checkpoint)
+- Trend: Plan 01-08 shipped the full CI pipeline (postgres:17-alpine service container + pnpm + Playwright caches + 15-step workflow) plus 3 planning-doc reconciliations (REQUIREMENTS INFRA-12 + OBS-05 defer, ROADMAP SC-4 split wording + 9-plan list, FILE-MATRIX diag rename fix) + 1 Rule 2 housekeeping (public/sw.js.map gitignore). First PR CI run (24911496475) passed in 2m43s on the first attempt after the Task 4 checkpoint unblock: client-side posthog-js capture could not be intercepted by Playwright despite 8 commits of investigation (init/loaded/capture pipeline all execute without error); root cause never isolated. Resolved per SC-4 (b) by softening the client assertion to warn-only + deferring to the PostHog dashboard as authoritative, with the full investigation and follow-up disposition documented in 01-08-SUMMARY § 'Known gap'. D-21 privacy posture (`person_profiles: 'identified_only'`) restored post-investigation. GitHub deprecation warning on actions/cache@v4 + actions/upload-artifact@v4 captured as a tooling todo (`.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`) with hard 2026-06-02 and 2026-09-16 deadlines.
 
 *Updated after each plan completion*
 
@@ -110,6 +110,11 @@ Recent decisions affecting current work:
 - Plan 01-07: Sentry envelope-count assertion in `diagnostics-sentry.spec.ts` is CI-gated (`if (process.env.CI) expect(...)`); PII-sentinel assertion is unconditional. The inverse `sentry-local-mode.spec.ts` uses `test.skip(!!process.env.CI, ...)` — runs only locally and asserts zero envelopes emitted under empty-DSN mode (Action 13). This split means local-mode developers running the suite don't get false failures when DSN is blank while still catching any accidental re-enable.
 - Plan 01-07: INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 all marked complete in REQUIREMENTS.md per plan frontmatter. OBS-01 + LGPD-13 were previously marked by Plan 05b; plan 07 re-confirms them end-to-end via the smoke suite. OBS-02 was contributed-not-completed by Plan 06; 07 closes the loop. INFRA-16 (env gate) + INFRA-18 (security headers every response) land here because their end-to-end Playwright verification is the authoritative proof.
 - Plan 01-07: Pre-existing `public/sw.js.map` missing from `.gitignore` (Plan 03 SUMMARY claimed it was added but only `public/sw.js` was). Logged to `.planning/phases/01-foundation/deferred-items.md` for Plan 01-08 or later housekeeping — out of Plan 07 scope.
+- Plan 01-08: `.github/workflows/ci.yml` pins `actions/checkout@v5` + `actions/setup-node@v5` + `actions/cache@v4` + `actions/upload-artifact@v4`; all verified GA via live `api.github.com/repos/.../tags` on 2026-04-24 (Action 19). postgres:17-alpine service container matches local Supabase's bundled Postgres 17 (D-25 parity); DATABASE_URL == DATABASE_POOL_URL in CI because Supavisor is not used. Integration step exports `NEXT_PUBLIC_POSTHOG_KEY=ph_test_key` so the mocked `getPostHog()` in `diagnostics-server-probe` unlocks its singleton. SENTRY_DSN_CI + POSTHOG_KEY_CI injected ONLY into the E2E step; Build step has NO SENTRY_AUTH_TOKEN (Pitfall 7 — source-map upload is Phase 12 `deploy-production.yml`). Workflow uses `on: pull_request` (NOT `pull_request_target`) so fork PRs run without secrets; CI-gated diagnostics assertions tolerate empty DSN/key.
+- Plan 01-08: Planning-doc-drift mitigations (T-08-06) extended beyond plan text to include REQUIREMENTS.md per-phase totals (Phase 1 13→12 after OBS-05 move, Phase 13 3→4), FILE-MATRIX.md stale `__diag`/`_diagnostics` paths post-Plan-07 rename (3 rows), and `.gitignore` `public/sw.js.map` entry (Plan 07 deferred-item closure). Advisor-flagged as Rule 1 doc-consistency fixes — keeps Phase 1's planning artifacts authoritative.
+- Plan 01-08: posthog-js 1.368 client-side capture does NOT POST to `*.i.posthog.com` in the Playwright + CI + Next 16 combo despite the full pipeline executing without error (init → loaded-callback → capture all confirmed via instrumentation; `/flags` POST IS observed but `/e`, `/batch`, `/capture` never fire). 8 commits of investigation (`6b23819`…`a95a004`) eliminated candidate root causes (batch-flush timing, page-unload flush, pre-init drop, `person_profiles: 'identified_only'` gate, loaded-callback queuing) without producing a POST. Resolved per SC-4 (b) / user decision 1: Playwright assertion softened to warn-only when zero events intercepted (dashboard is authoritative); marker + scrub sentinel assertions retained when events ARE intercepted. Hard assertions remain for server-side `$diagnostics_server_ping` (via `diagnostics-server-probe.integration.test.ts`), Sentry envelopes, and scrub sentinels. D-21 privacy posture (`person_profiles: 'identified_only'`) restored after the diagnostic flip to `'always'` (`fcfa448`) was reverted. Gap documented in 01-08-SUMMARY § 'Known gap' with investigation trail, resolution posture, and follow-up disposition (ops item, no phase owner; not a launch blocker since MVP identification flows will capture server-side via `posthog-node` where the pipeline is fully asserted).
+- Plan 01-08: INFRA-12 marked complete in REQUIREMENTS.md traceability table. Phase 1 complete: INFRA-12 + INFRA-16 + INFRA-17 + INFRA-18 + INFRA-20 + INFRA-23 + INFRA-26 + OBS-01 + OBS-02 + LGPD-13 (plus INFRA-01 + INFRA-02 from Plan 01-01). OBS-05 explicitly deferred to Phase 13 on 2026-04-23 per user decision 2 (alert rules need real traffic to tune thresholds — empty-project alerts are noise).
+- Plan 01-08: First PR CI run (https://github.com/aesir-tecnologia/folhario/actions/runs/24911496475) completed green in 2m43s on the first attempt post-checkpoint-unblock; all 15 workflow steps passed including Playwright smoke (7 passed + 1 expected local-mode skip). GitHub emitted a deprecation annotation: `actions/cache@v4` and `actions/upload-artifact@v4` run on Node 20, forced to Node 24 on 2026-06-02, removed 2026-09-16 — captured as tooling todo at `.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`.
 
 ### Pending Todos
 
@@ -135,6 +140,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T03:37:30.000Z
-Stopped at: Completed Phase 1 Plan 01-07 (diagnostics routes + 5 Playwright E2E specs + Vitest server-probe; 5 commits — feat Task 1 + test Task 2 + test Task 3 + test Task 4 + fix rename; 10 files created, 1 modified; pnpm typecheck exit 0, pnpm build --webpack green with /diag + /api/v1/diagnostics/ping routes emitted; 116 unit + 2 integration + 8 Playwright E2E tests green; INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 marked complete); ready to execute 01-08 (.github/workflows/ci.yml + REQUIREMENTS.md INFRA-12 amendment + ROADMAP.md SC-4 wording split + OBS-05 map to Phase 13)
-Resume file: .planning/phases/01-foundation/01-08-PLAN.md
+Last session: 2026-04-24T21:05:00.000Z
+Stopped at: Phase 1 COMPLETE (9/9 plans shipped). Plan 01-08 closed with CI run 24911496475 green in 2m43s on first attempt post-checkpoint; Manual dashboard verification confirmed by developer (Sentry + PostHog CI projects receiving events). posthog-js client-capture gap documented in 01-08-SUMMARY § 'Known gap' — soft-assert per SC-4 (b), dashboard authoritative. D-21 privacy posture restored. v4-action deprecation todo captured. Phase 1 delivered: Next 16 + Serwist scaffold, local Supabase Docker stack, Sentry + PostHog baseline with split client/server verification, security headers every response, closed error-code registry, `ci.yml` with postgres:17-alpine service container + pnpm + Playwright caches. Requirements complete: INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, LGPD-13 (OBS-05 deferred to Phase 13 per user decision 2). Ready to begin Phase 2 (Data Layer & Bounded Contexts — Drizzle schema + Supabase adapters + image pipeline + API conventions).
+Resume file: .planning/ROADMAP.md (Phase 2 entry — plans TBD)

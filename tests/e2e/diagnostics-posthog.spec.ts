@@ -6,9 +6,17 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
 }) => {
   const posthogEvents: string[] = [];
   const consoleLogs: string[] = [];
+  const allRequests: string[] = [];
 
   page.on("console", (msg) => {
     consoleLogs.push(`[${msg.type()}] ${msg.text()}`);
+  });
+
+  page.on("request", (req) => {
+    const url = req.url();
+    if (url.includes("posthog") || url.includes("/_next/") === false) {
+      allRequests.push(`${req.method()} ${url}`);
+    }
   });
 
   await page.route(/\.i\.posthog\.com\/(e|batch|capture)/, async (route) => {
@@ -40,6 +48,9 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
       console.log("---- BROWSER CONSOLE ----");
       for (const line of consoleLogs) console.log(line);
       console.log("---- END BROWSER CONSOLE ----");
+      console.log("---- ALL PAGE REQUESTS (filtered) ----");
+      for (const line of allRequests) console.log(line);
+      console.log("---- END PAGE REQUESTS ----");
     }
     expect(posthogEvents.length).toBeGreaterThan(0);
     const joined = posthogEvents.join("\n");

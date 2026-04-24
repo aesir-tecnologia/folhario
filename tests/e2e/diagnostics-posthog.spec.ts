@@ -30,18 +30,11 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
   expect(typeof body.timestamp).toBe("string");
   expect(() => new Date(body.timestamp)).not.toThrow();
 
-  // Soft check (user decision 1 / SC-4 (b)): client-side events are authoritatively verified via
-  // the PostHog dashboard, not via local intercept. posthog-js flush behavior in CI + Next 16 is
-  // unreliable enough that failing on zero intercepted payloads produces false negatives. If events
-  // DID fire locally, still assert the marker is present and no forbidden sentinels leaked.
-  if (posthogEvents.length > 0) {
+  if (process.env.CI) {
+    expect(posthogEvents.length).toBeGreaterThan(0);
     const joined = posthogEvents.join("\n");
     expect(joined, "client diagnostics event must appear in some PostHog payload").toContain(
       "$diagnostics_client_ping",
-    );
-  } else if (process.env.CI) {
-    console.warn(
-      "[diagnostics-posthog] no PostHog events intercepted locally — verify in the CI PostHog dashboard (SC-4 (b) manual check)",
     );
   }
 });

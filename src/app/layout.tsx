@@ -1,6 +1,7 @@
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import type { ReactNode } from "react";
+import { PostHogProvider } from "./posthog-provider";
 
 export const metadata = {
   title: "Folhário",
@@ -18,7 +19,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
+          <PostHogProvider>{children}</PostHogProvider>
         </NextIntlClientProvider>
       </body>
     </html>

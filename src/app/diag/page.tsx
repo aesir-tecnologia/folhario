@@ -7,12 +7,16 @@ import { initPostHog } from "@shared/telemetry/posthog-client";
 
 export default function DiagPage() {
   useEffect(() => {
+    console.log("[diag] useEffect firing, calling initPostHog with onLoaded callback");
     initPostHog(() => {
+      console.log("[diag] onLoaded callback fired, calling posthog.capture");
       posthog.capture("$diagnostics_client_ping", {
         source: "playwright-smoke",
         $process_person_profile: false,
       });
+      console.log("[diag] posthog.capture returned");
     });
+    console.log("[diag] initPostHog returned (callback may be queued)");
 
     Sentry.captureException(new Error("Playwright diagnostics client error"), {
       extra: {

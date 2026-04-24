@@ -23,6 +23,11 @@ export function initPostHog(onLoaded?: () => void): void {
     persistence: "localStorage+cookie",
     person_profiles: "identified_only",
     loaded: () => {
+      console.log(
+        "[posthog-client] loaded callback fired, draining",
+        loadedCallbacks.length,
+        "callbacks",
+      );
       loaded = true;
       while (loadedCallbacks.length > 0) loadedCallbacks.shift()?.();
     },

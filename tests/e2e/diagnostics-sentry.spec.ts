@@ -5,7 +5,7 @@ const FORBIDDEN_SENTINELS = ["scrub-me", "should-be-scrubbed", "should-be-scrubb
 test("Sentry fires from /diag and client scrubs PII from envelopes", async ({ page }) => {
   const sentryPayloads: string[] = [];
 
-  await page.route(/\.ingest\.sentry\.io\/.*\/envelope/, async (route) => {
+  await page.route(/ingest\.(?:[a-z]+\.)?sentry\.io\/.*\/envelope/, async (route) => {
     const body = route.request().postData() ?? "";
     sentryPayloads.push(body);
     await route.fulfill({ status: 200, body: "ok" });

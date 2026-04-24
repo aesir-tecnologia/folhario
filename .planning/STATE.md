@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-04 (local Supabase dev stack + env sync + postgres@3 integration test)
-last_updated: "2026-04-24T02:41:28.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-04 complete; 3 commits; 4 files created, 3 modified
+stopped_at: Completed Phase 1 Plan 01-05a (Sentry LGPD-13 scrub helpers via TDD RED->GREEN; REFACTOR skipped)
+last_updated: "2026-04-24T02:53:18.000Z"
+last_activity: 2026-04-24 -- Phase 01 Plan 01-05a complete; 2 commits (RED + GREEN); 2 files created, 0 modified
 progress:
   total_phases: 13
   completed_phases: 0
   total_plans: 9
-  completed_plans: 4
-  percent: 44
+  completed_plans: 5
+  percent: 55
 ---
 
 # Project State
@@ -26,30 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 — foundation — EXECUTING
-Plan: 5 of 9 (next)
+Plan: 6 of 9 (next: 01-05b — three Sentry.init config files consuming the scrub helpers shipped by 05a)
 Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-04 complete; 3 commits; 4 files created, 3 modified
+Last activity: 2026-04-24 -- Phase 01 Plan 01-05a complete; 2 commits (RED + GREEN); 2 files created, 0 modified
 
-Progress: [████░░░░░░] 44%
+Progress: [█████░░░░░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
-- Average duration: ~14 minutes
-- Total execution time: ~57 minutes
+- Total plans completed: 5
+- Average duration: ~12 minutes
+- Total execution time: ~61 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 4/9 | ~57 min | ~14 min |
+| 01 | 5/9 | ~61 min | ~12 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min)
-- Trend: Plan 01-04 fastest to date — only 1 Rule 1 bug (script key names + pnpm banner) and 1 Rule 3 blocker (Plan 01-02 root-level setupFiles leak into integration project). Docker already up from prior session; supabase images cached — skipped ~4GB first-run download.
+- Last 5 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min), 01-04 (~9 min), 01-05a (~4 min)
+- Trend: Plan 01-05a fastest to date — strict TDD with no REFACTOR needed. Two Rule 3 blockers at commit time (project lint `no-explicit-any` vs plan's `any`-heavy sample code + commitlint `subject-case` on "LGPD-13" leading upper-case) both resolved inline with no scope expansion. Unit test count grew 101→116 (+15). All acceptance criteria met; `pnpm typecheck` exit 0.
 
 *Updated after each plan completion*
 
@@ -84,6 +84,14 @@ Recent decisions affecting current work:
 - Plan 01-04: `postgres@3.4.9` pinned exactly (not `"3"` or `"^3.x"`) as PRODUCTION dependency (not devDep). Action 14 avoids Phase 2 churn; exact pin matches repo convention (`next: 16.2.3`, `zod: 4.3.6`).
 - Plan 01-04: `supabase/config.toml` tracked with `[db].major_version = 17` (CLI 2.95 default matches D-16 + D-25). Live Postgres reports `server_version = 17.6`, `server_version_num = 170006`.
 - Plan 01-04: Task 3 was a `checkpoint:human-verify` in the plan; orchestrator pre-authorized the automatable subset (steps 2, 3, 5). Steps 4 (dev server headers — covered by Plan 01-03), 6 (`db:reset`), 7 (`db:stop`) SKIPPED. Stack left running per orchestrator instruction.
+- Plan 01-05a: `src/shared/telemetry/sentry-scrub.ts` ships the LGPD-13 scrub contract as 5 named exports (`SCRUB_FIELDS`, `scrubHeaders`, `scrubObject`, `makeBeforeSend`, `makeBeforeBreadcrumb`) consumed verbatim by Plan 05b's three Sentry.init files. Redaction marker is the literal string `[scrubbed]` for per-field scrubs; `undefined` reserved for wholesale section drops (request.cookies, request.data on `/api/v1/identifications/*`).
+- Plan 01-05a: IDENTIFICATION_PATH regex uses `(\/|$)` boundary anchor — matches `/api/v1/identifications`, `/api/v1/identifications/`, `/api/v1/identifications/abc`; does NOT match `/api/v1/identifications_foo` (T-05a-02 suffix-bypass mitigation). `isScrubKey` lowercases before Set lookup (T-05a-03 case-bypass mitigation).
+- Plan 01-05a: makeBeforeSend / makeBeforeBreadcrumb are factory functions returning closures, not direct exports — future-proofs for per-runtime config injection in Plan 05b without breaking the import shape.
+- Plan 01-05a: LGPD-13 NOT marked complete in REQUIREMENTS.md — the module is shipped but runtime enforcement requires Plan 05b's three Sentry.init files. Frontmatter `requirements: [LGPD-13]` is a contributor traceability pointer, not a completion claim; 05b marks it complete. Per the plan's own threat model T-05a-01: "the scrub MODULE is verified here; the init-file WIRING that consumes it is verified in Plan 05b".
+- Plan 01-05a: Test file rewritten to use typed synthetic events (`TestEvent`, `TestBreadcrumb` locals mirroring module's internal types) because project's `@typescript-eslint/no-explicit-any` rule (from eslint-config-next/typescript) blocked the plan's `any`-laden sample code at lint-staged. Semantically identical; all 12 behaviors / 15 tests preserved 1:1.
+- Plan 01-05a: Commitlint `subject-case` rejected "LGPD-13" as a leading upper-case subject word — rephrased RED commit subject to lowercase-start ("add failing test for Sentry LGPD-13 ..."). Zero content change; commitlint flags only the first subject word.
+- Plan 01-05a: REFACTOR skipped — GREEN is 94 lines, zero duplication, single-responsibility helpers. Plan explicitly permitted `no refactor needed — GREEN is minimal` in the summary.
+- ROADMAP.md Phase 1 plan list has stale entry `01-05-PLAN.md` (pre-split) — actual files on disk are `01-05a-PLAN.md` + `01-05b-PLAN.md`. Left as-is; out of 05a's scope to fix retroactively. Progress row updated to 5/9.
 
 ### Pending Todos
 
@@ -109,6 +117,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T02:41:28.000Z
-Stopped at: Completed Phase 1 Plan 01-04 (local Supabase dev stack + postgres@3 integration test); ready to execute 01-05a (Sentry scrub TDD)
-Resume file: .planning/phases/01-foundation/01-05a-PLAN.md
+Last session: 2026-04-24T02:53:18.000Z
+Stopped at: Completed Phase 1 Plan 01-05a (Sentry LGPD-13 scrub helpers via TDD; 2 commits RED+GREEN; 15 unit tests); ready to execute 01-05b (three Sentry.init config files consuming the 05a helpers)
+Resume file: .planning/phases/01-foundation/01-05b-PLAN.md

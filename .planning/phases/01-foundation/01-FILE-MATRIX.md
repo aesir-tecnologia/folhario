@@ -25,10 +25,10 @@
 | `src/shared/telemetry/posthog-client.ts` | 01-06 | — | imports only from `@shared/config/client-env` |
 | `src/shared/telemetry/posthog-server.ts` | 01-06 | — | server singleton; imports `client-env.ts` (PostHog public key is not a server secret) |
 | `src/app/posthog-provider.tsx` | 01-06 | — | `"use client"` wrapper calling `initPostHog()` on mount |
-| `src/app/__diag/layout.tsx` | 01-07 | — | server guard; `notFound()` unless `IDENTIFICATION_PROVIDER_MODE === "stub"` |
-| `src/app/__diag/page.tsx` | 01-07 | — | client diagnostics page |
-| `src/app/api/v1/_diagnostics/ping/route.ts` | 01-07 | — | server diagnostics route; both POST and GET exercised |
-| `tests/e2e/security-headers.spec.ts` | 01-07 | — | MUST assert headers on `/`, `/api/v1/_diagnostics/ping`, AND `/manifest.webmanifest` (per user decision 3 + Action 3) |
+| `src/app/diag/layout.tsx` | 01-07 | — | server guard; `notFound()` unless `IDENTIFICATION_PROVIDER_MODE === "stub"` (renamed from `__diag` in Plan 07 — Next App Router filters `_`-prefixed segments) |
+| `src/app/diag/page.tsx` | 01-07 | — | client diagnostics page (renamed from `__diag` in Plan 07) |
+| `src/app/api/v1/diagnostics/ping/route.ts` | 01-07 | — | server diagnostics route; both POST and GET exercised (renamed from `_diagnostics` in Plan 07) |
+| `tests/e2e/security-headers.spec.ts` | 01-07 | — | MUST assert headers on `/`, `/api/v1/diagnostics/ping`, AND `/manifest.webmanifest` (per user decision 3 + Action 3) |
 | `tests/e2e/pwa-smoke.spec.ts` | 01-07 | — | manifest + sw.js |
 | `tests/e2e/diagnostics-sentry.spec.ts` | 01-07 | — | client envelope + PII sentinel absence |
 | `tests/e2e/diagnostics-posthog.spec.ts` | 01-07 | — | client `$pageview`-style capture; asserts server handler returned 200 |

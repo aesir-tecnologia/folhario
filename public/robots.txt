@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /__diag
+Disallow: /api/v1/_diagnostics/

@@ -15,6 +15,7 @@ export function initPostHog(): void {
     disable_session_recording: true,
     persistence: "localStorage+cookie",
     person_profiles: "identified_only",
+    debug: typeof window !== "undefined" && window.location.search.includes("ph_debug=1"),
   });
 
   initialized = true;

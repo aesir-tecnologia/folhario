@@ -5,6 +5,11 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
   request,
 }) => {
   const posthogEvents: string[] = [];
+  const consoleLogs: string[] = [];
+
+  page.on("console", (msg) => {
+    consoleLogs.push(`[${msg.type()}] ${msg.text()}`);
+  });
 
   await page.route(/\.i\.posthog\.com\/(e|batch|capture)/, async (route) => {
     const raw = route.request().postData();
@@ -12,7 +17,7 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
     await route.fulfill({ status: 200, body: "1" });
   });
 
-  await page.goto("/diag");
+  await page.goto("/diag?ph_debug=1");
 
   if (process.env.CI) {
     await page
@@ -31,6 +36,11 @@ test("PostHog $diagnostics_client_ping fires + GET /api/v1/diagnostics/ping retu
   expect(() => new Date(body.timestamp)).not.toThrow();
 
   if (process.env.CI) {
+    if (posthogEvents.length === 0) {
+      console.log("---- BROWSER CONSOLE (posthog debug) ----");
+      for (const line of consoleLogs) console.log(line);
+      console.log("---- END BROWSER CONSOLE ----");
+    }
     expect(posthogEvents.length).toBeGreaterThan(0);
     const joined = posthogEvents.join("\n");
     expect(joined, "client diagnostics event must appear in some PostHog payload").toContain(

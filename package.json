@@ -36,6 +36,7 @@
     "@serwist/next": "9.5.7",
     "next": "16.2.3",
     "next-intl": "4.9.1",
+    "postgres": "3.4.9",
     "posthog-js": "1.368.0",
     "posthog-node": "5.29.7",
     "react": "19.2.5",

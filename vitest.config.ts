@@ -4,7 +4,6 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   plugins: [tsconfigPaths()],
   test: {
-    setupFiles: ["tests/unit/setup-env.ts"],
     projects: [
       {
         extends: true,
@@ -13,6 +12,7 @@ export default defineConfig({
           include: ["tests/unit/**/*.test.ts"],
           environment: "node",
           isolate: false,
+          setupFiles: ["tests/unit/setup-env.ts"],
         },
       },
       {

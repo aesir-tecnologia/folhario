@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-02 (scaffold + error registry + split env)
-last_updated: "2026-04-24T02:10:00.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-02 complete; 5 commits; 50 files in play
+stopped_at: Completed Phase 1 Plan 01-03 (Next 16 app skeleton + i18n + proxy + Serwist + security headers)
+last_updated: "2026-04-23T23:30:00.000Z"
+last_activity: 2026-04-23 -- Phase 01 Plan 01-03 complete; 4 commits; 12 files created, 3 modified
 progress:
   total_phases: 13
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
-  percent: 22
+  completed_plans: 3
+  percent: 33
 ---
 
 # Project State
@@ -26,30 +26,30 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 — foundation — EXECUTING
-Plan: 3 of 9 (next)
+Plan: 4 of 9 (next)
 Status: Executing Phase 01
-Last activity: 2026-04-24 -- Phase 01 Plan 01-02 complete; 5 commits; 50 files created/modified
+Last activity: 2026-04-23 -- Phase 01 Plan 01-03 complete; 4 commits; 12 files created, 3 modified
 
-Progress: [██░░░░░░░░] 22%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
-- Average duration: ~11.5 minutes
-- Total execution time: ~23 minutes
+- Total plans completed: 3
+- Average duration: ~16 minutes
+- Total execution time: ~48 minutes
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 2/9 | ~23 min | ~11.5 min |
+| 01 | 3/9 | ~48 min | ~16 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (~11 min), 01-02 (~12 min)
-- Trend: stable
+- Last 5 plans: 01-01 (~11 min), 01-02 (~12 min), 01-03 (~25 min)
+- Trend: Plan 01-03 slower than avg due to 4 Rule 3 blockers (next-intl plugin missing, Turbopack/Serwist gap, next-intl middleware vs root-level pages, @ts-expect-error guard) — all resolved inline, all documented
 
 *Updated after each plan completion*
 
@@ -71,6 +71,12 @@ Recent decisions affecting current work:
 - Plan 01-02: `src/placeholder.ts` deleted in Task 2 GREEN (bundled with `errors.ts` creation so `tsc --noEmit` never sees an empty `src/`)
 - Plan 01-02: `vitest.config.ts` gained root-level `setupFiles: ["tests/unit/setup-env.ts"]`; `extends: true` propagates into both projects
 - Plan 01-02: Zod `z.string().url()` kept as-is (deprecated in Zod 4.3.6 but functional; migration to top-level `z.url()` deferred — zero behavior delta)
+- Plan 01-03: next.config.ts wraps `withSentryConfig(withSerwist(withNextIntl(nextConfig)))` — added `createNextIntlPlugin` (Rule 3 blocker; plan omitted the plugin; `getLocale()`/`getMessages()` cannot find `src/i18n/request.ts` without it)
+- Plan 01-03: Build script uses `next build --webpack` because `@serwist/next@9.5.7` does not support Next 16 Turbopack (upstream issue); Serwist is disabled in dev anyway (D-13). Dev script stays on default Turbopack.
+- Plan 01-03: Switched to next-intl "without i18n routing" mode — `src/proxy.ts` is a no-op pass-through; `src/i18n/request.ts` hardcodes `routing.defaultLocale`. Plan's `createMiddleware(routing)` invocation with `localePrefix: "as-needed"` rewrote `/` → `/pt-BR` expecting an `src/app/[locale]/` segment that intentionally doesn't exist. Routing config remains committed for future multi-locale plan.
+- Plan 01-03: Security headers live ONLY in `next.config.ts` `headers()` with `source: "/(.*)"` (user decision 3); `src/proxy.ts` grep-verified to contain zero security-header strings.
+- Plan 01-03: `src/instrumentation.ts` uses `try/catch` + `@ts-expect-error` on `await import("./sentry.<runtime>.config")` because Plan 05b creates both files in a later wave. Plan 05b removes both guards.
+- Plan 01-03: `public/sw.js` + `public/sw.js.map` added to `.gitignore`; `next-env.d.ts` is intentionally NEITHER tracked NOR gitignored (CONTEXT.md Action 6). `tsconfig.json` `jsx` changed from `preserve` to `react-jsx` by Next 16 build (mandatory).
 
 ### Pending Todos
 
@@ -96,6 +102,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T02:10:00.000Z
-Stopped at: Completed Phase 1 Plan 01-02 (scaffold + error registry + split env); ready to execute 01-03
-Resume file: .planning/phases/01-foundation/01-03-PLAN.md
+Last session: 2026-04-23T23:30:00.000Z
+Stopped at: Completed Phase 1 Plan 01-03 (Next 16 app skeleton + i18n + proxy + Serwist + security headers); ready to execute 01-04
+Resume file: .planning/phases/01-foundation/01-04-PLAN.md

@@ -43,7 +43,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md -- Repo tooling bootstrap
 - [x] 01-02-PLAN.md -- Scaffold + TDD error registry + TDD Zod env
-- [ ] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
+- [x] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
 - [ ] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
 - [ ] 01-05-PLAN.md -- TDD Sentry scrub (LGPD-13) + three init files
 - [ ] 01-06-PLAN.md -- Hand-rolled PostHog providers

@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 8 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Repo tooling bootstrap
+- [x] 01-01-PLAN.md -- Repo tooling bootstrap
 - [ ] 01-02-PLAN.md -- Scaffold + TDD error registry + TDD Zod env
 - [ ] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
 - [ ] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
@@ -213,7 +213,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 1/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |

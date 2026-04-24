@@ -59,8 +59,8 @@ decisions:
   - "Use `eslint-config-next/core-web-vitals` + `eslint-config-next/typescript` subpath imports as discovered from create-next-app@16.2.4 output"
   - "Pin pnpm@9.15.5 via Corepack (packageManager field) even though system had 9.15.9"
 metrics:
-  duration: TBD
-  completed: TBD
+  duration: "~11 minutes"
+  completed: 2026-04-23
 ---
 
 # Phase 01 Plan 01: Repository Tooling Scaffold Summary
@@ -204,6 +204,68 @@ This is a divergence from PLAN.md Task 2 Step 2 — both offered shapes there we
 - **Files modified:** `.gitignore`
 - **Commit:** Task 2
 
+**7. [Rule 1 - Bug] `commitlint --stdin --strict` → `commitlint --strict`**
+- **Found during:** Task 4 Step 5 (stateless verification)
+- **Issue:** PLAN.md Task 4 Step 5 + Action 10 prescribe `pnpm exec commitlint --stdin --strict`, but `@commitlint/cli@20.5.0` has **no `--stdin` flag**. Its help text explicitly says "[input] reads from stdin if --edit, --env, --from and --to are omitted". Running the plan-prescribed command errors with `Unknown argument: stdin`.
+- **Fix:** Use `echo "<msg>" | pnpm exec commitlint --strict` (no `--stdin` flag); commitlint reads stdin implicitly when `--edit`/`--env`/`--from`/`--to` are all omitted. Verified: bad message exits 3 (strict-mode error), `feat: valid` exits 0.
+- **Files modified:** None (verification-time command correction only; the hook body `pnpm exec commitlint --edit "$1"` remains correct).
+- **Commit:** Task 4
+
+## Commits
+
+| Task | Name | Commit |
+|------|------|--------|
+| 0 | Pre-flight version resolution + eslint-config-next spike | `0692871` |
+| 1 | `.nvmrc`, `.gitignore`, `package.json`, dependencies install | `a678522` |
+| 2 | `tsconfig.json`, `eslint.config.mjs`, prettier configs, commitlint config | `8f37b1c` |
+| 3 | `vitest.config.ts`, `playwright.config.ts`, `.env.example` | `33281e3` |
+| 4 | `.husky/pre-commit`, `.husky/commit-msg` | `244055d` |
+
+## Known Stubs
+
+- `src/placeholder.ts` — contains `export {};` only. Purpose: satisfy `tsc --noEmit` glob before Plan 01-02 lands its first real module at `src/shared/config/errors.ts`. Plan 01-02 or 01-03 should delete this file the moment a real source file exists under `src/`. This is documented in a top-of-file comment.
+
+## Threat Flags
+
+None — Plan 01-01 introduces no new network endpoints, auth paths, file access patterns, or schema changes at trust boundaries. The `.env` / `.env.example` T-01-01 mitigation is already covered in the plan's threat register and remains in effect (dummy values in `.env.example`; real `.env` stays ignored via `.gitignore`).
+
+## Reference to Next Plan
+
+Next plan: **01-02** — Error registry + env validation (split `server-env.ts` / `client-env.ts` per D-29 revised). Plan 01-02 will:
+- Drop `src/placeholder.ts` once it lands real modules under `src/shared/config/`.
+- Add `setupFiles: ["tests/unit/setup-env.ts"]` to both Vitest projects (per FILE-MATRIX).
+- Ship the first unit tests, satisfying the `pnpm test:unit` project with ≥1 file.
+
 ## Self-Check
 
-Populated at plan end.
+Files created/modified by this plan verified against disk:
+
+- `.nvmrc` — EXISTS (contains `22`).
+- `.gitignore` — EXISTS (extended; `.DS_Store` preserved; `next-env.d.ts` NOT present; `tsconfig.tsbuildinfo` added).
+- `package.json` — EXISTS (scripts, engines, packageManager, lint-staged config present; `lint` script = `"eslint"`).
+- `pnpm-lock.yaml` — EXISTS (10 runtime + 16 dev deps at pinned versions).
+- `tsconfig.json` — EXISTS (strict + noUncheckedIndexedAccess + 3 path aliases).
+- `eslint.config.mjs` — EXISTS (line 1 = `// verified from create-next-app@16.2.4 output`).
+- `.prettierrc`, `.prettierignore`, `.commitlintrc.json` — EXIST.
+- `vitest.config.ts` — EXISTS (`test.projects` v4 API with `unit` + `integration` projects).
+- `playwright.config.ts` — EXISTS (chromium-only, webServer `pnpm start`, probe URL `/`).
+- `.env.example` — EXISTS (exactly 19 PRD §20 variables; `NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com`).
+- `.husky/pre-commit`, `.husky/commit-msg` — EXIST (both executable; no `husky install`).
+- `src/placeholder.ts` — EXISTS (Rule 3 fix; documented for deletion by 01-02).
+
+Commits verified present in `git log`:
+- `0692871` (Task 0)
+- `a678522` (Task 1)
+- `8f37b1c` (Task 2)
+- `33281e3` (Task 3)
+- `244055d` (Task 4)
+
+Full-plan verification:
+- `pnpm install --frozen-lockfile` — exits 0.
+- `pnpm typecheck` — exits 0.
+- `pnpm lint` — exits 0.
+- `playwright --version` — prints `Version 1.59.1`.
+- `vitest run` — discovers `unit` + `integration` projects, reports 0 test files, exits 1 (expected; no tests yet).
+- Stateless commitlint: bad → exit 3, `feat: valid` → exit 0.
+
+## Self-Check: PASSED

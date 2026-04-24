@@ -2,7 +2,7 @@
 
 ## Overview
 
-Folhário is a Brazilian plant-identification + care-guide + reminder PWA whose core promise is "identified, cataloged, with care guidance in under 2 minutes from email verification." The journey from empty repo to launch goes: first lay down deploy/data foundations (Phases 1-2), then the design system and app shell (Phase 3), then unlock the verified-account gate (Phase 4), then build the catalog so there's something to identify INTO (Phase 5), then the identification flow itself with its architectural cost controls (Phase 6), then render care guides — the retention hook's supporting content (Phase 7), then close the retention loop with reminders and the single daily push nudge (Phase 8), then harden the offline queue that every mutating flow assumed (Phase 9), then wire the billing state machine that gates mutations across the whole app (Phase 10), then land LGPD data rights with the 7-day deletion grace via Inngest durable sleep (Phase 11), and finally the observability rollups and launch-blocker sign-off (Phase 12). Every phase ships observable end-to-end behavior; no horizontal-layer phases.
+Folhário is a Brazilian plant-identification + care-guide + reminder PWA whose core promise is "identified, cataloged, with care guidance in under 2 minutes from email verification." The journey from empty repo to launch goes: first lay down the local-dev foundation (Phase 1 — Next 16 scaffold, local Supabase in Docker, Sentry + PostHog baseline), then the data layer (Phase 2), then the design system and app shell (Phase 3), then unlock the verified-account gate (Phase 4 — which also onboards Inngest + Resend because email verification is the first async consumer), then build the catalog so there's something to identify INTO (Phase 5), then the identification flow itself with its architectural cost controls (Phase 6), then render care guides — the retention hook's supporting content (Phase 7), then close the retention loop with reminders and the single daily push nudge (Phase 8), then harden the offline queue that every mutating flow assumed (Phase 9), then wire the billing state machine that gates mutations across the whole app (Phase 10 — also onboards Stripe), then land LGPD data rights with the 7-day deletion grace via Inngest durable sleep (Phase 11), then wire up the Vercel deploy pipeline + Supabase branch DBs + preview-URL E2E (Phase 12) so production traffic has a real landing strip, and finally the observability rollups and launch-blocker sign-off (Phase 13). Every phase ships observable end-to-end behavior; no horizontal-layer phases. Tools are onboarded in the phase that first needs them, not upfront.
 
 ## Phases
 
@@ -12,10 +12,10 @@ Folhário is a Brazilian plant-identification + care-guide + reminder PWA whose 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & CI/CD** - Next 16 + Serwist scaffold, GitHub-Actions-only pipeline with Supabase branching, observability baseline
-- [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, Inngest wiring, image pipeline, API conventions
+- [x] **Phase 1: Foundation** - Next 16 + Serwist scaffold, local Supabase + Docker dev, Sentry + PostHog baseline with verification, security headers, error registry, ci.yml-only (no deploy)
+- [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, image pipeline, API conventions
 - [ ] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings
-- [ ] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Resend transactional-email backbone
+- [ ] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Inngest `serve()` + Resend transactional-email backbone (first async consumer)
 - [ ] **Phase 5: Catalog — Meu Jardim** - Manual plant add, plant profile, photo journal, location picker, offline-browsable catalog
 - [ ] **Phase 6: Identification Flow & Cost Controls** - Plant.id + OpenAI-compat adapters, per-user caps, per-provider ceilings, breakers, LGPD transfer consent, confidence ladder
 - [ ] **Phase 7: Species, Care Guides & Augmentation** - Curated launch corpus rendering, toxicity badge spec, Inngest care-guide augmentation with "Gerado por IA" chip
@@ -23,49 +23,43 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 9: Offline Queue & Sync Resilience** - IndexedDB queue replayer, Idempotency-Key dedupe, discard-summary, OfflineSyncFailure surface
 - [ ] **Phase 10: Billing, Trials & Read-Only Mode** - Stripe adapter (card + Pix), webhook-driven state machine, partner codes, dunning 4×7d, subscription-gated mutations
 - [ ] **Phase 11: LGPD Data Rights & 7-Day Deletion Grace** - Export ZIP + deletion via Inngest `step.sleepUntil`, consent revocation, Privacy panel, DPO contact
-- [ ] **Phase 12: Observability Rollups & Launch Readiness** - PostHog event taxonomy, identification-quality SQL rollups, launch-blocker checklist sign-off
+- [ ] **Phase 12: Deploy Pipeline** - Vercel project (git integration OFF), deploy-preview.yml + deploy-production.yml + deploy-preview-cleanup.yml, Supabase branch DB per PR, Playwright against preview URL, Sentry source-map upload
+- [ ] **Phase 13: Observability Rollups & Launch Readiness** - PostHog event taxonomy, identification-quality SQL rollups, launch-blocker checklist sign-off
 
 ## Phase Details
 
-### Phase 1: Foundation & CI/CD
-**Goal**: A deployable Next 16 skeleton whose every PR flows through GitHub-Actions-driven test → preview → merge → production with observability and secrets in place before any feature code ships.
+### Phase 1: Foundation
+**Goal**: A Next 16 skeleton that a developer can run locally end-to-end — `pnpm dev` against a local Supabase Docker stack — with Sentry + PostHog wired and verified, security headers applied, the closed error-code registry in place, and `ci.yml` running lint + typecheck + Vitest unit + integration + a local-build Playwright smoke. No Vercel, no preview URLs, no deploy workflows, no Inngest yet — those land in the phases that first need them.
 **Depends on**: Nothing (first phase)
-**Requirements**: INFRA-01, INFRA-02, INFRA-11, INFRA-12, INFRA-13, INFRA-14, INFRA-15, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, OBS-01, OBS-02, OBS-05, LGPD-13
+**Requirements**: INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, LGPD-13 *(OBS-05 deferred to Phase 13 on 2026-04-23 per user decision 2)*
 **Success Criteria** (what must be TRUE):
   1. An empty Next 16 App Router app with TS strict + pt-BR locale + `@serwist/next` PWA wiring builds locally and on CI, with the bounded-context folder layout from PRD §2 in place.
-  2. Opening a PR runs lint + typecheck + Vitest unit + Vitest integration (against a `postgres:16-alpine` service container) + Playwright (against a `vercel deploy --prebuilt` preview URL bound to a per-PR Supabase branch DB), and closing the PR cleans up the branch DB + preview alias.
-  3. Merging to `main` deploys to production via `vercel deploy --prebuilt --prod`, creates a Sentry release tagged with git SHA, uploads Turbopack source maps post-build, and syncs Inngest functions — with Vercel git integration confirmed OFF.
-  4. A deliberately thrown error in any environment appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes; PostHog EU client + `posthog-node` server are connected and a ping event lands in the EU project.
-  5. The closed error-code registry enum exists as a single importable source, standard security headers (CSP, HSTS, X-Frame-Options) apply to every response, and the `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers so preview cannot accidentally burn real provider credit.
-**Plans**: 18 plans
-- [ ] 01-01-PLAN.md — Wave 0 operator provisioning checklist (Sentry/PostHog EU/Supabase/Vercel/Inngest + GH Actions secrets + Node 22/pnpm) — D-27 [autonomous: false]
-- [ ] 01-02-PLAN.md — package.json + pnpm-lock + .nvmrc + .gitignore + .editorconfig + .env.example
-- [ ] 01-03-PLAN.md — tsconfig (D-06 strict-plus + D-07 alias) + ESLint flat + Prettier + husky + commitlint
-- [ ] 01-04-PLAN.md — Bounded-context folder scaffold (7×5 + shared/5) with README stubs (INFRA-02)
-- [ ] 01-05-PLAN.md — [TDD] Closed error code registry (INFRA-20, D-23)
-- [ ] 01-06-PLAN.md — [TDD] Zod-validated env parser (INFRA-16, INFRA-17, D-24/D-29 gate)
-- [ ] 01-07-PLAN.md — [TDD] Sentry scrubber + 3 init files (OBS-01, LGPD-13, D-19 OVERRIDE)
-- [ ] 01-08-PLAN.md — [TDD] PostHog client + server factories (OBS-02, D-17, D-18)
-- [ ] 01-09-PLAN.md — [TDD] Security headers builder + Next middleware (INFRA-18, D-20..D-22)
-- [ ] 01-10-PLAN.md — Drizzle + postgres-js client with {prepare:false} + drizzle.config.ts
-- [ ] 01-11-PLAN.md — next.config.mjs (Serwist + Sentry Turbopack native upload per D-19 OVERRIDE) + next-intl static pt-BR + root layout + sw.ts
-- [ ] 01-12-PLAN.md — [TDD] Route handlers: /api/v1/health, /api/v1/_test/throw (D-29 double guard), /api/v1/_csp/report, /api/inngest + hello-world fn + scaffold tests
-- [ ] 01-13-PLAN.md — vitest.config (unit + integration projects) + playwright.config + integration setup (D-14) + D-24 Playwright smoke
-- [ ] 01-14-PLAN.md — .github/workflows/ci.yml (postgres:17-alpine per D-28 OVERRIDE)
-- [ ] 01-15-PLAN.md — .github/workflows/deploy-preview.yml (Supabase branch + vercel deploy --prebuilt + Playwright against preview URL)
-- [ ] 01-16-PLAN.md — .github/workflows/deploy-preview-cleanup.yml (SC-2d)
-- [ ] 01-17-PLAN.md — .github/workflows/deploy-production.yml (D-19 OVERRIDE — no sentry-cli step) + branch protection doc (D-11)
-- [ ] 01-18-PLAN.md — Throwaway verification PR + operator manual checks (SC-3e/SC-2d/SC-4a,b) — D-27 [autonomous: false]
+  2. `supabase start` launches a local Postgres + Auth + Storage + Studio stack in Docker; the app running via `pnpm dev` connects to it through a local `DATABASE_URL`; `supabase db reset` rebuilds the stack from migrations.
+  3. Opening a PR runs `ci.yml`: lint + typecheck + Vitest unit + Vitest integration (against a `postgres:17-alpine` service container) + `next build` + a Playwright smoke against `next start` on the CI runner. No deploy, no preview URL.
+  4. A deliberately thrown error in the local app appears in Sentry with `Authorization`, `Cookie`, `email`, `password`, `token`, and `photo_url` scrubbed, `Sentry.setUser({ id })` only, and request bodies dropped on `/api/v1/identifications/*` routes. A PostHog ping event fires from both the client and `posthog-node` server. Client-side envelopes are verified automatically by the Playwright smoke (Sentry transport + PostHog `$pageview` intercepted at the network layer). Server-side envelopes are verified in two ways: (a) an automated Vitest integration test (`tests/integration/diagnostics-server-probe.integration.test.ts`) that imports the server route handler directly, mocks `posthog-node` + `@sentry/nextjs`, and asserts `capture()` + `captureException()` were invoked; and (b) a manual dashboard check recorded in `01-08-SUMMARY.md` with screenshot links.
+  5. The closed error-code registry enum exists as a single importable source, standard security headers (CSP, HSTS, X-Frame-Options) apply to every response, and the `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers so any future environment cannot accidentally burn real provider credit.
+**Plans**: 9 plans
+
+Plans:
+- [x] 01-01-PLAN.md -- Repo tooling bootstrap
+- [x] 01-02-PLAN.md -- Scaffold + TDD error registry + TDD Zod env
+- [x] 01-03-PLAN.md -- Next 16 app + i18n + proxy + Serwist + next.config.ts
+- [x] 01-04-PLAN.md -- Local Supabase Docker stack + env sync script
+- [x] 01-05a-PLAN.md -- TDD Sentry scrub module (LGPD-13 load-bearing)
+- [x] 01-05b-PLAN.md -- Three Sentry.init files (server + edge + browser) + instrumentation.ts cleanup
+- [x] 01-06-PLAN.md -- Hand-rolled PostHog providers
+- [x] 01-07-PLAN.md -- Diagnostics routes + 5 Playwright E2E specs + Vitest server-probe
+- [x] 01-08-PLAN.md -- ci.yml + REQUIREMENTS.md + ROADMAP.md amendments (final plan)
 **UI hint**: no
 
 ### Phase 2: Data Layer & Bounded Contexts
 **Goal**: Every entity from PRD §4 exists in Postgres with Drizzle migrations applied, auth/storage/inngest adapters are wired behind their interfaces, and route handlers have the conventions (Zod, Idempotency-Key, cursor pagination, RLS) needed for feature phases to write thin use-cases without reinventing plumbing.
 **Depends on**: Phase 1
-**Requirements**: INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, INFRA-08, INFRA-09, INFRA-10, INFRA-19, INFRA-21, INFRA-22, INFRA-24
+**Requirements**: INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, INFRA-08, INFRA-09, INFRA-19, INFRA-21, INFRA-22, INFRA-24
 **Success Criteria** (what must be TRUE):
   1. Drizzle schema + migrations for all 19 entities (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription) are applied to a fresh DB from `drizzle-kit`, with RLS enabled on every user-owned table.
   2. A single shared `db/client.ts` exports a Drizzle client built on `postgres-js` with `{ prepare: false }` against the Supavisor txn pooler, and integration tests fail loudly if any route handler imports Drizzle directly (repositories only).
-  3. `AuthAdapter`, `StorageAdapter` (with `plant-photos`, `plant-thumbnails`, `data-exports` private buckets + signed-URL helpers), and the Inngest `serve()` handler at `/api/inngest/route.ts` registering every async function (`care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push`) boot without errors and are exercised by integration tests.
+  3. `AuthAdapter` and `StorageAdapter` (with `plant-photos`, `plant-thumbnails`, `data-exports` private buckets + signed-URL helpers) boot without errors and are exercised by integration tests. Inngest is NOT wired here — it lands in Phase 4 alongside the first async consumer (verification email).
   4. A smoke `/api/v1/*` route handler validates body with a `drizzle-zod`-derived Zod schema, enforces JWT verification via Next middleware, returns cursor-paginated responses (`?cursor=&limit=`, default 50 / max 200, opaque `next_cursor`), and dedupes POSTs by `Idempotency-Key` header.
   5. A client-side image pipeline (compression ≤1MB + EXIF/GPS strip) uploads through the storage adapter and the server-side upload endpoint rejects any image carrying GPS EXIF with `validation_failed`; `ConsentLog` + policy-version + legal-basis registry seed data is loaded into every environment.
 **Plans**: TBD
@@ -85,9 +79,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **UI hint**: yes
 
 ### Phase 4: IAM — Auth, Verification, Consent
-**Goal**: A Brazilian beginner can sign up with email+password or Google, confirm age ≥13, accept T&C + privacy policy, receive + click a pt-BR verification email from Resend, and land in the app shell with the verification gate lifted — and the Settings shell exists with an "Account" section so profile basics and password change work end-to-end.
+**Goal**: A Brazilian beginner can sign up with email+password or Google, confirm age ≥13, accept T&C + privacy policy, receive + click a pt-BR verification email from Resend, and land in the app shell with the verification gate lifted — and the Settings shell exists with an "Account" section so profile basics and password change work end-to-end. This phase also onboards Inngest (`serve()` handler + all async function registrations) because the verification email is the first async consumer, and onboards Resend (React Email templates + sandbox domain) for the same reason.
 **Depends on**: Phase 3
-**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, AUTH-11, AUTH-12, AUTH-13, AUTH-14, AUTH-15, NOTIF-01, NOTIF-02, UI-13
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, AUTH-11, AUTH-12, AUTH-13, AUTH-14, AUTH-15, INFRA-10, NOTIF-01, NOTIF-02, UI-13
 **Success Criteria** (what must be TRUE):
   1. A new user submits the signup form with email+password, confirms age ≥13, accepts T&C + privacy policy (ConsentLog row recorded against the active `policy_version`), optionally enters a partner code, and their browser's `Intl.DateTimeFormat().resolvedOptions().timeZone` is captured into `User.timezone`; a `Subscription` row is created `status=trialing`; a verification email arrives in pt-BR via Resend (rendered from a React Email template); until they click the link, any gated endpoint returns `email_unverified` 403 and the app shell is replaced by a full-screen blocker "Verifique seu e-mail para começar." with resend-verification + logout links.
   2. A Google-OAuth signup treats the user as pre-verified — no verification email sent, gated endpoints reachable immediately — while the email+password user who clicks the verification link has `User.email_verified_at` set, the blocker cleared, and the "value <2 min" clock started.
@@ -188,12 +182,25 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 12: Observability Rollups & Launch Readiness
-**Goal**: Every PostHog event from the PRD taxonomy fires from the right place across all contexts, identification-quality SQL rollups run via Inngest cron and surface confidence/correction/latency/error/cap-hit/breaker/augment metrics, and the launch-blocker checklist (pricing, NFS-e, DPO, privacy policy, ≥200 care guides) is explicitly signed off before go-live.
+### Phase 12: Deploy Pipeline
+**Goal**: The app ships to a real URL. Vercel project created (git integration OFF), GitHub Actions deploy workflows wire up preview-per-PR with Supabase branch DBs and production deploys to `main`, a Playwright smoke runs against each preview URL, and Sentry source maps upload post-build so production errors are symbolicated.
 **Depends on**: Phase 11
-**Requirements**: OBS-03, OBS-04, INFRA-25
+**Requirements**: INFRA-11, INFRA-13, INFRA-14, INFRA-15
 **Success Criteria** (what must be TRUE):
-  1. The PostHog event taxonomy is wired end-to-end and every event from the PRD list (`signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested`) is observed in the PostHog EU project during an end-to-end test run, fired from the correct layer (client vs `posthog-node` server for Inngest-emitted events).
+  1. A Vercel project exists for Folhário with git integration confirmed OFF (builds only run from GitHub Actions, never from Vercel's own git connector); `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` are stored as GH Actions repo secrets.
+  2. `deploy-preview.yml` runs on PR open/sync: depends on `ci.yml` → `supabase branches create pr-{N}` (pinned CLI version) → apply migrations to the branch DB via `drizzle-kit migrate` → `vercel pull` preview env → `vercel build` → `vercel deploy --prebuilt` → Playwright smoke against the returned preview URL → comment the URL on the PR. Concurrency group per PR so rapid pushes don't race branch creation.
+  3. `deploy-preview-cleanup.yml` runs on PR close: delete the Supabase branch `pr-{N}` (pinned CLI version) and remove the Vercel preview alias.
+  4. `deploy-production.yml` runs on push to `main`: depends on `ci.yml` → apply migrations to prod Supabase (manual approval gate for destructive changes) → `vercel pull` prod env → `vercel build --prod` → `vercel deploy --prebuilt --prod` → create a Sentry release tagged `$GITHUB_SHA` with Turbopack source maps uploaded → sync Inngest functions.
+  5. A Playwright run against a fresh preview URL green-lights signup → verify → consent → identify happy path (against stub providers with `IDENTIFICATION_PROVIDER_MODE=stub`), and a deliberately thrown error in production is symbolicated in Sentry back to the originating TypeScript line.
+**Plans**: TBD
+**UI hint**: no
+
+### Phase 13: Observability Rollups & Launch Readiness
+**Goal**: Every PostHog event from the PRD taxonomy fires from the right place across all contexts, identification-quality SQL rollups run via Inngest cron and surface confidence/correction/latency/error/cap-hit/breaker/augment metrics, and the launch-blocker checklist (pricing, NFS-e, DPO, privacy policy, ≥200 care guides) is explicitly signed off before go-live.
+**Depends on**: Phase 12
+**Requirements**: OBS-03, OBS-04, OBS-05, INFRA-25 *(OBS-05 deferred from Phase 1 on 2026-04-23 per user decision; alert rules need real traffic to tune thresholds)*
+**Success Criteria** (what must be TRUE):
+  1. The PostHog event taxonomy is wired end-to-end and every event from the PRD list (`signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested`) is observed in the PostHog US project during an end-to-end test run, fired from the correct layer (client vs `posthog-node` server for Inngest-emitted events).
   2. Scheduled SQL rollups via Inngest cron over the `Identification` table populate dashboards for confidence distribution, manual-correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, and augmentation cost — and a single dashboard view surfaces them together.
   3. The launch-blocker checklist — (1) BRL monthly pricing, (2) NFS-e issuance strategy, (3) DPO appointment, (4) privacy policy + ToS published, (5) ≥200 curated care guides — is surfaced in the repo (e.g. `.planning/LAUNCH-BLOCKERS.md`) with each item explicitly checked off before production deploy, and the `IDENTIFICATION_PROVIDER_MODE` env var is set to real providers in production only.
   4. A full end-to-end Playwright run against the production-preview URL executes the <2-min core loop (signup → verify → consent → identify → catalog → care guide → reminder → push permission) and all 12 phases' acceptance criteria are green.
@@ -203,11 +210,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & CI/CD | 0/TBD | Not started | - |
+| 1. Foundation | 8/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
@@ -218,7 +225,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Offline Queue & Sync Resilience | 0/TBD | Not started | - |
 | 10. Billing, Trials & Read-Only Mode | 0/TBD | Not started | - |
 | 11. LGPD Data Rights & 7-Day Deletion Grace | 0/TBD | Not started | - |
-| 12. Observability Rollups & Launch Readiness | 0/TBD | Not started | - |
+| 12. Deploy Pipeline | 0/TBD | Not started | - |
+| 13. Observability Rollups & Launch Readiness | 0/TBD | Not started | - |
 
 ## Launch-Blocker Dependencies (Not Phase Tasks)
 
@@ -230,4 +238,4 @@ These are founder-owned prerequisites that must land before production launch bu
 4. **Privacy policy + ToS authored and published** — required before the Phase 4 consent flow ships to real users
 5. **≥200 curated pt-BR care guides published** — founder-owned content; Phase 7 renders them but authoring is separate (CARE-09 is tracked here, not as a Phase 7 dev task)
 
-Phase 12 gates production deploy on all five being checked off.
+Phase 13 gates production deploy on all five being checked off.

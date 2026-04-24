@@ -27,7 +27,7 @@ Reminders are the retention engine; without the <2-min first-value moment there'
 - **Security**: Per-device JWT, no server sessions, narrow per-IP throttle on public auth endpoints — only place `rate_limited` 429 is emitted in MVP. Standard security headers via Next.js middleware. RLS on all user-owned tables, service-role key server-side only.
 - **Data**: Timestamps ISO-8601 UTC with `Z`; exception: `User.notification_time_local` as `HH:MM` in `User.timezone`. `next_due_at` computed at create/advance, not at fire time.
 - **Error codes**: Closed registry in PRD §5 — no ad-hoc error codes. `cost_ceiling_reached` and `breaker_open` are INTERNAL-only and surface as `provider_unavailable` to clients.
-- **Observability**: Sentry (release = git SHA, source maps uploaded post-build from CI because Turbopack requires it), PostHog EU cloud (LGPD residency), SQL rollups via Inngest cron for identification quality metrics. `Sentry.setUser({ id })` only — never email.
+- **Observability**: Sentry (release = git SHA, source maps uploaded post-build from CI because Turbopack requires it), PostHog US cloud (lower latency from Brazil; international transfer basis documented in privacy policy + DPA via PostHog SCCs per LGPD Art. 33), SQL rollups via Inngest cron for identification quality metrics. `Sentry.setUser({ id })` only — never email.
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:STACK.md -->

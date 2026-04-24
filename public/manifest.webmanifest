@@ -1,0 +1,9 @@
+{
+  "name": "Folhário",
+  "short_name": "Folhário",
+  "display": "standalone",
+  "start_url": "/",
+  "theme_color": "#FFFFFF",
+  "background_color": "#FFFFFF",
+  "lang": "pt-BR"
+}

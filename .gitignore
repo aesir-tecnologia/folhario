@@ -1,1 +1,32 @@
 .DS_Store
+
+# deps
+node_modules/
+
+# next
+.next/
+out/
+
+# serwist-generated service worker (build output)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
+public/workbox-*.js
+
+# ts incremental
+tsconfig.tsbuildinfo
+
+# test + coverage
+coverage/
+playwright-report/
+test-results/
+.vitest-cache/
+
+# env (NEVER commit .env — real creds live there)
+.env
+.env.local
+.env.*.local
+
+# supabase CLI
+supabase/.temp/
+supabase/.branches/

@@ -167,7 +167,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **LGPD-10**: Privacy policy version bump flagged material for an activity → on next use of that activity, a new consent prompt appears before proceeding; new `policy_version` recorded on grant (AC-LGPD-011)
 - [ ] **LGPD-11**: `iam/process-deletion` uses `step.sleepUntil(grace_period_ends_at)` with `grace_period_ends_at` embedded in the event payload (not fetched at wake time) — survives cancellation races (§13, stack notes)
 - [ ] **LGPD-12**: Privacy policy + ToS published and versioned before launch; DPO contact info surfaced in privacy policy + Settings (§13)
-- [ ] **LGPD-13**: Sentry breadcrumbs scrub `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; drop request bodies on identification routes; `Sentry.setUser({ id })` only (§13, §21)
+- [x] **LGPD-13**: Sentry breadcrumbs scrub `Authorization`, `Cookie`, `email`, `password`, `token`, `photo_url`; drop request bodies on identification routes; `Sentry.setUser({ id })` only (§13, §21)
 - [ ] **LGPD-14**: Settings Privacy & LGPD panel: "Exportar meus dados", "Excluir minha conta" (confirm modal → 7-day grace), manage consents (per-consent toggle), privacy policy link, ToS link, DPO contact (§16)
 
 ### NOTIF — Email + push notifications
@@ -181,11 +181,11 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### OBS — Observability + metrics
 
-- [ ] **OBS-01**: Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GitHub Actions (Turbopack requirement); PII scrubbing rules enforced (§21, stack notes)
-- [ ] **OBS-02**: PostHog EU cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD residency compliant (§21)
+- [x] **OBS-01**: Sentry Next.js SDK integrated; release tag = git SHA; source maps uploaded post-build from GitHub Actions (Turbopack requirement); PII scrubbing rules enforced (§21, stack notes)
+- [x] **OBS-02**: PostHog US cloud integrated (client + server via `posthog-node` for Inngest-emitted events); LGPD Art. 33 international transfer basis documented via PostHog SCCs (§21)
 - [ ] **OBS-03**: PostHog event taxonomy implemented: `signup_completed`, `consent_granted`, `identification_started`, `identification_succeeded`, `identification_cap_hit`, `plant_added`, `reminder_created`, `reminder_acted`, `care_guide_viewed`, `trial_started`, `subscription_activated`, `subscription_canceled`, `data_export_requested`, `data_deletion_requested` (§20)
 - [ ] **OBS-04**: Scheduled SQL rollups via Inngest cron over `Identification` table → dashboards for confidence distribution, manual correction rate, success rate, provider latency p50/p95/p99, error rate, cap-hit rate, breaker open minutes/day, augmentation success rate, augmentation cost (§21, §22)
-- [ ] **OBS-05**: Alerts: Sentry on new issues + error-rate spikes, 80% provider ceiling → Resend operator email, Stripe webhook signature failure → Sentry critical + operator email, Inngest function failure after retries exhausted → Sentry (§21)
+- [ ] **OBS-05**: Alerts: Sentry on new issues + error-rate spikes, 80% provider ceiling → Resend operator email, Stripe webhook signature failure → Sentry critical + operator email, Inngest function failure after retries exhausted → Sentry (§21). *(Deferred from Phase 1 → Phase 13 on 2026-04-23 per user decision; alert rules need real traffic to tune thresholds.)*
 
 ### UI — Screens, design system, accessibility
 
@@ -217,8 +217,8 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### INFRA — Tech stack, repo layout, DB, CI/CD, security
 
-- [ ] **INFRA-01**: Next.js 16 App Router project scaffolded with React 19, TS strict (+ `noUncheckedIndexedAccess`), pt-BR locale default, PWA via `@serwist/next` (stack)
-- [ ] **INFRA-02**: Repo layout per PRD §2 — `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/` (§2)
+- [x] **INFRA-01**: Next.js 16 App Router project scaffolded with React 19, TS strict (+ `noUncheckedIndexedAccess`), pt-BR locale default, PWA via `@serwist/next` (stack)
+- [x] **INFRA-02**: Repo layout per PRD §2 — `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/` (§2)
 - [ ] **INFRA-03**: Route handlers under `/api/v1` are thin: validate → use-case → HTTP map; no Drizzle in handlers (§2)
 - [ ] **INFRA-04**: Drizzle ORM + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn-pooler compatibility; single shared `db/client.ts` (stack)
 - [ ] **INFRA-05**: Drizzle schema + migrations for all entities in §4 (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription)
@@ -228,20 +228,21 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **INFRA-09**: Zod validation at route-handler body/query boundaries; `drizzle-zod` for DB-schema-derived Zod (stack)
 - [ ] **INFRA-10**: Inngest `serve()` handler at `/api/inngest/route.ts`; all async functions registered: `care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push` (§3)
 - [ ] **INFRA-11**: Vercel hosting configured; Vercel git integration DISABLED (stack)
-- [ ] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:16-alpine` service container with Drizzle migrations seeded, build (§20)
+- [x] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:17-alpine` service container with Drizzle migrations seeded, build (§20). *(Amended 2026-04-23 per Phase 1 D-25 — parity with local Supabase Postgres 17.)*
 - [ ] **INFRA-13**: `deploy-preview.yml`: apply migrations to Supabase branch DB per PR → `vercel pull` → `vercel build` → `vercel deploy --prebuilt` → Playwright against returned preview URL → comment URL on PR (§20)
 - [ ] **INFRA-14**: `deploy-production.yml`: apply migrations to prod Supabase (manual approval gate for destructive) → `vercel deploy --prebuilt --prod` → create Sentry release + upload source maps → sync Inngest functions (§20)
 - [ ] **INFRA-15**: `deploy-preview-cleanup.yml`: delete Supabase branch DB + remove Vercel preview alias on PR close (§20)
-- [ ] **INFRA-16**: `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers to prevent accidental spend in preview (§20)
-- [ ] **INFRA-17**: All env vars from PRD §20 table configured in Vercel + GitHub secrets; none committed, none logged (§20)
-- [ ] **INFRA-18**: Standard security headers via Next.js middleware (CSP, HSTS, X-Frame-Options, etc.) (§21)
+- [x] **INFRA-16**: `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers to prevent accidental spend in preview (§20)
+- [x] **INFRA-17**: All env vars from PRD §20 table configured in Vercel + GitHub secrets; none committed, none logged (§20)
+- [x] **INFRA-18**: Standard security headers via Next.js middleware (CSP, HSTS, X-Frame-Options, etc.) (§21)
 - [ ] **INFRA-19**: Image pipeline — client-side compression to ≤1MB + EXIF/GPS strip → upload → thumbnail generation on upload → originals preserved for ID accuracy (§11)
-- [ ] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
+- [x] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
 - [ ] **INFRA-21**: Pagination implemented as opaque cursor `?cursor=&limit=`, default 50 / max 200, `next_cursor` in response; clients never parse cursors (§5)
 - [ ] **INFRA-22**: Idempotency-Key support on mutating endpoints; client UUID is the key for offline queue actions (§5, §10)
 - [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
 - [ ] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
 - [ ] **INFRA-25**: Launch-blocker checklist surfaced in repo (pricing TBD, NFS-e strategy, DPO appointment, privacy policy + ToS authoring, ≥200 care guides) tracked separately from phases (§24)
+- [x] **INFRA-26**: Local dev environment: `supabase start` launches local Postgres + Auth + Storage + Studio in Docker; `supabase db reset` rebuilds from migrations; developer can run the full app locally against this stack without cloud Supabase (§20)
 
 ## v2 Requirements
 
@@ -456,7 +457,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | LGPD-10 | Phase 11 | Pending |
 | LGPD-11 | Phase 11 | Pending |
 | LGPD-12 | Phase 11 | Pending |
-| LGPD-13 | Phase 1 | Pending |
+| LGPD-13 | Phase 1 | Complete (Plans 01-05a + 01-05b) |
 | LGPD-14 | Phase 11 | Pending |
 | NOTIF-01 | Phase 4 | Pending |
 | NOTIF-02 | Phase 4 | Pending |
@@ -464,11 +465,11 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | NOTIF-04 | Phase 8 | Pending |
 | NOTIF-05 | Phase 8 | Pending |
 | NOTIF-06 | Phase 10 | Pending |
-| OBS-01 | Phase 1 | Pending |
-| OBS-02 | Phase 1 | Pending |
-| OBS-03 | Phase 12 | Pending |
-| OBS-04 | Phase 12 | Pending |
-| OBS-05 | Phase 1 | Pending |
+| OBS-01 | Phase 1 | Complete (Plan 01-05b; release tag + source-map upload deferred to Phase 12) |
+| OBS-02 | Phase 1 | Complete (Plans 01-06 + 01-07) |
+| OBS-03 | Phase 13 | Pending |
+| OBS-04 | Phase 13 | Pending |
+| OBS-05 | Phase 13 | Pending (deferred from Phase 1 on 2026-04-23 per user decision) |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
@@ -494,8 +495,8 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | UI-23 | Phase 3 | Pending |
 | UI-24 | Phase 3 | Pending |
 | UI-25 | Phase 3 | Pending |
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete (01-03) |
+| INFRA-02 | Phase 1 | Complete (01-02) |
 | INFRA-03 | Phase 2 | Pending |
 | INFRA-04 | Phase 2 | Pending |
 | INFRA-05 | Phase 2 | Pending |
@@ -503,33 +504,34 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-07 | Phase 2 | Pending |
 | INFRA-08 | Phase 2 | Pending |
 | INFRA-09 | Phase 2 | Pending |
-| INFRA-10 | Phase 2 | Pending |
-| INFRA-11 | Phase 1 | Pending |
-| INFRA-12 | Phase 1 | Pending |
-| INFRA-13 | Phase 1 | Pending |
-| INFRA-14 | Phase 1 | Pending |
-| INFRA-15 | Phase 1 | Pending |
-| INFRA-16 | Phase 1 | Pending |
-| INFRA-17 | Phase 1 | Pending |
-| INFRA-18 | Phase 1 | Pending |
+| INFRA-10 | Phase 4 | Pending |
+| INFRA-11 | Phase 12 | Pending |
+| INFRA-12 | Phase 1 | Complete (01-08) |
+| INFRA-13 | Phase 12 | Pending |
+| INFRA-14 | Phase 12 | Pending |
+| INFRA-15 | Phase 12 | Pending |
+| INFRA-16 | Phase 1 | Complete (01-02) |
+| INFRA-17 | Phase 1 | Complete (01-02) |
+| INFRA-18 | Phase 1 | Complete (01-03) |
 | INFRA-19 | Phase 2 | Pending |
-| INFRA-20 | Phase 1 | Pending |
+| INFRA-20 | Phase 1 | Complete (01-02) |
 | INFRA-21 | Phase 2 | Pending |
 | INFRA-22 | Phase 2 | Pending |
 | INFRA-23 | Phase 1 | Pending |
 | INFRA-24 | Phase 2 | Pending |
-| INFRA-25 | Phase 12 | Pending |
+| INFRA-25 | Phase 13 | Pending |
+| INFRA-26 | Phase 1 | Complete (01-04) |
 
 **Coverage:**
-- v1 requirements: 196 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 25)
-- Mapped to phases: 196 (100%) ✓
+- v1 requirements: 197 total across 13 categories (AUTH 15, IDENT 21, CAT 11, CARE 10, REM 21, OFF 10, SUB 23, COST 10, LGPD 14, NOTIF 6, OBS 5, UI 25, INFRA 26)
+- Mapped to phases: 197 (100%) ✓
 - Unmapped: 0
 
 **Per-phase totals:**
-- Phase 1 (Foundation & CI/CD): 16 — INFRA-01,02,11,12,13,14,15,16,17,18,20,23 + OBS-01,02,05 + LGPD-13
-- Phase 2 (Data Layer): 12 — INFRA-03,04,05,06,07,08,09,10,19,21,22,24
+- Phase 1 (Foundation): 12 — INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02 + LGPD-13 *(OBS-05 deferred to Phase 13 on 2026-04-23)*
+- Phase 2 (Data Layer): 11 — INFRA-03,04,05,06,07,08,09,19,21,22,24
 - Phase 3 (Design System): 15 — UI-01,02,03,14,17,18,19,20,21,22,23,24,25 + OFF-09,10
-- Phase 4 (IAM): 18 — AUTH-01..15 + NOTIF-01,02 + UI-13
+- Phase 4 (IAM): 19 — AUTH-01..15 + INFRA-10 + NOTIF-01,02 + UI-13
 - Phase 5 (Catalog): 16 — CAT-01..11 + OFF-08 + UI-04,07,08,11
 - Phase 6 (Identification + Cost): 35 — IDENT-01..21 + COST-01..10 + LGPD-09 + UI-06,12,15
 - Phase 7 (Care Guides): 12 — CARE-01..10 + UI-09,16
@@ -537,9 +539,11 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 - Phase 9 (Offline Queue): 7 — OFF-01..07
 - Phase 10 (Billing): 24 — SUB-01..23 + NOTIF-06
 - Phase 11 (LGPD): 12 — LGPD-01..08,10,11,12,14
-- Phase 12 (Observability + Launch): 3 — OBS-03,04 + INFRA-25
-- **Total: 196 ✓**
+- Phase 12 (Deploy Pipeline): 4 — INFRA-11,13,14,15
+- Phase 13 (Observability + Launch): 4 — OBS-03,04,05 + INFRA-25 *(OBS-05 added 2026-04-23 from Phase 1)*
+- **Total: 197 ✓**
 
 ---
 *Requirements defined: 2026-04-14*
 *Last updated: 2026-04-14 after roadmap creation by gsd-roadmapper*
+*Rescoped: 2026-04-22 — Phase 1 trimmed to local-dev foundation; Inngest setup folded into Phase 4 (first async consumer); deploy pipeline extracted to new Phase 12; old Phase 12 renumbered to Phase 13; new INFRA-26 added for local Supabase dev*

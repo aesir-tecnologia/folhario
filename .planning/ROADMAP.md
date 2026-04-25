@@ -62,7 +62,39 @@ Plans:
   3. `AuthAdapter` and `StorageAdapter` (with `plant-photos`, `plant-thumbnails`, `data-exports` private buckets + signed-URL helpers) boot without errors and are exercised by integration tests. Inngest is NOT wired here — it lands in Phase 4 alongside the first async consumer (verification email).
   4. A smoke `/api/v1/*` route handler validates body with a `drizzle-zod`-derived Zod schema, enforces JWT verification via Next middleware, returns cursor-paginated responses (`?cursor=&limit=`, default 50 / max 200, opaque `next_cursor`), and dedupes POSTs by `Idempotency-Key` header.
   5. A client-side image pipeline (compression ≤1MB + EXIF/GPS strip) uploads through the storage adapter and the server-side upload endpoint rejects any image carrying GPS EXIF with `validation_failed`; `ConsentLog` + policy-version + legal-basis registry seed data is loaded into every environment.
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+**Wave 1**
+- [ ] 02-01-PLAN.md -- Tooling and migration bootstrap
+
+**Wave 2 _(blocked on Wave 1 completion)_**
+- [ ] 02-02-PLAN.md -- Core schema modules and migration-only registry
+
+**Wave 3 _(blocked on Wave 2 completion)_**
+- [ ] 02-03-PLAN.md -- Operational schema, generated migration, RLS/custom SQL, and domain events
+
+**Wave 4 _(blocked on Wave 3 completion)_**
+- [ ] 02-04-PLAN.md -- Seed data, private storage buckets, and `pnpm db:setup`
+- [ ] 02-05-PLAN.md -- Runtime DB client, UnitOfWork, repositories, and no-Drizzle route guards
+
+**Wave 5 _(blocked on Wave 4 DB layer completion)_**
+- [ ] 02-06-PLAN.md -- API convention helpers: Zod, cursor pagination, and idempotency
+- [ ] 02-07-PLAN.md -- AuthAdapter, JWT verification, current-user helper, and API-aware proxy
+
+**Wave 6 _(blocked on Waves 4-5 completion)_**
+- [ ] 02-08-PLAN.md -- StorageAdapter, image pipeline, and `/api/v1/photos/upload`
+- [ ] 02-09-PLAN.md -- ConsentLog smoke route at `/api/v1/diagnostics/consent`
+
+**Wave 7 _(blocked on Wave 6 completion)_**
+- [ ] 02-10-PLAN.md -- CI DB setup, full verification, and planning metadata reconciliation
+
+Cross-cutting constraints:
+- Drizzle schema remains per-context; `src/shared/db/schema-registry.ts` is migration-only.
+- Runtime DB access uses `DATABASE_POOL_URL` with `postgres-js` `{ prepare: false }`; migrations/setup use `DATABASE_URL`.
+- Route handlers validate, call use-cases, and map HTTP; they do not import Drizzle or schema tables.
+- RLS is defense in depth; repositories still apply explicit user scoping.
+- The diagnostic smoke route is `/api/v1/diagnostics/consent`, not `_diagnostics`, because Next App Router ignores underscore-prefixed route segments.
 **UI hint**: no
 
 ### Phase 3: Design System & App Shell
@@ -215,7 +247,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 8/9 | In progress | - |
-| 2. Data Layer & Bounded Contexts | 0/TBD | Not started | - |
+| 2. Data Layer & Bounded Contexts | 0/10 | Ready to execute | - |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
 | 5. Catalog — Meu Jardim | 0/TBD | Not started | - |

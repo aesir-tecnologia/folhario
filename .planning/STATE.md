@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed Phase 1 Plan 01-08 (ci.yml + REQUIREMENTS.md + ROADMAP.md amendments); Phase 1 COMPLETE (9/9)
-last_updated: "2026-04-24T21:05:00.000Z"
-last_activity: 2026-04-24 -- Phase 01 Plan 01-08 complete; CI run 24911496475 green in 2m43s (all 15 steps incl. Playwright smoke 7 passed + 1 expected skip); posthog-js client-capture known gap documented in 01-08-SUMMARY § 'Known gap' (soft-assert per SC-4 (b), dashboard authoritative); D-21 privacy posture restored (person_profiles 'identified_only'); v4-action deprecation todo captured; Phase 1 COMPLETE 9/9
+stopped_at: "Phase 1 COMPLETE (9/9 plans shipped). Plan 01-08 closed with CI run 24911496475 green in 2m43s on first attempt post-checkpoint; Manual dashboard verification confirmed by developer (Sentry + PostHog CI projects receiving events). posthog-js client-capture gap documented in 01-08-SUMMARY § 'Known gap' — soft-assert per SC-4 (b), dashboard authoritative. D-21 privacy posture restored. v4-action deprecation todo captured. Phase 1 delivered: Next 16 + Serwist scaffold, local Supabase Docker stack, Sentry + PostHog baseline with split client/server verification, security headers every response, closed error-code registry, `ci.yml` with postgres:17-alpine service container + pnpm + Playwright caches. Requirements complete: INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, LGPD-13 (OBS-05 deferred to Phase 13 per user decision 2). Ready to begin Phase 2 (Data Layer & Bounded Contexts — Drizzle schema + Supabase adapters + image pipeline + API conventions)."
+last_updated: "2026-04-25T18:43:06.424Z"
+last_activity: 2026-04-25 -- Phase 02 planning complete
 progress:
   total_phases: 13
   completed_phases: 1
-  total_plans: 9
+  total_plans: 19
   completed_plans: 9
-  percent: 100
+  percent: 47
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** A beginner in Brazil goes from "I have no idea what this plant is" to "identified, cataloged, with care guidance" in under 2 minutes from email verification — honestly, without jargon, without fake confidence scores, and without hiding AI provenance.
-**Current focus:** Phase null
+**Current focus:** Phase 02 — Data Layer & Bounded Contexts
 
 ## Current Position
 
-Phase: 01 — foundation — COMPLETE
-Plan: 9 of 9 complete (Phase 1 closed; next: Phase 2 Data Layer & Bounded Contexts — Drizzle schema + Supabase adapters + image pipeline + API conventions)
-Status: Phase 01 COMPLETE — ready to begin Phase 02
-Last activity: 2026-04-24 -- Phase 01 Plan 01-08 complete; CI run 24911496475 green in 2m43s (all 15 steps including Playwright smoke 7 passed + 1 expected skip); posthog-js client-capture known gap documented in 01-08-SUMMARY § 'Known gap' (soft-assert per SC-4 (b), dashboard authoritative); D-21 privacy posture restored (person_profiles 'identified_only'); v4-action deprecation todo captured; Phase 1 COMPLETE 9/9; INFRA-12 marked complete alongside INFRA-16 + INFRA-18 + OBS-01 + OBS-02 + LGPD-13 from earlier plans
+Phase: 02 — data-layer — PLANNED
+Plan: 0 of 10 complete (next: 02-01 Tooling and migration bootstrap)
+Status: Ready to execute
+Last activity: 2026-04-25 -- Phase 02 planning complete
 
-Progress: [██████████] 100% of Phase 1 (1/13 phases complete, 7.7% project-wide)
+Progress: [----------] 0% of Phase 2 (1/13 phases complete, 7.7% project-wide)
 
 ## Performance Metrics
 
@@ -141,6 +141,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-24T21:05:00.000Z
-Stopped at: Phase 1 COMPLETE (9/9 plans shipped). Plan 01-08 closed with CI run 24911496475 green in 2m43s on first attempt post-checkpoint; Manual dashboard verification confirmed by developer (Sentry + PostHog CI projects receiving events). posthog-js client-capture gap documented in 01-08-SUMMARY § 'Known gap' — soft-assert per SC-4 (b), dashboard authoritative. D-21 privacy posture restored. v4-action deprecation todo captured. Phase 1 delivered: Next 16 + Serwist scaffold, local Supabase Docker stack, Sentry + PostHog baseline with split client/server verification, security headers every response, closed error-code registry, `ci.yml` with postgres:17-alpine service container + pnpm + Playwright caches. Requirements complete: INFRA-01, INFRA-02, INFRA-12, INFRA-16, INFRA-17, INFRA-18, INFRA-20, INFRA-23, INFRA-26, OBS-01, OBS-02, LGPD-13 (OBS-05 deferred to Phase 13 per user decision 2). Ready to begin Phase 2 (Data Layer & Bounded Contexts — Drizzle schema + Supabase adapters + image pipeline + API conventions).
-Resume file: .planning/ROADMAP.md (Phase 2 entry — plans TBD)
+Last session: 2026-04-25T18:43:06.424Z
+Stopped at: Phase 02 planning complete. Phase 2 has 10 chunked plans covering Drizzle schema/migrations, RLS, seed data, private Storage buckets, pooled postgres-js client with `{ prepare: false }`, repository/UoW guardrails, API conventions, AuthAdapter/JWT, image upload pipeline, ConsentLog diagnostic route at `/api/v1/diagnostics/consent`, and final CI verification. Ready to execute Plan 02-01.
+Resume file: .planning/phases/02-data-layer/02-01-PLAN.md

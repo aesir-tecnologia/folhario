@@ -1,0 +1,10 @@
+{
+  "permission": {
+    "read": {
+      "/Users/machado/Projects/folhario/.kilo/get-shit-done/*": "allow"
+    },
+    "external_directory": {
+      "/Users/machado/Projects/folhario/.kilo/get-shit-done/*": "allow"
+    }
+  }
+}

@@ -2,7 +2,7 @@
 phase: 1
 slug: foundation
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-23
 ---
@@ -41,6 +41,7 @@ created: 2026-04-23
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 1-00-00 | — | 0 | (Wave 0 — test infra stubs) | — | N/A | setup | `pnpm i && pnpm exec playwright install chromium` | ❌ W0 | ⬜ pending |
+| 1-08-01 | 01-08 | 0 | INFRA-12: `ci.yml` exists and validates pipeline | — | N/A | unit | `pnpm exec vitest run tests/unit/ci.test.ts` | ✅ | 🟩 green |
 
 ---
 
@@ -60,6 +61,7 @@ Wave 0 installs test infrastructure and stub test files **before** any implement
 - [ ] `tests/e2e/diagnostics-sentry.spec.ts` — Playwright smoke that triggers `/__diag` + `/api/v1/_diagnostics/ping`, intercepts outbound Sentry transport requests, asserts event arrives AND forbidden fields absent from serialized payload
 - [ ] `tests/e2e/diagnostics-posthog.spec.ts` — Playwright smoke asserting `posthog.capture` fires from both client + `posthog-node` server, event arrives in the dedicated CI PostHog project
 - [ ] `tests/e2e/pwa-smoke.spec.ts` — asserts `/sw.js` registers and manifest `/manifest.webmanifest` returns 200 with `theme_color` + `display: standalone` (Serwist skeleton — D-13, D-14)
+- [ ] `tests/unit/ci.test.ts` — asserts `.github/workflows/ci.yml` exists, uses `postgres:17-alpine`, has all required steps (lint, typecheck, unit, integration, build, e2e) and does not deploy (INFRA-12)
 
 ---
 
@@ -83,3 +85,12 @@ Wave 0 installs test infrastructure and stub test files **before** any implement
 - [ ] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
+
+---
+
+## Validation Audit 2026-04-24
+| Metric | Count |
+|--------|-------|
+| Gaps found | 1 |
+| Resolved | 1 |
+| Escalated | 0 |

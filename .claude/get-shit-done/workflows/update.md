@@ -12,6 +12,7 @@ Read all files referenced by the invoking prompt's execution_context before star
 Detect whether GSD is installed locally or globally by checking both locations and validating install integrity.
 
 First, derive `PREFERRED_CONFIG_DIR` and `PREFERRED_RUNTIME` from the invoking prompt's `execution_context` path:
+
 - If the path contains `/get-shit-done/workflows/update.md`, strip that suffix and store the remainder as `PREFERRED_CONFIG_DIR`
 - Path contains `/.codex/` -> `codex`
 - Path contains `/.gemini/` -> `gemini`
@@ -20,7 +21,7 @@ First, derive `PREFERRED_CONFIG_DIR` and `PREFERRED_RUNTIME` from the invoking p
 - Otherwise -> `claude`
 
 Use `PREFERRED_CONFIG_DIR` when available so custom `--config-dir` installs are checked before default locations.
-Use `PREFERRED_RUNTIME` as the first runtime checked so `/gsd-update` targets the runtime that invoked it.
+Use `PREFERRED_RUNTIME` as the first runtime checked so `/gsd:update` targets the runtime that invoked it.
 
 Kilo config precedence must match the installer: `KILO_CONFIG_DIR` -> `dirname(KILO_CONFIG)` -> `XDG_CONFIG_HOME/kilo` -> `~/.config/kilo`.
 
@@ -247,6 +248,7 @@ echo "$TARGET_RUNTIME"
 ```
 
 Parse output:
+
 - Line 1 = installed version (`0.0.0` means unknown version)
 - Line 2 = install scope (`LOCAL`, `GLOBAL`, or `UNKNOWN`)
 - Line 3 = target runtime (`claude`, `opencode`, `gemini`, `kilo`, or `codex`)
@@ -255,6 +257,7 @@ Parse output:
 If multiple runtime installs are detected and the invoking runtime cannot be determined from execution_context, ask the user which runtime to update before running install.
 
 **If VERSION file missing:**
+
 ```
 ## GSD Update
 
@@ -276,6 +279,7 @@ npm view get-shit-done-cc version 2>/dev/null
 ```
 
 **If npm check fails:**
+
 ```
 Couldn't check for updates (offline or npm unavailable).
 
@@ -289,6 +293,7 @@ Exit.
 Compare installed vs latest:
 
 **If installed == latest:**
+
 ```
 ## GSD Update
 
@@ -301,6 +306,7 @@ You're already on the latest version.
 Exit.
 
 **If installed > latest:**
+
 ```
 ## GSD Update
 
@@ -315,7 +321,7 @@ by re-running the local installer from your dev branch:
 
     node bin/install.js --global --claude
 
-Running /gsd-update would install the npm release (A.B.C) and downgrade
+Running /gsd:update would install the npm release (A.B.C) and downgrade
 your dev version — do NOT use it to resolve this warning.
 ```
 
@@ -365,12 +371,12 @@ Your custom files in other locations are preserved:
 - Custom hooks ✓
 - Your CLAUDE.md files ✓
 
-If you've modified any GSD files directly, they'll be automatically backed up to `gsd-local-patches/` and can be reapplied with `/gsd-reapply-patches` after the update.
+If you've modified any GSD files directly, they'll be automatically backed up to `gsd-local-patches/` and can be reapplied with `/gsd:reapply-patches` after the update.
 ```
-
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Gemini CLI, etc.) where `AskUserQuestion` is not available.
 Use AskUserQuestion:
+
 - Question: "Proceed with update?"
 - Options:
   - "Yes, update now"
@@ -388,14 +394,15 @@ installer does not know about and will delete during the wipe.
 **Do not use bash path-stripping (`${filepath#$RUNTIME_DIR/}`) or `node -e require()`
 inline** — those patterns fail when `$RUNTIME_DIR` is unset and the stripped
 relative path may not match manifest key format, which causes CUSTOM_COUNT=0
-even when custom files exist (bug #1997). Use `gsd-tools detect-custom-files`
-instead, which resolves paths reliably with Node.js `path.relative()`.
+even when custom files exist (bug #1997). Use `gsd-sdk query detect-custom-files`
+when `gsd-sdk` is on `PATH`, or the bundled `gsd-tools.cjs detect-custom-files`
+otherwise — both resolve paths reliably with Node.js `path.relative()`.
 
 First, resolve the config directory (`RUNTIME_DIR`) from the install scope
 detected in `get_installed_version`:
 
 ```bash
-# RUNTIME_DIR is the resolved config directory (e.g. ~/.claude, ~/.config/opencode)
+# RUNTIME_DIR is the resolved config directory (e.g. ~/.config/opencode, ~/.gemini)
 # It should already be set from get_installed_version as GLOBAL_DIR or LOCAL_DIR.
 # Use the appropriate variable based on INSTALL_SCOPE.
 if [ "$INSTALL_SCOPE" = "LOCAL" ]; then
@@ -410,17 +417,20 @@ fi
 If `RUNTIME_DIR` is empty or does not exist, skip this step (no config dir to
 inspect).
 
-Otherwise, resolve the path to `gsd-tools.cjs` and run:
+Otherwise run `detect-custom-files` (prefer SDK when available):
 
 ```bash
 GSD_TOOLS="$RUNTIME_DIR/get-shit-done/bin/gsd-tools.cjs"
-if [ -f "$GSD_TOOLS" ] && [ -n "$RUNTIME_DIR" ]; then
+CUSTOM_JSON=''
+if [ -n "$RUNTIME_DIR" ] && command -v gsd-sdk >/dev/null 2>&1; then
+  CUSTOM_JSON=$(gsd-sdk query detect-custom-files --config-dir "$RUNTIME_DIR" 2>/dev/null)
+elif [ -f "$GSD_TOOLS" ] && [ -n "$RUNTIME_DIR" ]; then
   CUSTOM_JSON=$(node "$GSD_TOOLS" detect-custom-files --config-dir "$RUNTIME_DIR" 2>/dev/null)
-  CUSTOM_COUNT=$(echo "$CUSTOM_JSON" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{console.log(JSON.parse(d).custom_count);}catch{console.log(0);}})" 2>/dev/null || echo "0")
-else
-  CUSTOM_COUNT=0
+fi
+if [ -z "$CUSTOM_JSON" ]; then
   CUSTOM_JSON='{"custom_files":[],"custom_count":0}'
 fi
+CUSTOM_COUNT=$(echo "$CUSTOM_JSON" | node -e "process.stdin.resume();let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{console.log(JSON.parse(d).custom_count);}catch{console.log(0);}})" 2>/dev/null || echo "0")
 ```
 
 **If `CUSTOM_COUNT` > 0:**
@@ -465,21 +475,25 @@ Then inform the user:
 Run the update using the install type detected in step 1:
 
 Build runtime flag from step 1:
+
 ```bash
 RUNTIME_FLAG="--$TARGET_RUNTIME"
 ```
 
 **If LOCAL install:**
+
 ```bash
 npx -y get-shit-done-cc@latest "$RUNTIME_FLAG" --local
 ```
 
 **If GLOBAL install:**
+
 ```bash
 npx -y get-shit-done-cc@latest "$RUNTIME_FLAG" --global
 ```
 
 **If UNKNOWN install:**
+
 ```bash
 npx -y get-shit-done-cc@latest --claude --global
 ```
@@ -552,8 +566,8 @@ Format completion message (changelog was already shown in confirmation step):
 
 [View full changelog](https://github.com/gsd-build/get-shit-done/blob/main/CHANGELOG.md)
 ```
-</step>
 
+</step>
 
 <step name="check_local_patches">
 After update completes, check if the installer detected and backed up any locally modified files:
@@ -564,7 +578,7 @@ Check for gsd-local-patches/backup-meta.json in the config directory.
 
 ```
 Local patches were backed up before the update.
-Run /gsd-reapply-patches to merge your modifications into the new version.
+Run /gsd:reapply-patches to merge your modifications into the new version.
 ```
 
 **If no patches:** Continue normally.
@@ -572,6 +586,7 @@ Run /gsd-reapply-patches to merge your modifications into the new version.
 </process>
 
 <success_criteria>
+
 - [ ] Installed version read correctly
 - [ ] Latest version checked via npm
 - [ ] Update skipped if already current
@@ -580,4 +595,4 @@ Run /gsd-reapply-patches to merge your modifications into the new version.
 - [ ] User confirmation obtained
 - [ ] Update executed successfully
 - [ ] Restart reminder shown
-</success_criteria>
+      </success_criteria>

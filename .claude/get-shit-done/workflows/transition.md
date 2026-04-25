@@ -7,10 +7,11 @@ There is no `/gsd-transition` command. This workflow is invoked automatically by
 verification. Users should never be told to run `/gsd-transition`.
 
 **Valid user commands for phase progression:**
-- `/gsd-discuss-phase {N}` — discuss a phase before planning
-- `/gsd-plan-phase {N}` — plan a phase
-- `/gsd-execute-phase {N}` — execute a phase
-- `/gsd-progress` — see roadmap progress
+
+- `/gsd:discuss-phase {N}` — discuss a phase before planning
+- `/gsd:plan-phase {N}` — plan a phase
+- `/gsd:execute-phase {N}` — execute a phase
+- `/gsd:progress` — see roadmap progress
 
 </internal_workflow>
 
@@ -93,7 +94,7 @@ Append to the completion confirmation message (regardless of mode):
 Outstanding verification items in this phase:
 {list filenames}
 
-These will carry forward as debt. Review: `/gsd-audit-uat`
+These will carry forward as debt. Review: `/gsd:audit-uat`
 ```
 
 This does NOT block transition — it ensures the user sees the debt before confirming.
@@ -167,6 +168,7 @@ TRANSITION=$(gsd-sdk query phase.complete "${current_phase}")
 ```
 
 The CLI handles:
+
 - Marking the phase checkbox as `[x]` complete with today's date
 - Updating plan count to final (e.g., "3/3 plans complete")
 - Updating the Progress table (Status → Complete, adding date)
@@ -222,7 +224,8 @@ Make the edits inline. Update "Last updated" footer:
 
 ```markdown
 ---
-*Last updated: [date] after Phase [X]*
+
+_Last updated: [date] after Phase [X]_
 ```
 
 **Example evolution:**
@@ -268,6 +271,28 @@ After (Phase 2 shipped JWT auth, discovered rate limiting needed):
 - [ ] New decisions logged with rationale
 - [ ] "What This Is" updated if product changed
 - [ ] "Last updated" footer reflects this transition
+
+</step>
+
+<step name="graduation_scan">
+
+Scan LEARNINGS.md files from recent phases for recurring patterns and surface promotion candidates to the developer.
+
+**Invoke the graduation helper:**
+
+```text
+@/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/graduation.md
+```
+
+This step is fully delegated to `graduation.md`. It handles guard checks (feature flag, window size, threshold), clustering, backlog filtering, HITL prompting, promotion writes, and STATE.md updates.
+
+**This step is always non-blocking:** graduation candidates are surfaced for the developer's decision; no action is required to continue the transition. If the graduation scan produces no qualifying clusters, it prints a single `[graduation: no qualifying clusters]` line and returns.
+
+**Step complete when:**
+
+- [ ] graduation.md guard checks passed (or skipped with silent no-op)
+- [ ] Recurring clusters surfaced (or `[graduation: no qualifying clusters]` printed)
+- [ ] Each cluster resolved as Promote / Defer / Dismiss (or all skipped)
 
 </step>
 
@@ -380,12 +405,14 @@ Resume file: None
 **Use the transition result from `gsd-sdk query phase.complete`:**
 
 The `is_last_phase` field from the phase complete result tells you directly:
+
 - `is_last_phase: false` → More phases remain → Go to **Route A**
 - `is_last_phase: true` → Last phase done → **Check for workstream collisions first**
 
 The `next_phase` and `next_phase_name` fields give you the next phase details.
 
 If you need additional context, use:
+
 ```bash
 ROADMAP=$(gsd-sdk query roadmap.analyze)
 ```
@@ -446,7 +473,7 @@ Next: Phase [X+1] — [Name]
 ⚡ Auto-continuing: Plan Phase [X+1] in detail
 ```
 
-Exit skill and invoke SlashCommand("/gsd-plan-phase [X+1] --auto ${GSD_WS}")
+Exit skill and invoke SlashCommand("/gsd:plan-phase [X+1] --auto ${GSD_WS}")
 
 **If CONTEXT.md does NOT exist:**
 
@@ -458,7 +485,7 @@ Next: Phase [X+1] — [Name]
 ⚡ Auto-continuing: Discuss Phase [X+1] first
 ```
 
-Exit skill and invoke SlashCommand("/gsd-discuss-phase [X+1] --auto ${GSD_WS}")
+Exit skill and invoke SlashCommand("/gsd:discuss-phase [X+1] --auto ${GSD_WS}")
 
 </if>
 
@@ -477,13 +504,13 @@ Exit skill and invoke SlashCommand("/gsd-discuss-phase [X+1] --auto ${GSD_WS}")
 
 `/clear` then:
 
-`/gsd-discuss-phase [X+1] ${GSD_WS}` — gather context and clarify approach
+`/gsd:discuss-phase [X+1] ${GSD_WS}` — gather context and clarify approach
 
 ---
 
 **Also available:**
-- `/gsd-plan-phase [X+1] ${GSD_WS}` — skip discussion, plan directly
-- `/gsd-research-phase [X+1] ${GSD_WS}` — investigate unknowns
+- `/gsd:plan-phase [X+1] ${GSD_WS}` — skip discussion, plan directly
+- `/gsd:research-phase [X+1] ${GSD_WS}` — investigate unknowns
 
 ---
 ```
@@ -502,13 +529,13 @@ Exit skill and invoke SlashCommand("/gsd-discuss-phase [X+1] --auto ${GSD_WS}")
 
 `/clear` then:
 
-`/gsd-plan-phase [X+1] ${GSD_WS}`
+`/gsd:plan-phase [X+1] ${GSD_WS}`
 
 ---
 
 **Also available:**
-- `/gsd-discuss-phase [X+1] ${GSD_WS}` — revisit context
-- `/gsd-research-phase [X+1] ${GSD_WS}` — investigate unknowns
+- `/gsd:discuss-phase [X+1] ${GSD_WS}` — revisit context
+- `/gsd:research-phase [X+1] ${GSD_WS}` — investigate unknowns
 
 ---
 ```
@@ -554,18 +581,18 @@ This workstream's phases are complete. Other workstreams are still active:
 
 Archive this workstream:
 
-`/gsd-workstreams complete {current_ws_name} ${GSD_WS}`
+`/gsd:workstreams complete {current_ws_name} ${GSD_WS}`
 
 See overall milestone progress:
 
-`/gsd-workstreams progress ${GSD_WS}`
+`/gsd:workstreams progress ${GSD_WS}`
 
 <sub>Milestone completion will be available once all workstreams finish.</sub>
 
 ---
 ```
 
-Do NOT suggest `/gsd-complete-milestone` or `/gsd-new-milestone`.
+Do NOT suggest `/gsd:complete-milestone` or `/gsd:new-milestone`.
 Do NOT auto-invoke any further slash commands.
 
 **Stop here.** The user must explicitly decide what to do next.
@@ -575,6 +602,7 @@ Do NOT auto-invoke any further slash commands.
 **Route B: Milestone complete (all phases done)**
 
 **This route is only reached when:**
+
 - `is_last_phase: true` AND no other active workstreams exist (or flat mode)
 
 **Clear auto-advance chain flag** — milestone boundary is the natural stopping point:
@@ -593,7 +621,7 @@ Phase {X} marked complete.
 ⚡ Auto-continuing: Complete milestone and archive
 ```
 
-Exit skill and invoke SlashCommand("/gsd-complete-milestone {version} ${GSD_WS}")
+Exit skill and invoke SlashCommand("/gsd:complete-milestone {version} ${GSD_WS}")
 
 </if>
 
@@ -612,7 +640,7 @@ Exit skill and invoke SlashCommand("/gsd-complete-milestone {version} ${GSD_WS}"
 
 `/clear` then:
 
-`/gsd-complete-milestone {version} ${GSD_WS}`
+`/gsd:complete-milestone {version} ${GSD_WS}`
 
 ---
 

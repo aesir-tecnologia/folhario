@@ -11,15 +11,15 @@ Read all files referenced by the invoking prompt's execution_context before star
 <step name="parse_arguments">
 Parse the command arguments:
 - All arguments become the phase description
-- Example: `/gsd-add-phase Add authentication` → description = "Add authentication"
-- Example: `/gsd-add-phase Fix critical performance issues` → description = "Fix critical performance issues"
+- Example: `/gsd:add-phase Add authentication` → description = "Add authentication"
+- Example: `/gsd:add-phase Fix critical performance issues` → description = "Fix critical performance issues"
 
 If no arguments provided:
 
 ```
 ERROR: Phase description required
-Usage: /gsd-add-phase <description>
-Example: /gsd-add-phase Add authentication system
+Usage: /gsd:add-phase <description>
+Example: /gsd:add-phase Add authentication system
 ```
 
 Exit.
@@ -34,10 +34,12 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
 Check `roadmap_exists` from init JSON. If false:
+
 ```
 ERROR: No roadmap found (.planning/ROADMAP.md)
-Run /gsd-new-project to initialize.
+Run /gsd:new-project to initialize.
 ```
+
 Exit.
 </step>
 
@@ -49,6 +51,7 @@ RESULT=$(gsd-sdk query phase.add "${description}")
 ```
 
 The CLI handles:
+
 - Finding the highest existing integer phase number
 - Calculating next phase number (max + 1)
 - Generating slug from description
@@ -89,24 +92,26 @@ Roadmap updated: .planning/ROADMAP.md
 
 `/clear` then:
 
-`/gsd-plan-phase {N}`
+`/gsd:plan-phase {N}`
 
 ---
 
 **Also available:**
-- `/gsd-add-phase <description>` — add another phase
+- `/gsd:add-phase <description>` — add another phase
 - Review roadmap
 
 ---
 ```
+
 </step>
 
 </process>
 
 <success_criteria>
+
 - [ ] `gsd-sdk query phase.add` executed successfully
 - [ ] Phase directory created
 - [ ] Roadmap updated with new phase entry
 - [ ] STATE.md updated with roadmap evolution note
 - [ ] User informed of next steps
-</success_criteria>
+      </success_criteria>

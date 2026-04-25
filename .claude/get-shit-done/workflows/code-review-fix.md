@@ -7,9 +7,10 @@ Read all files referenced by the invoking prompt's execution_context before star
 </required_reading>
 
 <available_agent_types>
+
 - gsd-code-fixer: Applies fixes to code review findings
 - gsd-code-reviewer: Reviews source files for bugs and issues
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -25,6 +26,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 Parse from init JSON: `phase_found`, `phase_dir`, `phase_number`, `phase_name`, `padded_phase`, `commit_docs`.
 
 **Input sanitization (defense-in-depth):**
+
 ```bash
 # Validate PADDED_PHASE contains only digits and optional dot (e.g., "02", "03.1")
 if ! [[ "$PADDED_PHASE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
@@ -35,6 +37,7 @@ fi
 
 **Phase validation (before config gate):**
 If `phase_found` is false, report error and exit:
+
 ```
 Error: Phase ${PHASE_ARG} not found. Run /gsd-status to see available phases.
 ```
@@ -68,6 +71,7 @@ Compute review and fix report paths:
 REVIEW_PATH="${PHASE_DIR}/${PADDED_PHASE}-REVIEW.md"
 FIX_REPORT_PATH="${PHASE_DIR}/${PADDED_PHASE}-REVIEW-FIX.md"
 ```
+
 </step>
 
 <step name="check_config_gate">
@@ -78,9 +82,11 @@ CODE_REVIEW_ENABLED=$(gsd-sdk query config-get workflow.code_review 2>/dev/null 
 ```
 
 If CODE_REVIEW_ENABLED is "false":
+
 ```
 Code review fix skipped (workflow.code_review=false in config)
 ```
+
 Exit workflow.
 
 Default is true — only skip on explicit false. This check runs AFTER phase validation so invalid phase errors are shown first.
@@ -93,7 +99,7 @@ Verify that REVIEW.md exists:
 
 ```bash
 if [ ! -f "${REVIEW_PATH}" ]; then
-  echo "Error: No REVIEW.md found for Phase ${PHASE_ARG}. Run /gsd-code-review ${PHASE_ARG} first."
+  echo "Error: No REVIEW.md found for Phase ${PHASE_ARG}. Run /gsd:code-review ${PHASE_ARG} first."
   exit 1
 fi
 ```
@@ -119,12 +125,15 @@ REVIEW_STATUS=$(REVIEW_PATH="${REVIEW_PATH}" node -e "
 ```
 
 If status is "clean" or "skipped":
+
 ```
 No issues to fix in Phase ${PHASE_ARG} REVIEW.md (status: ${REVIEW_STATUS}).
 ```
+
 Exit workflow.
 
 If status is "unknown":
+
 ```
 Warning: Could not parse REVIEW.md status. Proceeding with fix attempt.
 ```
@@ -210,18 +219,21 @@ Read REVIEW.md findings, apply fixes, commit each atomically, write REVIEW-FIX.m
 **Agent failure handling:**
 
 If Task() fails:
+
 ```
 Error: Code fix agent failed: ${error_message}
 ```
 
 Check if FIX_REPORT_PATH exists:
+
 - If yes: "Partial success — some fixes may have been committed."
 - If no: "No fixes applied."
 
 Either way:
+
 ```
 Some fix commits may already exist in git history — check git log for fix(${PADDED_PHASE}) commits.
-You can retry with /gsd-code-review-fix ${PHASE_ARG}.
+You can retry with /gsd:code-review-fix ${PHASE_ARG}.
 ```
 
 Exit workflow (skip auto loop).
@@ -237,19 +249,19 @@ if [ "$AUTO_MODE" = "true" ]; then
   # Total fix passes = MAX_ITERATIONS. Loop uses -lt (not -le) intentionally.
   ITERATION=1
   MAX_ITERATIONS=3
-  
+
   while [ $ITERATION -lt $MAX_ITERATIONS ]; do
     ITERATION=$((ITERATION + 1))
-    
+
     echo ""
     echo "═══════════════════════════════════════════════════════"
     echo "  --auto: Starting iteration ${ITERATION}/${MAX_ITERATIONS}"
     echo "═══════════════════════════════════════════════════════"
     echo ""
-    
+
     # Re-review using same depth and file scope as original review
     echo "Re-reviewing phase ${PHASE_ARG} at ${REVIEW_DEPTH} depth..."
-    
+
     # Backup previous REVIEW.md and REVIEW-FIX.md before overwriting
     if [ -f "${REVIEW_PATH}" ]; then
       cp "${REVIEW_PATH}" "${REVIEW_PATH%.md}.iter${ITERATION}.md" 2>/dev/null || true
@@ -257,7 +269,7 @@ if [ "$AUTO_MODE" = "true" ]; then
     if [ -f "${FIX_REPORT_PATH}" ]; then
       cp "${FIX_REPORT_PATH}" "${FIX_REPORT_PATH%.md}.iter${ITERATION}.md" 2>/dev/null || true
     fi
-    
+
     # If original review had explicit file list, pass it safely to re-review agent
     FILES_CONFIG=""
     if [ ${#REVIEW_FILES_ARRAY[@]} -gt 0 ]; then
@@ -267,7 +279,7 @@ if [ "$AUTO_MODE" = "true" ]; then
   - ${f}"
       done
     fi
-    
+
     # Spawn gsd-code-reviewer agent to re-review
     # (This overwrites REVIEW_PATH with latest review state)
     Task(subagent_type="gsd-code-reviewer", prompt="
@@ -281,7 +293,7 @@ ${FILES_CONFIG}
 Re-review the phase at ${REVIEW_DEPTH} depth. Write findings to ${REVIEW_PATH}.
 Do NOT commit the output — the orchestrator handles that.
 ")
-    
+
     # Check new REVIEW.md status
     NEW_STATUS=$(REVIEW_PATH="${REVIEW_PATH}" node -e "
       const fs = require('fs');
@@ -293,16 +305,16 @@ Do NOT commit the output — the orchestrator handles that.
         console.log('unknown');
       }
     " 2>/dev/null)
-    
+
     if [ "$NEW_STATUS" = "clean" ]; then
       echo ""
       echo "✓ All issues resolved after iteration ${ITERATION}."
       break
     fi
-    
+
     # Still has issues — spawn fixer again
     echo "Issues remain. Applying fixes for iteration ${ITERATION}..."
-    
+
     Task(subagent_type="gsd-code-fixer", prompt="
 <files_to_read>
 ${REVIEW_PATH}
@@ -319,14 +331,14 @@ iteration: ${ITERATION}
 
 Read REVIEW.md findings, apply fixes, commit each atomically, write REVIEW-FIX.md (overwrite previous). Do NOT commit REVIEW-FIX.md.
 ")
-    
+
     # Check if fixer succeeded
     if [ ! -f "${FIX_REPORT_PATH}" ]; then
       echo "Warning: Iteration ${ITERATION} fixer failed to produce fix report. Stopping auto-loop."
       break
     fi
   done
-  
+
   # After loop completes
   if [ $ITERATION -ge $MAX_ITERATIONS ]; then
     echo ""
@@ -336,11 +348,12 @@ fi
 ```
 
 Key design decisions for --auto (addresses ALL review HIGH concerns):
+
 1. **Re-review scope**: Uses REVIEW_FILES_ARRAY from original REVIEW.md frontmatter, falling back to full phase scope. Scope is NOT lost between iterations. Uses portable while-read loop (bash 3.2+ compatible, handles spaces in paths).
 2. **Artifact semantics**: REVIEW.md is overwritten by each re-review (latest review state). REVIEW-FIX.md is overwritten by each fixer iteration (latest fix state with iteration count). There is ONE final version of each artifact, not per-iteration copies.
    Backup files (.iterN.md) preserve history for post-mortem analysis if iterations degrade.
 3. **Commit timing**: Fix commits happen per-finding inside the agent. REVIEW-FIX.md is NOT committed until step 7 (after ALL iterations complete). Only ONE docs commit for REVIEW-FIX.md, not one per iteration.
-</step>
+   </step>
 
 <step name="commit_fix_report">
 After ALL iterations complete (or single pass in non-auto mode), validate and commit REVIEW-FIX.md:
@@ -354,10 +367,10 @@ if [ -f "${FIX_REPORT_PATH}" ]; then
     const match = content.match(/^---\n([\s\S]*?)\n---/);
     if (match && /status:/.test(match[1])) { console.log('valid'); } else { console.log('invalid'); }
   " 2>/dev/null)
-  
+
   if [ "$HAS_STATUS" = "valid" ]; then
     echo "REVIEW-FIX.md created at ${FIX_REPORT_PATH}"
-    
+
     if [ "$COMMIT_DOCS" = "true" ]; then
       gsd-sdk query commit \
         "docs(${PADDED_PHASE}): add code review fix report" \
@@ -394,7 +407,7 @@ if [ ! -f "${FIX_REPORT_PATH}" ]; then
   echo "The fixer agent may have failed before completing."
   echo "Check git log for any fix(${PADDED_PHASE}) commits."
   echo ""
-  echo "Retry: /gsd-code-review-fix ${PHASE_ARG}"
+  echo "Retry: /gsd:code-review-fix ${PHASE_ARG}"
   echo ""
   echo "═══════════════════════════════════════════════════════════════"
   exit 1
@@ -444,6 +457,7 @@ echo ""
 ```
 
 If status is "all_fixed":
+
 ```bash
 if [ "$FIX_STATUS" = "all_fixed" ]; then
   echo "✓ All issues resolved."
@@ -451,12 +465,13 @@ if [ "$FIX_STATUS" = "all_fixed" ]; then
   echo "Full report: ${FIX_REPORT_PATH}"
   echo ""
   echo "Next step:"
-  echo "  /gsd-verify-work  — Verify phase completion"
+  echo "  /gsd:verify-work  — Verify phase completion"
   echo ""
 fi
 ```
 
 If status is "partial" or "none_fixed":
+
 ```bash
 if [ "$FIX_STATUS" = "partial" ] || [ "$FIX_STATUS" = "none_fixed" ]; then
   echo "⚠ Some issues could not be fixed automatically."
@@ -465,8 +480,8 @@ if [ "$FIX_STATUS" = "partial" ] || [ "$FIX_STATUS" = "none_fixed" ]; then
   echo ""
   echo "Next steps:"
   echo "  cat ${FIX_REPORT_PATH}                     — View fix report"
-  echo "  /gsd-code-review ${PHASE_NUMBER}           — Re-review code"
-  echo "  /gsd-verify-work                           — Verify phase completion"
+  echo "  /gsd:code-review ${PHASE_NUMBER}           — Re-review code"
+  echo "  /gsd:verify-work                           — Verify phase completion"
   echo ""
 fi
 ```
@@ -474,6 +489,7 @@ fi
 ```bash
 echo "═══════════════════════════════════════════════════════════════"
 ```
+
 </step>
 
 </process>
@@ -483,6 +499,7 @@ echo "════════════════════════�
 </platform_notes>
 
 <success_criteria>
+
 - [ ] Phase validated before config gate check
 - [ ] Config gate checked (workflow.code_review)
 - [ ] REVIEW.md existence verified (error if missing)
@@ -494,4 +511,4 @@ echo "════════════════════════�
 - [ ] REVIEW-FIX.md committed ONCE after all iterations (not per-iteration)
 - [ ] Missing fix report handled with explicit error message in present_results
 - [ ] Results presented inline with next step suggestion
-</success_criteria>
+      </success_criteria>

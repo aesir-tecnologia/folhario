@@ -1,10 +1,10 @@
 ---
-phase: {N}
-slug: {phase-slug}
+phase: { N }
+slug: { phase-slug }
 status: draft
 nyquist_compliant: false
 wave_0_complete: false
-created: {date}
+created: { date }
 ---
 
 # Phase {N} — Validation Strategy
@@ -15,13 +15,13 @@ created: {date}
 
 ## Test Infrastructure
 
-| Property | Value |
-|----------|-------|
-| **Framework** | {pytest 7.x / jest 29.x / vitest / go test / other} |
-| **Config file** | {path or "none — Wave 0 installs"} |
-| **Quick run command** | `{quick command}` |
-| **Full suite command** | `{full command}` |
-| **Estimated runtime** | ~{N} seconds |
+| Property               | Value                                               |
+| ---------------------- | --------------------------------------------------- |
+| **Framework**          | {pytest 7.x / jest 29.x / vitest / go test / other} |
+| **Config file**        | {path or "none — Wave 0 installs"}                  |
+| **Quick run command**  | `{quick command}`                                   |
+| **Full suite command** | `{full command}`                                    |
+| **Estimated runtime**  | ~{N} seconds                                        |
 
 ---
 
@@ -29,18 +29,18 @@ created: {date}
 
 - **After every task commit:** Run `{quick run command}`
 - **After every plan wave:** Run `{full suite command}`
-- **Before `/gsd-verify-work`:** Full suite must be green
+- **Before `/gsd:verify-work`:** Full suite must be green
 - **Max feedback latency:** {N} seconds
 
 ---
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| {N}-01-01 | 01 | 1 | REQ-{XX} | T-{N}-01 / — | {expected secure behavior or "N/A"} | unit | `{command}` | ✅ / ❌ W0 | ⬜ pending |
+| Task ID   | Plan | Wave | Requirement | Threat Ref   | Secure Behavior                     | Test Type | Automated Command | File Exists | Status     |
+| --------- | ---- | ---- | ----------- | ------------ | ----------------------------------- | --------- | ----------------- | ----------- | ---------- |
+| {N}-01-01 | 01   | 1    | REQ-{XX}    | T-{N}-01 / — | {expected secure behavior or "N/A"} | unit      | `{command}`       | ✅ / ❌ W0  | ⬜ pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+_Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ---
 
@@ -50,17 +50,17 @@ created: {date}
 - [ ] `{tests/conftest.py}` — shared fixtures
 - [ ] `{framework install}` — if no framework detected
 
-*If none: "Existing infrastructure covers all phase requirements."*
+_If none: "Existing infrastructure covers all phase requirements."_
 
 ---
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| {behavior} | REQ-{XX} | {reason} | {steps} |
+| Behavior   | Requirement | Why Manual | Test Instructions |
+| ---------- | ----------- | ---------- | ----------------- |
+| {behavior} | REQ-{XX}    | {reason}   | {steps}           |
 
-*If none: "All phase behaviors have automated verification."*
+_If none: "All phase behaviors have automated verification."_
 
 ---
 

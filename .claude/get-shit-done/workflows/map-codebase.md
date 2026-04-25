@@ -8,8 +8,9 @@ Output: .planning/codebase/ folder with 7 structured documents about the codebas
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-codebase-mapper — Maps project structure and dependencies
-</available_agent_types>
+  </available_agent_types>
 
 <philosophy>
 **Why dedicated mapper agents:**
@@ -27,6 +28,44 @@ Documents are reference material for Claude when planning/executing. Always incl
 
 <process>
 
+<step name="parse_paths_flag" priority="first">
+Parse an optional `--paths <p1,p2,...>` argument. When supplied (by the
+post-execute codebase-drift gate in `/gsd:execute-phase` or by a user running
+`/gsd:map-codebase --paths apps/accounting,packages/ui`), the workflow
+operates in **incremental-remap mode**:
+
+- Pass `--paths <p1>,<p2>,...` through to each spawned `gsd-codebase-mapper`
+  agent's prompt. Agents scope their Glob/Grep/Bash exploration to the listed
+  repo-relative prefixes only — no whole-repo scan.
+- Reject path values that contain `..`, start with `/`, or include shell
+  metacharacters (`;`, `` ` ``, `$`, `&`, `|`, `<`, `>`). If all provided
+  paths are invalid, fall back to a normal whole-repo run.
+- On write, each mapper stamps `last_mapped_commit: <HEAD sha>` into the YAML
+  frontmatter of every document it produces (see `bin/lib/drift.cjs:writeMappedCommit`).
+
+**Explicit contract — propagate `--paths` through a single normalized
+variable.** Downstream steps (`spawn_agents`, `sequential_mapping`, and any
+Task-mode prompt construction) MUST use `${PATH_SCOPE_HINT}` to ensure every
+mapper receives the same deterministic scope. Without this contract
+incremental-remap can silently regress to a whole-repo scan.
+
+```bash
+# Validated, comma-separated paths (empty if --paths absent or all rejected):
+SCOPED_PATHS="<validated paths or empty>"
+if [ -n "$SCOPED_PATHS" ]; then
+  PATH_SCOPE_HINT="--paths $SCOPED_PATHS"
+else
+  PATH_SCOPE_HINT=""
+fi
+```
+
+All mapper prompts built later in this workflow MUST include
+`${PATH_SCOPE_HINT}` (expanded to empty when full-repo mode is in effect).
+
+When `--paths` is absent, behave exactly as before: full-repo scan, all 7
+documents refreshed.
+</step>
+
 <step name="init_context" priority="first">
 Load codebase mapping context:
 
@@ -43,6 +82,7 @@ Extract from init JSON: `mapper_model`, `commit_docs`, `codebase_dir`, `existing
 Check if .planning/codebase/ already exists using `has_maps` from init context.
 
 If `codebase_dir_exists` is true:
+
 ```bash
 ls -la .planning/codebase/
 ```
@@ -77,6 +117,7 @@ mkdir -p .planning/codebase
 ```
 
 **Expected output files:**
+
 - STACK.md (from tech mapper)
 - INTEGRATIONS.md (from tech mapper)
 - ARCHITECTURE.md (from arch mapper)
@@ -124,6 +165,8 @@ Write these documents to .planning/codebase/:
 
 IMPORTANT: Use {date} for all [YYYY-MM-DD] date placeholders in documents.
 
+Scope: ${PATH_SCOPE_HINT:-(full repo)} — when --paths is supplied, restrict exploration to those prefixes only.
+
 Explore thoroughly. Write documents directly using templates. Return confirmation only.
 ${AGENT_SKILLS_MAPPER}"
 )
@@ -147,6 +190,8 @@ Write these documents to .planning/codebase/:
 - STRUCTURE.md - Directory layout, key locations, naming conventions
 
 IMPORTANT: Use {date} for all [YYYY-MM-DD] date placeholders in documents.
+
+Scope: ${PATH_SCOPE_HINT:-(full repo)} — when --paths is supplied, restrict exploration to those prefixes only.
 
 Explore thoroughly. Write documents directly using templates. Return confirmation only.
 ${AGENT_SKILLS_MAPPER}"
@@ -172,6 +217,8 @@ Write these documents to .planning/codebase/:
 
 IMPORTANT: Use {date} for all [YYYY-MM-DD] date placeholders in documents.
 
+Scope: ${PATH_SCOPE_HINT:-(full repo)} — when --paths is supplied, restrict exploration to those prefixes only.
+
 Explore thoroughly. Write documents directly using templates. Return confirmation only.
 ${AGENT_SKILLS_MAPPER}"
 )
@@ -195,6 +242,8 @@ Write this document to .planning/codebase/:
 
 IMPORTANT: Use {date} for all [YYYY-MM-DD] date placeholders in documents.
 
+Scope: ${PATH_SCOPE_HINT:-(full repo)} — when --paths is supplied, restrict exploration to those prefixes only.
+
 Explore thoroughly. Write document directly using template. Return confirmation only.
 ${AGENT_SKILLS_MAPPER}"
 )
@@ -207,6 +256,7 @@ Continue to collect_confirmations.
 Wait for all 4 agents to complete using TaskOutput tool.
 
 **For each agent task_id returned by the Agent tool calls above:**
+
 ```
 TaskOutput tool:
   task_id: "{task_id from Agent result}"
@@ -221,6 +271,7 @@ Call TaskOutput for all 4 agents in parallel (single message with 4 TaskOutput c
 Once all TaskOutput calls return, read each agent's output file to collect confirmations.
 
 **Expected confirmation format from each agent:**
+
 ```
 ## Mapping Complete
 
@@ -246,24 +297,30 @@ When the `Task` tool is unavailable, perform codebase mapping sequentially in th
 
 **IMPORTANT:** Use `{date}` from init context for all `[YYYY-MM-DD]` date placeholders in documents. NEVER guess the date.
 
+**SCOPE:** When `${PATH_SCOPE_HINT}` is non-empty (i.e. `--paths` was supplied), restrict every pass below to the validated path prefixes in `${SCOPED_PATHS}`. Do NOT scan files outside those prefixes. When `${PATH_SCOPE_HINT}` is empty, perform a full-repo scan.
+
 Perform all 4 mapping passes sequentially:
 
 **Pass 1: Tech Focus**
+
 - Explore package.json/Cargo.toml/go.mod/requirements.txt, config files, dependency trees
 - Write `.planning/codebase/STACK.md` — Languages, runtime, frameworks, dependencies, configuration
 - Write `.planning/codebase/INTEGRATIONS.md` — External APIs, databases, auth providers, webhooks
 
 **Pass 2: Architecture Focus**
+
 - Explore directory structure, entry points, module boundaries, data flow
 - Write `.planning/codebase/ARCHITECTURE.md` — Pattern, layers, data flow, abstractions, entry points
 - Write `.planning/codebase/STRUCTURE.md` — Directory layout, key locations, naming conventions
 
 **Pass 3: Quality Focus**
+
 - Explore code style, error handling patterns, test files, CI config
 - Write `.planning/codebase/CONVENTIONS.md` — Code style, naming, patterns, error handling
 - Write `.planning/codebase/TESTING.md` — Framework, structure, mocking, coverage
 
 **Pass 4: Concerns Focus**
+
 - Explore TODOs, known issues, fragile areas, security patterns
 - Write `.planning/codebase/CONCERNS.md` — Tech debt, bugs, security, performance, fragile areas
 
@@ -281,6 +338,7 @@ wc -l .planning/codebase/*.md
 ```
 
 **Verification checklist:**
+
 - All 7 documents exist
 - No empty documents (each should have >20 lines)
 
@@ -338,6 +396,7 @@ Continue to offer_next.
 Present completion summary and next steps.
 
 **Get line counts:**
+
 ```bash
 wc -l .planning/codebase/*.md
 ```
@@ -365,12 +424,12 @@ Created .planning/codebase/:
 
 `/clear` then:
 
-`/gsd-new-project`
+`/gsd:new-project`
 
 ---
 
 **Also available:**
-- Re-run mapping: `/gsd-map-codebase`
+- Re-run mapping: `/gsd:map-codebase`
 - Review specific file: `cat .planning/codebase/STACK.md`
 - Edit any document before proceeding
 
@@ -383,6 +442,7 @@ End workflow.
 </process>
 
 <success_criteria>
+
 - .planning/codebase/ directory created
 - If Task tool available: 4 parallel gsd-codebase-mapper agents spawned with run_in_background=true
 - If Task tool NOT available: 4 sequential mapping passes performed inline (never using browser_subagent)
@@ -390,4 +450,4 @@ End workflow.
 - No empty documents (each should have >20 lines)
 - Clear completion summary with line counts
 - User offered clear next steps in GSD style
-</success_criteria>
+  </success_criteria>

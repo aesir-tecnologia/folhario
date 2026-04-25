@@ -381,7 +381,7 @@ function cmdPhaseAdd(cwd, description, raw, customId) {
 
     // Build phase entry
     const dependsOn = config.phase_naming === 'custom' ? '' : `\n**Depends on:** Phase ${typeof _newPhaseId === 'number' ? _newPhaseId - 1 : 'TBD'}`;
-    const phaseEntry = `\n### Phase ${_newPhaseId}: ${description}\n\n**Goal:** [To be planned]\n**Requirements**: TBD${dependsOn}\n**Plans:** 0 plans\n\nPlans:\n- [ ] TBD (run /gsd-plan-phase ${_newPhaseId} to break down)\n`;
+    const phaseEntry = `\n### Phase ${_newPhaseId}: ${description}\n\n**Goal:** [To be planned]\n**Requirements**: TBD${dependsOn}\n**Plans:** 0 plans\n\nPlans:\n- [ ] TBD (run /gsd:plan-phase ${_newPhaseId} to break down)\n`;
 
     // Find insertion point: before last "---" or at end
     let updatedContent;
@@ -458,7 +458,7 @@ function cmdPhaseAddBatch(cwd, descriptions, raw) {
       fs.mkdirSync(dirPath, { recursive: true });
       fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
       const dependsOn = config.phase_naming === 'custom' ? '' : `\n**Depends on:** Phase ${typeof newPhaseId === 'number' ? newPhaseId - 1 : 'TBD'}`;
-      const phaseEntry = `\n### Phase ${newPhaseId}: ${description}\n\n**Goal:** [To be planned]\n**Requirements**: TBD${dependsOn}\n**Plans:** 0 plans\n\nPlans:\n- [ ] TBD (run /gsd-plan-phase ${newPhaseId} to break down)\n`;
+      const phaseEntry = `\n### Phase ${newPhaseId}: ${description}\n\n**Goal:** [To be planned]\n**Requirements**: TBD${dependsOn}\n**Plans:** 0 plans\n\nPlans:\n- [ ] TBD (run /gsd:plan-phase ${newPhaseId} to break down)\n`;
       const lastSeparator = rawContent.lastIndexOf('\n---');
       rawContent = lastSeparator > 0
         ? rawContent.slice(0, lastSeparator) + phaseEntry + rawContent.slice(lastSeparator)
@@ -542,7 +542,7 @@ function cmdPhaseInsert(cwd, afterPhase, description, raw) {
     fs.writeFileSync(path.join(dirPath, '.gitkeep'), '');
 
     // Build phase entry
-    const phaseEntry = `\n### Phase ${_decimalPhase}: ${description} (INSERTED)\n\n**Goal:** [Urgent work - to be planned]\n**Requirements**: TBD\n**Depends on:** Phase ${afterPhase}\n**Plans:** 0 plans\n\nPlans:\n- [ ] TBD (run /gsd-plan-phase ${_decimalPhase} to break down)\n`;
+    const phaseEntry = `\n### Phase ${_decimalPhase}: ${description} (INSERTED)\n\n**Goal:** [Urgent work - to be planned]\n**Requirements**: TBD\n**Depends on:** Phase ${afterPhase}\n**Plans:** 0 plans\n\nPlans:\n- [ ] TBD (run /gsd:plan-phase ${_decimalPhase} to break down)\n`;
 
     // Insert after the target phase section
     const headerPattern = new RegExp(`(#{2,4}\\s*Phase\\s+0*${afterPhaseEscaped}:[^\\n]*\\n)`, 'i');
@@ -625,7 +625,7 @@ function renameIntegerPhases(phasesDir, removedInt) {
       const m = dir.match(/^(\d+)([A-Z])?(?:\.(\d+))?-(.+)$/i);
       if (!m) return null;
       const dirInt = parseInt(m[1], 10);
-      return dirInt > removedInt ? { dir, oldInt: dirInt, letter: m[2] ? m[2].toUpperCase() : '', decimal: m[3] ? parseInt(m[3], 10) : null, slug: m[4] } : null;
+      return (dirInt > removedInt && dirInt < 999) ? { dir, oldInt: dirInt, letter: m[2] ? m[2].toUpperCase() : '', decimal: m[3] ? parseInt(m[3], 10) : null, slug: m[4] } : null;
     })
     .filter(Boolean)
     .sort((a, b) => a.oldInt !== b.oldInt ? b.oldInt - a.oldInt : (b.decimal || 0) - (a.decimal || 0));
@@ -673,7 +673,7 @@ function updateRoadmapAfterPhaseRemoval(roadmapPath, targetPhase, isDecimal, rem
         const oldPad = oldStr.padStart(2, '0'), newPad = newStr.padStart(2, '0');
         content = content.replace(new RegExp(`(#{2,4}\\s*Phase\\s+)${oldStr}(\\s*:)`, 'gi'), `$1${newStr}$2`);
         content = content.replace(new RegExp(`(Phase\\s+)${oldStr}([:\\s])`, 'g'), `$1${newStr}$2`);
-        content = content.replace(new RegExp(`${oldPad}-(\\d{2})`, 'g'), `${newPad}-$1`);
+        content = content.replace(new RegExp(`(?<![0-9-])${oldPad}-(\\d{2})(?![0-9-])`, 'g'), `${newPad}-$1`);
         content = content.replace(new RegExp(`(\\|\\s*)${oldStr}\\.\\s`, 'g'), `$1${newStr}. `);
         content = content.replace(new RegExp(`(Depends on:\\*\\*\\s*Phase\\s+)${oldStr}\\b`, 'gi'), `$1${newStr}`);
       }
@@ -828,7 +828,7 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
       // Update plan count in phase section.
       // Use direct .replace() rather than replaceInCurrentMilestone() so this
       // works when the current milestone section is itself inside a <details>
-      // block (the standard /gsd-new-project layout). replaceInCurrentMilestone
+      // block (the standard /gsd:new-project layout). replaceInCurrentMilestone
       // scopes to content after the last </details>, which misses content inside
       // the current milestone's own <details> wrapper (#2005).
       // The phase-scoped heading pattern is specific enough to avoid matching
@@ -870,9 +870,10 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
         const sectionText = phaseSectionMatch ? phaseSectionMatch[1] : '';
         const reqMatch = sectionText.match(/\*\*Requirements:\*\*\s*([^\n]+)/i);
 
+        let reqContent = fs.readFileSync(reqPath, 'utf-8');
+
         if (reqMatch) {
           const reqIds = reqMatch[1].replace(/[\[\]]/g, '').split(/[,\s]+/).map(r => r.trim()).filter(Boolean);
-          let reqContent = fs.readFileSync(reqPath, 'utf-8');
 
           for (const reqId of reqIds) {
             const reqEscaped = escapeRegex(reqId);
@@ -887,10 +888,40 @@ function cmdPhaseComplete(cwd, phaseNum, raw) {
               '$1 Complete $2'
             );
           }
-
-          atomicWriteFileSync(reqPath, reqContent);
-          requirementsUpdated = true;
         }
+
+        // Scan body for all **REQ-ID** patterns, warn about any missing from the Traceability table.
+        // Always runs regardless of whether the roadmap has a Requirements: line.
+        const bodyReqIds = [];
+        const bodyReqPattern = /\*\*([A-Z][A-Z0-9]*-\d+)\*\*/g;
+        let bodyMatch;
+        while ((bodyMatch = bodyReqPattern.exec(reqContent)) !== null) {
+          const id = bodyMatch[1];
+          if (!bodyReqIds.includes(id)) bodyReqIds.push(id);
+        }
+
+        // Collect REQ-IDs present in the Traceability section only, to avoid
+        // picking up IDs from other tables in the document.
+        const traceabilityHeadingMatch = reqContent.match(/^#{1,6}\s+Traceability\b/im);
+        const traceabilitySection = traceabilityHeadingMatch
+          ? reqContent.slice(traceabilityHeadingMatch.index)
+          : '';
+        const tableReqIds = new Set();
+        const tableRowPattern = /^\|\s*([A-Z][A-Z0-9]*-\d+)\s*\|/gm;
+        let tableMatch;
+        while ((tableMatch = tableRowPattern.exec(traceabilitySection)) !== null) {
+          tableReqIds.add(tableMatch[1]);
+        }
+
+        const unregistered = bodyReqIds.filter(id => !tableReqIds.has(id));
+        if (unregistered.length > 0) {
+          warnings.push(
+            `REQUIREMENTS.md: ${unregistered.length} REQ-ID(s) found in body but missing from Traceability table: ${unregistered.join(', ')} — add them manually to keep traceability in sync`
+          );
+        }
+
+        atomicWriteFileSync(reqPath, reqContent);
+        requirementsUpdated = true;
       }
     });
   }

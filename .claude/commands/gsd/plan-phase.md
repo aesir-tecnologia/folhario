@@ -14,6 +14,7 @@ allowed-tools:
   - WebFetch
   - mcp__context7__*
 ---
+
 <objective>
 Create executable phase prompts (PLAN.md files) for a roadmap phase with integrated research and verification.
 
@@ -35,12 +36,13 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 Phase number: $ARGUMENTS (optional — auto-detects next unplanned phase if omitted)
 
 **Flags:**
+
 - `--research` — Force re-research even if RESEARCH.md exists
 - `--skip-research` — Skip research, go straight to planning
 - `--gaps` — Gap closure mode (reads VERIFICATION.md, skips research)
 - `--skip-verify` — Skip verification loop
 - `--prd <file>` — Use a PRD/acceptance criteria file instead of discuss-phase. Parses requirements into CONTEXT.md automatically. Skips discuss-phase entirely.
-- `--reviews` — Replan incorporating cross-AI review feedback from REVIEWS.md (produced by `/gsd-review`)
+- `--reviews` — Replan incorporating cross-AI review feedback from REVIEWS.md (produced by `/gsd:review`)
 - `--text` — Use plain-text numbered lists instead of TUI menus (required for `/rc` remote sessions)
 
 Normalize phase input in step 2 before any directory lookups.

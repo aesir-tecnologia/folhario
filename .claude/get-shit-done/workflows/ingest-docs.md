@@ -41,6 +41,8 @@ if [ -n "{MANIFEST_PATH}" ]; then
 fi
 ```
 
+**Containment (required):** After resolving `SCAN_PATH` and `MANIFEST_PATH` relative to the repo root, canonicalize each with `realpath` (or platform equivalent) and assert the result is under `realpath("$REPO_ROOT")`. Reject absolute paths outside the repo (e.g. `/tmp`, `C:\Windows`) even when they do not contain `..`.
+
 If `PATH_NOT_FOUND` or `MANIFEST_NOT_FOUND`: display error and exit.
 
 </step>
@@ -56,17 +58,20 @@ INIT=$(gsd-sdk query init.ingest-docs)
 Parse `project_exists`, `planning_exists`, `has_git`, `project_path` from INIT.
 
 **Auto-detect MODE** if not set:
+
 - `planning_exists: true` → `MODE=merge`
 - `planning_exists: false` → `MODE=new`
 
 If user passed `--mode new` but `.planning/` already exists: display warning and require explicit confirm via `AskUserQuestion` (approve-revise-abort from `references/gate-prompts.md`) before overwriting.
 
 If `has_git: false` and `MODE=new`: initialize git:
+
 ```bash
 git init
 ```
 
 **Detect runtime** using the same pattern as `new-project.md`:
+
 - execution_context path `/.codex/` → `RUNTIME=codex`
 - `/.gemini/` → `RUNTIME=gemini`
 - `/.opencode/` or `/.config/opencode/` → `RUNTIME=opencode`
@@ -88,7 +93,7 @@ Read `MANIFEST_PATH`. Expected YAML shape:
 docs:
   - path: docs/adr/0001-db.md
     type: ADR
-    precedence: 0   # optional, lower = higher precedence
+    precedence: 0 # optional, lower = higher precedence
   - path: docs/prd/auth.md
     type: PRD
 ```
@@ -120,7 +125,7 @@ De-duplicate the union (a file matched by multiple patterns is one doc).
 ```
 GSD > Discovered {N} docs, which exceeds the v1 cap of 50.
       Use --manifest to narrow the set to ≤ 50 files, or run
-      /gsd-ingest-docs again with a narrower <path>.
+      /gsd:ingest-docs again with a narrower <path>.
 ```
 
 Exit without proceeding.
@@ -140,6 +145,7 @@ Discovered {N} documents:
 **Text mode:** apply the same `--text`/`text_mode` rule as other workflows — replace `AskUserQuestion` with a numbered list.
 
 Use `AskUserQuestion` (approve-revise-abort):
+
 - question: "Proceed with classification of these {N} documents?"
 - header: "Approve?"
 - options: Approve | Revise | Abort
@@ -160,6 +166,7 @@ mkdir -p .planning/intel/classifications/
 For each discovered doc, spawn `gsd-doc-classifier` in parallel. In Claude Code, issue all Task calls in a single message with multiple tool uses so the harness runs them concurrently. For Copilot / sequential runtimes, fall back to sequential dispatch.
 
 Per-spawn prompt fields:
+
 - `FILEPATH` — absolute path to the doc
 - `OUTPUT_DIR` — `.planning/intel/classifications/`
 - `MANIFEST_TYPE` — the type from the manifest if present, else omit
@@ -194,6 +201,7 @@ Task({
 ```
 
 The synthesizer writes:
+
 - `.planning/intel/decisions.md`, `.planning/intel/requirements.md`, `.planning/intel/constraints.md`, `.planning/intel/context.md`
 - `.planning/intel/SYNTHESIS.md`
 - `.planning/INGEST-CONFLICTS.md`
@@ -219,6 +227,7 @@ Exit WITHOUT writing PROJECT.md, REQUIREMENTS.md, ROADMAP.md, or STATE.md. The s
 **If WARNINGS > 0 and BLOCKERS = 0:**
 
 Render the report, then ask via AskUserQuestion (approve-revise-abort):
+
 - question: "Review the competing variants above. Resolve manually and proceed, or abort?"
 - header: "Approve?"
 - options: Approve | Abort
@@ -270,6 +279,7 @@ Load existing `.planning/ROADMAP.md`, `.planning/PROJECT.md`, `.planning/REQUIRE
 The synthesizer has already hard-blocked on any LOCKED-in-ingest vs LOCKED-in-existing contradiction; if we reach this step, no such blockers remain.
 
 Plan the merge:
+
 - **New requirements** from synthesized `.planning/intel/requirements.md` that do not overlap existing REQUIREMENTS.md entries → append to REQUIREMENTS.md
 - **New decisions** from synthesized `.planning/intel/decisions.md` that do not overlap existing CONTEXT.md `<decisions>` blocks → write to a new phase's CONTEXT.md or append to the next milestone's requirements
 - **New scope** → derive phase additions following the `new-milestone.md` pattern; append phases to `.planning/ROADMAP.md`
@@ -303,11 +313,12 @@ Display completion:
 ```
 
 Show:
+
 - Mode ran (new or merge)
 - Docs ingested (count + type breakdown)
 - Decisions locked, requirements created, constraints captured
 - Conflict report path (`.planning/INGEST-CONFLICTS.md`)
-- Next step: `/gsd-plan-phase 1` (new mode) or `/gsd-plan-phase N` (merge, pointing at the first newly-added phase)
+- Next step: `/gsd:plan-phase 1` (new mode) or `/gsd:plan-phase N` (merge, pointing at the first newly-added phase)
 
 </step>
 
@@ -316,6 +327,7 @@ Show:
 ## Anti-Patterns
 
 Do NOT:
+
 - Violate the shared conflict-engine contract in `references/doc-conflict-engine.md` (no markdown tables, no new severity labels, no bypass of the BLOCKER gate)
 - Write PROJECT.md, REQUIREMENTS.md, ROADMAP.md, or STATE.md when BLOCKERs exist in the conflict report
 - Skip the 50-doc cap — larger sets must use `--manifest` to narrow the scope

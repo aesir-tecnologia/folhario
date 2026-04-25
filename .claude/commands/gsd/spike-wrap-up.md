@@ -10,6 +10,7 @@ allowed-tools:
   - Glob
   - AskUserQuestion
 ---
+
 <objective>
 Curate spike experiment findings and package them into a persistent project skill that Claude
 auto-loads in future build conversations. Also writes a summary to `.planning/spikes/` for
@@ -27,5 +28,5 @@ project history. Output skill goes to `./.claude/skills/spike-findings-[project]
 
 <process>
 Execute the spike-wrap-up workflow from @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/spike-wrap-up.md end-to-end.
-Preserve all curation gates (per-spike review, grouping approval, CLAUDE.md routing line).
+Preserve all workflow gates (auto-include, feature-area grouping, skill synthesis, CLAUDE.md routing line, intelligent next-step routing).
 </process>

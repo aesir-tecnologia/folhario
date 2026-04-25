@@ -10,12 +10,13 @@ allowed-tools:
   - Task
   - AskUserQuestion
 ---
+
 <objective>
 Open-ended Socratic ideation session. Guides the developer through exploring an idea via
 probing questions, optionally spawns research, then routes outputs to the appropriate GSD
 artifacts (notes, todos, seeds, research questions, requirements, or new phases).
 
-Accepts an optional topic argument: `/gsd-explore authentication strategy`
+Accepts an optional topic argument: `/gsd:explore authentication strategy`
 </objective>
 
 <execution_context>

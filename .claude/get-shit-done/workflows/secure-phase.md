@@ -8,8 +8,9 @@ Verify threat mitigations for a completed phase. Confirm PLAN.md threat register
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-security-auditor — Verifies threat mitigation coverage
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
@@ -28,7 +29,7 @@ AUDITOR_MODEL=$(gsd-sdk query resolve-model gsd-security-auditor --raw)
 SECURITY_CFG=$(gsd-sdk query config-get workflow.security_enforcement --raw 2>/dev/null || echo "true")
 ```
 
-If `SECURITY_CFG` is `false`: exit with "Security enforcement disabled. Enable via /gsd-settings."
+If `SECURITY_CFG` is `false`: exit with "Security enforcement disabled. Enable via /gsd:settings."
 
 Display banner: `GSD > SECURE PHASE {N}: {name}`
 
@@ -42,7 +43,7 @@ SUMMARY_FILES=$(ls "${PHASE_DIR}"/*-SUMMARY.md 2>/dev/null)
 
 - **State A** (`SECURITY_FILE` non-empty): Audit existing
 - **State B** (`SECURITY_FILE` empty, `PLAN_FILES` and `SUMMARY_FILES` non-empty): Run from artifacts
-- **State C** (`SUMMARY_FILES` empty): Exit — "Phase {N} not executed. Run /gsd-execute-phase {N} first."
+- **State C** (`SUMMARY_FILES` empty): Exit — "Phase {N} not executed. Run /gsd:execute-phase {N} first."
 
 ## 2. Discovery
 
@@ -62,10 +63,10 @@ Per threat: `{ threat_id, category, component, disposition, mitigation_pattern, 
 
 Classify each threat:
 
-| Status | Criteria |
-|--------|----------|
+| Status | Criteria                                                                           |
+| ------ | ---------------------------------------------------------------------------------- |
 | CLOSED | mitigation found OR accepted risk documented in SECURITY.md OR transfer documented |
-| OPEN | none of the above |
+| OPEN   | none of the above                                                                  |
 
 Build: `{ threat_id, category, component, disposition, status, evidence }`
 
@@ -73,9 +74,9 @@ If `threats_open: 0` → skip to Step 6 directly.
 
 ## 4. Present Threat Plan
 
-
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Gemini CLI, etc.) where `AskUserQuestion` is not available.
 Call AskUserQuestion with threat table and options:
+
 1. "Verify all open threats" → Step 5
 2. "Accept all open — document in accepted risks log" → add to SECURITY.md accepted risks, set all CLOSED, Step 6
 3. "Cancel" → exit
@@ -97,6 +98,7 @@ Task(
 ```
 
 Handle return:
+
 - `## SECURED` → record closures → Step 6
 - `## OPEN_THREATS` → record closed + open, present user with accept/block choice → Step 6
 - `## ESCALATE` → present to user → Step 6
@@ -104,20 +106,23 @@ Handle return:
 ## 6. Write/Update SECURITY.md
 
 **State B (create):**
+
 1. Read template from `/Users/machado/Projects/folhario/.claude/get-shit-done/templates/SECURITY.md`
 2. Fill: frontmatter, threat register, accepted risks, audit trail
 3. Write to `${PHASE_DIR}/${PADDED_PHASE}-SECURITY.md`
 
 **State A (update):**
+
 1. Update threat register statuses, append to audit trail:
 
 ```markdown
 ## Security Audit {date}
-| Metric | Count |
-|--------|-------|
-| Threats found | {N} |
-| Closed | {M} |
-| Open | {K} |
+
+| Metric        | Count |
+| ------------- | ----- |
+| Threats found | {N}   |
+| Closed        | {M}   |
+| Open          | {K}   |
 ```
 
 **ENFORCING GATE:** If `threats_open > 0` after all options exhausted (user did not accept, not all verified closed):
@@ -125,7 +130,7 @@ Handle return:
 ```
 GSD > PHASE {N} SECURITY BLOCKED
 {K} threats open — phase advancement blocked until threats_open: 0
-▶ Fix mitigations then re-run: /gsd-secure-phase {N}
+▶ Fix mitigations then re-run: /gsd:secure-phase {N}
 ▶ Or document accepted risks in SECURITY.md and re-run.
 ```
 
@@ -140,11 +145,12 @@ gsd-sdk query commit "docs(phase-${PHASE}): add/update security threat verificat
 ## 8. Results + Routing
 
 **Secured (threats_open: 0):**
+
 ```
 GSD > PHASE {N} THREAT-SECURE
 threats_open: 0 — all threats have dispositions.
-▶ /gsd-validate-phase {N}    validate test coverage
-▶ /gsd-verify-work {N}       run UAT
+▶ /gsd:validate-phase {N}    validate test coverage
+▶ /gsd:verify-work {N}       run UAT
 ```
 
 Display `/clear` reminder.
@@ -152,6 +158,7 @@ Display `/clear` reminder.
 </process>
 
 <success_criteria>
+
 - [ ] Security enforcement checked — exit if false
 - [ ] Input state detected (A/B/C) — state C exits cleanly
 - [ ] PLAN.md threat model parsed, register built
@@ -163,4 +170,4 @@ Display `/clear` reminder.
 - [ ] SECURITY.md created or updated
 - [ ] threats_open > 0 BLOCKS advancement (no next-phase routing emitted)
 - [ ] Results with routing presented on success
-</success_criteria>
+      </success_criteria>

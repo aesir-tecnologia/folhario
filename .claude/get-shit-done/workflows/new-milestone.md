@@ -12,16 +12,18 @@ Read all files referenced by the invoking prompt's execution_context before star
 
 <available_agent_types>
 Valid GSD subagent types (use exact names — do not fall back to 'general-purpose'):
+
 - gsd-project-researcher — Researches project-level technical decisions
 - gsd-research-synthesizer — Synthesizes findings from parallel research agents
 - gsd-roadmapper — Creates phased execution roadmaps
-</available_agent_types>
+  </available_agent_types>
 
 <process>
 
 ## 1. Load Context
 
 Parse `$ARGUMENTS` before doing anything else:
+
 - `--reset-phase-numbers` flag → opt into restarting roadmap phase numbering at `1`
 - remaining text → use as milestone name if present
 
@@ -35,13 +37,16 @@ If the flag is absent, keep the current behavior of continuing phase numbering f
 ## 2. Gather Milestone Goals
 
 **If MILESTONE-CONTEXT.md exists:**
+
 - Use features and scope from discuss-milestone
 - Present summary for confirmation
 
 **If no context file:**
+
 - Present what shipped in last milestone
 
 **Text mode (`workflow.text_mode: true` in config or `--text` flag):** Set `TEXT_MODE=true` if `--text` is present in `$ARGUMENTS` OR `text_mode` from init JSON is `true`. When TEXT_MODE is active, replace every `AskUserQuestion` call with a plain-text numbered list and ask the user to type their choice number. This is required for non-Claude runtimes (OpenAI Codex, Gemini CLI, etc.) where `AskUserQuestion` is not available.
+
 - Ask inline (freeform, NOT AskUserQuestion): "What do you want to build next?"
 - Wait for their response, then use AskUserQuestion to probe specifics
 - If user selects "Other" at any point to provide freeform input, ask follow-up as plain text — not another AskUserQuestion
@@ -57,6 +62,7 @@ ls .planning/seeds/SEED-*.md 2>/dev/null
 **If no seed files exist:** Skip this step silently — do not print any message or prompt.
 
 **If seed files exist:** Read each `SEED-*.md` file and extract from its frontmatter and body:
+
 - **Idea** — the seed title (heading after frontmatter, e.g. `# SEED-001: <idea>`)
 - **Trigger conditions** — the `trigger_when` frontmatter field and the "When to Surface" section's bullet list
 - **Planted during** — the `planted_during` frontmatter field (for context)
@@ -70,6 +76,7 @@ Compare each seed's trigger conditions against the milestone goals from step 2. 
 **`--auto` mode:** Auto-select ALL matching seeds. Log: `[auto] Selected N matching seed(s): [list seed names]`
 
 **Text mode (`TEXT_MODE=true`):** Present matching seeds as a plain-text numbered list:
+
 ```
 Seeds that match your milestone goals:
 1. SEED-001: <idea> (trigger: <trigger_when>)
@@ -79,6 +86,7 @@ Enter numbers to include (comma-separated), or "none" to skip:
 ```
 
 **Normal mode:** Present via AskUserQuestion:
+
 ```
 AskUserQuestion(
   header: "Seeds",
@@ -92,6 +100,7 @@ AskUserQuestion(
 ```
 
 **After selection:**
+
 - Selected seeds become additional context for requirement definition in step 9. Store them in an accumulator (e.g. `$SELECTED_SEEDS`) so step 9 can reference the ideas and their "Why This Matters" sections when defining requirements.
 - Unselected seeds remain untouched in `.planning/seeds/` — never delete or modify seed files during this workflow.
 
@@ -123,6 +132,7 @@ Before writing any files, present a summary of what was gathered and ask for con
 ```
 
 AskUserQuestion:
+
 - header: "Confirm?"
 - question: "Does this capture what you want to build in this milestone?"
 - options:
@@ -143,6 +153,7 @@ Add/update:
 **Goal:** [One sentence describing milestone focus]
 
 **Target features:**
+
 - [Feature 1]
 - [Feature 2]
 - [Feature 3]
@@ -158,13 +169,15 @@ Ensure the `## Evolution` section exists in PROJECT.md. If missing (projects cre
 This document evolves at phase transitions and milestone boundaries.
 
 **After each phase transition** (via `/gsd-transition`):
+
 1. Requirements invalidated? → Move to Out of Scope with reason
 2. Requirements validated? → Move to Validated with phase reference
 3. New requirements emerged? → Add to Active
 4. Decisions to log? → Add to Key Decisions
 5. "What This Is" still accurate? → Update if drifted
 
-**After each milestone** (via `/gsd-complete-milestone`):
+**After each milestone** (via `/gsd:complete-milestone`):
+
 1. Full review of all sections
 2. Core Value check — still the right priority?
 3. Audit Out of Scope — reasons still valid?
@@ -204,11 +217,27 @@ gsd-sdk query commit "docs: start milestone v[X.Y] [Name]" .planning/PROJECT.md 
 INIT=$(gsd-sdk query init.new-milestone)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 AGENT_SKILLS_RESEARCHER=$(gsd-sdk query agent-skills gsd-project-researcher 2>/dev/null)
-AGENT_SKILLS_SYNTHESIZER=$(gsd-sdk query agent-skills gsd-synthesizer 2>/dev/null)
+AGENT_SKILLS_SYNTHESIZER=$(gsd-sdk query agent-skills gsd-research-synthesizer 2>/dev/null)
 AGENT_SKILLS_ROADMAPPER=$(gsd-sdk query agent-skills gsd-roadmapper 2>/dev/null)
 ```
 
-Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`, `latest_completed_milestone`, `phase_dir_count`, `phase_archive_path`.
+Extract from init JSON: `researcher_model`, `synthesizer_model`, `roadmapper_model`, `commit_docs`, `research_enabled`, `current_milestone`, `project_exists`, `roadmap_exists`, `latest_completed_milestone`, `phase_dir_count`, `phase_archive_path`, `agents_installed`, `missing_agents`.
+
+**If `agents_installed` is false:** Display a warning before proceeding:
+
+```
+⚠ GSD agents not installed. The following agents are missing from your agents directory:
+  {missing_agents joined with newline}
+
+Subagent spawns (gsd-project-researcher, gsd-research-synthesizer, gsd-roadmapper) will fail
+with "agent type not found". Run the installer with --global to make agents available:
+
+  npx get-shit-done-cc@latest --global
+
+Proceeding without research subagents — roadmap will be generated inline.
+```
+
+Skip the parallel research spawn step and generate the roadmap inline.
 
 ## 7.5 Reset-phase safety (only when `--reset-phase-numbers`)
 
@@ -227,8 +256,9 @@ find .planning/phases -mindepth 1 -maxdepth 1 -type d -exec mv {} "${phase_archi
 Then verify `.planning/phases/` no longer contains old milestone directories before continuing.
 
 If `phase_dir_count > 0` but `phase_archive_path` is missing:
+
 - Stop and explain that reset numbering is unsafe without a completed milestone archive target.
-- Tell the user to complete/archive the previous milestone first, then rerun `/gsd-new-milestone --reset-phase-numbers ${GSD_WS}`.
+- Tell the user to complete/archive the previous milestone first, then rerun `/gsd:new-milestone --reset-phase-numbers ${GSD_WS}`.
 
 ## 8. Research Decision
 
@@ -237,16 +267,18 @@ Check `research_enabled` from init JSON (loaded from config).
 **If `research_enabled` is `true`:**
 
 AskUserQuestion: "Research the domain ecosystem for new features before defining requirements?"
+
 - "Research first (Recommended)" — Discover patterns, features, architecture for NEW capabilities
 - "Skip research for this milestone" — Go straight to requirements (does not change your default)
 
 **If `research_enabled` is `false`:**
 
 AskUserQuestion: "Research the domain ecosystem for new features before defining requirements?"
+
 - "Skip research (current default)" — Go straight to requirements
 - "Research first" — Discover patterns, features, architecture for NEW capabilities
 
-**IMPORTANT:** Do NOT persist this choice to config.json. The `workflow.research` setting is a persistent user preference that controls plan-phase behavior across the project. Changing it here would silently alter future `/gsd-plan-phase` behavior. To change the default, use `/gsd-settings`.
+**IMPORTANT:** Do NOT persist this choice to config.json. The `workflow.research` setting is a persistent user preference that controls plan-phase behavior across the project. Changing it here would silently alter future `/gsd:plan-phase` behavior. To change the default, use `/gsd:settings`.
 
 **If user chose "Research first":**
 
@@ -266,6 +298,7 @@ mkdir -p .planning/research
 Spawn 4 parallel gsd-project-researcher agents. Each uses this template with dimension-specific fields:
 
 **Common structure for all 4 researchers:**
+
 ```
 Task(prompt="
 <research_type>Project Research — {DIMENSION} for [new features].</research_type>
@@ -297,13 +330,13 @@ Use template: /Users/machado/Projects/folhario/.claude/get-shit-done/templates/r
 
 **Dimension-specific fields:**
 
-| Field | Stack | Features | Architecture | Pitfalls |
-|-------|-------|----------|-------------|----------|
-| EXISTING_CONTEXT | Existing validated capabilities (DO NOT re-research): [from PROJECT.md] | Existing features (already built): [from PROJECT.md] | Existing architecture: [from PROJECT.md or codebase map] | Focus on common mistakes when ADDING these features to existing system |
-| QUESTION | What stack additions/changes are needed for [new features]? | How do [target features] typically work? Expected behavior? | How do [target features] integrate with existing architecture? | Common mistakes when adding [target features] to [domain]? |
-| CONSUMER | Specific libraries with versions for NEW capabilities, integration points, what NOT to add | Table stakes vs differentiators vs anti-features, complexity noted, dependencies on existing | Integration points, new components, data flow changes, suggested build order | Warning signs, prevention strategy, which phase should address it |
-| GATES | Versions current (verify with Context7), rationale explains WHY, integration considered | Categories clear, complexity noted, dependencies identified | Integration points identified, new vs modified explicit, build order considers deps | Pitfalls specific to adding these features, integration pitfalls covered, prevention actionable |
-| FILE | STACK.md | FEATURES.md | ARCHITECTURE.md | PITFALLS.md |
+| Field            | Stack                                                                                      | Features                                                                                     | Architecture                                                                        | Pitfalls                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| EXISTING_CONTEXT | Existing validated capabilities (DO NOT re-research): [from PROJECT.md]                    | Existing features (already built): [from PROJECT.md]                                         | Existing architecture: [from PROJECT.md or codebase map]                            | Focus on common mistakes when ADDING these features to existing system                          |
+| QUESTION         | What stack additions/changes are needed for [new features]?                                | How do [target features] typically work? Expected behavior?                                  | How do [target features] integrate with existing architecture?                      | Common mistakes when adding [target features] to [domain]?                                      |
+| CONSUMER         | Specific libraries with versions for NEW capabilities, integration points, what NOT to add | Table stakes vs differentiators vs anti-features, complexity noted, dependencies on existing | Integration points, new components, data flow changes, suggested build order        | Warning signs, prevention strategy, which phase should address it                               |
+| GATES            | Versions current (verify with Context7), rationale explains WHY, integration considered    | Categories clear, complexity noted, dependencies identified                                  | Integration points identified, new vs modified explicit, build order considers deps | Pitfalls specific to adding these features, integration pitfalls covered, prevention actionable |
+| FILE             | STACK.md                                                                                   | FEATURES.md                                                                                  | ARCHITECTURE.md                                                                     | PITFALLS.md                                                                                     |
 
 After all 4 complete, spawn synthesizer:
 
@@ -327,6 +360,7 @@ Commit after writing.
 ```
 
 Display key findings from SUMMARY.md:
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  GSD ► RESEARCH COMPLETE ✓
@@ -354,6 +388,7 @@ Read PROJECT.md: core value, current milestone goals, validated requirements (wh
 **If research exists:** Read FEATURES.md, extract feature categories.
 
 Present features by category:
+
 ```
 ## [Category 1]
 **Table stakes:** Feature A, Feature B
@@ -364,6 +399,7 @@ Present features by category:
 **If no research:** Gather requirements through conversation. Ask: "What are the main things users need to do with [new features]?" Clarify, probe for related capabilities, group into categories.
 
 **Scope each category** via AskUserQuestion (multiSelect: true, header max 12 chars):
+
 - "[Feature 1]" — [brief description]
 - "[Feature 2]" — [brief description]
 - "None for this milestone" — Defer entire category
@@ -371,10 +407,12 @@ Present features by category:
 Track: Selected → this milestone. Unselected table stakes → future. Unselected differentiators → out of scope.
 
 **Identify gaps** via AskUserQuestion:
+
 - "No, research covered it" — Proceed
 - "Yes, let me add some" — Capture additions
 
 **Generate REQUIREMENTS.md:**
+
 - v1 Requirements grouped by category (checkboxes, REQ-IDs)
 - Future Requirements (deferred)
 - Out of Scope (explicit exclusions with reasoning)
@@ -385,6 +423,7 @@ Track: Selected → this milestone. Unselected table stakes → future. Unselect
 **Requirement quality criteria:**
 
 Good requirements are:
+
 - **Specific and testable:** "User can reset password via email link" (not "Handle password reset")
 - **User-centric:** "User can X" (not "System does Y")
 - **Atomic:** One capability per requirement (not "User can login and manage profile")
@@ -408,6 +447,7 @@ Does this capture what you're building? (yes / adjust)
 If "adjust": Return to scoping.
 
 **Commit requirements:**
+
 ```bash
 gsd-sdk query commit "docs: define milestone v[X.Y] requirements" .planning/REQUIREMENTS.md
 ```
@@ -423,6 +463,7 @@ gsd-sdk query commit "docs: define milestone v[X.Y] requirements" .planning/REQU
 ```
 
 **Starting phase number:**
+
 - If `--reset-phase-numbers` is active, start at **Phase 1**
 - Otherwise, continue from the previous milestone's last phase number (v1.0 ended at phase 5 → v1.1 starts at phase 6)
 
@@ -484,6 +525,7 @@ Success criteria:
 ```
 
 **Ask for approval** via AskUserQuestion:
+
 - "Approve" — Commit and continue
 - "Adjust phases" — Tell me what to change
 - "Review full file" — Show raw ROADMAP.md
@@ -492,8 +534,65 @@ Success criteria:
 **If "Review":** Display raw ROADMAP.md, re-ask.
 
 **Commit roadmap** (after approval):
+
 ```bash
 gsd-sdk query commit "docs: create milestone v[X.Y] roadmap ([N] phases)" .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md
+```
+
+## 10.5. Link Pending Todos to Roadmap Phases
+
+After roadmap approval, scan pending todos against the newly approved phases. For each todo whose scope matches a phase, tag it with `resolves_phase: N` in its YAML frontmatter.
+
+**Check for pending todos:**
+
+```bash
+PENDING_TODOS=$(ls .planning/todos/pending/*.md 2>/dev/null | head -50)
+```
+
+**If no pending todos exist:** Skip this step silently.
+
+**If pending todos exist:**
+
+Read the approved ROADMAP.md and extract the phase list: phase number, phase name, goal, and requirement IDs.
+
+For each pending todo, compare:
+
+- The todo's `title` and `area` frontmatter fields
+- The todo body (Problem and Solution sections)
+
+Against each phase's:
+
+- Phase goal
+- Requirement IDs and descriptions
+
+**Match criteria (best-effort — do not over-match):** A todo is considered resolved by a phase if the phase's goal or requirements directly describe implementing the same feature, area, or capability as the todo. Narrow, specific todos with concrete scopes are the best candidates. Vague or cross-cutting todos should be left unlinked.
+
+**For each matched todo**, add `resolves_phase: [N]` to the YAML frontmatter block (after the existing fields):
+
+```yaml
+---
+created: [existing]
+title: [existing]
+area: [existing]
+resolves_phase: [N]
+files: [existing]
+---
+```
+
+**Only modify todos that have a clear, confident match.** Leave unmatched todos unmodified.
+
+**If any todos were linked:**
+
+```bash
+gsd-sdk query commit "docs: tag [count] pending todos with resolves_phase after milestone v[X.Y] roadmap" .planning/todos/pending/*.md
+```
+
+Print a summary:
+
+```
+◆ Linked [N] pending todos to roadmap phases:
+  → [todo title] → Phase [N]: [Phase Name]
+  (Leave [M] unmatched todos in pending/)
 ```
 
 ## 11. Done
@@ -520,14 +619,15 @@ gsd-sdk query commit "docs: create milestone v[X.Y] roadmap ([N] phases)" .plann
 
 `/clear` then:
 
-`/gsd-discuss-phase [N] ${GSD_WS}` — gather context and clarify approach
+`/gsd:discuss-phase [N] ${GSD_WS}` — gather context and clarify approach
 
-Also: `/gsd-plan-phase [N] ${GSD_WS}` — skip discussion, plan directly
+Also: `/gsd:plan-phase [N] ${GSD_WS}` — skip discussion, plan directly
 ```
 
 </process>
 
 <success_criteria>
+
 - [ ] PROJECT.md updated with Current Milestone section
 - [ ] STATE.md reset for new milestone
 - [ ] MILESTONE-CONTEXT.md consumed and deleted (if existed)
@@ -539,7 +639,8 @@ Also: `/gsd-plan-phase [N] ${GSD_WS}` — skip discussion, plan directly
 - [ ] User feedback incorporated (if any)
 - [ ] Phase numbering mode respected (continued or reset)
 - [ ] All commits made (if planning docs committed)
-- [ ] User knows next step: `/gsd-discuss-phase [N] ${GSD_WS}`
+- [ ] Pending todos scanned for phase matches; matched todos tagged with `resolves_phase: N`
+- [ ] User knows next step: `/gsd:discuss-phase [N] ${GSD_WS}`
 
 **Atomic commits:** Each phase commits its artifacts immediately.
 </success_criteria>

@@ -1,0 +1,1377 @@
+{
+  "phase": "02-data-layer",
+  "phase_number": "2",
+  "phase_name": "Data Layer & Bounded Contexts",
+  "phase_goal": "Every entity from PRD §4 exists in Postgres with Drizzle migrations applied, auth/storage adapters are wired behind their interfaces, and route handlers have the conventions (Zod, Idempotency-Key, cursor pagination, RLS) needed for feature phases to write thin use-cases without reinventing plumbing. Inngest is NOT wired here — it lands in Phase 4 alongside the first async consumer.",
+  "generated_at": "2026-04-24T00:00:00Z",
+  "stats": {
+    "total": 49,
+    "answered": 49,
+    "chat_more": 4,
+    "remaining": 0
+  },
+  "canonical_refs": [
+    "docs/CAVE-PRD.md §2 (Tech Stack — Drizzle inside repositories only, postgres-js + { prepare: false }, Supavisor txn pooler, RLS as defense in depth, repo layout)",
+    "docs/CAVE-PRD.md §3 (Bounded Contexts — IAM, Catalog, Species & Care, Identification, Reminders, Billing, Notifications + their aggregates / emitted events / consumed events)",
+    "docs/CAVE-PRD.md §4 (Data Model — all 19 entities with field shapes; Plant deletion cascade rules)",
+    "docs/CAVE-PRD.md §5 (API Rules — JWT bearer per device, public endpoints list, Idempotency-Key, opaque cursor pagination default 50/max 200, ISO-8601 UTC timestamps, closed error registry incl. validation_failed, conflict, unauthenticated)",
+    "docs/CAVE-PRD.md §10 (Offline & Sync — client UUID idempotency, replay rules, OfflineSyncFailure)",
+    "docs/CAVE-PRD.md §11 (Image Handling — ≤1MB compression, EXIF/GPS strip client-side, server rejects GPS as validation_failed, thumbnail generation)",
+    "docs/CAVE-PRD.md §13 (LGPD — Art. 7 legal basis, Art. 18 rights, Art. 33 transfer, ConsentLog policy_version + legal_basis registry)",
+    "docs/CAVE-PRD.md §19 (Testing — Vitest unit + integration with REAL Postgres, zero DB mocking, migrations applied as in production)",
+    "docs/CAVE-PRD.md §21 (Security checklist — JWT in middleware on every /api/v1/*, RLS on all user-owned tables, service-role key server-only)",
+    "CLAUDE.md (stack lock-in — Drizzle 0.45.2, postgres-js, Supavisor, Zod 4.3.6, Vitest 4.1.4, real Postgres for integration tests)",
+    ".planning/PROJECT.md (constraints — Drizzle inside repositories only, RLS defense in depth, EXIF stripped client + server-rejected, per-device JWT)",
+    ".planning/REQUIREMENTS.md (INFRA-03,04,05,06,07,08,09,19,21,22,24)",
+    ".planning/ROADMAP.md §Phase 2 (goal + 5 success criteria)",
+    ".planning/phases/01-foundation/01-CONTEXT.md (D-07 path aliases @contexts/*, @shared/*; D-08 no barrels; D-10/D-11/D-12 error registry shape; D-25 postgres:17-alpine; D-29 server-env vs client-env modules)"
+  ],
+  "prior_decisions": [
+    "Phase 1 D-07: Path aliases per-root: @contexts/* → src/contexts/*, @shared/* → src/shared/*. No generic @/* alias. Reuse for db/repo files.",
+    "Phase 1 D-08: No barrel files. Direct imports only. Continue this rule into the data layer.",
+    "Phase 1 D-09: Bounded-context folder tree already shipped — src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/ + src/shared/{db,events,adapters,config,telemetry}/.",
+    "Phase 1 D-10/D-11/D-12: Error registry in src/shared/config/errors.ts as `as const` + literal-union. Error response body is `{ error: { code, message, details? } }`. HTTP mapper helper co-located.",
+    "Phase 1 D-25: Postgres 17 everywhere — local Supabase + CI service container. Drizzle migrations run against postgres:17-alpine.",
+    "Phase 1 D-29: server-env.ts vs client-env.ts — DATABASE_URL + DATABASE_POOL_URL + SUPABASE_SERVICE_ROLE_KEY live in server-env only; never imported by client modules.",
+    "PRD §2 stack: Drizzle ORM (queries inside repositories only), postgres-js + { prepare: false } mandatory for Supavisor txn pooler; route handlers thin (validate → use-case → HTTP map; no Drizzle in handlers).",
+    "PRD §5 API rules: JWT per device, opaque cursor pagination (?cursor=&limit=, default 50, max 200, next_cursor in response), Idempotency-Key on mutating endpoints, ISO-8601 UTC timestamps with Z (exception: User.notification_time_local is HH:MM in User.timezone), closed error registry including validation_failed, conflict, unauthenticated.",
+    "PRD §11 image pipeline: client-side compression to ≤1MB + EXIF/GPS strip → upload → server rejects GPS-bearing as validation_failed → thumbnail generation → originals preserved. Failure modes: retry once at lower quality; upload mid-fail stays in IndexedDB queue; thumbnail-gen fail keeps original + placeholder + later regen.",
+    "PRD §13 LGPD: ConsentLog with policy_version + legal_basis registry (contract, consent, legitimate_interest); Art. 33 international transfer consent before Plant.id/OpenAI-compat call.",
+    "PRD §3 bounded-context emission map: who emits/consumes which events. Phase 2 is NOT wiring Inngest, but the cross-context contract is locked.",
+    "PRD §4 entity field shapes: 19 entities with their columns are spec'd; the question for Phase 2 is HOW to express them in Drizzle, not WHAT they are.",
+    "Storage buckets: plant-photos, plant-thumbnails, data-exports — all PRIVATE (signed-URL only).",
+    "Inngest: NOT in Phase 2 (lands Phase 4 with verification email as first async consumer). Event publishing infrastructure decision still possibly relevant (defining types vs not).",
+    "Email/Resend/Stripe: NOT in Phase 2."
+  ],
+  "sections": [
+    {
+      "id": "schema-foundation",
+      "title": "Schema Foundation",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Drizzle schema file layout",
+          "context": "Repo already has src/contexts/{iam,catalog,...}/infrastructure/ ready and src/shared/db/ as a shared root. Drizzle wants to enumerate every table for migration generation. Choice trades context-ownership purity vs. cross-aggregate FK ergonomics.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Per-context schemas + shared barrel for drizzle-kit",
+              "description": "Each context owns src/contexts/{ctx}/infrastructure/db/schema.ts for its aggregates; src/shared/db/schema.ts re-exports them so drizzle-kit sees one entry point. Best DDD alignment. FK across contexts requires importing across modules."
+            },
+            {
+              "id": "b",
+              "label": "Centralized schema in src/shared/db/schema.ts",
+              "description": "Single file with all 19 entities. FK across contexts trivial. Bounded-context separation lives only in repository placement, not schema files. Smallest moving parts."
+            },
+            {
+              "id": "c",
+              "label": "Per-aggregate files in src/shared/db/schemas/",
+              "description": "One file per entity (user.ts, plant.ts, ...) imported from src/shared/db/schema.ts barrel. Easier diffs, no per-context boundary. Hybrid — keeps schema centralized but file-grained."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The shared file should be treated as src/shared/db/schema-registry.ts for drizzle-kit only, not an application import barrel. Add a lint/test guard if needed.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Primary key strategy",
+          "context": "PRD §4 lists `id` on every entity but doesn't lock the type. Choice affects URL safety, index size, sort behavior, dependency footprint, and whether IDs leak count.",
+          "options": [
+            {
+              "id": "a",
+              "label": "UUID v4 (PG `gen_random_uuid()`)",
+              "description": "Postgres-native (pgcrypto), 128-bit, opaque, no extra dep, no sort signal. Universally portable. Slight index bloat vs sequential."
+            },
+            {
+              "id": "b",
+              "label": "UUID v7 (time-sortable, app-side)",
+              "description": "128-bit, monotonic prefix → better B-tree locality, better range queries on `created_at` proxy. Needs `uuid` v9+ npm dep generated app-side (PG 17 has no native v7 yet)."
+            },
+            {
+              "id": "c",
+              "label": "bigserial (sequential int8)",
+              "description": "Smallest indexes, fastest joins. Exposes row count in URLs (privacy + competitive concern), trivial enumeration. Non-portable across shards."
+            },
+            {
+              "id": "d",
+              "label": "cuid2 (collision-resistant, short)",
+              "description": "Short, secure, sortable-ish. Adds @paralleldrive/cuid2 dep. Less common in Postgres ecosystems; debugging tools less aware."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Timestamp columns & defaults",
+          "context": "PRD §5 locks ISO-8601 UTC with `Z` for all timestamps. Decision is about column type (timestamptz vs timestamp), default-value source (DB clock vs app clock), and naming (snake_case in DB).",
+          "options": [
+            {
+              "id": "a",
+              "label": "timestamptz + PG `now()` defaults + snake_case (`created_at`, `updated_at`)",
+              "description": "Postgres handles UTC normalization, drizzle-kit emits `DEFAULT now()`. Writes don't need to set `created_at`. Matches Postgres convention."
+            },
+            {
+              "id": "b",
+              "label": "timestamptz + app-side timestamps (no PG defaults)",
+              "description": "App generates `new Date()` and inserts explicitly. Easier to mock/freeze in tests, deterministic. Slightly more code per insert."
+            },
+            {
+              "id": "c",
+              "label": "timestamp (no tz) + UTC convention enforced in app",
+              "description": "Smallest column. Loses timezone info entirely; relies on every consumer assuming UTC. Brittle if anyone forgets."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-04",
+          "title": "Enum strategy for status/type fields",
+          "context": "PRD §4 has many enum-shaped fields: `Identification.status (success|failed)`, `Identification.failure_reason (timeout|provider_unavailable|cost_ceiling_reached|breaker_open|invalid_response)`, `Subscription.status (trialing|active|past_due|canceled|expired)`, `Reminder.type (watering|fertilization)`, `CareGuide.toxicity (safe|toxic_pets|toxic_children|toxic_both)`, etc. Choice trades schema strictness vs migration flexibility.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Postgres native ENUMs via `pgEnum` (drizzle helper)",
+              "description": "DB-enforced, type-safe, `\\d+` shows the values. Adding a new value needs `ALTER TYPE ... ADD VALUE` (cannot run inside transactions in older PG; PG 17 allows). Removing a value requires recreating the type."
+            },
+            {
+              "id": "b",
+              "label": "varchar + CHECK constraint + TS literal union",
+              "description": "Drizzle column is `varchar` with a CHECK; TS layer has `type Status = 'trialing' | 'active' | ...`. Adding values = relaxing the CHECK in a migration. Removing = harder. Less DB-side introspection."
+            },
+            {
+              "id": "c",
+              "label": "varchar + TS validation only (Zod literal union, no DB CHECK)",
+              "description": "Most flexible. Zod at the route boundary is the only enforcement. DB accepts any string — risk of bad data from manual SQL or admin scripts."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Column naming convention",
+          "context": "PRD §4 uses snake_case (`user_id`, `acquisition_date`, `current_period_end`). TypeScript convention is camelCase. Drizzle supports either with mapping, but consistency matters.",
+          "options": [
+            {
+              "id": "a",
+              "label": "snake_case columns ↔ camelCase TS via Drizzle mapping",
+              "description": "DB stays Postgres-idiomatic (`user_id`, `created_at`); TS reads `userId`, `createdAt`. Best for SQL admins + ORM users. Drizzle handles via `name: 'user_id'`."
+            },
+            {
+              "id": "b",
+              "label": "camelCase columns + camelCase TS (uniform everywhere)",
+              "description": "Drizzle just uses the field name as the column name. SQL queries quote `\"userId\"` (case-sensitive). Less idiomatic in Postgres tooling."
+            },
+            {
+              "id": "c",
+              "label": "snake_case columns + snake_case TS",
+              "description": "Match DB names verbatim. Unusual for TS code but eliminates a class of mapping bugs. Reads less idiomatically in JS land."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "schema-specifics",
+      "title": "Schema Specifics",
+      "questions": [
+        {
+          "id": "Q-06",
+          "title": "JSON column type for opaque payloads",
+          "context": "Three entities carry JSON: `Identification.results` (top-N w/ confidence — sometimes queried by status/min_confidence at insert), `BillingEvent.payload` (raw Stripe event), `OfflineSyncFailure.payload` (queued action). PG 17 has both `json` (preserves raw text) and `jsonb` (parsed binary, indexable).",
+          "options": [
+            {
+              "id": "a",
+              "label": "jsonb everywhere",
+              "description": "Indexable, faster random reads, lossy on whitespace. Industry default for new projects."
+            },
+            {
+              "id": "b",
+              "label": "json everywhere",
+              "description": "Preserves exact bytes (good for webhook signature verification audits). Faster writes, no indexability. Useful if BillingEvent.payload needs byte-faithful retention."
+            },
+            {
+              "id": "c",
+              "label": "Mixed — jsonb for queryable fields, json for opaque payloads",
+              "description": "`Identification.results` = jsonb (we may filter on confidence in admin queries); `BillingEvent.payload` + `OfflineSyncFailure.payload` = json (audit-faithful)."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Cross-aggregate FK constraints",
+          "context": "Plant.user_id → User.id, Plant.species_id → Species.id (nullable), PhotoEntry.plant_id → Plant.id, Identification.user_id → User.id, Identification.plant_id → Plant.id (set NULL on plant delete per PRD §4), etc. Real DB FKs catch bugs early but make migrations heavier.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Real FKs everywhere with explicit ON DELETE rules per PRD §4",
+              "description": "CASCADE for ownership (PhotoEntry.plant_id, Reminder.plant_id), SET NULL for cross-context history (Identification.plant_id), RESTRICT/NO ACTION for reference (Plant.species_id). Maximum referential integrity."
+            },
+            {
+              "id": "b",
+              "label": "Real FKs with default ON DELETE NO ACTION + app-level cascade logic",
+              "description": "DB enforces existence; deletion semantics live in repositories/use-cases (more visible in code, easier to test). Risk: double-delete if app and DB both attempt cascade."
+            },
+            {
+              "id": "c",
+              "label": "No DB FKs, app-level integrity only",
+              "description": "Allows independent context schema migrations. Big consistency risk — easy to leak orphans. Drizzle still has TS-level relations for joins."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "migrations",
+      "title": "Migration Tooling",
+      "questions": [
+        {
+          "id": "Q-08",
+          "title": "Migration directory ownership",
+          "context": "Two systems can own migrations: drizzle-kit (TS-driven, generates SQL from schema diffs) and Supabase CLI (`supabase/migrations/*.sql`, runs on `db reset`, also handles RLS/storage). Locally, `db:reset` is in package.json from Phase 1. Choice impacts where SQL lives + who runs it.",
+          "options": [
+            {
+              "id": "a",
+              "label": "drizzle-kit owns ALL migrations in `drizzle/migrations/`",
+              "description": "Supabase CLI is just for local services (Postgres + Auth + Storage). Drizzle migrations applied via `pnpm db:migrate` or pre-test hook. RLS is also drizzle-kit (raw SQL embedded). One source of truth, `supabase db reset` doesn't auto-run them — needs custom orchestration."
+            },
+            {
+              "id": "b",
+              "label": "drizzle-kit generates SQL → output to `supabase/migrations/`",
+              "description": "Supabase CLI's `db reset` picks them up automatically. Lose drizzle-kit's `migrate` command but gain Supabase CLI's diff-and-deploy + branch-DB story. Naming conventions need to align (`YYYYMMDDHHMMSS_description.sql`)."
+            },
+            {
+              "id": "c",
+              "label": "Two systems — drizzle-kit for app schema, supabase/migrations for RLS + storage policies + seeding triggers",
+              "description": "Each tool owns its strength. Risk: ordering bugs (RLS migration runs before table exists). Need clear sequencing convention."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-09",
+          "title": "Migration application strategy",
+          "context": "drizzle-kit offers `push` (introspect + apply schema directly, no migration file) vs `generate` (write SQL file from schema diff) + `migrate` (apply checked-in files). Phase 2 SC-1 says migrations are applied to a fresh DB, implying file-based.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`drizzle-kit generate` + checked-in SQL + `drizzle-kit migrate`",
+              "description": "Migration files in repo, full audit trail, prod-style. CI applies the same files as dev. Slight friction during early-phase schema iteration (regenerate often)."
+            },
+            {
+              "id": "b",
+              "label": "`drizzle-kit push` (no migration files)",
+              "description": "Schema-direct sync, fast iteration, zero file noise. NO audit trail — any out-of-band change to prod overwrites silently. Only safe for greenfield local dev."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — `push` in local dev, `generate+migrate` in CI/preview/prod",
+              "description": "Best of both. Risk: drift between dev (push'd schema) and migration files. Need a `db:migrate-check` script that asserts they match."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "RLS policy authoring location",
+          "context": "RLS policies are SQL — `CREATE POLICY ... ON tablename FOR SELECT USING (auth.uid() = user_id)`. They're tightly coupled to the schema (same table, same migration moment). Where to keep them?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Embedded in same drizzle migration files via raw SQL strings",
+              "description": "drizzle-kit emits CREATE TABLE; we hand-edit (or hook drizzle's `customMigration`) to append CREATE POLICY. Single migration file = single source of truth for that table."
+            },
+            {
+              "id": "b",
+              "label": "Separate `supabase/migrations/*-rls.sql` files post-table",
+              "description": "Hand-authored, run after drizzle migrations. Clear separation: \"schema vs policy\". Risk: mismatch if a column name changes and the RLS file doesn't."
+            },
+            {
+              "id": "c",
+              "label": "Drizzle's declarative RLS API (limited) + raw SQL for the rest",
+              "description": "Drizzle 0.45 has experimental `pgPolicy()` for simple cases. Use it when possible, raw SQL fallback for `auth.uid()`-dependent policies. Most modern; less mature."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-11",
+          "title": "Migration verification in CI",
+          "context": "Phase 2 SC-1 requires migrations apply to a fresh DB cleanly. CI integration tests need migrations + seed before tests run. Failure to verify could let drift land.",
+          "options": [
+            {
+              "id": "a",
+              "label": "CI pre-test step: `db:reset` → `db:migrate` → `db:seed` → run tests",
+              "description": "Three-step orchestration. Each piece is independently runnable. Slow if seed is large."
+            },
+            {
+              "id": "b",
+              "label": "CI pre-test step: `db:setup` (single command) → run tests",
+              "description": "Wrapper script does reset + migrate + seed in one shot. Less granular but easier to invoke."
+            },
+            {
+              "id": "c",
+              "label": "Per-test-file fresh DB (slower but safer)",
+              "description": "Each Vitest worker spins up its own DB or schema. Eliminates cross-test pollution. Significantly slower CI."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "seed-data",
+      "title": "Seed Data",
+      "questions": [
+        {
+          "id": "Q-12",
+          "title": "Seed data format",
+          "context": "INFRA-24 requires ConsentLog policy_version + legal-basis registry seeded everywhere. Plus: IdentificationLimit defaults (trial/paid caps), ProviderBudget defaults ($5/day each, alert 80%, min_confidence 0.30). Choice affects type-safety and refactor cost.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`supabase/seed.sql` (raw SQL, run by `db:reset`)",
+              "description": "Supabase CLI handles it natively. Static data, easy to review in PR. No type-safety — column rename breaks silently until next reset."
+            },
+            {
+              "id": "b",
+              "label": "TS-based seed runner — `scripts/seed.ts` via `tsx`, uses Drizzle insert helpers",
+              "description": "Type-safe (column rename → compile error). Refactor-friendly. Needs explicit `pnpm db:seed` invocation (or hook into `db:reset` via supabase config). Harder to run in CI without Node."
+            },
+            {
+              "id": "c",
+              "label": "Mixed — SQL for static reference (legal-basis, defaults), TS for dev fixtures (test users, plants)",
+              "description": "Static immutable data via SQL (audit-friendly), dev-only convenience via TS. Two sources, but each is appropriate to its scope."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Seed coverage at Phase 2",
+          "context": "Phase 2 SC-5 only requires ConsentLog policy_version + legal-basis registry. PRD also has IdentificationLimit + ProviderBudget defaults. Anything else seeded now is Phase 5+ scaffolding.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Minimum required: ConsentLog policy_version + legal-basis registry only",
+              "description": "Strict to SC-5. IdentificationLimit + ProviderBudget seeded by Phase 6 when caps actually engage."
+            },
+            {
+              "id": "b",
+              "label": "Above + IdentificationLimit (trial 5/75, paid 15/200) + ProviderBudget defaults ($5/day Plant.id + OpenAI-compat, 80% alert, min_confidence 0.30)",
+              "description": "Phase 6 needs them; landing in Phase 2 means a fresh DB is always identification-ready (if connected to a provider). Aligns with PRD §6 cost-control table."
+            },
+            {
+              "id": "c",
+              "label": "Above + sample PartnerStore rows (e.g., `internal-test` partner code) for E2E",
+              "description": "Phase 4 needs partner codes for signup. Seeding now means E2E in Phase 4 doesn't need its own setup."
+            },
+            {
+              "id": "d",
+              "label": "Above + sample test users + test plants (dev-only, not loaded in prod)",
+              "description": "Convenient for dev/manual testing. Risk of leaking into prod if seed file isn't gated by NODE_ENV."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "db-client",
+      "title": "Database Client",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Pooled vs direct connection separation",
+          "context": "App runs on Vercel serverless → goes through Supavisor txn pooler at port 6543 with `prepare: false`. drizzle-kit migrations + admin scripts use direct DB connection at port 5432 (txn pooler doesn't allow DDL). DATABASE_URL + DATABASE_POOL_URL already in .env per Phase 1.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Two clients — `db/client.ts` (pooled, `{ prepare: false }`) for app; `db/migration-client.ts` (direct) for drizzle-kit + scripts",
+              "description": "Clean separation. App never touches direct connection (production safety). drizzle-kit gets its own narrow file."
+            },
+            {
+              "id": "b",
+              "label": "Single client (pooled, `{ prepare: false }`) used everywhere",
+              "description": "Simpler. drizzle-kit migrations might fail (txn pooler rejects DDL). Risk: production DDL from app accidentally."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Client lifecycle in Next 16 serverless",
+          "context": "Vercel functions can warm up/cool down. postgres-js opens TCP connections. Connection pooling is at Supavisor — local pool size matters mostly for hot-reload safety in dev.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single global lazy-initialized client (module-scope)",
+              "description": "Standard serverless pattern. Postgres connection persists across warm invocations. Hot-reload in dev creates leaks until process restart — acceptable."
+            },
+            {
+              "id": "b",
+              "label": "Lazy global + explicit `db.end()` on hot-reload (dev-only HMR hook)",
+              "description": "Add a Vite/Next HMR hook to close connections on module replacement. Cleaner dev DX, more code."
+            },
+            {
+              "id": "c",
+              "label": "Per-request client instantiation",
+              "description": "Fresh client per request, explicit close at end. Burns connection budget; safest cleanup. Likely overkill with Supavisor in front."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "repository-pattern",
+      "title": "Repository Pattern",
+      "questions": [
+        {
+          "id": "Q-16",
+          "title": "Repository style (DDD strictness)",
+          "context": "Folhário's PROJECT.md emphasizes \"adapter boundaries at every external dependency\" + \"DDD-lite per bounded context\". Repositories abstract DB access from use-cases. Choice trades testability/swappability against ceremony.",
+          "options": [
+            {
+              "id": "a",
+              "label": "DDD strict — interface in `domain/{aggregate}-repository.ts`, impl in `infrastructure/{aggregate}-repository.drizzle.ts`",
+              "description": "Use-cases depend on interface. Mockable for unit tests. Maximum boilerplate. Easy to add an in-memory test impl."
+            },
+            {
+              "id": "b",
+              "label": "Concrete only — `infrastructure/{aggregate}-repository.ts` exporting class or instance",
+              "description": "No domain-layer interface. Pragmatic. Use-cases depend on the class directly. Mocking requires `vi.mock` or DI param. Less code."
+            },
+            {
+              "id": "c",
+              "label": "Functional — `infrastructure/db/{aggregate}.ts` exporting `findById`, `create`, etc. (no class, no `this`)",
+              "description": "Pure functions take a Drizzle client param. Easiest to test. No DDD-style \"object identity\". Very TS-idiomatic."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "How to enforce \"no Drizzle in handlers\"",
+          "context": "Phase 2 SC-2 says \"integration tests fail loudly if any route handler imports Drizzle directly\". CLAUDE.md and PROJECT.md repeat the rule. Mechanism choice trades author-time vs. test-time enforcement.",
+          "options": [
+            {
+              "id": "a",
+              "label": "ESLint `no-restricted-imports` rule on `src/app/api/**`",
+              "description": "Forbid `drizzle-orm`, `drizzle-orm/postgres-js`, and `@shared/db/client` from being imported by route handler files. Lint failure on commit/CI. Author sees error in editor."
+            },
+            {
+              "id": "b",
+              "label": "Vitest test that greps `src/app/api/` for forbidden imports",
+              "description": "Runtime test in CI. Catches all variants of import (require, dynamic). Slower feedback than lint but harder to disable."
+            },
+            {
+              "id": "c",
+              "label": "Both — ESLint + Vitest grep test (belt and suspenders)",
+              "description": "ESLint for fast author feedback, Vitest for CI safety net. Slight duplication."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-18",
+          "title": "Transaction API exposure",
+          "context": "Use-cases sometimes need atomic multi-table writes (e.g., create Plant + initial PhotoEntry). Drizzle exposes `db.transaction(async (tx) => ...)`. Repositories must accept the tx context.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Repositories take optional `tx?: Drizzle` parameter on every method",
+              "description": "`async create(data, tx?: Tx)` — tx defaults to global db. Use-cases call `db.transaction((tx) => repo.create(data, tx))`. Pragmatic, type-safe, slightly leaky."
+            },
+            {
+              "id": "b",
+              "label": "Repositories expose `withTx(tx)` factory returning a tx-bound repo",
+              "description": "`const txRepo = repo.withTx(tx)`. Cleaner — methods don't carry tx param. More code in repos."
+            },
+            {
+              "id": "c",
+              "label": "Unit-of-Work abstraction hiding Drizzle entirely",
+              "description": "`uow.execute(async (uow) => uow.plants.create(data))`. Most DDD-pure. Highest ceremony. Hardest to read for casual contributors."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-19",
+          "title": "drizzle-zod usage pattern",
+          "context": "INFRA-09 says \"Zod validation at route-handler body/query boundaries; drizzle-zod for DB-schema-derived Zod\". drizzle-zod gives `createInsertSchema` + `createSelectSchema` — but raw schemas often need pt-BR error messages and business rules layered on.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Routes import `createInsertSchema(plants)` directly",
+              "description": "Minimal layer. Fastest. pt-BR error messages must be added at schema definition or via Zod's `errorMap` globally. Thin route handler."
+            },
+            {
+              "id": "b",
+              "label": "Domain layer exports refined Zod schemas",
+              "description": "`src/contexts/catalog/domain/plant-schemas.ts` extends `createInsertSchema` with pt-BR messages, business rules (`name.min(1).max(80)`). Routes import from domain. More files but separates concerns."
+            },
+            {
+              "id": "c",
+              "label": "Two layers — raw drizzle-zod for shape + composed domain Zod for rules",
+              "description": "Domain composes raw + business rules. Routes always import domain version. Most explicit, most files."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "rls-strategy",
+      "title": "RLS Strategy",
+      "questions": [
+        {
+          "id": "Q-20",
+          "title": "Auth model for RLS",
+          "context": "PRD §2 says \"RLS as defense in depth\". The app primarily uses service-role key (server-only, bypasses RLS). RLS only kicks in if someone authenticates as a user via JWT. Two patterns exist: (1) Supabase pattern — every request opens a JWT-bearing PG connection, RLS enforces user_id filtering automatically; (2) Service-role + app-level WHERE filters — RLS exists only as a backstop.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Service-role + app-level `WHERE user_id = ?` in every repo (RLS strictly defense-in-depth)",
+              "description": "Repos always filter by user_id explicitly. Simple connection model (one client, service role). RLS is a backstop if a repo forgets the filter. Most testable. Aligns with current Drizzle patterns."
+            },
+            {
+              "id": "b",
+              "label": "Per-request JWT-bearing PG connection (RLS is primary enforcement)",
+              "description": "Each `/api/v1/*` request creates a Drizzle client with the user's JWT in `Authorization` header → Supavisor passes through → `auth.uid()` works in policies → repos skip explicit user_id filter. Fewer bugs, harder to test."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — service-role for cross-context reads (Species, CareGuide, partner stores) + JWT-bearing for user-scoped mutations",
+              "description": "Best of both. Two clients per request worst-case. Most code paths to think about."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-21",
+          "title": "Which tables get RLS enabled",
+          "context": "User-owned (need RLS): User, Plant, PhotoEntry, Reminder, ReminderLog, Identification, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, OfflineSyncFailure, PushSubscription. Reference/admin: Species, CareGuide, PartnerStore, IdentificationLimit, ProviderBudget, ProviderUsageCounter, BillingEvent.",
+          "options": [
+            {
+              "id": "a",
+              "label": "RLS on all 12 user-owned tables; reference/admin tables have RLS disabled",
+              "description": "Strict to PRD wording \"all user-owned tables\". Minimum surface. Reference tables stay unrestricted at DB level (service role enforces)."
+            },
+            {
+              "id": "b",
+              "label": "RLS enabled on ALL tables; reference tables have permissive `FOR SELECT TO authenticated USING (true)` policies",
+              "description": "Uniform posture: every table has RLS on. Reference tables explicitly grant read. Most defense. Slight policy bloat."
+            },
+            {
+              "id": "c",
+              "label": "RLS on user-owned + RLS on reference tables (read-only via authenticated role) + admin tables RLS-off",
+              "description": "Species/CareGuide can be read by anyone authenticated; IdentificationLimit/ProviderBudget operator-tunable via service role only. Most expressive."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-22",
+          "title": "RLS policy granularity",
+          "context": "PG supports `FOR ALL` (combined SELECT/INSERT/UPDATE/DELETE) and per-action policies. Decision affects audit complexity vs explicit semantics.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single `FOR ALL` policy per user-owned table — `USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)`",
+              "description": "Minimum policy lines. Same condition for read/write. Simplest mental model."
+            },
+            {
+              "id": "b",
+              "label": "Separate SELECT/INSERT/UPDATE/DELETE policies per table",
+              "description": "Explicit per-action enforcement. Easier to audit what each operation requires. More lines."
+            },
+            {
+              "id": "c",
+              "label": "Mixed — `FOR ALL` for symmetric cases, separate policies where rules differ (e.g., SELECT permissive for Species but INSERT operator-only)",
+              "description": "Pragmatic — granularity scales with table needs. Most expressive."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-23",
+          "title": "RLS on storage buckets (`plant-photos`, `plant-thumbnails`, `data-exports`)",
+          "context": "Buckets are private. Two enforcement layers exist: (1) Supabase Storage bucket-level RLS via `storage.objects` policies referencing `auth.uid()` and path; (2) Server proxy — clients never touch buckets directly, server uses service role + signed URLs.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Path-based bucket RLS — `(storage.foldername(name))[1] = auth.uid()::text` policy",
+              "description": "Path convention `{user_id}/...` enforced at storage layer. Direct client uploads possible (signed-upload-URL). RLS is the gate."
+            },
+            {
+              "id": "b",
+              "label": "Service-role only — clients never call Supabase Storage directly",
+              "description": "Server proxies uploads via service role; clients receive signed download URLs. Maximum control (we can validate GPS, transform, gate by subscription). Adds server bandwidth on uploads."
+            },
+            {
+              "id": "c",
+              "label": "Both — path-based RLS for direct uploads (after signed-upload-URL grant) + signed URLs for downloads + server-side GPS check on upload notification",
+              "description": "Direct client → bucket via signed URL (fast, low server bandwidth) + server validates the EXIF via post-upload Supabase storage event/Inngest hook. Inngest deferred to Phase 4 — would need a sync alternative now."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "storage-adapter",
+      "title": "Storage Adapter & Buckets",
+      "questions": [
+        {
+          "id": "Q-24",
+          "title": "Bucket provisioning mechanism",
+          "context": "Three private buckets need to exist in every environment: `plant-photos`, `plant-thumbnails`, `data-exports`. Supabase CLI's config.toml has `[storage.buckets.<name>]` declarative blocks; raw SQL works too.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`supabase/config.toml` declarative `[storage.buckets.*]` blocks",
+              "description": "Supabase CLI creates buckets on `supabase start` / `db reset`. Schema-coupled to migrations. Per-bucket settings (public, file_size_limit, allowed_mime_types) declarative."
+            },
+            {
+              "id": "b",
+              "label": "SQL migration that inserts into `storage.buckets`",
+              "description": "Lives alongside other migrations. Works in any environment. Slightly more brittle — Supabase Storage internal table format may change."
+            },
+            {
+              "id": "c",
+              "label": "TS setup script `scripts/setup-buckets.ts` using Supabase JS admin API",
+              "description": "Idempotent creation via Supabase JS client. Easy to run against any environment with credentials. Extra moving piece — must be invoked manually."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-25",
+          "title": "StorageAdapter interface granularity",
+          "context": "INFRA-06 mandates `StorageAdapter` with signed-URL helpers. Decision: how abstract is the API surface?",
+          "options": [
+            {
+              "id": "a",
+              "label": "High-level — `uploadPlantPhoto(userId, plantId, buffer): { photoUrl, thumbnailUrl }`, `uploadDataExport(userId, archive)`, etc.",
+              "description": "Encapsulates path + bucket per use-case. Use-cases stay clean. Adapter has many methods. Path conventions live inside adapter."
+            },
+            {
+              "id": "b",
+              "label": "Low-level — `upload(bucket, path, file)`, `getSignedUrl(bucket, path, ttl)`, `delete(bucket, path)`",
+              "description": "Generic. Callers compose paths. Adapter has 3-4 methods. Path conventions live in callers (or in a `paths.ts` helper)."
+            },
+            {
+              "id": "c",
+              "label": "Two-tier — low-level adapter `StorageAdapter` + high-level helpers per context (`src/contexts/catalog/infrastructure/photo-storage.ts`)",
+              "description": "Adapter is generic, swappable. Per-context helpers wrap with path conventions. Cleanest layering, more files."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-26",
+          "title": "Storage path convention",
+          "context": "Bucket layout affects RLS (path-based policies), LGPD per-user delete (rm -rf {user_id}/), debugging, and future migrations.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`{user_id}/{aggregate_id}/{file_id}.{ext}` — e.g., `plant-photos/abc-123/plant-789/photo-xyz.jpg`",
+              "description": "Easy LGPD delete (drop prefix). Easy RLS via foldername(name). Aggregate-grouped listings. Clear lineage."
+            },
+            {
+              "id": "b",
+              "label": "`{user_id}/{file_id}.{ext}` — flat per user",
+              "description": "Simpler. No aggregate grouping; aggregate id lives only in DB. Easy LGPD. Slight risk of file-id collisions (mitigated by UUIDs)."
+            },
+            {
+              "id": "c",
+              "label": "`{user_id}/{yyyy-mm}/{file_id}.{ext}` — month-sharded",
+              "description": "Better for backup/archive workflows. More complex prefix logic. Harder to find files by aggregate."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "LGPD prefix delete + debuggability",
+          "status": "answered"
+        },
+        {
+          "id": "Q-27",
+          "title": "Upload mechanism",
+          "context": "Two patterns for Supabase Storage uploads: (1) Client → server route → service-role upload; (2) Client → server gets signed-upload-URL → client direct uploads → server records metadata. EXIF/GPS checks must happen somewhere.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Server proxy — client POSTs multipart to `/api/v1/photos/upload`, server runs GPS check, server uploads via service role, server inserts DB row",
+              "description": "Single atomic transaction (file uploaded ↔ DB row exists). GPS check at server boundary (defense in depth). Burns server bandwidth on uploads — every byte hits Vercel."
+            },
+            {
+              "id": "b",
+              "label": "Direct upload via signed URL — server returns signed-upload-URL, client uploads to Supabase, server callback inserts DB row",
+              "description": "Minimal server bandwidth. GPS check requires post-upload validation (server fetches just EXIF and validates) → risk of orphaned files if check fails. Needs cleanup logic."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — direct upload via signed URL + server post-upload GPS validation in same request flow",
+              "description": "Client uploads to Supabase, then POSTs metadata + checksum to `/api/v1/photos/confirm`. Server fetches EXIF (lightweight HEAD/range read), rejects + deletes object if GPS present, otherwise inserts DB row. More moving parts."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "image-pipeline",
+      "title": "Image Pipeline",
+      "questions": [
+        {
+          "id": "Q-28",
+          "title": "Client-side compression library",
+          "context": "PRD §11: client-side compression to ≤1MB. Choice affects bundle size, EXIF strip behavior, browser support, and developer ergonomics.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`browser-image-compression` (popular, ~5k stars)",
+              "description": "Battle-tested, supports EXIF strip option, async API, configurable target size. Bundle ~30KB gzipped. Workers support."
+            },
+            {
+              "id": "b",
+              "label": "`compressorjs` (lighter, jQuery-style API)",
+              "description": "Smaller bundle (~12KB). Less rich API. Doesn't strip EXIF natively — needs separate piexifjs."
+            },
+            {
+              "id": "c",
+              "label": "Custom Canvas API (`canvas.toBlob({ quality })`)",
+              "description": "Zero deps. Implements iterative quality downsampling manually. Strips EXIF as side effect of canvas redraw. Most code, most control."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-29",
+          "title": "EXIF strip approach (client-side)",
+          "context": "Even with compression, EXIF survival depends on the library. PRD §11 mandates client strips EXIF including GPS before upload.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Bundled in compression library (browser-image-compression has `exifOrientation` + strip options)",
+              "description": "Single dep. Library guarantees no EXIF in output. Implicit — easy to forget to enable."
+            },
+            {
+              "id": "b",
+              "label": "Separate `piexifjs` after compression",
+              "description": "Explicit two-step: compress → piexifjs.remove(). Verifiable in tests. Two deps. Slight bundle bloat."
+            },
+            {
+              "id": "c",
+              "label": "Canvas redraw guarantees no EXIF (option Q-28-c)",
+              "description": "If we go with custom Canvas, EXIF is gone by construction (canvas can't re-emit it). Implicit but provably correct."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-30",
+          "title": "Server-side GPS detection library",
+          "context": "PRD §11 server defense in depth: \"server REJECTS uploads still carrying GPS as `validation_failed`\". Server must read EXIF without trusting the client.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`exifr` (light, modern, ESM)",
+              "description": "Fast (parses streams), small (~10KB), works in Node + browser. Supports JPEG/HEIC/TIFF. Most maintained option in 2026."
+            },
+            {
+              "id": "b",
+              "label": "`exiftool-vendored` (full ExifTool wrapper)",
+              "description": "Comprehensive (handles every format). Bundles a Perl runtime + binary. Heavy (50MB+) — bad for serverless cold start."
+            },
+            {
+              "id": "c",
+              "label": "`piexifjs` (small, JPEG-only)",
+              "description": "Lightweight, works in Node. JPEG-only — fails on HEIC (iOS default). Risky if iOS users upload from Camera Roll."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-31",
+          "title": "Thumbnail generation timing",
+          "context": "PRD §11 mandates thumbnails. Phase 5 (Catalog) is the first consumer. Generation could happen sync (Sharp on server upload), async (Inngest function — but Inngest doesn't land until Phase 4), or via Supabase image transformations.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Sync in upload route — `sharp` resizes + uploads thumbnail to `plant-thumbnails` in same request",
+              "description": "Atomic. Latency: resize 200-400ms per photo. Sharp adds ~10MB to bundle (native binary). Phase 2 ships fully."
+            },
+            {
+              "id": "b",
+              "label": "Supabase image transformations (`?width=300` query)",
+              "description": "No thumbnails bucket needed. Edge-cached. Fees per transformation. May not match \"plant-thumbnails bucket\" scoping in INFRA-06."
+            },
+            {
+              "id": "c",
+              "label": "Defer thumbnail generation logic to Phase 5 — Phase 2 only ships the bucket + adapter scaffolding",
+              "description": "Phase 2 SC-3 only requires buckets boot without errors. Thumbnail generation is INFRA-19 which doesn't strictly require Phase 2. Move to Phase 5 (catalog) where it's first needed. Honest scope."
+            },
+            {
+              "id": "d",
+              "label": "Async Inngest function — but Inngest doesn't exist yet (Phase 4)",
+              "description": "Would defer Phase 2 scope. Not viable now without breaking phase ordering."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "auth-adapter",
+      "title": "Auth Adapter & Middleware",
+      "questions": [
+        {
+          "id": "Q-32",
+          "title": "AuthAdapter scope at Phase 2",
+          "context": "Phase 4 owns full auth (signup, OAuth, verification, reset). Phase 2 SC-4 says \"enforces JWT verification via Next middleware\". Question: how thin is the AuthAdapter at Phase 2?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Thin — only `verifyJWT(token) → { userId, email, ... }` exposed",
+              "description": "Phase 2 ships JWT verification, nothing else. Phase 4 adds signup/signin/reset to the same adapter. Minimum surface."
+            },
+            {
+              "id": "b",
+              "label": "Skeleton — verify + stubbed signUp/signIn/requestReset that throw \"not implemented\"",
+              "description": "Adapter interface defined upfront. Phase 4 fills in. Clearer contract earlier; nothing usable yet."
+            },
+            {
+              "id": "c",
+              "label": "Verify + `getUserById(id)` (small DB read used by smoke route + Phase 5+ catalog)",
+              "description": "Just enough to power the Phase 2 smoke endpoint that asserts \"the authenticated user has a User row\". Practical minimum for downstream phases."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-33",
+          "title": "JWT verification mechanism",
+          "context": "Supabase signs JWTs with a project secret (or via JWKS). Verification options trade SDK weight vs control.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`jose` library + JWKS endpoint (`{SUPABASE_URL}/auth/v1/.well-known/jwks.json`)",
+              "description": "Tiny dep, full control, async-friendly. Caches JWKS. Best for serverless cold start."
+            },
+            {
+              "id": "b",
+              "label": "`@supabase/supabase-js` server client with `auth.getUser()`",
+              "description": "Bundles auth + DB + storage clients. Heaviest. Goes well beyond verify-only — drags in JS-land patterns we don't need at the data-layer phase."
+            },
+            {
+              "id": "c",
+              "label": "`@supabase/ssr` (Next-aware, cookie-based)",
+              "description": "Designed for Server Components/Actions. Uses cookies. Phase 2 is mostly route handlers (Bearer tokens), so SSR-cookie semantics may not fit."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-34",
+          "title": "Middleware location for JWT verification",
+          "context": "Phase 1 D-24 puts security headers in `next.config.ts headers()` and locale routing in `src/proxy.ts` (next-intl). JWT verification is a third concern. Where does it live?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Extend `src/proxy.ts` with auth check after locale handling",
+              "description": "Single proxy file, conditional matchers. Re-uses Next 16 proxy/middleware infrastructure already wired. Mixed concerns."
+            },
+            {
+              "id": "b",
+              "label": "Compose two functions in `src/proxy.ts` (locale + auth) via runtime helper",
+              "description": "`export default chain([locale, auth])` — cleaner separation, both run in one file. Custom chaining helper."
+            },
+            {
+              "id": "c",
+              "label": "Per-route validation via shared helper (`requireAuth(req)`) in route handlers — no middleware",
+              "description": "Each route handler calls `await requireAuth(req)` at top. Explicit, auditable. Repetitive. Risk: missing on a new route."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-35",
+          "title": "User row sync (Supabase `auth.users` ↔ `public.users`)",
+          "context": "Supabase Auth lives in its own `auth.users` table. Folhário's `User` lives in `public.users` (with extra fields: timezone, notification_time_local, trial_source, etc.). When a JWT arrives, the public.users row may not exist yet.",
+          "options": [
+            {
+              "id": "a",
+              "label": "DB trigger on `auth.users` INSERT → INSERT INTO `public.users` with defaults; app fills extra fields later",
+              "description": "Atomic with auth signup. Extra fields (timezone, notification_time_local) defaulted; app updates them on first authed request or Phase 4 signup endpoint. Trigger lives in supabase/migrations."
+            },
+            {
+              "id": "b",
+              "label": "App-side lazy create — first authed request without a User row creates it",
+              "description": "No trigger needed. Race condition possible if two requests arrive concurrently for the same auth.user. Mitigate with `INSERT ... ON CONFLICT DO NOTHING`."
+            },
+            {
+              "id": "c",
+              "label": "Defer entirely to Phase 4 — Phase 2 ships the User table + AuthAdapter but no sync logic",
+              "description": "Phase 2 smoke route accepts \"user has no public.users row → 401 user_not_provisioned\" or similar. Phase 4 signup endpoint creates the row explicitly."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "api-conventions",
+      "title": "API Conventions",
+      "questions": [
+        {
+          "id": "Q-36",
+          "title": "Cursor encoding format",
+          "context": "PRD §5: \"opaque cursor, `?cursor=&limit=` (default 50, max 200), response carries `next_cursor` (null when exhausted). Clients MUST NOT parse cursors.\" Implementation choice trades simplicity vs tamper-resistance.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`base64(JSON.stringify({ id, createdAt }))`",
+              "description": "Simple, opaque enough. Tampering yields 400 (invalid JSON or out-of-range data). Easy to debug in dev (decode in console)."
+            },
+            {
+              "id": "b",
+              "label": "HMAC-signed cursor with secret from env",
+              "description": "Tamper-proof. Slight code overhead (sign + verify). Harder to debug. Overkill for IDs that are already opaque (UUIDs)."
+            },
+            {
+              "id": "c",
+              "label": "Plain composite — `{lastId}_{lastSortKey}` as a string",
+              "description": "No encoding. Visibly tied to ORDER BY column. Easier to reason about. Exposes internal column names slightly."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-37",
+          "title": "Idempotency-Key implementation",
+          "context": "INFRA-22: Idempotency-Key on mutating endpoints; client UUID is the key for offline queue actions. Implementation determines TTL, replay semantics, and storage.",
+          "options": [
+            {
+              "id": "a",
+              "label": "`IdempotencyKey` table (key, user_id, response_status, response_body, expires_at)",
+              "description": "DB-backed. Survives restarts. Race-safe via unique constraint. Replay returns the persisted response. Adds writes to every mutation. Easy to reason about."
+            },
+            {
+              "id": "b",
+              "label": "Postgres advisory locks keyed on `hash(key)` — no extra table",
+              "description": "Briefly locks on concurrent replays. Replay returns \"in progress\" or completed result. Less storage. Lock release on connection close — risk of stuck locks."
+            },
+            {
+              "id": "c",
+              "label": "In-memory LRU per server instance",
+              "description": "Fastest. Useless across serverless invocations (no shared state). Effectively means only same-instance dedup — usually accidental."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-38",
+          "title": "Idempotency-Key TTL",
+          "context": "Offline-queue replays can arrive long after original (LGPD grace = 7d, app might be offline for days). Too short = duplicate work; too long = unbounded table growth.",
+          "options": [
+            {
+              "id": "a",
+              "label": "24 hours uniform",
+              "description": "Typical mobile-offline replay window. Most queued actions reach server within a day."
+            },
+            {
+              "id": "b",
+              "label": "7 days uniform",
+              "description": "Matches LGPD deletion grace + Inngest free-tier `sleepUntil` cap. Safer for long offline streaks. More table growth."
+            },
+            {
+              "id": "c",
+              "label": "48 hours uniform",
+              "description": "Generous for offline-queue replay; limits unbounded growth. Middle ground."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-39",
+          "title": "Smoke endpoint subject for SC-4",
+          "context": "Phase 2 SC-4 says: \"A smoke `/api/v1/*` route handler validates body with drizzle-zod-derived Zod, enforces JWT verification via Next middleware, returns cursor-paginated responses, and dedupes POSTs by Idempotency-Key header.\" Need a concrete subject that exercises all four.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Pure read smoke — `GET /api/v1/health/db?cursor=&limit=` returning paginated empty `users` slice (operator-only)",
+              "description": "Touches DB via repo (proves client + repo layer wire). Read-only — doesn't exercise idempotency or Zod validation."
+            },
+            {
+              "id": "b",
+              "label": "ConsentLog write smoke — `POST /api/v1/_diagnostics/consent` records ConsentLog row, requires Idempotency-Key, returns paginated GET history",
+              "description": "Exercises every requirement (Zod insert validation + JWT + cursor on GET + Idempotency on POST). ConsentLog is real data needed by Phase 4. Real product surface, audit-friendly."
+            },
+            {
+              "id": "c",
+              "label": "Diagnostic-only `/api/v1/_diagnostics/probe` against a throwaway `Probe` entity (CI/preview-only)",
+              "description": "Doesn't touch real product tables. Cleanly removable post-Phase-2. Adds entity that exists only for testing."
+            },
+            {
+              "id": "d",
+              "label": "All three — `/health/db` + ConsentLog write + cursor probe",
+              "description": "Belt-and-suspenders coverage. Most code, most surface. Each piece justifiable."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "domain-layer",
+      "title": "Domain Layer & Cross-Context",
+      "questions": [
+        {
+          "id": "Q-40",
+          "title": "Domain entity layer style",
+          "context": "DDD-classic has rich domain classes with invariants and methods. Lean approach uses Zod-derived types only. Functional uses ADTs + helpers. PROJECT.md says \"DDD-lite per bounded context\" but doesn't specify class vs function.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Lean — types derived from drizzle-zod (`type Plant = z.infer<typeof selectPlantSchema>`), no class layer",
+              "description": "Minimum ceremony. Use-cases are functions taking/returning types. Easy onboarding. \"DDD-lite\" interpreted loosely."
+            },
+            {
+              "id": "b",
+              "label": "DDD-classic — domain classes per aggregate (`class Plant { rename(name) { ... } }`) with invariants",
+              "description": "Maximum DDD. Domain-method-driven mutations. Repos hydrate/persist instances. Highest ceremony; highest expressiveness."
+            },
+            {
+              "id": "c",
+              "label": "Functional — `function createPlant(input)`, `function deletePlant(plant, ...)` returning new state",
+              "description": "ADTs + pure helpers. Modern TS-idiomatic. Less ceremonial than classes; more expressive than raw types."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-41",
+          "title": "Cross-context query services scaffolding",
+          "context": "PRD §3: \"cross-context = Inngest events for async, thin read-only query services for sync reads\". Example: Catalog (Phase 5) needs to read Species (Species & Care context). Phase 2 has no consumers yet.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Defer entirely — scaffold cross-context query services in their first consumer phase (Phase 5+)",
+              "description": "Phase 2 stays focused on schema + adapters. No premature abstraction. Risk: pattern inconsistency when later phases improvise."
+            },
+            {
+              "id": "b",
+              "label": "Scaffold one as part of smoke route (e.g., User read by Catalog from IAM context) to lock the pattern",
+              "description": "One concrete example establishes the convention. Phase 5+ copies it. Slight extra Phase 2 scope."
+            },
+            {
+              "id": "c",
+              "label": "Scaffold all 7 contexts' `*-queries.ts` as empty placeholders documenting the pattern",
+              "description": "Empty stubs in `src/contexts/{ctx}/application/queries.ts` with usage examples. Establishes structure aggressively. Risk of churn when contracts emerge."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-42",
+          "title": "Event type definitions in Phase 2",
+          "context": "PRD §3 lists every cross-context event (e.g., `user.signed_up`, `identification.succeeded`, `daily_reminder_summary.due`). Phase 2 doesn't wire Inngest, but the contract exists. Locking event payload Zod schemas now means later phases just import.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Define all event types/payload Zod schemas in `src/shared/events/` now",
+              "description": "Locks contract early. Phase 4-8 just import. Some events may need refactoring as their payloads evolve. Most upfront design."
+            },
+            {
+              "id": "b",
+              "label": "Per-context event types in `src/contexts/{ctx}/domain/events.ts` — context-owned",
+              "description": "Each context owns its emitted events. Cross-context consumers import. Aligns with DDD ownership."
+            },
+            {
+              "id": "c",
+              "label": "Defer entirely — events live in Phase 4 when Inngest lands",
+              "description": "Phase 2 stays pure data layer. Risk: events designed in isolation per phase, no upfront contract."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "testing",
+      "title": "Testing Strategy",
+      "questions": [
+        {
+          "id": "Q-43",
+          "title": "Integration test DB isolation",
+          "context": "PRD §19: \"REAL Postgres, zero DB mocking, migrations applied as in production\". Multiple Vitest workers in CI; each test needs a clean state. Choice trades speed vs purity.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Transaction-rollback per test — wrap each test in `BEGIN ... ROLLBACK`",
+              "description": "Fastest. Breaks if code under test uses its own transactions (Drizzle nests them as savepoints — works). All tests share one DB."
+            },
+            {
+              "id": "b",
+              "label": "TRUNCATE all tables between each test",
+              "description": "Reliable, slower than rollback. Works regardless of code's transaction usage. Loses sequence values, may need RESET."
+            },
+            {
+              "id": "c",
+              "label": "Separate `test_<worker>` schema per Vitest worker, fresh between files",
+              "description": "Parallel-safe. Each worker has its own schema. Slow startup. Most isolation."
+            },
+            {
+              "id": "d",
+              "label": "Whole separate Postgres DB per worker via Testcontainers",
+              "description": "Maximum isolation. Slowest. Heaviest infra. Overkill if Supavisor already separates DBs in branch-DB workflow."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Keep an exit ramp documented — if you hit a test that needs a real commit, fall back to TRUNCATE for that file.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-44",
+          "title": "Auth in integration tests",
+          "context": "Integration tests hit real route handlers that go through middleware (JWT verify). Need a way to simulate authenticated requests.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mock AuthAdapter via `vi.mock` — fast, doesn't exercise real verify path",
+              "description": "Tests inject a fake user. JWT path untested. Risk: real verification logic regression goes unnoticed."
+            },
+            {
+              "id": "b",
+              "label": "Real Supabase Auth in local stack — generate JWT via `auth.signInWithPassword()` with seeded test users",
+              "description": "Full path exercised including JWKS verify. Slower (~50-200ms per signin). Requires test user seeding."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — most tests mock; one or two \"real\" auth tests verify JWKS/verify path",
+              "description": "Speed for the bulk; coverage for the edge. Mocking convention may hide bugs in mocked tests."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-45",
+          "title": "Smoke E2E coverage in Phase 2",
+          "context": "Phase 1 has a Playwright smoke with diagnostics routes. Phase 2 adds backend logic. Question: does Phase 2 add new Playwright coverage or stay in Vitest?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Phase 2 adds Playwright spec covering the smoke `/api/v1/...` route — verifies JWT + cursor + idempotency end-to-end via real HTTP",
+              "description": "Visible end-to-end. Real Next 16 build serving the route. Most confidence."
+            },
+            {
+              "id": "b",
+              "label": "Smoke testing lives in Vitest integration only; Playwright deferred to feature phases",
+              "description": "Vitest covers the route handler imported as a function. Faster CI. Playwright ramps up in Phase 5+ with UI."
+            },
+            {
+              "id": "c",
+              "label": "Both — Vitest integration is primary, one Playwright happy-path smoke",
+              "description": "Belt-and-suspenders. Slight redundancy. Higher CI time."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "phase-boundary",
+      "title": "Phase Boundary",
+      "questions": [
+        {
+          "id": "Q-46",
+          "title": "User row schema fill-out at Phase 2",
+          "context": "PRD §4 lists 11 User fields (id, email, name, locale, timezone, notification_time_local, trial_source, partner_code, age_confirmed_at, toxicity_disclaimer_acknowledged_at, deletion_requested_at, created_at). Phase 4 wires auth/signup, Phase 8 wires reminders, Phase 11 wires deletion. Question: how much of the User table ships in Phase 2?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Full schema per PRD §4 — all 11 fields with sensible defaults; Phase 4+ adds the wire-up logic",
+              "description": "Single migration sets the table. Subsequent phases just write to existing columns. Minimum migration churn."
+            },
+            {
+              "id": "b",
+              "label": "Minimum viable — id, email, created_at; other columns added per migration as their phase needs them",
+              "description": "Each phase explicitly evolves the schema. Migration churn but clear lineage. Risk: many small migrations to coordinate."
+            },
+            {
+              "id": "c",
+              "label": "Full schema + sync stub (DB trigger or app-side) defined but not wired to actual auth flow",
+              "description": "Closer to production-ready. Phase 4 just turns it on. Some Phase 4 logic leaks into Phase 2."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-47",
+          "title": "JWT verification posture for Phase 2 smoke route",
+          "context": "Phase 2 SC-4 says \"enforces JWT verification\". But Phase 4 owns auth. Question: does the smoke route require a real JWT (operator generates manually) or stay public for now?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Smoke route requires real JWT (401 if missing) — proves middleware/adapter end-to-end",
+              "description": "Strict to SC-4 wording. Operators/integration tests generate JWTs against local Supabase auth. Most realistic."
+            },
+            {
+              "id": "b",
+              "label": "Smoke route public — Phase 4 turns on JWT enforcement",
+              "description": "Easier Phase 2 testing. Strict reading of SC-4 violated unless it's interpreted as \"middleware exists, route opts in\"."
+            },
+            {
+              "id": "c",
+              "label": "Smoke route public + a separate `/api/v1/_authcheck` route requires JWT — both postures covered",
+              "description": "SC-4 satisfied (some route enforces JWT). Smoke tests can hit the public route without auth dance. Two routes."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-48",
+          "title": "ConsentLog seed strategy (INFRA-24 specifics)",
+          "context": "INFRA-24 says \"ConsentLog, policy_version, legal-basis registry seed data loaded\". \"Policy_version\" is on every ConsentLog row referencing the active T&C/privacy version. \"Legal-basis registry\" enumerates Art. 7 bases: contract, consent, legitimate_interest, etc. Question: what shape do these take?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Static seed: legal_basis registry as a `legal_basis_registry` table (purpose enum → legal_basis enum) + initial `policy_version='v1.0.0'` row in a `policy_versions` table",
+              "description": "Two reference tables seeded. ConsentLog references via FK. Clear separation. Phase 4+ writes ConsentLog rows pointing to these registries."
+            },
+            {
+              "id": "b",
+              "label": "No registry tables — `policy_version` is a varchar on ConsentLog (default 'v1.0.0' from env), `legal_basis` is a varchar with CHECK or enum",
+              "description": "Less ceremonial. No FK joins. Registry exists only in code (TS const). Risk: drift between DB and TS."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — `legal_basis` as PG enum (registry) + `policy_version` as a single `policy_versions` table with `is_current` flag",
+              "description": "Enums for closed sets, table for evolving versions. Phase 4 re-consent flow can mark a new version as current. Most flexible."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "Most operational statuses should stay varchar + CHECK for easier evolution. legal_basis can be a PG enum because it is a legally closed registry; document that exception.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-49",
+          "title": "Provider config seed (IdentificationLimit + ProviderBudget) timing",
+          "context": "Phase 6 (Identification) is when caps actually engage. PRD §6 lists defaults: trial 5/day + 75/period, paid 15/day + 200/period; Plant.id $5/day, OpenAI-compat $5/day, alert 80%, min_confidence 0.30.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Seed defaults in Phase 2 — `IdentificationLimit` rows for trial + paid; `ProviderBudget` rows for Plant.id + OpenAI-compat (identification + care_guide purposes)",
+              "description": "A fresh DB is identification-ready when Phase 6 lands. Aligns with INFRA-05 (\"all entities exist\"). Slight Phase 2 scope creep but minimal."
+            },
+            {
+              "id": "b",
+              "label": "Seed only the schema (empty tables); Phase 6 seeds defaults",
+              "description": "Strict Phase 2 boundary. Phase 6 must remember to seed before tests."
+            },
+            {
+              "id": "c",
+              "label": "Seed empty tables + ship a `pnpm db:seed:providers` operator script Phase 6 invokes",
+              "description": "Convention without commitment. Operator/CI invokes when needed. Slightly hedged."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}

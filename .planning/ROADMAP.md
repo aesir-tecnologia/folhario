@@ -62,7 +62,7 @@ Plans:
   3. `AuthAdapter` and `StorageAdapter` (with `plant-photos`, `plant-thumbnails`, `data-exports` private buckets + signed-URL helpers) boot without errors and are exercised by integration tests. Inngest is NOT wired here — it lands in Phase 4 alongside the first async consumer (verification email).
   4. A smoke `/api/v1/*` route handler validates body with a `drizzle-zod`-derived Zod schema, enforces JWT verification via Next middleware, returns cursor-paginated responses (`?cursor=&limit=`, default 50 / max 200, opaque `next_cursor`), and dedupes POSTs by `Idempotency-Key` header.
   5. A client-side image pipeline (compression ≤1MB + EXIF/GPS strip) uploads through the storage adapter and the server-side upload endpoint rejects any image carrying GPS EXIF with `validation_failed`; `ConsentLog` + policy-version + legal-basis registry seed data is loaded into every environment.
-**Plans**: 10 plans
+**Plans**: 11 plans
 
 Plans:
 **Wave 1**
@@ -79,6 +79,7 @@ Plans:
 - [ ] 02-05-PLAN.md -- Runtime DB client, UnitOfWork, repositories, and no-Drizzle route guards
 
 **Wave 5 _(blocked on Wave 4 DB layer completion)_**
+- [ ] 02-05.5-PLAN.md -- Real-Supabase-JWT RLS denial proof (defense-in-depth verification)
 - [ ] 02-06-PLAN.md -- API convention helpers: Zod, cursor pagination, and idempotency
 - [ ] 02-07-PLAN.md -- AuthAdapter, JWT verification, current-user helper, and API-aware proxy
 

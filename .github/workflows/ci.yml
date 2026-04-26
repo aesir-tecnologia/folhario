@@ -77,6 +77,16 @@ jobs:
           IDENTIFICATION_PROVIDER_MODE: stub
         run: pnpm test:unit
 
+      - name: DB setup (migrations + seeds + RLS guard + seed guard) per D-11
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/folhario_test
+          DATABASE_POOL_URL: postgres://postgres:postgres@localhost:5432/folhario_test
+          SUPABASE_SERVICE_ROLE_KEY: test
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: anon
+          IDENTIFICATION_PROVIDER_MODE: stub
+        run: pnpm db:setup
+
       - name: Integration tests (includes diagnostics-server-probe per D-27-a)
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/folhario_test

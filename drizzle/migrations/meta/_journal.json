@@ -15,6 +15,13 @@
       "when": 1777220252423,
       "tag": "0001_phase_02_rls_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777247706469,
+      "tag": "0002_unique_current_policy_per_doc_type",
+      "breakpoints": true
     }
   ]
 }

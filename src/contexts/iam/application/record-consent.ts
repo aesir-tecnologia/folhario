@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { ErrorCode } from "@shared/config/errors";
 import { withUnitOfWork, type TransactionalDb } from "@shared/db/unit-of-work";
@@ -59,12 +59,19 @@ export async function recordConsent(
   // envelope. Otherwise open a fresh UoW so standalone callers still
   // get role + GUC bound.
   const work = async (tx: TransactionalDb): Promise<RecordConsentResult> => {
+    // WR-03: the partial unique index added in migration
+    // 0002_unique_current_policy_per_doc_type makes "exactly one current
+    // row per document_type" a hard DB invariant — but the orderBy here
+    // is belt-and-braces so we still pick the most-recently-effective
+    // row deterministically if the invariant is ever loosened or if
+    // historical rows pre-date the index.
     const currentPolicy = await tx
       .select({ id: policyVersions.id })
       .from(policyVersions)
       .where(
         and(eq(policyVersions.documentType, "privacy_policy"), eq(policyVersions.isCurrent, true)),
       )
+      .orderBy(desc(policyVersions.effectiveAt))
       .limit(1);
 
     const policy = currentPolicy[0];

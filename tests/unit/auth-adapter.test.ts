@@ -14,6 +14,9 @@ import {
   createAuthAdapter,
   type AuthAdapter,
 } from "@contexts/iam/infrastructure/auth/auth-adapter";
+import { __setCurrentUserAdapterForTests } from "@contexts/iam/application/current-user";
+import { requireApiUser } from "@shared/api/auth";
+import type { UserRow } from "@contexts/iam/infrastructure/db/users";
 
 /**
  * Plan 02-07 Task 1 RED → GREEN.
@@ -162,5 +165,114 @@ describe("AuthAdapter — verifyBearer", () => {
       jwks: createLocalJWKSet(keys.jwks),
     });
     expect(typeof localAdapter.verifyBearer).toBe("function");
+  });
+});
+
+/**
+ * Plan 02-07 Task 2 RED → GREEN.
+ *
+ * `requireApiUser(request)` — the API helper used by route handlers — must:
+ *  - Return Unauthenticated when no Authorization header is present.
+ *  - Return Unauthenticated when the JWT is invalid.
+ *  - Return Unauthenticated when the JWT is valid but no users row exists
+ *    (defense in depth: deleted-user JWTs in flight).
+ *  - Return { id } when the JWT is valid AND the users row exists.
+ *
+ * The shared adapter is overridable via `__setCurrentUserAdapterForTests`
+ * so this test never imports Drizzle and never makes a network call.
+ */
+
+function buildFakeUserRow(id: string): UserRow {
+  // Minimal partial — only the fields we read are required at runtime; the
+  // rest are typed but unused by the helper. Build with a structural cast.
+  const now = new Date();
+  return {
+    id,
+    email: `user+${id}@example.test`,
+    name: "Test User",
+    timezone: "America/Sao_Paulo",
+    notificationTimeLocal: "09:00",
+    plan: "trial",
+    trialEndsAt: null,
+    partnerCode: null,
+    consentVersionId: null,
+    notificationOptIn: false,
+    pendingDeletionAt: null,
+    locale: "pt-BR",
+    createdAt: now,
+    updatedAt: now,
+  } as unknown as UserRow;
+}
+
+describe("requireApiUser — protected API helper", () => {
+  afterAll(() => {
+    __setCurrentUserAdapterForTests(null);
+  });
+
+  it("returns ErrorCode.Unauthenticated when no Authorization header is present", async () => {
+    __setCurrentUserAdapterForTests({
+      verifyBearer: async () => ({
+        ok: false,
+        code: ErrorCode.Unauthenticated,
+        reason: "missing_bearer",
+      }),
+      getUserById: async () => null,
+    });
+    const request = new Request("http://localhost/api/v1/foo");
+    const result = await requireApiUser(request);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.Unauthenticated);
+    }
+  });
+
+  it("returns ErrorCode.Unauthenticated when the JWT is invalid", async () => {
+    __setCurrentUserAdapterForTests({
+      verifyBearer: async () => ({
+        ok: false,
+        code: ErrorCode.Unauthenticated,
+        reason: "verify_failed",
+      }),
+      getUserById: async () => null,
+    });
+    const request = new Request("http://localhost/api/v1/foo", {
+      headers: { authorization: "Bearer not-a-real-jwt" },
+    });
+    const result = await requireApiUser(request);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.Unauthenticated);
+    }
+  });
+
+  it("returns ErrorCode.Unauthenticated when JWT is valid but no users row exists", async () => {
+    __setCurrentUserAdapterForTests({
+      verifyBearer: async () => ({ ok: true, userId: "ghost-user-id" }),
+      getUserById: async () => null,
+    });
+    const request = new Request("http://localhost/api/v1/foo", {
+      headers: { authorization: "Bearer ok-but-deleted" },
+    });
+    const result = await requireApiUser(request);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.Unauthenticated);
+    }
+  });
+
+  it("returns { id } when the JWT is valid AND the users row exists", async () => {
+    const userId = "00000000-0000-4000-8000-000000000010";
+    __setCurrentUserAdapterForTests({
+      verifyBearer: async () => ({ ok: true, userId }),
+      getUserById: async (id) => (id === userId ? buildFakeUserRow(id) : null),
+    });
+    const request = new Request("http://localhost/api/v1/foo", {
+      headers: { authorization: "Bearer good-token" },
+    });
+    const result = await requireApiUser(request);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.user.id).toBe(userId);
+    }
   });
 });

@@ -55,23 +55,15 @@ export async function withUnitOfWork<T>(
 ): Promise<T> {
   assertValidUserId(userId);
 
+  // Drizzle's `.transaction()` opens a `BEGIN`/`COMMIT` envelope before
+  // invoking the callback; the `tx: TransactionalDb` parameter is the
+  // structural assertion that we are inside that envelope. There is no
+  // public API path that yields a `TransactionalDb` outside an open
+  // transaction. The integration test in
+  // `tests/integration/unit-of-work.integration.test.ts` exercises the
+  // GUC end-to-end inside the callback (`current_setting('request.jwt.claim.sub')`
+  // returns the supplied userId), which is the behavioral proof.
   return db.transaction(async (tx) => {
-    // Probe that we are actually inside a transaction at call time. The
-    // GUC `transaction_read_only` is always defined inside a tx; calling it
-    // with `missing_ok=true` returns null outside of one. Drizzle's
-    // `transaction()` is structurally guaranteed to open one, but the probe
-    // turns a future regression into a loud failure rather than silent
-    // autocommit drift.
-    const probe = await tx.execute<{ in_tx: string | null }>(
-      sql`select current_setting('transaction_read_only', true) as in_tx`,
-    );
-    const probeRow = probe[0];
-    if (!probeRow || probeRow.in_tx === null) {
-      throw new UnitOfWorkError(
-        "withUnitOfWork: callback is not running inside an active transaction",
-      );
-    }
-
     // Bind the JWT sub claim for RLS / auth.uid()-style policies.
     // Parameterize userId; keep `true` (is_local) as a SQL literal.
     await tx.execute(

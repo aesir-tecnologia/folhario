@@ -5,7 +5,6 @@ import sharp from "sharp";
 import { ErrorCode } from "@shared/config/errors";
 import { db as defaultDb } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
-import { MAX_UPLOAD_BYTES } from "@shared/images/limits";
 import {
   rejectGpsMetadata,
   rejectOversizeBuffer,
@@ -211,7 +210,3 @@ export async function uploadPhoto(
 
   return { ok: true, photoEntry };
 }
-
-export const __TEST_ONLY = {
-  MAX_UPLOAD_BYTES_REF: MAX_UPLOAD_BYTES,
-};

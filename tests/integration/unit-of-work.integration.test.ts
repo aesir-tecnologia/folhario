@@ -116,10 +116,16 @@ describe.skipIf(!dbUrl)("Phase-02-05 UnitOfWork + repositories integration", () 
     expect(observed).toBe(userId);
   });
 
+  it("withUnitOfWork switches to authenticated role so RLS engages (CR-02)", async () => {
+    const observed = await withUnitOfWork(userId, async (tx) => {
+      const rows = await tx.execute<{ role: string }>(sql`select current_user as role`);
+      return rows[0]?.role ?? null;
+    });
+    expect(observed).toBe("authenticated");
+  });
+
   it("withUnitOfWork rejects empty/non-string userId before opening a transaction", async () => {
-    await expect(withUnitOfWork("", async () => "ok")).rejects.toThrow(
-      /non-empty string/,
-    );
+    await expect(withUnitOfWork("", async () => "ok")).rejects.toThrow(/non-empty string/);
     await expect(
       // @ts-expect-error – intentional runtime check
       withUnitOfWork(null, async () => "ok"),

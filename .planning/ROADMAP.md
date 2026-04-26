@@ -80,8 +80,8 @@ Plans:
 
 **Wave 5 _(blocked on Wave 4 DB layer completion)_**
 - [x] 02-05.5-PLAN.md -- Real-Supabase-JWT RLS denial proof (defense-in-depth verification)
-- [ ] 02-06-PLAN.md -- API convention helpers: Zod, cursor pagination, and idempotency
-- [ ] 02-07-PLAN.md -- AuthAdapter, JWT verification, current-user helper, and API-aware proxy
+- [x] 02-06-PLAN.md -- API convention helpers: Zod, cursor pagination, and idempotency
+- [x] 02-07-PLAN.md -- AuthAdapter, JWT verification, current-user helper, and API-aware proxy
 
 **Wave 6 _(blocked on Waves 4-5 completion)_**
 - [ ] 02-08-PLAN.md -- StorageAdapter, image pipeline, and `/api/v1/photos/upload`

@@ -35,15 +35,18 @@ const MULTIPART_NOTE_FIELD = "note";
 export async function POST(request: Request): Promise<Response> {
   const auth = await requireApiUser(request);
   if (!auth.ok) {
-    return errorResponse(auth.code, auth.reason);
+    // WR-02: never surface `auth.reason` to the client — it carries jose
+    // error names (JWTExpired, JWSSignatureVerificationFailed, etc.) that
+    // would aid attacker fingerprinting and contradict the closed error
+    // registry posture. Use a stable, registry-rooted message instead.
+    return errorResponse(auth.code, "missing or invalid bearer token");
   }
 
   let formData: FormData;
   try {
     formData = await request.formData();
   } catch (error) {
-    const reason =
-      error instanceof Error ? error.message : "could not parse multipart body";
+    const reason = error instanceof Error ? error.message : "could not parse multipart body";
     return errorResponse(ErrorCode.ValidationFailed, `multipart parse failed: ${reason}`);
   }
 

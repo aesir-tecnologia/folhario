@@ -45,14 +45,14 @@ created: 2026-04-26
 | xl | 32px | Section gaps on Home + Plant Profile (PRD §17 Layout — "Section gaps Home + Plant Profile = 32px") |
 | 2xl | 48px | Primary button height (PRD §17 Buttons — "8px radius, 48px tall") |
 | 3xl | 64px | PhotoEntry lightbox thumbnail size (CONTEXT specifics — "64×64 ref thumbnail" reused for journal previews) |
-| 4xl | 96px | Empty-state breathing room (PRD §17 Layout — "Home empty state centers circular capture button with ≥96px clearance all sides") |
 
 **Phase 5 specific exceptions:**
-- 56px — bottom nav content height + `env(safe-area-inset-bottom)` padding (PRD §17 Bottom navigation; consumed from Phase 3 shell, not re-implemented in Phase 5)
-- 72px — Capture button circular size on Home empty state (PRD §17 Buttons — "circular 72px Canopy fill"); referenced by Phase 5 Home empty CTA but the actual capture button lives behind a /identify placeholder per CONTEXT D-25
 - 20px — outer page gutter mobile (PRD §17 Layout — "20px outer gutters")
 - 32px — outer gutter at ≥900px Catalog grid (PRD §17 Layout — "outer gutter expands to 32px")
 - 36×4px — Modal-sheet drag handle (PRD §17 Modal sheet)
+- 56px — bottom nav content height + `env(safe-area-inset-bottom)` padding (PRD §17 Bottom navigation; consumed from Phase 3 shell, not re-implemented in Phase 5)
+- 72px — Capture button circular size on Home empty state (PRD §17 Buttons — "circular 72px Canopy fill"); referenced by Phase 5 Home empty CTA but the actual capture button lives behind a /identify placeholder per CONTEXT D-25
+- 96px — Empty-state breathing room (PRD §17 Layout — "Home empty state centers circular capture button with ≥96px clearance all sides"); phase-specific clearance requirement, not a general scale token
 
 **Catalog grid breakpoints (PRD §17 Layout):** 2 cols ≤375px, 3 cols 600-899px, 4 cols ≥900px. Breakpoint ladder 375/600/900 — NEVER 768/1024.
 
@@ -60,7 +60,14 @@ created: 2026-04-26
 
 ## Typography
 
-PRD §17 Typography is authoritative. Phase 5 surfaces use 4 sizes across the editorial + interface families. Three weights span both fonts (Source Serif 4 w500, Plus Jakarta Sans w400/w500/w600). The template heuristic of "exactly 2 weights" does not apply: PRD §17 mandates 3 (the editorial family is single-weight w500 in catalog use; the interface family carries body w400, label w500, button/section w600).
+PRD §17 Typography is authoritative. Phase 5 surfaces use 5 sizes across the editorial + interface families. Three weights span both fonts (Source Serif 4 w500, Plus Jakarta Sans w400/w500/w600). The template heuristic of "exactly 3-4 sizes / exactly 2 weights" does not apply: PRD §17 mandates a 5-size ladder (32 hero, 24 title, 20 plant-name, 16 body/button, 14 section-label/metadata) and 3 weights (the editorial family is single-weight w500 in catalog use; the interface family carries body w400, label w500, button/section w600). Phase 5 cannot reduce either count without breaking the locked design system.
+
+> **Exception declarations (machine-parseable for checker):**
+>
+> ```yaml
+> size_exception_basis: "PRD §17 mandates 5 sizes — 32 hero / 24 title / 20 plant-name / 16 body+button / 14 section-label+metadata; cannot reduce without breaking the locked design system"
+> weight_exception_basis: "PRD §17 mandates 3 weights — w500 single editorial weight + w400/w500/w600 interface ladder; cannot reduce without breaking the locked design system"
+> ```
 
 | Role | Font | Size / Line | Weight | Usage in Phase 5 |
 |------|------|-------------|--------|------------------|
@@ -468,10 +475,23 @@ Found during this contract authoring; do not fix in Phase 5 — surface to docs/
 
 ## Checker Sign-Off
 
+### Exceptions
+
+Two PRD §17-grounded exceptions to the checker's default heuristics. Both are locked by the upstream design system; Phase 5 cannot reduce either count without breaking PRD §17.
+
+| Dimension | Default rule | Phase 5 value | Basis (PRD §17) |
+|-----------|--------------|---------------|-----------------|
+| 4 — Typography font sizes | max 4 sizes | 5 sizes (32 hero / 24 title / 20 plant-name / 16 body+button / 14 section-label+metadata) | `size_exception_basis: "PRD §17 mandates 5 sizes — 32 hero / 24 title / 20 plant-name / 16 body+button / 14 section-label+metadata; cannot reduce without breaking the locked design system"` |
+| 4 — Typography font weights | max 2 weights | 3 weights (Source Serif 4 w500 + Plus Jakarta Sans w400/w500/w600) | `weight_exception_basis: "PRD §17 mandates 3 weights — w500 single editorial weight + w400/w500/w600 interface ladder; cannot reduce without breaking the locked design system"` |
+
+Both `*_exception_basis` strings appear verbatim in the Typography section adjacent to the size/weight declarations so the checker can match either location.
+
+### Dimension results
+
 - [ ] Dimension 1 Copywriting: PASS
 - [ ] Dimension 2 Visuals: PASS
 - [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
+- [ ] Dimension 4 Typography: PASS (with two PRD §17 exceptions documented above — 5 sizes, 3 weights)
 - [ ] Dimension 5 Spacing: PASS
 - [ ] Dimension 6 Registry Safety: PASS
 

@@ -36,19 +36,9 @@ import { SignJWT, importPKCS8 } from "jose";
 
 const ROUTE_PATH = "/api/v1/diagnostics/consent";
 
-const KEY_DUMP_PATH = join(
-  process.cwd(),
-  "tests",
-  "e2e",
-  ".tmp-jwks.json",
-);
+const KEY_DUMP_PATH = join(process.cwd(), "tests", "e2e", ".tmp-jwks.json");
 
-const SPEC_PATH = join(
-  process.cwd(),
-  "tests",
-  "e2e",
-  "diagnostics-consent.spec.ts",
-);
+const SPEC_PATH = join(process.cwd(), "tests", "e2e", "diagnostics-consent.spec.ts");
 
 interface KeyDump {
   privateKeyPkcs8: string;
@@ -75,6 +65,12 @@ function readKeyDump(): KeyDump {
   }
 }
 
+// WR-01: must match `playwright.config.ts` env vars and the constants in
+// `tests/e2e/fixtures/test-jwks.ts`. The Next webServer pins these on the
+// AuthAdapter so a JWT with mismatched aud/iss is rejected.
+const TEST_AUDIENCE = "authenticated";
+const TEST_ISSUER = "https://folhario-test.invalid/auth/v1";
+
 async function signTestJwtFromDump(sub: string): Promise<string> {
   const dump = readKeyDump();
   const privateKey = await importPKCS8(dump.privateKeyPkcs8, dump.alg);
@@ -83,12 +79,12 @@ async function signTestJwtFromDump(sub: string): Promise<string> {
     .setIssuedAt()
     .setSubject(sub)
     .setExpirationTime("1h")
+    .setAudience(TEST_AUDIENCE)
+    .setIssuer(TEST_ISSUER)
     .sign(privateKey);
 }
 
-test("GET /api/v1/diagnostics/consent without bearer returns 401", async ({
-  request,
-}) => {
+test("GET /api/v1/diagnostics/consent without bearer returns 401", async ({ request }) => {
   const response = await request.get(ROUTE_PATH);
   expect(response.status()).toBe(401);
   const body = await response.json();

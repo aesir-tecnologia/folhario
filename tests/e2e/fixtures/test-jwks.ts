@@ -39,6 +39,19 @@ import {
 const TEST_KID = "folhario-test-kid-02-09";
 const TEST_ALG = "RS256";
 
+/**
+ * WR-01 fixture constants. The auth adapter validates `aud` and `iss`,
+ * so every test JWT signed via `signTestJwt` must carry these claims and
+ * the adapter under test must be configured with the same values.
+ *
+ *   - `TEST_AUDIENCE` mirrors Supabase's `"authenticated"` default.
+ *   - `TEST_ISSUER` is a deterministic value distinct from any real
+ *     Supabase URL so a misconfigured production env (where the override
+ *     env vars are unset) cannot silently accept these test JWTs.
+ */
+export const TEST_AUDIENCE = "authenticated";
+export const TEST_ISSUER = "https://folhario-test.invalid/auth/v1";
+
 type TestKeyMaterial = {
   publicJwk: JWK;
   publicKey: KeyObject | CryptoKey;
@@ -106,6 +119,10 @@ export interface SignTestJwtInput {
   email?: string;
   /** Override expiration (default '1h'). Pass a date or a `2h`-style string. */
   exp?: string | number | Date;
+  /** Override audience (default `TEST_AUDIENCE`). Pass `null` to omit. */
+  audience?: string | null;
+  /** Override issuer (default `TEST_ISSUER`). Pass `null` to omit. */
+  issuer?: string | null;
   /** Additional claims to merge into the payload. */
   extraClaims?: Record<string, unknown>;
 }
@@ -113,6 +130,11 @@ export interface SignTestJwtInput {
 /**
  * Sign a test JWT with the shared private key. The returned token verifies
  * against any local or remote key set published from `createTestJwks()`.
+ *
+ * WR-01: by default sets `aud = TEST_AUDIENCE` and `iss = TEST_ISSUER` so
+ * the token clears the adapter's audience/issuer pinning. Tests that want
+ * to exercise wrong-audience / wrong-issuer paths can override either to a
+ * different string, or pass `null` to omit the claim entirely.
  */
 export async function signTestJwt(input: SignTestJwtInput): Promise<string> {
   const { privateKey } = await ensureKeys();
@@ -121,10 +143,14 @@ export async function signTestJwt(input: SignTestJwtInput): Promise<string> {
     ...(input.email ? { email: input.email } : {}),
     ...(input.extraClaims ?? {}),
   };
-  return new SignJWT(payload)
+  const builder = new SignJWT(payload)
     .setProtectedHeader({ alg: TEST_ALG, kid: TEST_KID })
     .setIssuedAt()
     .setSubject(input.sub)
-    .setExpirationTime(input.exp ?? "1h")
-    .sign(privateKey);
+    .setExpirationTime(input.exp ?? "1h");
+  const audience = input.audience === undefined ? TEST_AUDIENCE : input.audience;
+  if (audience !== null) builder.setAudience(audience);
+  const issuer = input.issuer === undefined ? TEST_ISSUER : input.issuer;
+  if (issuer !== null) builder.setIssuer(issuer);
+  return builder.sign(privateKey);
 }

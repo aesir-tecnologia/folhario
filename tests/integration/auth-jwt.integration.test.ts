@@ -12,10 +12,7 @@ process.env.IDENTIFICATION_PROVIDER_MODE ??= "stub";
 
 import { SignJWT, exportJWK } from "jose";
 
-import {
-  createTestJwks,
-  signTestJwt,
-} from "../e2e/fixtures/test-jwks";
+import { TEST_AUDIENCE, TEST_ISSUER, createTestJwks, signTestJwt } from "../e2e/fixtures/test-jwks";
 
 /**
  * Plan 02-07 — integration test that exercises real `jose` cryptographic
@@ -87,7 +84,11 @@ afterAll(async () => {
 
 describe("AuthAdapter — real JWKS over HTTP (D-44 hybrid path)", () => {
   it("verifies a JWT signed by the test key against the live JWKS endpoint", async () => {
-    const adapter = authAdapterModule.createAuthAdapter({ jwksUrl });
+    const adapter = authAdapterModule.createAuthAdapter({
+      jwksUrl,
+      audience: TEST_AUDIENCE,
+      issuer: TEST_ISSUER,
+    });
     const token = await signTestJwt({
       sub: "00000000-0000-4000-8000-000000000020",
       exp: "5m",
@@ -100,7 +101,11 @@ describe("AuthAdapter — real JWKS over HTTP (D-44 hybrid path)", () => {
   });
 
   it("fails closed with Unauthenticated when the JWT was signed by a different key", async () => {
-    const adapter = authAdapterModule.createAuthAdapter({ jwksUrl });
+    const adapter = authAdapterModule.createAuthAdapter({
+      jwksUrl,
+      audience: TEST_AUDIENCE,
+      issuer: TEST_ISSUER,
+    });
     // Sign with a *different* key pair — the live JWKS does NOT contain
     // its public key, so verification must fail. We construct the stranger
     // key with Web Crypto directly (not jose's `generateKeyPair`) so the
@@ -136,7 +141,11 @@ describe("AuthAdapter — real JWKS over HTTP (D-44 hybrid path)", () => {
   });
 
   it("fails closed with Unauthenticated when the bearer is missing", async () => {
-    const adapter = authAdapterModule.createAuthAdapter({ jwksUrl });
+    const adapter = authAdapterModule.createAuthAdapter({
+      jwksUrl,
+      audience: TEST_AUDIENCE,
+      issuer: TEST_ISSUER,
+    });
     const result = await adapter.verifyBearer(undefined);
     expect(result.ok).toBe(false);
     if (!result.ok) {

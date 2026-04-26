@@ -10,9 +10,17 @@ import { defineConfig, devices } from "@playwright/test";
  * setup binds to. The AuthAdapter factory (Plan 02-07, hooked in 02-09
  * Task 3) reads this env var at construction time and prefers it over
  * the default Supabase URL.
+ *
+ * WR-01 hooks: `AUTH_AUDIENCE_OVERRIDE` / `AUTH_ISSUER_OVERRIDE` mirror
+ * the constants in `tests/e2e/fixtures/test-jwks.ts` so the running
+ * Next server pins the same audience and issuer the spec's signed JWTs
+ * carry. Without these the Next adapter would default to the Supabase
+ * URL-derived issuer and reject every test JWT.
  */
 
 const TEST_JWKS_URL = "http://127.0.0.1:4567/auth/v1/.well-known/jwks.json";
+const TEST_AUDIENCE = "authenticated";
+const TEST_ISSUER = "https://folhario-test.invalid/auth/v1";
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -40,6 +48,8 @@ export default defineConfig({
     env: {
       IDENTIFICATION_PROVIDER_MODE: "stub",
       AUTH_JWKS_OVERRIDE_URL: TEST_JWKS_URL,
+      AUTH_AUDIENCE_OVERRIDE: TEST_AUDIENCE,
+      AUTH_ISSUER_OVERRIDE: TEST_ISSUER,
     },
   },
 });

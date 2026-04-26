@@ -43,6 +43,26 @@ export interface AuthAdapterFactoryOptions {
   jwks?: JWTVerifyGetKey;
   /** Inject a JWKS URL (defaults to Supabase). Ignored when `jwks` is provided. */
   jwksUrl?: string;
+  /**
+   * Expected JWT `aud` claim. Defaults to `"authenticated"` (Supabase's
+   * default for user-facing tokens). Override via `AUTH_AUDIENCE_OVERRIDE`
+   * env var or this option for tests. WR-01: `jose` does not validate
+   * audience unless this is supplied.
+   */
+  audience?: string;
+  /**
+   * Expected JWT `iss` claim. Defaults to `${NEXT_PUBLIC_SUPABASE_URL}/auth/v1`.
+   * Override via `AUTH_ISSUER_OVERRIDE` env var or this option for tests.
+   * WR-01: `jose` does not validate issuer unless this is supplied.
+   */
+  issuer?: string;
+  /**
+   * Allowed signing algorithms. Defaults to RS256/ES256 (the algorithm
+   * families Supabase emits). WR-01 belt-and-braces: pinning `algorithms`
+   * forecloses `alg=none` and HMAC-vs-RSA-key-confusion attacks even
+   * though `jose` already rejects them.
+   */
+  algorithms?: string[];
   /** Inject a Drizzle client (defaults to the global pooled `db`). Used by tests. */
   db?: DbClient;
 }
@@ -68,6 +88,37 @@ function defaultJwksUrl(): string {
   return `${baseUrl}/auth/v1/.well-known/jwks.json`;
 }
 
+/**
+ * Default `iss` claim. Supabase issues JWTs with `iss = <project URL>/auth/v1`.
+ *
+ * WR-01: combined with the JWKS override hook, this lets E2E setup point
+ * at a deterministic test issuer. Production runs against the Supabase
+ * URL exactly as configured.
+ */
+function defaultIssuer(): string {
+  const override = process.env.AUTH_ISSUER_OVERRIDE;
+  if (override && override.length > 0) {
+    return override;
+  }
+  const baseUrl = serverEnv.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "");
+  return `${baseUrl}/auth/v1`;
+}
+
+/**
+ * Default `aud` claim. Supabase tags user tokens with `aud = "authenticated"`.
+ *
+ * WR-01: configurable via `AUTH_AUDIENCE_OVERRIDE` for E2E.
+ */
+function defaultAudience(): string {
+  const override = process.env.AUTH_AUDIENCE_OVERRIDE;
+  if (override && override.length > 0) {
+    return override;
+  }
+  return "authenticated";
+}
+
+const DEFAULT_ALGORITHMS: readonly string[] = ["RS256", "ES256"];
+
 function extractBearer(header: string | null | undefined): string | null {
   if (!header) return null;
   const trimmed = header.trim();
@@ -82,6 +133,9 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
   const jwks: JWTVerifyGetKey =
     options.jwks ?? createRemoteJWKSet(new URL(options.jwksUrl ?? defaultJwksUrl()));
   const dbClient: DbClient = options.db ?? db;
+  const audience = options.audience ?? defaultAudience();
+  const issuer = options.issuer ?? defaultIssuer();
+  const algorithms = options.algorithms ?? [...DEFAULT_ALGORITHMS];
 
   return {
     async verifyBearer(authorizationHeader) {
@@ -94,7 +148,15 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
         };
       }
       try {
-        const { payload } = await jwtVerify(token, jwks);
+        // WR-01: pin `audience`, `issuer`, and `algorithms` so jose
+        // rejects tokens minted for a different aud/iss or signed with
+        // an unexpected algorithm. Without these options jose accepts
+        // any signature-valid token resolvable through the JWKS.
+        const { payload } = await jwtVerify(token, jwks, {
+          audience,
+          issuer,
+          algorithms,
+        });
         const sub = typeof payload.sub === "string" ? payload.sub : null;
         if (!sub || sub.length === 0) {
           return {

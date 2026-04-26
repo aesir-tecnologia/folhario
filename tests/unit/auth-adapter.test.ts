@@ -18,6 +18,14 @@ import { __setCurrentUserAdapterForTests } from "@contexts/iam/application/curre
 import { requireApiUser } from "@shared/api/auth";
 import type { UserRow } from "@contexts/iam/infrastructure/db/users";
 
+// WR-01: pinned audience/issuer the unit adapter is configured with. Tests
+// that want to exercise wrong-aud or wrong-iss paths sign with different
+// values and assert the adapter rejects them. These constants stay local
+// to the unit test (the e2e fixture has its own pair) so the unit suite
+// remains free of cross-suite coupling.
+const TEST_AUDIENCE = "authenticated";
+const TEST_ISSUER = "https://folhario-unit-test.invalid/auth/v1";
+
 /**
  * Plan 02-07 Task 1 RED → GREEN.
  *
@@ -59,17 +67,30 @@ afterAll(() => {
 });
 
 async function signTestJwt(payload: Record<string, unknown>): Promise<string> {
+  // WR-01: every JWT signed for this suite carries `aud` and `iss` that
+  // match what `buildAdapterWithLocalJwks` configures. Negative tests
+  // override one or both via direct `SignJWT` to prove the adapter rejects
+  // mismatches.
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "RS256", kid: TEST_KID })
     .setIssuedAt()
     .setExpirationTime("5m")
     .setSubject(typeof payload.sub === "string" ? payload.sub : "user-1")
+    .setAudience(TEST_AUDIENCE)
+    .setIssuer(TEST_ISSUER)
     .sign(keys.privateKey);
 }
 
 function buildAdapterWithLocalJwks(): AuthAdapter {
   const localKeySet = createLocalJWKSet(keys.jwks);
-  return createAuthAdapter({ jwks: localKeySet });
+  // WR-01: pin audience/issuer to match `signTestJwt`. Without these
+  // options the adapter would silently accept any JWT it can verify
+  // signature-wise.
+  return createAuthAdapter({
+    jwks: localKeySet,
+    audience: TEST_AUDIENCE,
+    issuer: TEST_ISSUER,
+  });
 }
 
 describe("AuthAdapter — verifyBearer", () => {
@@ -134,9 +155,61 @@ describe("AuthAdapter — verifyBearer", () => {
       .setIssuedAt(Math.floor(Date.now() / 1000) - 3600)
       .setExpirationTime(Math.floor(Date.now() / 1000) - 60)
       .setSubject("user-expired")
+      .setAudience(TEST_AUDIENCE)
+      .setIssuer(TEST_ISSUER)
       .sign(keys.privateKey);
     const adapter = buildAdapterWithLocalJwks();
     const result = await adapter.verifyBearer(`Bearer ${expired}`);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.Unauthenticated);
+    }
+  });
+
+  it("WR-01: returns Unauthenticated when JWT audience does not match", async () => {
+    const wrongAud = await new SignJWT({ sub: "user-aud" })
+      .setProtectedHeader({ alg: "RS256", kid: TEST_KID })
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .setSubject("user-aud")
+      .setAudience("not-our-audience")
+      .setIssuer(TEST_ISSUER)
+      .sign(keys.privateKey);
+    const adapter = buildAdapterWithLocalJwks();
+    const result = await adapter.verifyBearer(`Bearer ${wrongAud}`);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.Unauthenticated);
+    }
+  });
+
+  it("WR-01: returns Unauthenticated when JWT issuer does not match", async () => {
+    const wrongIss = await new SignJWT({ sub: "user-iss" })
+      .setProtectedHeader({ alg: "RS256", kid: TEST_KID })
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .setSubject("user-iss")
+      .setAudience(TEST_AUDIENCE)
+      .setIssuer("https://attacker.invalid/auth/v1")
+      .sign(keys.privateKey);
+    const adapter = buildAdapterWithLocalJwks();
+    const result = await adapter.verifyBearer(`Bearer ${wrongIss}`);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe(ErrorCode.Unauthenticated);
+    }
+  });
+
+  it("WR-01: returns Unauthenticated when JWT has no audience claim at all", async () => {
+    const noAud = await new SignJWT({ sub: "user-no-aud" })
+      .setProtectedHeader({ alg: "RS256", kid: TEST_KID })
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .setSubject("user-no-aud")
+      .setIssuer(TEST_ISSUER)
+      .sign(keys.privateKey);
+    const adapter = buildAdapterWithLocalJwks();
+    const result = await adapter.verifyBearer(`Bearer ${noAud}`);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe(ErrorCode.Unauthenticated);

@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { z } from "zod";
 
 import { ErrorCode, errorResponse } from "@shared/config/errors";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
@@ -12,29 +11,23 @@ import { recordConsent } from "@contexts/iam/application/record-consent";
 import { listByUser } from "@contexts/iam/infrastructure/db/consent-logs";
 
 /**
- * Route-boundary schema for the diagnostics consent POST. It is a
- * narrowed projection of the drizzle-zod insert schema (D-19): only
- * the four user-supplied fields appear; userId comes from the JWT,
+ * Route-boundary schema for the diagnostics consent POST. WR-04: this is
+ * a `.pick()` of the drizzle-zod insert schema (D-19), NOT a hand-rolled
+ * `z.object({...})`. Picking from the drizzle-zod root means the enum
+ * options propagate from the table definition automatically — extending
+ * `consentLogs.purpose.enum` in the schema flows here without any code
+ * change at the route boundary. The hand-rolled previous form (with a
+ * dead `_ensureSchemaRoot` import to keep grep results honest) actively
+ * risked drift; this form makes the drizzle-zod rooting load-bearing.
+ *
+ * Only the four user-supplied fields appear: userId comes from the JWT,
  * policyVersionId is resolved server-side from the seeded current
  * privacy_policy row, and createdAt/grantedAt default at the DB layer.
- *
- * `consentLogInsertSchema` is the column-faithful drizzle-zod parent
- * (Plan 02-06); we re-derive the user-facing shape here so the route
- * boundary stays explicit while the schema is still drizzle-zod-rooted
- * (per plan 02-09 must_haves).
  */
-const _ensureSchemaRoot = consentLogInsertSchema;
-void _ensureSchemaRoot;
-
-const consentRoutePostBodySchema = z.object({
-  purpose: z.enum([
-    "identification_third_party",
-    "push_notifications",
-    "marketing",
-    "analytics",
-  ] as const),
-  legalBasis: z.enum(["consent", "contract", "legitimate_interest"] as const),
-  source: z.enum(["signup", "settings", "first_use_prompt"] as const),
+const consentRoutePostBodySchema = consentLogInsertSchema.pick({
+  purpose: true,
+  legalBasis: true,
+  source: true,
 });
 
 /**

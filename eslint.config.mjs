@@ -21,6 +21,29 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Phase-2 D-17 / T-02-11: route handlers under `src/app/api/**/route.ts`
+  // MUST NOT import Drizzle, the runtime DB client, the schema registry, or
+  // any per-context schema module. They call use-cases (which call
+  // repositories via withUnitOfWork) instead. The companion Vitest grep
+  // guard at `tests/unit/no-drizzle-in-routes.test.ts` enforces the same
+  // boundary so coverage survives an `--no-eslint` invocation.
+  {
+    files: ["src/app/api/**/route.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            "drizzle-orm",
+            "drizzle-orm/*",
+            "@shared/db/client",
+            "@shared/db/schema-registry",
+            "@contexts/*/infrastructure/db/schema",
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     "node_modules",
     ".next/**",

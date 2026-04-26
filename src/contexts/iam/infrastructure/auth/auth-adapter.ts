@@ -47,7 +47,23 @@ export interface AuthAdapterFactoryOptions {
   db?: DbClient;
 }
 
+/**
+ * Plan 02-09 Task 3 hook (T-02-40 mitigation): when running Playwright E2E
+ * against `pnpm start`, the global setup spins up a deterministic test
+ * JWKS endpoint and points the running Next server at it via this env var.
+ *
+ * In production this var is unset and the default Supabase JWKS URL wins.
+ * The override is consulted ONLY when no `jwks` / `jwksUrl` option is
+ * passed to `createAuthAdapter()` — explicit injection still trumps env.
+ *
+ * Read directly from `process.env` (not via `serverEnv`) so the override
+ * is opt-in and additive without churning the strict-zod env schema.
+ */
 function defaultJwksUrl(): string {
+  const override = process.env.AUTH_JWKS_OVERRIDE_URL;
+  if (override && override.length > 0) {
+    return override;
+  }
   const baseUrl = serverEnv.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "");
   return `${baseUrl}/auth/v1/.well-known/jwks.json`;
 }

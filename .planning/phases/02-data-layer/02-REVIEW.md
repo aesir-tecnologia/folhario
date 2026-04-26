@@ -1,5 +1,5 @@
 ---
-status: issues_found
+status: blockers_resolved
 phase: 02-data-layer
 depth: standard
 files_reviewed: 72
@@ -8,9 +8,30 @@ findings:
   warning: 10
   info: 8
   total: 21
+resolved:
+  critical: 3
+  warning: 0
+  info: 0
 diff_base: faf8a132638abd54fd1a3776cf3a29aac37fbb6c^
 reviewed: 2026-04-26
+resolved_at: 2026-04-26
+resolution_commits:
+  - 05acd1b  # fix(02-05): SET LOCAL ROLE authenticated (CR-02)
+  - 9966d35  # fix(02-06,02-09): unified idempotency+UoW tx (CR-01)
+  - 025146a  # fix(02-08): compensating delete on photo upload (CR-03)
 ---
+
+## Resolution Status
+
+**3 BLOCKERs resolved inline before phase completion** with proof tests:
+
+- **CR-01** (idempotency dual-tx) → commit `9966d35`. `withIdempotency` now composes with `withUnitOfWork` internally; handler receives the shared `tx`. New integration test proves handler-side writes via injected tx are rolled back when the wrapper rolls back.
+- **CR-02** (RLS bypassed at runtime) → commit `05acd1b`. `withUnitOfWork` issues `SET LOCAL ROLE authenticated` after binding the GUC. New integration test asserts `current_user = 'authenticated'` inside the callback.
+- **CR-03** (photo upload orphan storage) → commit `025146a`. `uploadPhoto` wraps the UoW insert in try/catch; on failure, `deleteSinglePlantPhotoBestEffort` issues compensating deletes for both buckets. New integration test triggers FK violation mid-upload and asserts both buckets received `deletePrefix`.
+
+WARNINGs and INFOs remain open and are tracked for follow-up (deferred to Phase 02.x decimal-phase or cleanup sweep).
+
+
 
 # Phase 02 (Data Layer) — Code Review
 

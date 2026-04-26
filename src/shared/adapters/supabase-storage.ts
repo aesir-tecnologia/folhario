@@ -6,6 +6,7 @@ import {
   type BucketSummary,
   type CreateSignedUrlInput,
   type CreateSignedUrlResult,
+  type DeleteObjectInput,
   type DeletePrefixInput,
   type ListObjectsUnderPrefixInput,
   type StorageAdapter,
@@ -60,10 +61,7 @@ export function createSupabaseStorageAdapter(
     async listBuckets(): Promise<BucketSummary[]> {
       const { data, error } = await client.storage.listBuckets();
       if (error) {
-        throw new StorageAdapterError(
-          `listBuckets failed: ${error.message}`,
-          error,
-        );
+        throw new StorageAdapterError(`listBuckets failed: ${error.message}`, error);
       }
       return (data ?? []).map((bucket) => ({
         id: bucket.id,
@@ -89,9 +87,7 @@ export function createSupabaseStorageAdapter(
       return { bucket, objectKey };
     },
 
-    async createSignedUrl(
-      input: CreateSignedUrlInput,
-    ): Promise<CreateSignedUrlResult> {
+    async createSignedUrl(input: CreateSignedUrlInput): Promise<CreateSignedUrlResult> {
       const { bucket, objectKey, expiresInSeconds } = input;
       const { data, error } = await client.storage
         .from(bucket)
@@ -123,9 +119,21 @@ export function createSupabaseStorageAdapter(
       }
     },
 
-    async listObjectsUnderPrefix(
-      input: ListObjectsUnderPrefixInput,
-    ): Promise<string[]> {
+    async deleteObject(input: DeleteObjectInput): Promise<void> {
+      // CR-01: single-object delete via remove([objectKey]). Do NOT route
+      // through deletePrefix — the SDK's list() treats its argument as a
+      // folder and silently no-ops on a file path.
+      const { bucket, objectKey } = input;
+      const { error } = await client.storage.from(bucket).remove([objectKey]);
+      if (error) {
+        throw new StorageAdapterError(
+          `deleteObject failed for ${bucket}/${objectKey}: ${error.message}`,
+          error,
+        );
+      }
+    },
+
+    async listObjectsUnderPrefix(input: ListObjectsUnderPrefixInput): Promise<string[]> {
       return collectObjectsRecursively(client, input.bucket, input.prefix);
     },
   };
@@ -139,9 +147,7 @@ async function collectObjectsRecursively(
   // Strip trailing slash for the SDK list call, which interprets the path
   // as a directory.
   const normalized = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
-  const { data, error } = await client.storage
-    .from(bucket)
-    .list(normalized, { limit: 1000 });
+  const { data, error } = await client.storage.from(bucket).list(normalized, { limit: 1000 });
   if (error) {
     throw new StorageAdapterError(
       `list failed for ${bucket}/${normalized}: ${error.message}`,

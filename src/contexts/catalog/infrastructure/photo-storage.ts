@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 import {
   createSupabaseStorageAdapter,
   __setSupabaseClientForTests as __underlyingSetSupabaseClientForTests,
@@ -147,10 +149,13 @@ export async function deleteAllPlantMediaForUser(userId: string): Promise<void> 
 
 /**
  * CR-03 compensating deletion: remove a single photo's storage objects
- * when the DB write fails after upload. Uses `deletePrefix` with the
- * full canonical key — UUIDs guarantee no false positives. Errors are
- * swallowed and logged: a failed compensating delete must not mask the
- * original DB error the caller is rethrowing.
+ * when the DB write fails after upload. CR-01 fix: routes through the
+ * adapter's `deleteObject` (single-key SDK `remove([key])`) — the prior
+ * implementation passed the full canonical file key to `deletePrefix`,
+ * which the Supabase SDK interprets as a folder path and silently
+ * no-ops, leaving the bytes orphaned. Errors are swallowed and logged
+ * (and reported to Sentry per IN-02): a failed compensating delete must
+ * not mask the original DB error the caller is rethrowing.
  */
 export async function deleteSinglePlantPhotoBestEffort(input: {
   userId: string;
@@ -172,22 +177,39 @@ export async function deleteSinglePlantPhotoBestEffort(input: {
     ext: "jpg",
   });
   try {
-    await adapter.deletePrefix({ bucket: PLANT_PHOTOS_BUCKET, prefix: originalKey });
+    await adapter.deleteObject({ bucket: PLANT_PHOTOS_BUCKET, objectKey: originalKey });
   } catch (err) {
     console.warn(
       `[catalog/photo-storage] compensating delete failed for ${PLANT_PHOTOS_BUCKET}/${originalKey}:`,
       err,
     );
+    Sentry.captureException(err, {
+      tags: { area: "photo-storage", operation: "compensating-delete" },
+      extra: {
+        bucket: PLANT_PHOTOS_BUCKET,
+        objectKey: originalKey,
+        userId: input.userId,
+        plantId: input.plantId,
+        photoId: input.photoId,
+      },
+    });
   }
   try {
-    await adapter.deletePrefix({
-      bucket: PLANT_THUMBNAILS_BUCKET,
-      prefix: thumbnailKey,
-    });
+    await adapter.deleteObject({ bucket: PLANT_THUMBNAILS_BUCKET, objectKey: thumbnailKey });
   } catch (err) {
     console.warn(
       `[catalog/photo-storage] compensating delete failed for ${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}:`,
       err,
     );
+    Sentry.captureException(err, {
+      tags: { area: "photo-storage", operation: "compensating-delete" },
+      extra: {
+        bucket: PLANT_THUMBNAILS_BUCKET,
+        objectKey: thumbnailKey,
+        userId: input.userId,
+        plantId: input.plantId,
+        photoId: input.photoId,
+      },
+    });
   }
 }

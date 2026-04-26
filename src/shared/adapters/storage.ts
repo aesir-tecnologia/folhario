@@ -53,6 +53,18 @@ export interface DeletePrefixInput {
   prefix: string;
 }
 
+export interface DeleteObjectInput {
+  bucket: string;
+  /**
+   * Full canonical object key (no bucket prefix). Use `deleteObject` for
+   * single-file deletes (e.g. CR-03 compensating delete) — `deletePrefix`
+   * is for folder-style sweeps and treats its argument as a directory,
+   * which means passing a file path returns zero matches and silently
+   * no-ops. CR-01: use this method for single-object deletes.
+   */
+  objectKey: string;
+}
+
 export interface ListObjectsUnderPrefixInput {
   bucket: string;
   prefix: string;
@@ -63,6 +75,11 @@ export interface StorageAdapter {
   uploadObject(input: UploadObjectInput): Promise<UploadObjectResult>;
   createSignedUrl(input: CreateSignedUrlInput): Promise<CreateSignedUrlResult>;
   deletePrefix(input: DeletePrefixInput): Promise<void>;
+  /**
+   * Delete a single object by its full canonical key. Distinct from
+   * `deletePrefix` — see `DeleteObjectInput.objectKey` doc. CR-01.
+   */
+  deleteObject(input: DeleteObjectInput): Promise<void>;
   listObjectsUnderPrefix(input: ListObjectsUnderPrefixInput): Promise<string[]>;
 }
 

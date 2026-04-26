@@ -55,31 +55,60 @@ interface FakeAdapter {
   uploadObject: ReturnType<typeof vi.fn>;
   createSignedUrl: ReturnType<typeof vi.fn>;
   deletePrefix: ReturnType<typeof vi.fn>;
+  deleteObject: ReturnType<typeof vi.fn>;
   listBuckets: ReturnType<typeof vi.fn>;
   listObjectsUnderPrefix: ReturnType<typeof vi.fn>;
   asAdapter: StorageAdapterShape;
 }
 
 function makeFakeAdapter(): FakeAdapter {
+  // CR-01 spec: the adapter exposes a `deleteObject` method (single-key
+  // remove via `client.storage.from(bucket).remove([objectKey])`) and the
+  // CR-03 compensating-delete path goes through it. Models the real bucket
+  // round-trip by tracking which (bucket, objectKey) pairs are "stored"
+  // and asserting the compensating delete actually clears them — the
+  // previous call-shape-only assertion accepted a no-op against
+  // `deletePrefix(file_path)`.
+  const stored = new Set<string>();
+  const storedKey = (bucket: string, objectKey: string) => `${bucket}/${objectKey}`;
+
   const uploadObject = vi.fn(
-    async ({ bucket, objectKey }: { bucket: string; objectKey: string }) => ({
-      bucket,
-      objectKey,
-    }),
+    async ({ bucket, objectKey }: { bucket: string; objectKey: string }) => {
+      stored.add(storedKey(bucket, objectKey));
+      return { bucket, objectKey };
+    },
   );
   const createSignedUrl = vi.fn(async () => ({
     signedUrl: "https://example.test/signed-url",
   }));
-  const deletePrefix = vi.fn(async () => undefined);
+  const deletePrefix = vi.fn(async ({ bucket, prefix }: { bucket: string; prefix: string }) => {
+    // Mirror the real Supabase semantics: list-and-remove. For tests
+    // this means dropping every stored key under the prefix.
+    for (const key of [...stored]) {
+      const expectedHead = `${bucket}/${prefix}`;
+      if (key.startsWith(expectedHead)) stored.delete(key);
+    }
+  });
+  const deleteObject = vi.fn(
+    async ({ bucket, objectKey }: { bucket: string; objectKey: string }) => {
+      stored.delete(storedKey(bucket, objectKey));
+    },
+  );
   const listBuckets = vi.fn(
     async () => [] as Awaited<ReturnType<StorageAdapterShape["listBuckets"]>>,
   );
-  const listObjectsUnderPrefix = vi.fn(async () => [] as string[]);
+  const listObjectsUnderPrefix = vi.fn(
+    async ({ bucket, prefix }: { bucket: string; prefix: string }): Promise<string[]> => {
+      const head = `${bucket}/${prefix}`;
+      return [...stored].filter((k) => k.startsWith(head)).map((k) => k.slice(bucket.length + 1));
+    },
+  );
 
   const asAdapter: StorageAdapterShape = {
     uploadObject: uploadObject as unknown as StorageAdapterShape["uploadObject"],
     createSignedUrl: createSignedUrl as unknown as StorageAdapterShape["createSignedUrl"],
     deletePrefix: deletePrefix as unknown as StorageAdapterShape["deletePrefix"],
+    deleteObject: deleteObject as unknown as StorageAdapterShape["deleteObject"],
     listBuckets: listBuckets as unknown as StorageAdapterShape["listBuckets"],
     listObjectsUnderPrefix:
       listObjectsUnderPrefix as unknown as StorageAdapterShape["listObjectsUnderPrefix"],
@@ -89,6 +118,7 @@ function makeFakeAdapter(): FakeAdapter {
     uploadObject,
     createSignedUrl,
     deletePrefix,
+    deleteObject,
     listBuckets,
     listObjectsUnderPrefix,
     asAdapter,
@@ -229,11 +259,19 @@ describe.skipIf(!dbUrl)("Phase-02-08 Task 3 photo upload use-case + route", () =
     expect(fake.uploadObject).not.toHaveBeenCalled();
   });
 
-  it("CR-03: when DB insert fails after storage uploads, compensating delete fires for both buckets", async () => {
+  it("CR-03/CR-01: when DB insert fails after storage uploads, both buckets end empty under userId/", async () => {
     // Drop the plant between the ownership check and the UoW write so
     // the photo_entries.plant_id FK violates and the UoW transaction
     // rolls back. Storage uploads have already committed by then; the
-    // compensating delete must fire for both buckets.
+    // compensating delete must clear both buckets.
+    //
+    // CR-01: this test now asserts STATE (the bucket round-trip) rather
+    // than CALL SHAPE. The previous version only checked that a delete
+    // method was called with a particular argument and accepted a no-op
+    // — a real Supabase deletePrefix(file_path) would silently do nothing
+    // because the SDK list() treats its argument as a folder. Asserting
+    // listObjectsUnderPrefix({ ... prefix: "${userId}/" }) returns an
+    // empty array catches the regression.
     const ephemeralPlant = await driver`
         INSERT INTO plants (user_id, name)
         VALUES (${userId}, 'Doomed Plant')
@@ -242,13 +280,14 @@ describe.skipIf(!dbUrl)("Phase-02-08 Task 3 photo upload use-case + route", () =
     const doomedPlantId = ephemeralPlant[0]!.id as string;
 
     const fake = makeFakeAdapter();
-    // Track the photoId mid-flight so we can assert deletePrefix was
-    // called with the original + thumbnail keys.
     let observedOriginalKey = "";
     let observedThumbnailKey = "";
     fake.uploadObject.mockImplementation(async ({ bucket, objectKey }) => {
       if (bucket === "plant-photos") observedOriginalKey = objectKey;
       if (bucket === "plant-thumbnails") observedThumbnailKey = objectKey;
+      // Preserve the default fake behaviour: track the upload as stored
+      // so the listObjectsUnderPrefix assertion below can verify the
+      // round-trip.
       return { bucket, objectKey };
     });
     fake.uploadObject.mockImplementationOnce(async ({ bucket, objectKey }) => {
@@ -274,15 +313,37 @@ describe.skipIf(!dbUrl)("Phase-02-08 Task 3 photo upload use-case + route", () =
     expect(observedOriginalKey).not.toBe("");
     expect(observedThumbnailKey).not.toBe("");
 
-    const deleteCalls = fake.deletePrefix.mock.calls.map(
-      (c) => c[0] as { bucket: string; prefix: string },
+    // CR-01: assert deleteObject was called with the full canonical key
+    // (NOT deletePrefix) — single-file removal must use the SDK's
+    // remove([objectKey]) path. Folder-style deletePrefix would silently
+    // no-op against a real Supabase backend.
+    const deleteObjectCalls = fake.deleteObject.mock.calls.map(
+      (c) => c[0] as { bucket: string; objectKey: string },
     );
     expect(
-      deleteCalls.some((c) => c.bucket === "plant-photos" && c.prefix === observedOriginalKey),
+      deleteObjectCalls.some(
+        (c) => c.bucket === "plant-photos" && c.objectKey === observedOriginalKey,
+      ),
     ).toBe(true);
     expect(
-      deleteCalls.some((c) => c.bucket === "plant-thumbnails" && c.prefix === observedThumbnailKey),
+      deleteObjectCalls.some(
+        (c) => c.bucket === "plant-thumbnails" && c.objectKey === observedThumbnailKey,
+      ),
     ).toBe(true);
+
+    // CR-01 round-trip: the compensating delete must actually have
+    // drained the buckets. Both the photos and thumbnails buckets
+    // should now contain no objects under the user prefix.
+    const photosLeft = await fake.asAdapter.listObjectsUnderPrefix({
+      bucket: "plant-photos",
+      prefix: `${userId}/`,
+    });
+    const thumbsLeft = await fake.asAdapter.listObjectsUnderPrefix({
+      bucket: "plant-thumbnails",
+      prefix: `${userId}/`,
+    });
+    expect(photosLeft).toEqual([]);
+    expect(thumbsLeft).toEqual([]);
   });
 
   it("successful upload calls uploadObject twice (original then thumbnail) and writes a PhotoEntry row", async () => {

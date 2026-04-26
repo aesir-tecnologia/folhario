@@ -84,8 +84,8 @@ Plans:
 - [x] 02-07-PLAN.md -- AuthAdapter, JWT verification, current-user helper, and API-aware proxy
 
 **Wave 6 _(blocked on Waves 4-5 completion)_**
-- [ ] 02-08-PLAN.md -- StorageAdapter, image pipeline, and `/api/v1/photos/upload`
-- [ ] 02-09-PLAN.md -- ConsentLog smoke route at `/api/v1/diagnostics/consent`
+- [x] 02-08-PLAN.md -- StorageAdapter, image pipeline, and `/api/v1/photos/upload`
+- [x] 02-09-PLAN.md -- ConsentLog smoke route at `/api/v1/diagnostics/consent`
 
 **Wave 7 _(blocked on Wave 6 completion)_**
 - [ ] 02-10-PLAN.md -- CI DB setup, full verification, and planning metadata reconciliation

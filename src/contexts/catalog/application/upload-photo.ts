@@ -51,9 +51,18 @@ function isAllowedMime(value: string): value is AllowedMime {
 }
 
 function extFromMime(mime: AllowedMime): "jpg" | "png" | "webp" {
-  if (mime === "image/jpeg") return "jpg";
-  if (mime === "image/png") return "png";
-  return "webp";
+  switch (mime) {
+    case "image/jpeg":
+      return "jpg";
+    case "image/png":
+      return "png";
+    case "image/webp":
+      return "webp";
+    default: {
+      const _exhaustive: never = mime;
+      throw new Error(`extFromMime: unhandled MIME ${_exhaustive as string}`);
+    }
+  }
 }
 
 const THUMBNAIL_MAX_DIMENSION = 512;

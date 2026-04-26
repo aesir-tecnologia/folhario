@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -74,7 +74,7 @@ describe.skipIf(!dbUrl)("Phase-02-06 withIdempotency integration", () => {
     const requestHash = "hash-" + randomUUID();
     const handler = vi.fn().mockResolvedValue({ status: 201, body: { id: 1 } });
 
-    const result = await withIdempotency(db, { userId, key, requestHash }, handler);
+    const result = await withIdempotency({ userId, key, requestHash }, handler);
 
     expect(result).toEqual({ status: 201, body: { id: 1 }, replayed: false });
     expect(handler).toHaveBeenCalledTimes(1);
@@ -96,11 +96,11 @@ describe.skipIf(!dbUrl)("Phase-02-06 withIdempotency integration", () => {
     const requestHash = "hash-" + randomUUID();
     const handler = vi.fn().mockResolvedValue({ status: 200, body: { hello: "world" } });
 
-    const first = await withIdempotency(db, { userId, key, requestHash }, handler);
+    const first = await withIdempotency({ userId, key, requestHash }, handler);
     expect(first.replayed).toBe(false);
     expect(handler).toHaveBeenCalledTimes(1);
 
-    const second = await withIdempotency(db, { userId, key, requestHash }, handler);
+    const second = await withIdempotency({ userId, key, requestHash }, handler);
     expect(second).toEqual({ status: 200, body: { hello: "world" }, replayed: true });
 
     // Same-key+same-hash second call MUST NOT invoke the handler.
@@ -113,14 +113,10 @@ describe.skipIf(!dbUrl)("Phase-02-06 withIdempotency integration", () => {
     const badHash = "hash-" + randomUUID();
     const handler = vi.fn().mockResolvedValue({ status: 200, body: { ok: true } });
 
-    await withIdempotency(db, { userId, key, requestHash: goodHash }, handler);
+    await withIdempotency({ userId, key, requestHash: goodHash }, handler);
     expect(handler).toHaveBeenCalledTimes(1);
 
-    const conflict = await withIdempotency(
-      db,
-      { userId, key, requestHash: badHash },
-      handler,
-    );
+    const conflict = await withIdempotency({ userId, key, requestHash: badHash }, handler);
     expect(conflict.status).toBe(409);
     // The body is the standard error envelope; assert against the closed code.
     expect(conflict.body).toMatchObject({ error: { code: ErrorCode.Conflict } });
@@ -155,37 +151,64 @@ describe.skipIf(!dbUrl)("Phase-02-06 withIdempotency integration", () => {
       .mockResolvedValueOnce({ status: 999, body: { wrong: true } });
 
     // 1. Handler throws — error MUST propagate.
-    await expect(
-      withIdempotency(db, { userId, key, requestHash }, handler),
-    ).rejects.toBe(boomError);
+    await expect(withIdempotency({ userId, key, requestHash }, handler)).rejects.toBe(boomError);
 
     // Transaction rolled back — no idempotency_keys row persists.
-    let rows = await db
-      .select()
-      .from(idempotencyKeys)
-      .where(eq(idempotencyKeys.key, key));
+    let rows = await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.key, key));
     expect(rows).toHaveLength(0);
 
     // 2. Same (userId, key, requestHash) — handler executes AGAIN (count = 2).
-    const replayAttempt = await withIdempotency(
-      db,
-      { userId, key, requestHash },
-      handler,
-    );
+    const replayAttempt = await withIdempotency({ userId, key, requestHash }, handler);
     expect(replayAttempt).toEqual({ status: 200, body: { ok: true }, replayed: false });
     expect(handler).toHaveBeenCalledTimes(2);
 
     // Row now persists.
-    rows = await db
-      .select()
-      .from(idempotencyKeys)
-      .where(eq(idempotencyKeys.key, key));
+    rows = await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.key, key));
     expect(rows).toHaveLength(1);
 
     // 3. Third call replays without invoking the handler.
-    const third = await withIdempotency(db, { userId, key, requestHash }, handler);
+    const third = await withIdempotency({ userId, key, requestHash }, handler);
     expect(third).toEqual({ status: 200, body: { ok: true }, replayed: true });
     expect(handler).toHaveBeenCalledTimes(2);
+  });
+
+  it("CR-01: handler writes via injected tx are rolled back when the wrapper rolls back", async () => {
+    // Prove handler-tx is the SAME tx as the wrapper-tx: a write the
+    // handler performs through the injected tx must vanish if the
+    // wrapper update later fails. Pre-fix, withIdempotency opened its
+    // own tx and the handler called withUnitOfWork independently — two
+    // physical connections, no shared rollback. This test exercises
+    // the unified envelope.
+    const key = `task-${randomUUID()}`;
+    const requestHash = "hash-" + randomUUID();
+    const boomError = new Error("handler write should rollback");
+
+    // Handler attempts to insert a fresh idempotency_keys row directly
+    // through the injected tx (a different `(userId, key2)` so the
+    // outer claim already succeeded), then throws. If the tx is shared,
+    // both rows roll back together.
+    const sentinelKey = `sentinel-${randomUUID()}`;
+    const handler = vi
+      .fn()
+      .mockImplementationOnce(async (tx: import("@shared/db/unit-of-work").TransactionalDb) => {
+        await tx.execute(
+          sql`insert into idempotency_keys (user_id, key, request_hash, expires_at)
+              values (${userId}, ${sentinelKey}, 'sentinel-hash', now() + interval '1 day')`,
+        );
+        throw boomError;
+      });
+
+    await expect(withIdempotency({ userId, key, requestHash }, handler)).rejects.toBe(boomError);
+
+    // Both rows must have rolled back: outer claim (key) AND inner
+    // sentinel write (sentinelKey).
+    const outerRows = await db.select().from(idempotencyKeys).where(eq(idempotencyKeys.key, key));
+    const sentinelRows = await db
+      .select()
+      .from(idempotencyKeys)
+      .where(eq(idempotencyKeys.key, sentinelKey));
+    expect(outerRows).toHaveLength(0);
+    expect(sentinelRows).toHaveLength(0);
   });
 
   it("expires_at is now() + 7 days (±5s tolerance)", async () => {
@@ -194,7 +217,7 @@ describe.skipIf(!dbUrl)("Phase-02-06 withIdempotency integration", () => {
     const handler = vi.fn().mockResolvedValue({ status: 200, body: { ok: true } });
 
     const before = Date.now();
-    await withIdempotency(db, { userId, key, requestHash }, handler);
+    await withIdempotency({ userId, key, requestHash }, handler);
     const after = Date.now();
 
     const rows = await driver`

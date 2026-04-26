@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import { type DbClient } from "@shared/db/client";
 import { ErrorCode, type ErrorBody } from "@shared/config/errors";
+import { withUnitOfWork, type TransactionalDb } from "@shared/db/unit-of-work";
 import { idempotencyKeys } from "@contexts/iam/infrastructure/db/schema";
 
 /**
@@ -23,6 +23,16 @@ import { idempotencyKeys } from "@contexts/iam/infrastructure/db/schema";
  *     partial idempotency row persists. A retry with the same
  *     `(userId, key, requestHash)` is therefore a fresh first call. This
  *     is the T-02-36 mitigation.
+ *
+ * CR-01 mitigation: `withIdempotency` opens a single `withUnitOfWork`
+ * transaction and invokes the handler with that same `tx`. Previously
+ * the wrapper opened its own `db.transaction(...)` and the handler called
+ * `withUnitOfWork(...)` independently — Drizzle's pooled `postgres-js`
+ * driver acquired a SECOND physical connection for the inner call, so
+ * the two transactions ran on different connections with no shared
+ * rollback envelope. Composing here means: one transaction, one
+ * connection, one rollback contract; RLS GUC + role apply uniformly to
+ * the idempotency row writes AND the handler's writes.
  *
  * Race-safety strategy (T-02-15): we use a single
  * `INSERT ... ON CONFLICT (user_id, key) DO NOTHING RETURNING *` to claim
@@ -55,7 +65,7 @@ export interface IdempotencyResult {
   replayed: boolean;
 }
 
-export type IdempotencyHandler = () => Promise<{
+export type IdempotencyHandler = (tx: TransactionalDb) => Promise<{
   status: number;
   body: unknown;
 }>;
@@ -77,15 +87,18 @@ function conflictBody(): ErrorBody {
  * The transaction boundary IS the rollback contract: if `handler` throws,
  * the BEGIN/COMMIT envelope is rolled back so the freshly-claimed
  * `idempotency_keys` row vanishes and the next caller can re-execute.
+ *
+ * Internally composes with `withUnitOfWork` so the handler shares the
+ * same transaction (CR-01) and runs under the `authenticated` role with
+ * `request.jwt.claim.sub` bound (CR-02).
  */
 export async function withIdempotency(
-  db: DbClient,
   input: WithIdempotencyInput,
   handler: IdempotencyHandler,
 ): Promise<IdempotencyResult> {
   const { userId, key, requestHash } = input;
 
-  return db.transaction(async (tx) => {
+  return withUnitOfWork(userId, async (tx) => {
     // Race-safe atomic claim: insert OR no-op-on-conflict, returning the
     // freshly-inserted row or an empty array. expires_at is set 7 days
     // out at insert time per D-38.
@@ -101,10 +114,12 @@ export async function withIdempotency(
       .returning();
 
     if (claimed.length > 0) {
-      // FIRST CALL: execute the handler, store its response on the row, commit.
-      // If the handler throws, the surrounding transaction rolls back and
-      // the freshly-inserted row vanishes — a retry will be a fresh first call.
-      const response = await handler();
+      // FIRST CALL: execute the handler with the same tx, store its
+      // response on the row, commit. If the handler throws, the
+      // surrounding transaction rolls back and BOTH the freshly-inserted
+      // idempotency row AND any handler-side writes vanish — a retry
+      // will be a fresh first call.
+      const response = await handler(tx);
 
       await tx
         .update(idempotencyKeys)
@@ -113,9 +128,7 @@ export async function withIdempotency(
           responseBody: response.body as never,
           updatedAt: sql`now()`,
         })
-        .where(
-          and(eq(idempotencyKeys.userId, userId), eq(idempotencyKeys.key, key)),
-        );
+        .where(and(eq(idempotencyKeys.userId, userId), eq(idempotencyKeys.key, key)));
 
       return { status: response.status, body: response.body, replayed: false };
     }

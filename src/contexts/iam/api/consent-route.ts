@@ -2,17 +2,11 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { ErrorCode, errorResponse } from "@shared/config/errors";
-import { db } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
 import { requireApiUser } from "@shared/api/auth";
 import { withIdempotency } from "@shared/api/idempotency";
 import { parseJsonBody } from "@shared/api/request";
-import {
-  DEFAULT_LIMIT,
-  decodeCursor,
-  encodeCursor,
-  normalizeLimit,
-} from "@shared/api/cursor";
+import { DEFAULT_LIMIT, decodeCursor, encodeCursor, normalizeLimit } from "@shared/api/cursor";
 import { consentLogInsertSchema } from "@contexts/iam/domain/consent-schemas";
 import { recordConsent } from "@contexts/iam/application/record-consent";
 import { listByUser } from "@contexts/iam/infrastructure/db/consent-logs";
@@ -75,10 +69,7 @@ export async function postHandler(request: Request): Promise<Response> {
 
   const idempotencyKey = request.headers.get("idempotency-key");
   if (!idempotencyKey || idempotencyKey.trim() === "") {
-    return errorResponse(
-      ErrorCode.ValidationFailed,
-      "Idempotency-Key header is required",
-    );
+    return errorResponse(ErrorCode.ValidationFailed, "Idempotency-Key header is required");
   }
 
   const parsed = await parseJsonBody(request, consentRoutePostBodySchema);
@@ -86,52 +77,49 @@ export async function postHandler(request: Request): Promise<Response> {
     return errorResponse(parsed.error, "invalid consent body");
   }
 
-  const requestHash = createHash("sha256")
-    .update(JSON.stringify(parsed.value))
-    .digest("hex");
+  const requestHash = createHash("sha256").update(JSON.stringify(parsed.value)).digest("hex");
 
-  const result = await withIdempotency(
-    db,
-    { userId, key: idempotencyKey, requestHash },
-    async () => {
-      const inner = await recordConsent({
+  const result = await withIdempotency({ userId, key: idempotencyKey, requestHash }, async (tx) => {
+    const inner = await recordConsent(
+      {
         userId,
         input: {
           purpose: parsed.value.purpose,
           legalBasis: parsed.value.legalBasis,
           source: parsed.value.source,
         },
-      });
-      if (!inner.ok) {
-        // recordConsent's only non-ok path is validation_failed
-        // (no current policy version). Surface the registry code.
-        return {
-          status: 400,
-          body: {
-            error: {
-              code: inner.error,
-              message: "no current policy version",
-            },
-          },
-        };
-      }
-      const row = inner.row;
+      },
+      tx,
+    );
+    if (!inner.ok) {
+      // recordConsent's only non-ok path is validation_failed
+      // (no current policy version). Surface the registry code.
       return {
-        status: 201,
+        status: 400,
         body: {
-          id: row.id,
-          user_id: row.userId,
-          purpose: row.purpose,
-          legal_basis: row.legalBasis,
-          policy_version_id: row.policyVersionId,
-          source: row.source,
-          granted_at: row.grantedAt,
-          revoked_at: row.revokedAt,
-          created_at: row.createdAt,
+          error: {
+            code: inner.error,
+            message: "no current policy version",
+          },
         },
       };
-    },
-  );
+    }
+    const row = inner.row;
+    return {
+      status: 201,
+      body: {
+        id: row.id,
+        user_id: row.userId,
+        purpose: row.purpose,
+        legal_basis: row.legalBasis,
+        policy_version_id: row.policyVersionId,
+        source: row.source,
+        granted_at: row.grantedAt,
+        revoked_at: row.revokedAt,
+        created_at: row.createdAt,
+      },
+    };
+  });
 
   return new Response(JSON.stringify(result.body), {
     status: result.status,

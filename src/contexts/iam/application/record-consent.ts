@@ -1,9 +1,12 @@
 import { and, eq } from "drizzle-orm";
 
 import { ErrorCode } from "@shared/config/errors";
-import { withUnitOfWork } from "@shared/db/unit-of-work";
+import { withUnitOfWork, type TransactionalDb } from "@shared/db/unit-of-work";
 import { policyVersions } from "@contexts/iam/infrastructure/db/schema";
-import { create as createConsentLog, type ConsentLogRow } from "@contexts/iam/infrastructure/db/consent-logs";
+import {
+  create as createConsentLog,
+  type ConsentLogRow,
+} from "@contexts/iam/infrastructure/db/consent-logs";
 
 /**
  * IAM application — record a ConsentLog row for the authenticated user.
@@ -31,11 +34,7 @@ import { create as createConsentLog, type ConsentLogRow } from "@contexts/iam/in
  */
 
 export type RecordConsentInput = {
-  purpose:
-    | "identification_third_party"
-    | "push_notifications"
-    | "marketing"
-    | "analytics";
+  purpose: "identification_third_party" | "push_notifications" | "marketing" | "analytics";
   legalBasis: "consent" | "contract" | "legitimate_interest";
   source: "signup" | "settings" | "first_use_prompt";
 };
@@ -51,18 +50,20 @@ export type RecordConsentResult =
 
 export async function recordConsent(
   args: RecordConsentArgs,
+  injectedTx?: TransactionalDb,
 ): Promise<RecordConsentResult> {
   const { userId, input } = args;
 
-  return withUnitOfWork(userId, async (tx) => {
+  // CR-01 mitigation: when a tx is injected (e.g., from withIdempotency),
+  // run inside it so the consent write shares the caller's rollback
+  // envelope. Otherwise open a fresh UoW so standalone callers still
+  // get role + GUC bound.
+  const work = async (tx: TransactionalDb): Promise<RecordConsentResult> => {
     const currentPolicy = await tx
       .select({ id: policyVersions.id })
       .from(policyVersions)
       .where(
-        and(
-          eq(policyVersions.documentType, "privacy_policy"),
-          eq(policyVersions.isCurrent, true),
-        ),
+        and(eq(policyVersions.documentType, "privacy_policy"), eq(policyVersions.isCurrent, true)),
       )
       .limit(1);
 
@@ -85,5 +86,10 @@ export async function recordConsent(
     });
 
     return { ok: true, row };
-  });
+  };
+
+  if (injectedTx) {
+    return work(injectedTx);
+  }
+  return withUnitOfWork(userId, work);
 }

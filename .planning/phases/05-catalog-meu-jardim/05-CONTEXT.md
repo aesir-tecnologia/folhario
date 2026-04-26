@@ -1,7 +1,7 @@
 # Phase 5: Catalog — Meu Jardim - Context
 
 **Gathered:** 2026-04-26 (power mode)
-**Status:** Ready for planning
+**Status:** Future-planning context; execution blocked until Phase 2 data layer, Phase 3 app shell/design system, and Phase 4 auth/Inngest are implemented and verified in this worktree
 **Source:** Synthesized from `.planning/phases/05-catalog-meu-jardim/05-QUESTIONS.json` (27/27 answered, all with rationale notes)
 
 <domain>
@@ -10,6 +10,7 @@
 Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identify INTO" that Phase 6 needs:
 
 - A verified user can manually add plants (name + ≥1 photo, `species_id=null`).
+- A catalog-side "create Plant from existing Identification" mutation for `CAT-01` (no capture/provider/result UI): creates a Plant with `species_id`, pre-filled name, cover from the identification upload, and sets `Identification.plant_id`.
 - A responsive Catalog grid (2/3/4 columns at 375/600/900 breakpoints) sorted by `acquisition_date desc` (null dates last) with a session-persisted sort control.
 - A Plant Profile with cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link (hidden when no Identifications), and a delete overflow.
 - A Location picker exposing prior locations + defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` + free text (free text becomes reusable).
@@ -18,14 +19,16 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 - Previously-loaded catalog browsable offline with a clear offline banner.
 - Empty Home + empty Catalog states per `UI-04` / `CAT-11`.
 
+**Execution readiness gate:** This document references several Phase 2, Phase 3, and Phase 4 assets as contracts. In the current worktree those phases may still be incomplete. Before planning or executing Phase 5, verify that the referenced schema, repositories, upload route, app shell, auth helper, and Inngest infrastructure exist. If they do not, treat those references as upstream requirements, not current code.
+
 **Explicitly NOT in scope (handled by other phases):**
 
-- Identification flow (Phase 6) — the camera button on Home empty state wires to a placeholder route only.
+- Identification capture/provider/result-selection flow (Phase 6) — the camera button on Home empty state wires to a placeholder route only. Phase 5 only owns the catalog-side mutation that Phase 6 will call after a user confirms an identification result.
 - Care guides + toxicity badges (Phase 7) — Plant Profile shows a hidden care-card slot; Phase 7 fills it.
 - Reminders create/done/snooze + push (Phase 8) — the Plant Profile shows an "active reminders" stub only.
 - Offline write queue (Phase 9) — Phase 5 ships **read-only offline browse** of cached catalog. Mutating actions while offline are out of scope here.
 - Subscription state machine (Phase 10) — read-only mode UI variants ship in Phase 5 behind a stubbed `useSubscription()` hook that always returns `'trialing'`.
-- LGPD deletion grace + storage hard-delete (Phase 11) — Phase 5 emits `catalog.plant.deleted` and trusts an Inngest function to clean Storage objects.
+- LGPD deletion grace + account-wide hard-delete (Phase 11) — Phase 5 emits canonical `plant.deleted` and schedules catalog photo cleanup for plant deletion only.
 
 </domain>
 
@@ -37,13 +40,17 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 - **D-01 (Q-01a):** `Plant.location` is a denormalized `text NULL` column — no separate `Location` table. Prior locations for the picker are derived via `SELECT DISTINCT location FROM plants WHERE user_id = $1 AND location IS NOT NULL`. Mitigate "Sala" vs "sala" collisions by trimming + lowercasing on case-insensitive compare while preserving the user's display case on storage.
 - **D-02 (Q-02b):** `Plant.cover_photo_url` is an explicit nullable text column (matches PRD §4 schema verbatim). On manual create + first PhotoEntry add it is set to that PhotoEntry's `photo_url`. A "Set as cover" affordance (D-18) on any PhotoEntry overwrites it.
 - **D-03 (Q-03a):** Cascade is enforced at the **DB level** via FK actions: `PhotoEntry.plant_id` → CASCADE, `Reminder.plant_id` → CASCADE, `Identification.plant_id` → SET NULL. Phase 2 D-07 already commits to this; Phase 5 simply uses it. A single `DELETE FROM plants WHERE id = $1 AND user_id = $2` atomically performs the cascade.
-- **D-04 (Q-04b):** Storage object deletion is **asynchronous via Inngest**. The `DELETE /api/v1/plants/:id` request:
-  1. Reads all PhotoEntry `photo_url`/`thumbnail_url` paths inside the txn (cover too).
-  2. Performs the SQL DELETE (FK cascade fires).
-  3. Emits `catalog.plant.deleted` with `{ user_id, plant_id, storage_paths[] }` in the payload.
-  4. Returns 204 immediately.
+- **D-04 (Q-04b):** Storage object deletion is **asynchronous via Inngest with a durable DB schedule**. The `DELETE /api/v1/plants/:id` request:
+  1. Opens a transaction and reads PhotoEntry-owned `photo_url`/`thumbnail_url` storage paths for the plant. It must not schedule Identification-owned upload paths for deletion, even if one is currently used as `Plant.cover_photo_url`.
+  2. Inserts a durable pending storage-deletion/outbox record in the same transaction with `{ user_id, plant_id, storage_paths[], status: 'pending' }`.
+  3. Performs the SQL DELETE (FK cascade fires).
+  4. Commits the transaction.
+  5. Emits canonical `plant.deleted` with `{ user_id, plant_id, storage_deletion_job_id, storage_paths[] }`.
+  6. Returns 204 only after the deletion is committed and the cleanup event is either dispatched or durably queued for dispatch.
 
-  An Inngest function `catalog/cleanup-storage` reads paths from the event and deletes them in batches via `StorageAdapter`. Durable retries handle transient Storage failures. Phase 4 brings Inngest online; Phase 5 is the second async consumer (after `iam/send-verification-email`).
+  An Inngest function `catalog/cleanup-storage` listens to `plant.deleted`, loads the pending storage-deletion job as the source of truth, deletes paths in batches via `StorageAdapter`, and marks the job complete. Durable retries handle transient Storage failures. If event dispatch fails after commit, the pending job remains visible to a retry dispatcher/reconciler; storage cleanup must not rely solely on an in-memory post-commit send. Phase 4 brings Inngest online; Phase 5 is the second async consumer (after `iam/send-verification-email`).
+
+  If Phase 4 does not provide a generic event outbox/dispatcher, Phase 5 owns a small catalog-local pending storage-deletion table plus tests proving the row is committed atomically with the plant delete.
 
 ### Data Fetching & State Management
 
@@ -93,11 +100,13 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 ### API Endpoints
 
 - **D-22 (Q-22a):** **Plant create is a two-step request** reusing Phase 2 D-27 photo upload pipeline:
-  1. Client compresses + strips EXIF → `POST /api/v1/photos/upload` (Phase 2's route) → returns `{ photo_url, thumbnail_url }`.
-  2. Client `POST /api/v1/plants` with `{ name, nickname?, location?, acquisition_date?, notes?, photo_urls: [...] }` and an `Idempotency-Key`. Server creates Plant + initial PhotoEntry + sets `cover_photo_url` to the first photo. Returns the created Plant.
+  1. Client reserves/generates a Plant UUID for the manual-add draft, compresses + strips EXIF, then calls `POST /api/v1/photos/upload` with that aggregate id. The upload route returns `{ photo_url, thumbnail_url }` and stores under the authenticated user's plant prefix.
+  2. Client `POST /api/v1/plants` with `{ id, name, nickname?, location?, acquisition_date?, notes?, initial_photos: [{ photo_url, thumbnail_url }] }` and an `Idempotency-Key`. Server validates every uploaded path belongs to the authenticated user + submitted plant id, creates Plant + initial PhotoEntry rows, and sets `cover_photo_url` to the first `photo_url`. Returns the created Plant.
 
-  Idempotency-Key on `/plants` makes Plant create replay-safe (Phase 2 D-37/D-38). The photo upload is its own idempotent operation.
+  Idempotency-Key on `/plants` makes Plant create replay-safe (Phase 2 D-37/D-38). The photo upload is its own idempotent operation. If a create fails after uploads succeeded, the use-case schedules those unclaimed storage objects through the same pending storage-deletion mechanism as D-04.
 - **D-23 (Q-23a):** **PhotoEntry add is a two-step request** mirroring D-22: `POST /api/v1/photos/upload` → `POST /api/v1/plants/:id/photos` with `{ photo_url, thumbnail_url, note? }`. Nested resource path is RESTful, ownership-clear. Reuses upload pipeline.
+- **D-23A (CAT-01):** **Create-from-identification is a catalog-side mutation, not the full identification flow.** Phase 5 ships `POST /api/v1/plants/from-identification` (or equivalent application use-case used by Phase 6) with an `Idempotency-Key` and body `{ identification_id, selected_result_id, name?, nickname?, location?, acquisition_date?, notes? }`. It verifies the Identification belongs to the user and is not already linked, creates Plant with `species_id` from the selected result, pre-fills `name`, sets `cover_photo_url` from the identification upload, and updates `Identification.plant_id`. Phase 6 owns creating Identification rows, provider calls, result UI, consent/cap handling, and the caller.
+- **D-23B:** **Complete Phase 5 API mutation surface before execution.** Catalog mutating endpoints must all accept `Idempotency-Key`: `POST /api/v1/plants`, `POST /api/v1/plants/from-identification`, `PATCH /api/v1/plants/:id` for inline fields, `DELETE /api/v1/plants/:id`, `POST /api/v1/plants/:id/photos`, `PATCH /api/v1/plants/:id/photos/:photoEntryId` for note edits, `DELETE /api/v1/plants/:id/photos/:photoEntryId`, and `PATCH /api/v1/plants/:id/cover-photo` for "Definir como capa". Read endpoints include `GET /api/v1/plants`, `GET /api/v1/plants/:id`, and `GET /api/v1/plants/:id/photos`.
 
 ### Cross-Phase Coupling
 
@@ -162,8 +171,11 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 - `docs/CAVE-PRD.md` §19 — Testing layers (unit + real-Postgres integration + Playwright).
 - `docs/CAVE-PRD.md` §20 — Environments + observability events (`plant_added` PostHog event lands here).
 
-### Phase 5 explicit dependencies on incomplete phases
+### Phase 5 execution dependencies (blocking if incomplete)
 
+As of this context capture, `.planning/STATE.md` may still show Phase 2 as planned and Phase 3/4 not executed. Downstream agents must verify the actual worktree state before treating any dependency below as implemented. If a dependency is missing, Phase 5 is not executable yet.
+
+- **Phase 2** (Data Layer & Bounded Contexts): supplies catalog schemas, repositories, Unit-of-Work, idempotency table, cursor helpers, storage adapter, private buckets, and `/api/v1/photos/upload`.
 - **Phase 3** (Design System + App Shell): supplies bottom nav, route shell, base layout, color tokens, typography, motion primitives. Phase 5 plugs catalog/home/identify routes into the shell.
 - **Phase 4** (Auth + Email Verification + Inngest onboarding): supplies the JWT-verified `User` row, Inngest infrastructure (D-04 uses it), and the email-verification gate.
 
@@ -172,23 +184,23 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 <code_context>
 ## Existing Code Insights
 
-### Reusable Assets (built or pending)
+### Expected Reusable Assets (must verify before planning)
 
-- **`src/contexts/catalog/{domain,application,infrastructure,api,inngest}/`** — empty `.gitkeep` directories from Phase 1 INFRA-02. Phase 2 fills `infrastructure/db/schema.ts` (D-01) and `infrastructure/db/plants.ts`-style repositories (D-16). Phase 5 fills the rest of `application` (use-cases), `api` (route handlers under `/api/v1/plants`), and `inngest` (`catalog/cleanup-storage` function).
-- **`src/contexts/catalog/infrastructure/photo-storage.ts`** — Phase 2 D-25 ships this context-scoped wrapper around the generic `StorageAdapter`. Phase 5 reuses it for `Plant.cover_photo_url` and `PhotoEntry.photo_url`/`thumbnail_url` paths.
-- **`src/app/api/v1/photos/upload/route.ts`** — Phase 2 D-27 ships this server proxy upload route (validates GPS, uploads with service role, generates thumbnail via `sharp`, inserts metadata). Phase 5 D-22 + D-23 reuse it as the first step of the two-step Plant create + PhotoEntry add flows.
-- **`src/shared/db/client.ts`** + **`src/shared/db/migration-client.ts`** — Phase 2 D-14/D-15 connection entry points. Repositories take a Drizzle client parameter (D-16).
+- **`src/contexts/catalog/{domain,application,infrastructure,api,inngest}/`** — empty `.gitkeep` directories from Phase 1 INFRA-02. Phase 2 is expected to fill `infrastructure/db/schema.ts` (D-01) and `infrastructure/db/plants.ts`-style repositories (D-16). Phase 5 fills the rest of `application` (use-cases), `api` (route handlers under `/api/v1/plants`), and `inngest` (`catalog/cleanup-storage` function).
+- **`src/contexts/catalog/infrastructure/photo-storage.ts`** — Phase 2 D-25 is expected to ship this context-scoped wrapper around the generic `StorageAdapter`. Phase 5 reuses it for `Plant.cover_photo_url` and `PhotoEntry.photo_url`/`thumbnail_url` paths.
+- **`src/app/api/v1/photos/upload/route.ts`** — Phase 2 D-27 is expected to ship this server proxy upload route (validates GPS, uploads with service role, generates thumbnail via `sharp`, returns original + thumbnail paths). Phase 5 D-22 + D-23 reuse it as the first step of the two-step Plant create + PhotoEntry add flows.
+- **`src/shared/db/client.ts`** + **`src/shared/db/migration-client.ts`** — Phase 2 D-14/D-15 connection entry points. Repositories take a Drizzle client parameter (D-16). Verify they exist before planning Phase 5 implementation.
 - **`src/shared/config/errors.ts`** — Phase 1 D-10/D-11/D-12 closed error registry. Phase 5 surfaces `validation_failed` (manual-add field validation), `not_found` (deleted/foreign plant), `unauthenticated`/`token_expired` (RLS), `read_only_mode` 402 on mutations when D-24's stubbed hook is later flipped to non-trialing.
 - **`src/contexts/billing/api/use-subscription.ts`** (D-24) — file Phase 5 creates as a stub returning `'trialing'`. Phase 10 swaps the implementation.
 - **`tests/integration/`** — Phase 1's CI runs `vitest --project=integration` against `postgres:17-alpine`. Phase 5 adds catalog integration tests under this project per Phase 2 D-43 transaction-rollback pattern.
-- **Inngest infrastructure** — Phase 4 onboards Inngest. Phase 5's `catalog/cleanup-storage` function (D-04) is the second async consumer.
+- **Inngest infrastructure** — Phase 4 is expected to onboard Inngest. Phase 5's `catalog/cleanup-storage` function (D-04) is the second async consumer.
 
 ### Established Patterns (must follow)
 
 - **Repositories are functional modules**, not classes (Phase 2 D-16). Phase 5 catalog repositories live at `src/contexts/catalog/infrastructure/db/{plants,photo-entries}.ts`.
 - **No Drizzle in route handlers** — enforced by ESLint + Vitest guard (Phase 2 D-17). Route handlers under `/api/v1/plants` and `/api/v1/plants/:id/photos` validate (Zod) → call use-case → HTTP-map.
 - **Domain-layer Zod schemas derived from `drizzle-zod`** (Phase 2 D-19); routes import the domain schemas, not raw Drizzle table definitions.
-- **Idempotency-Key on every mutating endpoint** (Phase 2 D-37/D-38). Plant create + delete + PhotoEntry add accept the header.
+- **Idempotency-Key on every mutating endpoint** (Phase 2 D-37/D-38). Plant create, create-from-identification, inline edits, delete, PhotoEntry add/note-edit/delete, and set-cover all accept the header.
 - **Cursor format `base64(JSON.stringify({ id, createdAt }))`** (Phase 2 D-36) for the catalog list endpoint.
 - **`Sentry.setUser({ id })` only — never email** (Phase 1 LGPD-13 / D-22). Plant aggregate emits `plant_added` PostHog event (server-side via `posthog-node` per Phase 1 D-21 client posture; D-21 D-21 dataset only contains identified user_id).
 - **i18n via `next-intl`** (Phase 1 D-15 + INFRA-23) — all user-facing strings go through the i18n layer, no hardcoded copy.
@@ -197,7 +209,7 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 
 ### Integration Points
 
-- **Phase 2 photo upload route** ↔ Phase 5 manual-add + PhotoEntry add flows (D-22, D-23).
+- **Phase 2 photo upload route** ↔ Phase 5 manual-add + PhotoEntry add flows (D-22, D-23). Contract returns both `photo_url` and `thumbnail_url`.
 - **Phase 2 `Plant`/`PhotoEntry`/`Identification` schemas** ↔ Phase 5 repositories + cascade SQL (D-03).
 - **Phase 4 Inngest** ↔ Phase 5 `catalog/cleanup-storage` function (D-04).
 - **Phase 4 JWT auth** ↔ Phase 5 RLS-protected `/api/v1/plants*` routes.
@@ -219,7 +231,7 @@ Phase 5 delivers the Catalog ("Meu Jardim") surface — the "something to identi
 - **Loading skeleton geometry per PRD §17:** "Catalog card skeleton: 4:5 Hairline Beige/Umber photo block + 60% title line + 40% metadata line. Shimmer left-to-right 1.4s in Warm Ivory/Embered at 40% opacity. Render only after 300ms delay; faster ops skip shimmer + fade content in over 120ms."
 - **Empty-state composition per PRD §17 / CAT-11:** Sage line-art illustration ("estante esperando" — pot/sprout/shelf), Source Serif 4 headline "Sua estante ainda está esperando a primeira planta.", Calm Slate hint, single Canopy primary CTA. Home empty state separately matches UI-04 ("Identifique sua primeira planta" + camera button + "Adicionar manualmente" text link).
 - **Delete modal copy (pt-BR):** title "Excluir [name]?", body "Isso apagará as fotos e lembretes desta planta. A ação não pode ser desfeita.", "Cancelar" primary, "Excluir" destructive. No emoji.
-- **Inngest event payload shape (D-04):** `{ user_id: string, plant_id: string, storage_paths: string[] }` — paths are pre-collected inside the SQL transaction so the function doesn't have to query a deleted row.
+- **Inngest event payload shape (D-04):** canonical event name `plant.deleted`, payload `{ user_id: string, plant_id: string, storage_deletion_job_id: string, storage_paths: string[] }`. Paths are pre-collected inside the SQL transaction and also stored durably in the pending deletion job; the job row is the cleanup source of truth.
 - **PhotoEntry lightbox bottom strip:** note text (Plus Jakarta Sans 14, Calm Slate) + actions row (`Editar nota` text-link, `Definir como capa` text-link, `Excluir` destructive overflow). Keyboard-navigable, focus trap, swipe-down dismiss.
 - **Inline-edit pencil affordance:** small Lucide `pencil` icon (16px, Calm Slate, 1.5px stroke per §17 iconography) appears on `:hover` (desktop) or always (mobile) next to editable fields. On focus, the pencil disappears + the field becomes a §17-styled input.
 

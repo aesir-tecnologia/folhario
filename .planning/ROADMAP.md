@@ -88,7 +88,7 @@ Plans:
 - [x] 02-09-PLAN.md -- ConsentLog smoke route at `/api/v1/diagnostics/consent`
 
 **Wave 7 _(blocked on Wave 6 completion)_**
-- [ ] 02-10-PLAN.md -- CI DB setup, full verification, and planning metadata reconciliation
+- [x] 02-10-PLAN.md -- CI DB setup, full verification, and planning metadata reconciliation
 
 Cross-cutting constraints:
 - Drizzle schema remains per-context; `src/shared/db/schema-registry.ts` is migration-only.

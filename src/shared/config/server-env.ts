@@ -6,6 +6,7 @@ const optional = (schema: z.ZodString) =>
 export const serverSchema = z.object({
   DATABASE_URL: z.string().url(),
   DATABASE_POOL_URL: z.string().url(),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_PROJECT_REF: optional(z.string().min(1)),
   SUPABASE_ACCESS_TOKEN: optional(z.string().min(1)),

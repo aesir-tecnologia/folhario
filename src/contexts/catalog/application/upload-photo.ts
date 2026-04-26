@@ -5,15 +5,13 @@ import sharp from "sharp";
 import { ErrorCode } from "@shared/config/errors";
 import { db as defaultDb } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
-import {
-  rejectGpsMetadata,
-  rejectOversizeBuffer,
-} from "@shared/images/server-validate";
+import { rejectGpsMetadata, rejectOversizeBuffer } from "@shared/images/server-validate";
 import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
 import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
 import {
   buildPlantPhotoObjectKey,
   buildPlantThumbnailObjectKey,
+  deleteSinglePlantPhotoBestEffort,
   PLANT_PHOTOS_BUCKET,
   PLANT_THUMBNAILS_BUCKET,
   uploadOriginalPlantPhoto,
@@ -45,11 +43,7 @@ import type { PhotoEntryRow } from "@contexts/catalog/infrastructure/db/photo-en
  * non-ok results directly to `errorResponse(...)`.
  */
 
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const);
+const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"] as const);
 type AllowedMime = "image/jpeg" | "image/png" | "image/webp";
 
 function isAllowedMime(value: string): value is AllowedMime {
@@ -87,9 +81,7 @@ export type UploadPhotoResult =
       reason: string;
     };
 
-export async function uploadPhoto(
-  input: UploadPhotoInput,
-): Promise<UploadPhotoResult> {
+export async function uploadPhoto(input: UploadPhotoInput): Promise<UploadPhotoResult> {
   // (1) MIME validation.
   if (!isAllowedMime(input.contentType)) {
     return {
@@ -123,11 +115,7 @@ export async function uploadPhoto(
 
   // (4) Plant ownership — user must own the plant. We check OUTSIDE the
   // UoW so an unowned plant short-circuits before opening a transaction.
-  const plantRow = await plantsRepo.findByIdForUser(
-    defaultDb,
-    input.userId,
-    input.plantId,
-  );
+  const plantRow = await plantsRepo.findByIdForUser(defaultDb, input.userId, input.plantId);
   if (!plantRow) {
     return {
       ok: false,
@@ -198,15 +186,34 @@ export async function uploadPhoto(
   // user's id. The photoUrl/thumbnailUrl columns store the bucket-prefixed
   // path (`{bucket}/{objectKey}`), not a signed URL — signing happens at
   // read time so URLs do not expire in the database row.
-  const photoEntry = await withUnitOfWork(input.userId, async (tx) =>
-    photoEntriesRepo.create(tx, {
-      id: photoId,
+  //
+  // CR-03 mitigation: storage uploads (step 6) committed bytes to two
+  // buckets BEFORE the DB row exists. If this insert fails (RLS denial,
+  // FK race on plant deletion, transient connection drop, etc.), the
+  // bytes would be unreachable orphans — `deleteAllPlantMediaForUser`
+  // can't find them because the DB has no record they were uploaded.
+  // Wrap the UoW in a try/catch and issue best-effort compensating
+  // deletes on failure before rethrowing.
+  let photoEntry: PhotoEntryRow;
+  try {
+    photoEntry = await withUnitOfWork(input.userId, async (tx) =>
+      photoEntriesRepo.create(tx, {
+        id: photoId,
+        plantId: input.plantId,
+        photoUrl: `${PLANT_PHOTOS_BUCKET}/${originalKey}`,
+        thumbnailUrl: `${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}`,
+        note: input.note ?? null,
+      }),
+    );
+  } catch (err) {
+    await deleteSinglePlantPhotoBestEffort({
+      userId: input.userId,
       plantId: input.plantId,
-      photoUrl: `${PLANT_PHOTOS_BUCKET}/${originalKey}`,
-      thumbnailUrl: `${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}`,
-      note: input.note ?? null,
-    }),
-  );
+      photoId,
+      originalExt: ext,
+    });
+    throw err;
+  }
 
   return { ok: true, photoEntry };
 }

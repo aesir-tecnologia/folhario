@@ -71,7 +71,9 @@ function makeFakeAdapter(): FakeAdapter {
     signedUrl: "https://example.test/signed-url",
   }));
   const deletePrefix = vi.fn(async () => undefined);
-  const listBuckets = vi.fn(async () => [] as Awaited<ReturnType<StorageAdapterShape["listBuckets"]>>);
+  const listBuckets = vi.fn(
+    async () => [] as Awaited<ReturnType<StorageAdapterShape["listBuckets"]>>,
+  );
   const listObjectsUnderPrefix = vi.fn(async () => [] as string[]);
 
   const asAdapter: StorageAdapterShape = {
@@ -93,182 +95,237 @@ function makeFakeAdapter(): FakeAdapter {
   };
 }
 
-describe.skipIf(!dbUrl)(
-  "Phase-02-08 Task 3 photo upload use-case + route",
-  () => {
-    const driver = postgres(dbUrl!, { prepare: false, max: 2, idle_timeout: 5 });
+describe.skipIf(!dbUrl)("Phase-02-08 Task 3 photo upload use-case + route", () => {
+  const driver = postgres(dbUrl!, { prepare: false, max: 2, idle_timeout: 5 });
 
-    let userId: string;
-    let plantId: string;
-    let uploadPhoto: typeof import("@contexts/catalog/application/upload-photo").uploadPhoto;
-    let setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
-    let validJpegBuffer: Buffer;
+  let userId: string;
+  let plantId: string;
+  let uploadPhoto: typeof import("@contexts/catalog/application/upload-photo").uploadPhoto;
+  let setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
+  let validJpegBuffer: Buffer;
 
-    beforeAll(async () => {
-      ({ uploadPhoto } = await import("@contexts/catalog/application/upload-photo"));
-      ({ __setStorageAdapterForTests: setStorageAdapterForTests } = await import(
-        "@contexts/catalog/infrastructure/photo-storage"
-      ));
+  beforeAll(async () => {
+    ({ uploadPhoto } = await import("@contexts/catalog/application/upload-photo"));
+    ({ __setStorageAdapterForTests: setStorageAdapterForTests } =
+      await import("@contexts/catalog/infrastructure/photo-storage"));
 
-      // Insert a fixture user + plant. Phase 04 wires real signup; here we
-      // bypass via service-role insert for the test fixture.
-      const userRow = await driver`
+    // Insert a fixture user + plant. Phase 04 wires real signup; here we
+    // bypass via service-role insert for the test fixture.
+    const userRow = await driver`
         INSERT INTO users (email, name, timezone, trial_source)
         VALUES (${"upload-" + randomUUID() + "@test.local"}, 'Upload Test', 'America/Sao_Paulo', 'organic')
         RETURNING id
       `;
-      userId = userRow[0]!.id as string;
+    userId = userRow[0]!.id as string;
 
-      const plantRow = await driver`
+    const plantRow = await driver`
         INSERT INTO plants (user_id, name)
         VALUES (${userId}, 'Test Plant')
         RETURNING id
       `;
-      plantId = plantRow[0]!.id as string;
+    plantId = plantRow[0]!.id as string;
 
-      // Generate a tiny valid JPEG so the success path can run end-to-end.
-      validJpegBuffer = await sharp({
-        create: {
-          width: 8,
-          height: 8,
-          channels: 3,
-          background: { r: 100, g: 200, b: 100 },
-        },
-      })
-        .jpeg({ quality: 80 })
-        .toBuffer();
+    // Generate a tiny valid JPEG so the success path can run end-to-end.
+    validJpegBuffer = await sharp({
+      create: {
+        width: 8,
+        height: 8,
+        channels: 3,
+        background: { r: 100, g: 200, b: 100 },
+      },
+    })
+      .jpeg({ quality: 80 })
+      .toBuffer();
+  });
+
+  afterAll(async () => {
+    if (userId) {
+      await driver`DELETE FROM users WHERE id = ${userId}`;
+    }
+    await driver.end({ timeout: 5 });
+  });
+
+  afterEach(() => {
+    setStorageAdapterForTests(null);
+    vi.clearAllMocks();
+  });
+
+  it("rejects GPS-bearing buffer with validation_failed BEFORE any storage write", async () => {
+    const fake = makeFakeAdapter();
+    setStorageAdapterForTests(fake.asAdapter);
+
+    const exifrMod = await import("exifr");
+    const gpsFn = exifrMod.gps as unknown as ReturnType<typeof vi.fn>;
+    gpsFn.mockResolvedValueOnce({ latitude: -23.55052, longitude: -46.633308 });
+
+    const result = await uploadPhoto({
+      userId,
+      plantId,
+      buffer: validJpegBuffer,
+      contentType: "image/jpeg",
     });
 
-    afterAll(async () => {
-      if (userId) {
-        await driver`DELETE FROM users WHERE id = ${userId}`;
-      }
-      await driver.end({ timeout: 5 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("validation_failed");
+    }
+    // Defense in depth assertion: the adapter NEVER saw the bytes.
+    expect(fake.uploadObject).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversize buffer (MAX_UPLOAD_BYTES + 1 = 1_048_577) with validation_failed", async () => {
+    const fake = makeFakeAdapter();
+    setStorageAdapterForTests(fake.asAdapter);
+
+    const oversizeBuffer = Buffer.alloc(1_048_577);
+    const result = await uploadPhoto({
+      userId,
+      plantId,
+      buffer: oversizeBuffer,
+      contentType: "image/jpeg",
     });
 
-    afterEach(() => {
-      setStorageAdapterForTests(null);
-      vi.clearAllMocks();
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("validation_failed");
+    }
+    expect(fake.uploadObject).not.toHaveBeenCalled();
+  });
+
+  it("rejects a disallowed MIME type with validation_failed", async () => {
+    const fake = makeFakeAdapter();
+    setStorageAdapterForTests(fake.asAdapter);
+
+    const result = await uploadPhoto({
+      userId,
+      plantId,
+      buffer: validJpegBuffer,
+      contentType: "application/pdf",
     });
 
-    it("rejects GPS-bearing buffer with validation_failed BEFORE any storage write", async () => {
-      const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake.asAdapter);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("validation_failed");
+    }
+    expect(fake.uploadObject).not.toHaveBeenCalled();
+  });
 
-      const exifrMod = await import("exifr");
-      const gpsFn = exifrMod.gps as unknown as ReturnType<typeof vi.fn>;
-      gpsFn.mockResolvedValueOnce({ latitude: -23.55052, longitude: -46.633308 });
+  it("rejects an upload to a plant the user does not own with not_found", async () => {
+    const fake = makeFakeAdapter();
+    setStorageAdapterForTests(fake.asAdapter);
 
-      const result = await uploadPhoto({
+    const otherPlantId = randomUUID();
+    const result = await uploadPhoto({
+      userId,
+      plantId: otherPlantId,
+      buffer: validJpegBuffer,
+      contentType: "image/jpeg",
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(["not_found", "validation_failed"]).toContain(result.code);
+    }
+    expect(fake.uploadObject).not.toHaveBeenCalled();
+  });
+
+  it("CR-03: when DB insert fails after storage uploads, compensating delete fires for both buckets", async () => {
+    // Drop the plant between the ownership check and the UoW write so
+    // the photo_entries.plant_id FK violates and the UoW transaction
+    // rolls back. Storage uploads have already committed by then; the
+    // compensating delete must fire for both buckets.
+    const ephemeralPlant = await driver`
+        INSERT INTO plants (user_id, name)
+        VALUES (${userId}, 'Doomed Plant')
+        RETURNING id
+      `;
+    const doomedPlantId = ephemeralPlant[0]!.id as string;
+
+    const fake = makeFakeAdapter();
+    // Track the photoId mid-flight so we can assert deletePrefix was
+    // called with the original + thumbnail keys.
+    let observedOriginalKey = "";
+    let observedThumbnailKey = "";
+    fake.uploadObject.mockImplementation(async ({ bucket, objectKey }) => {
+      if (bucket === "plant-photos") observedOriginalKey = objectKey;
+      if (bucket === "plant-thumbnails") observedThumbnailKey = objectKey;
+      return { bucket, objectKey };
+    });
+    fake.uploadObject.mockImplementationOnce(async ({ bucket, objectKey }) => {
+      observedOriginalKey = objectKey;
+      // After the original upload completes, delete the plant so the
+      // FK violates when uploadPhoto reaches step 7. The ownership
+      // check at step 4 already passed (we're past it).
+      await driver`DELETE FROM plants WHERE id = ${doomedPlantId}`;
+      return { bucket, objectKey };
+    });
+    setStorageAdapterForTests(fake.asAdapter);
+
+    await expect(
+      uploadPhoto({
         userId,
-        plantId,
+        plantId: doomedPlantId,
         buffer: validJpegBuffer,
         contentType: "image/jpeg",
-      });
+      }),
+    ).rejects.toThrow();
 
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.code).toBe("validation_failed");
-      }
-      // Defense in depth assertion: the adapter NEVER saw the bytes.
-      expect(fake.uploadObject).not.toHaveBeenCalled();
+    expect(fake.uploadObject).toHaveBeenCalledTimes(2);
+    expect(observedOriginalKey).not.toBe("");
+    expect(observedThumbnailKey).not.toBe("");
+
+    const deleteCalls = fake.deletePrefix.mock.calls.map(
+      (c) => c[0] as { bucket: string; prefix: string },
+    );
+    expect(
+      deleteCalls.some((c) => c.bucket === "plant-photos" && c.prefix === observedOriginalKey),
+    ).toBe(true);
+    expect(
+      deleteCalls.some((c) => c.bucket === "plant-thumbnails" && c.prefix === observedThumbnailKey),
+    ).toBe(true);
+  });
+
+  it("successful upload calls uploadObject twice (original then thumbnail) and writes a PhotoEntry row", async () => {
+    const fake = makeFakeAdapter();
+    setStorageAdapterForTests(fake.asAdapter);
+
+    const result = await uploadPhoto({
+      userId,
+      plantId,
+      buffer: validJpegBuffer,
+      contentType: "image/jpeg",
     });
 
-    it("rejects an oversize buffer (MAX_UPLOAD_BYTES + 1 = 1_048_577) with validation_failed", async () => {
-      const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake.asAdapter);
+    expect(result.ok).toBe(true);
+    expect(fake.uploadObject).toHaveBeenCalledTimes(2);
 
-      const oversizeBuffer = Buffer.alloc(1_048_577);
-      const result = await uploadPhoto({
-        userId,
-        plantId,
-        buffer: oversizeBuffer,
-        contentType: "image/jpeg",
-      });
+    const firstCall = fake.uploadObject.mock.calls[0]?.[0] as { bucket: string; objectKey: string };
+    const secondCall = fake.uploadObject.mock.calls[1]?.[0] as {
+      bucket: string;
+      objectKey: string;
+    };
+    expect(firstCall.bucket).toBe("plant-photos");
+    expect(secondCall.bucket).toBe("plant-thumbnails");
+    // D-26 path shape — same key on both buckets, just different bucket.
+    expect(firstCall.objectKey).toMatch(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg$/);
+    expect(secondCall.objectKey).toMatch(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg$/);
+    expect(firstCall.objectKey).toBe(secondCall.objectKey);
 
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.code).toBe("validation_failed");
-      }
-      expect(fake.uploadObject).not.toHaveBeenCalled();
-    });
-
-    it("rejects a disallowed MIME type with validation_failed", async () => {
-      const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake.asAdapter);
-
-      const result = await uploadPhoto({
-        userId,
-        plantId,
-        buffer: validJpegBuffer,
-        contentType: "application/pdf",
-      });
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.code).toBe("validation_failed");
-      }
-      expect(fake.uploadObject).not.toHaveBeenCalled();
-    });
-
-    it("rejects an upload to a plant the user does not own with not_found", async () => {
-      const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake.asAdapter);
-
-      const otherPlantId = randomUUID();
-      const result = await uploadPhoto({
-        userId,
-        plantId: otherPlantId,
-        buffer: validJpegBuffer,
-        contentType: "image/jpeg",
-      });
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(["not_found", "validation_failed"]).toContain(result.code);
-      }
-      expect(fake.uploadObject).not.toHaveBeenCalled();
-    });
-
-    it("successful upload calls uploadObject twice (original then thumbnail) and writes a PhotoEntry row", async () => {
-      const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake.asAdapter);
-
-      const result = await uploadPhoto({
-        userId,
-        plantId,
-        buffer: validJpegBuffer,
-        contentType: "image/jpeg",
-      });
-
-      expect(result.ok).toBe(true);
-      expect(fake.uploadObject).toHaveBeenCalledTimes(2);
-
-      const firstCall = fake.uploadObject.mock.calls[0]?.[0] as { bucket: string; objectKey: string };
-      const secondCall = fake.uploadObject.mock.calls[1]?.[0] as { bucket: string; objectKey: string };
-      expect(firstCall.bucket).toBe("plant-photos");
-      expect(secondCall.bucket).toBe("plant-thumbnails");
-      // D-26 path shape — same key on both buckets, just different bucket.
-      expect(firstCall.objectKey).toMatch(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg$/);
-      expect(secondCall.objectKey).toMatch(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.jpg$/);
-      expect(firstCall.objectKey).toBe(secondCall.objectKey);
-
-      // PhotoEntry row exists in the catalog schema.
-      if (result.ok) {
-        const photoId = result.photoEntry.id;
-        const rows = await driver`
+    // PhotoEntry row exists in the catalog schema.
+    if (result.ok) {
+      const photoId = result.photoEntry.id;
+      const rows = await driver`
           SELECT id, plant_id, photo_url, thumbnail_url
           FROM photo_entries
           WHERE id = ${photoId}
         `;
-        expect(rows.length).toBe(1);
-        expect(rows[0]?.plant_id).toBe(plantId);
-        expect(rows[0]?.photo_url).toBeTruthy();
-        expect(rows[0]?.thumbnail_url).toBeTruthy();
+      expect(rows.length).toBe(1);
+      expect(rows[0]?.plant_id).toBe(plantId);
+      expect(rows[0]?.photo_url).toBeTruthy();
+      expect(rows[0]?.thumbnail_url).toBeTruthy();
 
-        // Cleanup the PhotoEntry row so the test is parallel/repeatable-safe.
-        await driver`DELETE FROM photo_entries WHERE id = ${photoId}`;
-      }
-    });
-  },
-);
+      // Cleanup the PhotoEntry row so the test is parallel/repeatable-safe.
+      await driver`DELETE FROM photo_entries WHERE id = ${photoId}`;
+    }
+  });
+});

@@ -117,9 +117,7 @@ export interface SignPlantPhotoInput {
   expiresInSeconds: number;
 }
 
-export async function signOriginalUrl(
-  input: SignPlantPhotoInput,
-): Promise<CreateSignedUrlResult> {
+export async function signOriginalUrl(input: SignPlantPhotoInput): Promise<CreateSignedUrlResult> {
   return getAdapter().createSignedUrl({
     bucket: PLANT_PHOTOS_BUCKET,
     objectKey: buildPlantPhotoObjectKey(input),
@@ -127,9 +125,7 @@ export async function signOriginalUrl(
   });
 }
 
-export async function signThumbnailUrl(
-  input: SignPlantPhotoInput,
-): Promise<CreateSignedUrlResult> {
+export async function signThumbnailUrl(input: SignPlantPhotoInput): Promise<CreateSignedUrlResult> {
   return getAdapter().createSignedUrl({
     bucket: PLANT_THUMBNAILS_BUCKET,
     objectKey: buildPlantThumbnailObjectKey(input),
@@ -147,4 +143,51 @@ export async function deleteAllPlantMediaForUser(userId: string): Promise<void> 
   const prefix = `${userId}/`;
   await adapter.deletePrefix({ bucket: PLANT_PHOTOS_BUCKET, prefix });
   await adapter.deletePrefix({ bucket: PLANT_THUMBNAILS_BUCKET, prefix });
+}
+
+/**
+ * CR-03 compensating deletion: remove a single photo's storage objects
+ * when the DB write fails after upload. Uses `deletePrefix` with the
+ * full canonical key — UUIDs guarantee no false positives. Errors are
+ * swallowed and logged: a failed compensating delete must not mask the
+ * original DB error the caller is rethrowing.
+ */
+export async function deleteSinglePlantPhotoBestEffort(input: {
+  userId: string;
+  plantId: string;
+  photoId: string;
+  originalExt: "jpg" | "png" | "webp";
+}): Promise<void> {
+  const adapter = getAdapter();
+  const originalKey = buildPlantPhotoObjectKey({
+    userId: input.userId,
+    plantId: input.plantId,
+    photoId: input.photoId,
+    ext: input.originalExt,
+  });
+  const thumbnailKey = buildPlantThumbnailObjectKey({
+    userId: input.userId,
+    plantId: input.plantId,
+    photoId: input.photoId,
+    ext: "jpg",
+  });
+  try {
+    await adapter.deletePrefix({ bucket: PLANT_PHOTOS_BUCKET, prefix: originalKey });
+  } catch (err) {
+    console.warn(
+      `[catalog/photo-storage] compensating delete failed for ${PLANT_PHOTOS_BUCKET}/${originalKey}:`,
+      err,
+    );
+  }
+  try {
+    await adapter.deletePrefix({
+      bucket: PLANT_THUMBNAILS_BUCKET,
+      prefix: thumbnailKey,
+    });
+  } catch (err) {
+    console.warn(
+      `[catalog/photo-storage] compensating delete failed for ${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}:`,
+      err,
+    );
+  }
 }

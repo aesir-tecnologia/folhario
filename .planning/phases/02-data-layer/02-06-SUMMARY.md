@@ -58,10 +58,12 @@ patterns-established:
   - "DB-backed primitives accept `DbClient` (the wider singleton) so callers can choose to compose with `withUnitOfWork` (which yields a `TransactionalDb`) or use the plain `db` singleton. Drizzle's `db.transaction` works on both."
   - "Cursor encode/decode test uses Buffer.from(JSON.stringify(...)).toString('base64') for the raw fixture — same as the helper itself — so the test exercises the format contract directly without re-implementing encoding."
 
-requirements-completed: [INFRA-09, INFRA-21, INFRA-22]
-# Note: INFRA-03 was completed in 02-05 (no-Drizzle-in-routes guard); 02-09 will
-# verify INFRA-03 end-to-end via the diagnostic route. The plan frontmatter
-# included INFRA-03 by traceability but the canonical completion landed earlier.
+requirements-completed: [INFRA-03, INFRA-09, INFRA-21, INFRA-22]
+# Note: INFRA-03 (no-Drizzle-in-routes) was already marked complete in 02-05's
+# SUMMARY (`requirements-completed: [INFRA-03, INFRA-04]`). It is repeated here
+# to match the plan's `requirements:` frontmatter exactly for orchestrator
+# traceability. `requirements mark-complete` is idempotent on already-marked
+# IDs. The end-to-end verification via the diagnostic route lands in 02-09.
 
 # Metrics
 duration: ~13min

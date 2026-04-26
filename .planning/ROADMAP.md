@@ -72,7 +72,7 @@ Plans:
 - [x] 02-02-PLAN.md -- Core schema modules and migration-only registry
 
 **Wave 3 _(blocked on Wave 2 completion)_**
-- [ ] 02-03-PLAN.md -- Operational schema, generated migration, RLS/custom SQL, and domain events
+- [x] 02-03-PLAN.md -- Operational schema, generated migration, RLS/custom SQL, and domain events
 
 **Wave 4 _(blocked on Wave 3 completion)_**
 - [ ] 02-04-PLAN.md -- Seed data, private storage buckets, and `pnpm db:setup`

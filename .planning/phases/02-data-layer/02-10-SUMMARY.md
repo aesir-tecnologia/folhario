@@ -44,15 +44,28 @@ key-files:
     - .planning/phases/02-data-layer/02-10-SUMMARY.md
   modified:
     - .github/workflows/ci.yml
-    - .planning/REQUIREMENTS.md  # owned by Task 3 (paused at checkpoint)
-    - .planning/ROADMAP.md       # owned by Task 3 (paused at checkpoint)
+    - .planning/REQUIREMENTS.md
+    - .planning/ROADMAP.md
+  deleted:
+    - .planning/phases/02-data-layer/deferred-items.md  # stale — env-synthesis fix landed at 105a090 before this plan's base
 
 key-decisions:
   - "DB setup step placed between Unit tests and Integration tests, not before Unit tests. Unit tests use mocks (`tests/unit/setup-env.ts`) and never hit the DB; running migrations before them wastes CI time. Integration tests do hit the DB. Build doesn't need DB. Playwright reuses the migrated DB after integration tests run."
   - "Same env-var block applied to the new DB-setup step as the existing Integration / Build / Playwright steps — DATABASE_URL + DATABASE_POOL_URL + SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY + IDENTIFICATION_PROVIDER_MODE — to avoid silent skew between steps that all need the postgres:17-alpine service container."
   - "Checkpoint sits between Task 2 (verification + SUMMARY) and Task 3 (REQUIREMENTS + ROADMAP edits). The plan markers say `type=auto` but the orchestrator's wave-7 prompt designates Task 3 as the user-verify stop. Honored by writing/committing the SUMMARY first, then stopping for human approval before mutating planning metadata."
 
-requirements-completed: []  # Task 3 (REQUIREMENTS marker flips) is gated on the human-verify checkpoint and lands in the continuation commit.
+requirements-completed:
+  - INFRA-03
+  - INFRA-04
+  - INFRA-05
+  - INFRA-06
+  - INFRA-07
+  - INFRA-08
+  - INFRA-09
+  - INFRA-19  # server pipeline; in-browser compression UAT deferred
+  - INFRA-21
+  - INFRA-22
+  - INFRA-24
 
 # Metrics
 duration: ~10min
@@ -65,11 +78,11 @@ completed: 2026-04-26
 
 ## Performance
 
-- **Duration:** ~10 minutes (Tasks 1–2; Task 3 is gated on user approval at the checkpoint)
+- **Duration:** ~10 minutes (Tasks 1–2 in the original session; Task 3 metadata reconciliation landed in the post-checkpoint continuation commit)
 - **Started:** 2026-04-26T18:08:00Z (worktree reset)
-- **Tasks:** 2 of 3 (Task 3 paused at checkpoint)
-- **Files modified:** 1 source (`.github/workflows/ci.yml`)
-- **Commits:** 1 task commit + 1 SUMMARY commit (Task 3 metadata edits land in the continuation commit)
+- **Tasks:** 3 of 3
+- **Files modified:** 3 (`.github/workflows/ci.yml`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`); 1 file deleted (`.planning/phases/02-data-layer/deferred-items.md`)
+- **Commits:** 3 task commits + 2 SUMMARY commits (Task 1: `beaf97e`; Task 2 SUMMARY: `ed4d17f`; Task 3: `943e76d`; Task 3 SUMMARY finalize: this commit)
 
 ## Verification commands and outputs
 
@@ -151,7 +164,8 @@ The Plan 02-05.5 RLS-denial test at `tests/integration/rls-real-jwt.integration.
 |---|------|---------|------|
 | 1 | ci   | `ci(02-10): add pnpm db:setup before integration tests` | `beaf97e` |
 | 2 | docs | `docs(02-10): write Phase 2 final verification SUMMARY` | (this commit) |
-| 3 | docs | `docs(02-10): mark Phase 2 requirements complete + reconcile ROADMAP` | (deferred to continuation after human-verify checkpoint) |
+| 3 | docs | `docs(02-10): mark Phase 2 requirements complete + reconcile ROADMAP` | `943e76d` |
+| 4 | docs | `docs(02-10): finalize SUMMARY after Task 3 metadata reconciliation` | (this commit) |
 
 ## Files Created/Modified
 
@@ -160,10 +174,11 @@ The Plan 02-05.5 RLS-denial test at `tests/integration/rls-real-jwt.integration.
 
 ### Modified
 - `.github/workflows/ci.yml` — added `DB setup (migrations + seeds + RLS guard + seed guard) per D-11` step between Unit tests and Integration tests; preserves all existing env-var blocks and the postgres:17-alpine service container
+- `.planning/REQUIREMENTS.md` — flipped `[x]` markers for the 11 Phase 2 INFRA requirements; added the inline `(server pipeline; in-browser compression UAT deferred — see 02-10-SUMMARY.md INFRA-19 scoping note)` note next to INFRA-19's `[x]`; flipped the matching 11 traceability-table rows from `Pending` to `Complete` with cite-back plan IDs (e.g. `Complete (02-05 + 02-06)` for INFRA-03)
+- `.planning/ROADMAP.md` — Phase 2 progress-table row updated from `0/10 | Ready to execute | -` to `11/11 | Complete | 2026-04-26`; cross-cutting constraints list extended with three new bullets: Plan 02-05.5 insertion rationale, INFRA-19 server-pipeline scoping, and the LOW-severity `partner_code` no-FK trade-off rationale; line 16 phase checkbox `[ ] **Phase 2:**` deliberately left untouched (orchestrator owns that flip)
 
-### Deferred to Task 3 (post-checkpoint)
-- `.planning/REQUIREMENTS.md` — flip `[x]` markers for INFRA-03 / INFRA-04 / INFRA-05 / INFRA-06 / INFRA-07 / INFRA-08 / INFRA-09 / INFRA-19 / INFRA-21 / INFRA-22 / INFRA-24; add the inline `(server pipeline; in-browser compression UAT deferred — see 02-10-SUMMARY.md INFRA-19 scoping note)` note next to INFRA-19's `[x]`
-- `.planning/ROADMAP.md` — confirm Phase 2 plan list reads `**Plans**: 11 plans` (10 + 02-05.5); add Phase 2 summary note about the `/api/v1/diagnostics/consent` route (`_diagnostics` is ignored by Next App Router); add the Plan 02-05.5 insertion rationale; add the LOW-severity `users.partner_code` -> `partner_stores.code` no-FK note (intentional: partner code is free-text at signup and may not match an active partner store row when the user signs up off-channel — planning-doc note only, no schema change)
+### Deleted
+- `.planning/phases/02-data-layer/deferred-items.md` — stale Plan 02-05.5 deferred-items note about `NEXT_PUBLIC_SUPABASE_URL` synthesis. The fix landed at commit `105a090` (`fix(02-04): synthesize NEXT_PUBLIC_SUPABASE_URL when [api] disabled` — `scripts/sync-supabase-env.sh` lines 43–44) before this plan's base, so the deferred note is no longer accurate. Verified by `git log --oneline 105a090 -1 -- scripts/sync-supabase-env.sh` returning the expected commit and `git grep` confirming the synthesis lines are present in the worktree's tree.
 
 ## Decisions Made
 
@@ -208,19 +223,74 @@ None. All Phase 2 surfaces ship with real wiring (the diagnostic-consent route w
 
 None. The new CI step exercises the same code paths the integration tests already cover; it does not add network endpoints, auth surfaces, file-access patterns, or schema changes.
 
+## Task 3 outcome — planning metadata reconciliation
+
+Task 3 ran in the post-checkpoint continuation session after the user approved the Task 2 verification record. All three planning surfaces were updated atomically in commit `943e76d` (`docs(02-10): mark Phase 2 requirements complete + reconcile ROADMAP`).
+
+### REQUIREMENTS.md — 11 markers flipped + INFRA-19 inline note + 11 traceability rows reconciled
+
+| ID | Checkbox | Traceability table |
+|----|----------|--------------------|
+| INFRA-03 | `[x]` | `Complete (02-05 + 02-06)` |
+| INFRA-04 | `[x]` | `Complete (02-05)` |
+| INFRA-05 | `[x]` | `Complete (02-02 + 02-03)` |
+| INFRA-06 | `[x]` | `Complete (02-04 + 02-08)` |
+| INFRA-07 | `[x]` | `Complete (02-07)` |
+| INFRA-08 | `[x]` | `Complete (02-03 + 02-05.5)` |
+| INFRA-09 | `[x]` | `Complete (02-06)` |
+| INFRA-19 | `[x]` *(server pipeline; in-browser compression UAT deferred — see 02-10-SUMMARY.md INFRA-19 scoping note)* | `Complete (02-08; server pipeline — in-browser compression UAT deferred per 02-10-SUMMARY)` |
+| INFRA-21 | `[x]` | `Complete (02-06)` |
+| INFRA-22 | `[x]` | `Complete (02-06)` |
+| INFRA-24 | `[x]` | `Complete (02-04)` |
+
+The traceability-table edits matter as much as the checkbox flips: the table at REQUIREMENTS.md lines 325+ is the orchestrator's source of truth for completion status, separate from the `[x]` boxes at the top of the file. Leaving the 11 rows as `Pending` while the boxes were `[x]` would have been the exact drift the verifier checks for.
+
+### ROADMAP.md — three reconciliation additions + progress-table row
+
+1. **Cross-cutting constraints list (Phase 2 section)** extended with three new bullets:
+   - Plan 02-05.5 insertion rationale (HIGH-1 from `02-REVIEWS.md`).
+   - INFRA-19 server-pipeline scoping with explicit `MAX_UPLOAD_BYTES = 1_048_576` reference and UAT-defer pointer.
+   - LOW-severity `users.partner_code` → `partner_stores.code` no-FK trade-off rationale (raised in `02-REVIEWS.md`).
+2. **Progress table row** flipped from `0/10 | Ready to execute | -` to `11/11 | Complete | 2026-04-26` (factual: the SUMMARY for plan 02-10 exists on disk; status is plan-work complete, separate from the line 16 phase-launch checkbox which the orchestrator owns).
+3. **`/api/v1/diagnostics/consent` route name note** at line 98 was already present from a prior plan, so no duplicate added — the cross-cutting block now coherently lists all four Phase 2 narrative notes.
+
+The line 16 `- [ ] **Phase 2: Data Layer & Bounded Contexts**` checkbox is intentionally untouched. That toggle is the orchestrator's `phase.complete` flow signal.
+
+### deferred-items.md — deleted
+
+`.planning/phases/02-data-layer/deferred-items.md` was deleted because the `NEXT_PUBLIC_SUPABASE_URL` synthesis it documented was already shipped at commit `105a090` (`fix(02-04): synthesize NEXT_PUBLIC_SUPABASE_URL when [api] disabled`), which landed BEFORE this plan's base. Pre-deletion verification:
+
+```
+$ git log --oneline 105a090 -1 -- scripts/sync-supabase-env.sh
+105a090 fix(02-04): synthesize NEXT_PUBLIC_SUPABASE_URL when [api] disabled
+$ git grep -n NEXT_PUBLIC_SUPABASE_URL scripts/sync-supabase-env.sh
+scripts/sync-supabase-env.sh:25:  --override-name api.url=NEXT_PUBLIC_SUPABASE_URL \
+scripts/sync-supabase-env.sh:43:if ! grep -q '^NEXT_PUBLIC_SUPABASE_URL=' "$TMP"; then
+scripts/sync-supabase-env.sh:44:  echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321" >> "$TMP"
+```
+
+The fallback synthesis is on disk in the worktree's tree — the deferred note was stale, deletion is safe, and the file was removed via `trash` + `git rm` per project tooling rules.
+
 ## Next Phase Readiness
 
-- **Pending Task 3 (post-checkpoint):** REQUIREMENTS.md `[x]` markers + ROADMAP.md plan-count + summary notes. The orchestrator owns STATE.md and ROADMAP final phase-status flip; the executor only updates the per-phase plan list and traceability table.
-- **Phase 3 (Design System):** ready to start once Task 3 lands. Phase 2's data layer + image pipeline + auth + idempotency + cursor pagination + storage adapter + diagnostic smoke route are all CI-verified.
+- **Phase 3 (Design System):** ready to start. Phase 2's data layer + image pipeline + auth + idempotency + cursor pagination + storage adapter + diagnostic smoke route are all CI-verified, and the planning metadata has caught up to disk state.
 - **Phase 4 idempotency cleanup TODO:** documented above (Section 4 of required documented sections).
 - **Phase 12 source-map upload:** still deferred (Phase 1 SC-4 amendment, Plan 01-08 SUMMARY).
+- **Orchestrator follow-up:** the line 16 `- [ ] **Phase 2:**` ROADMAP checkbox flip is the orchestrator's `phase.complete` flow's responsibility; STATE.md is also orchestrator-owned and was deliberately not touched here.
 
 ## Self-Check: PASSED
 
 - FOUND: `.planning/phases/02-data-layer/02-10-SUMMARY.md`
 - FOUND: `.github/workflows/ci.yml` (with `pnpm db:setup` step)
 - FOUND: commit `beaf97e` — `ci(02-10): add pnpm db:setup before integration tests`
+- FOUND: commit `ed4d17f` — `docs(02-10): write Phase 2 final verification SUMMARY` (Task 2)
+- FOUND: commit `943e76d` — `docs(02-10): mark Phase 2 requirements complete + reconcile ROADMAP` (Task 3)
+- FOUND: 11 `[x]` markers for INFRA-03/04/05/06/07/08/09/19/21/22/24 in `.planning/REQUIREMENTS.md`
+- FOUND: 11 `Complete (...)` rows in `.planning/REQUIREMENTS.md` traceability table for the same IDs
+- FOUND: `11/11 | Complete | 2026-04-26` row for Phase 2 in `.planning/ROADMAP.md`
+- FOUND: `Plan 02-05.5 was inserted in revision`, `INFRA-19 in Phase 2 covers the server pipeline`, and `partner_code` trade-off bullets in the ROADMAP cross-cutting list
+- VERIFIED MISSING: `.planning/phases/02-data-layer/deferred-items.md` (deleted as planned; recorded in `git rm` of commit `943e76d`)
 
 ---
 *Phase: 02-data-layer*
-*Completed: 2026-04-26 (Tasks 1–2; Task 3 pending checkpoint approval)*
+*Completed: 2026-04-26 (Tasks 1–3 — full plan complete)*

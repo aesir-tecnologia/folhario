@@ -75,11 +75,11 @@ Plans:
 - [x] 02-03-PLAN.md -- Operational schema, generated migration, RLS/custom SQL, and domain events
 
 **Wave 4 _(blocked on Wave 3 completion)_**
-- [ ] 02-04-PLAN.md -- Seed data, private storage buckets, and `pnpm db:setup`
-- [ ] 02-05-PLAN.md -- Runtime DB client, UnitOfWork, repositories, and no-Drizzle route guards
+- [x] 02-04-PLAN.md -- Seed data, private storage buckets, and `pnpm db:setup`
+- [x] 02-05-PLAN.md -- Runtime DB client, UnitOfWork, repositories, and no-Drizzle route guards
 
 **Wave 5 _(blocked on Wave 4 DB layer completion)_**
-- [ ] 02-05.5-PLAN.md -- Real-Supabase-JWT RLS denial proof (defense-in-depth verification)
+- [x] 02-05.5-PLAN.md -- Real-Supabase-JWT RLS denial proof (defense-in-depth verification)
 - [ ] 02-06-PLAN.md -- API convention helpers: Zod, cursor pagination, and idempotency
 - [ ] 02-07-PLAN.md -- AuthAdapter, JWT verification, current-user helper, and API-aware proxy
 

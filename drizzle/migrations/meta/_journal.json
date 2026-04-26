@@ -8,6 +8,13 @@
       "when": 1777220218174,
       "tag": "0000_phase_02_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777220252423,
+      "tag": "0001_phase_02_rls_policies",
+      "breakpoints": true
     }
   ]
 }

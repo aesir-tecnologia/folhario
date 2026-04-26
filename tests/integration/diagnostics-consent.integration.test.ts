@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
@@ -231,10 +231,6 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
 
   function reqUrl(path: string): string {
     return `https://example.test${path}`;
-  }
-
-  function bodyHash(body: unknown): string {
-    return createHash("sha256").update(JSON.stringify(body)).digest("hex");
   }
 
   it("POST without bearer returns 401 unauthenticated", async () => {

@@ -1,8 +1,8 @@
 # Phase 4: IAM — Auth, Verification, Consent - Context
 
 **Gathered:** 2026-04-26 (power mode)
-**Status:** 27/30 answered — 3 open questions to resolve before plan-phase
-**Source:** Synthesized from `.planning/phases/04-iam-auth-verification-consent/04-QUESTIONS.json` (90% answered, all unanswered set to "Other" without text)
+**Status:** 30/30 answered — review-adjusted; prior Q-02/Q-06/Q-25 open questions resolved here
+**Source:** Synthesized from `.planning/phases/04-iam-auth-verification-consent/04-QUESTIONS.json` (90% answered, all unanswered set to "Other" without text) plus direct review corrections on 2026-04-26
 
 <domain>
 ## Phase Boundary
@@ -31,34 +31,34 @@ This phase ALSO onboards two infrastructure services because Phase 4 is their fi
 
 ### Supabase Auth Integration Boundary
 
-- **D-01 (Q-01):** Auth backend = **Supabase Auth (full)**. Use `supabase.auth.signUp` / `signInWithPassword` / `signInWithOAuth` / `updateUser` / `admin.*` end-to-end. Accept Supabase-issued JWT verified via Phase 2 D-33 JWKS. Lean on Supabase OAuth for Google. Phase 4 wires custom email dispatch via Auth Hooks (D-02 below). Minimal divergence from Phase 2 commitments.
-- **D-02 (Q-02): ⚠ OPEN — see Open Questions below.** Email dispatch path (Supabase Auth Hook → Inngest → Resend, custom SMTP, or fully custom tokens) — load-bearing decision; entangled with D-06.
-- **D-03 (Q-03):** **Application-level signup endpoint orchestrates everything.** `POST /api/v1/iam/signup` calls `supabase.auth.admin.createUser`, then in the same DB transaction writes `public.users` (full row with age_confirmed_at, timezone, partner_code, trial_source) + ConsentLog × 2 (D-24) + Subscription (status=trialing). Phase 2 D-35 trigger remains as **safety net only** (fires only if no `public.users` row exists for the auth.users id). Explicit, transactional, debug-friendly. Keeps repository ownership clean.
-- **D-04 (Q-04):** **Mandatory post-callback completion screen for Google OAuth.** After Google OAuth callback, route to `/auth/oauth-complete`. Page collects age confirmation ≥13, T&C acceptance, privacy-policy acceptance, timezone (auto-detected via `Intl.DateTimeFormat().resolvedOptions().timeZone`, editable), and optional partner code. Submitting writes the missing `public.users` fields + ConsentLog × 2 + Subscription. Until submitted, every other route redirects back to `/auth/oauth-complete`. Tracked via `User.age_confirmed_at IS NULL` ⇒ incomplete; gate page checks this column.
-- **D-05 (Q-05):** **Per-device JWT semantics: Supabase session = device.** Each Supabase auth session represents one device. Logout calls `supabase.auth.signOut({scope: 'local'})` killing only this session's refresh token. Phase 8 will tie `PushSubscription.device_id` to session_id. JWT shape unchanged from Phase 2 (Supabase JWT only, no custom claims for device_id).
+- **D-01 (Q-01):** Auth backend = **Supabase Auth (full)**. Use Supabase Auth for credential storage, password hashing, OAuth, JWT issuance, refresh-token sessions, and admin password updates. Phase 4 uses `admin.createUser`, `signInWithPassword`, `signInWithOAuth`, `updateUser`, and `admin.*`; it does **not** use Supabase-hosted auth emails. Accept Supabase-issued JWT verified via Phase 2 D-33 JWKS. Lean on Supabase OAuth for Google. Minimal divergence from Phase 2 commitments.
+- **D-02 (Q-02):** **App-owned auth email events → Inngest → Resend.** Do NOT use Supabase Auth email hooks, Supabase SMTP templates, or Supabase-hosted verification/reset emails in Phase 4. Supabase Auth remains the credential/JWT provider; Folhário owns the product email-token layer. Supabase email confirmations stay disabled for the product flow; `public.users.email_verified_at` enforces Folhário verification. Signup/resend/reset use IAM use-cases to mint hashed app tokens, then emit `notifications/email.requested` for `notifications/send-email` to render pt-BR React Email templates and send via Resend. This preserves NOTIF-01's single transactional-email path and avoids relying on Supabase mailer behavior that conflicts with the authenticated-unverified blocker.
+- **D-03 (Q-03):** **Application-level signup endpoint orchestrates everything.** `POST /api/v1/iam/signup` calls `supabase.auth.admin.createUser({ email, password, email_confirm: true })` to create a credential record without Supabase sending email, then in the same application DB transaction writes `public.users` (full row with `email_verified_at = NULL`, age_confirmed_at, timezone, partner_code, trial_source) + ConsentLog × 2 (D-24) + Subscription (status=trialing) + an `email_verification_tokens` row. After the DB transaction commits, it emits the verification email event and mints/sets the Supabase session for the current device. Phase 2 D-35 trigger remains as **safety net only** (fires only if no `public.users` row exists for the auth.users id). If the DB transaction fails after `auth.users` creation, the endpoint compensates with `supabase.auth.admin.deleteUser(user.id)`. Explicit, transactional, debug-friendly. Keeps repository ownership clean.
+- **D-04 (Q-04):** **Mandatory post-callback completion screen for Google OAuth.** After Google OAuth callback, route to `/auth/oauth-complete`. Page collects age confirmation ≥13, T&C acceptance, privacy-policy acceptance, timezone (auto-detected via `Intl.DateTimeFormat().resolvedOptions().timeZone`, editable), and optional partner code. Submitting writes the missing `public.users` fields + ConsentLog × 2 + Subscription and sets `public.users.email_verified_at` immediately because Google OAuth accounts are treated as pre-verified by Phase 4 success criterion 2. Until submitted, every other route redirects back to `/auth/oauth-complete`. Tracked via `User.age_confirmed_at IS NULL` ⇒ incomplete; gate page checks this column.
+- **D-05 (Q-05):** **Per-device JWT semantics: Supabase session = device.** Each Supabase auth session represents one device. Web transport may use Supabase SSR cookies or an Authorization bearer depending on the adapter, but Folhário never creates an app-owned server session table. Logout calls `supabase.auth.signOut({scope: 'local'})` killing only this session's refresh token. Phase 8 will tie `PushSubscription.device_id` to session_id. JWT shape unchanged from Phase 2 (Supabase JWT only, no custom claims for device_id).
 
 ### Email Verification Flow
 
-- **D-06 (Q-06): ⚠ OPEN — see Open Questions below.** Verification token mechanism (Supabase confirmation_token via verifyOtp, custom verification_tokens table, or magic-link OTP) — entangled with D-02.
-- **D-07 (Q-07):** **Server route `/auth/verify?token=...` validates and redirects.** Server-side handler validates token via `supabase.auth.verifyOtp`, sets `public.users.email_verified_at`, redirects to `/`. Server-side handler keeps the verification check off the client and gives us a clean place to fire PostHog `signup_completed` server-side via `posthog-node`.
-- **D-08 (Q-08):** **Resend-verification invalidates prior token, mints new.** Calls `supabase.auth.resend({type: 'signup'})` which invalidates the prior token and emits a new one (single-token-active rule). Combine with per-user rate-limit (1 resend per minute) using the same throttle backend as D-12 to defend against email-flood + Resend cost spike.
+- **D-06 (Q-06):** **Custom `email_verification_tokens` table.** Store only `sha256(token)` plus `user_id`, `expires_at`, `consumed_at`, `created_at`, and `sent_to_email`. Raw tokens exist only in the email URL. Token expiry: 24h. Single active token per user: minting a new verification token marks prior unused tokens consumed/revoked in the same transaction. This keeps the authenticated-unverified app blocker possible while Supabase `auth.users.email_confirmed_at` remains an internal login-enablement detail, not the product verification source of truth.
+- **D-07 (Q-07):** **Server route `/auth/verify?token=...` validates and redirects.** Server-side handler validates the app token hash in a DB transaction, marks the token consumed, sets `public.users.email_verified_at`, redirects to `/`, and fires PostHog `signup_completed` server-side via `posthog-node`. If the current browser has the signup/login session, the blocker clears immediately; if the link is opened elsewhere, verification still succeeds and the user can log in normally.
+- **D-08 (Q-08):** **Resend-verification invalidates prior app token, mints new, emits email event.** `POST /api/v1/iam/resend-verification` requires the current authenticated unverified user, revokes prior unused verification tokens, inserts a fresh token, and emits `notifications/email.requested`. Combine with per-user rate-limit (1 resend per minute) using the same throttle backend as D-12 to defend against email-flood + Resend cost spike.
 
 ### Password Reset Flow
 
-- **D-09 (Q-09):** **Supabase `resetPasswordForEmail` (built-in) for token mechanism.** Supabase issues + hashes + expires the reset token. Configure Supabase token expiry to 1h (per AUTH-11). Auth Hook from D-02 renders the email body with our pt-BR React Email template + sends via Resend. Single token mechanism shared with verification.
-- **D-10 (Q-10):** **Server route `/auth/reset?token=...` renders new-password form.** Server-side route renders the new-password form (current-password NOT required for reset flow), submitting to `POST /api/v1/iam/password/reset` which validates the token + updates the password via `supabase.auth.updateUser`. Brand UX, full pt-BR. Existing JWTs remain valid (no global revocation per AUTH-11/AUTH-12).
-- **D-11 (Q-11):** **"Always 200" implementation: enqueue first, look up later.** `POST /api/v1/iam/password/reset-request` immediately responds 200 + emits `iam/password-reset-requested` Inngest event with the email. Inngest function looks up user → if exists AND has password (not OAuth-only) → trigger Supabase `resetPasswordForEmail` (Auth Hook → Resend). Async, no timing-attack signal, no enumeration leak.
+- **D-09 (Q-09):** **Custom `password_reset_tokens` table.** Store only `sha256(token)` plus `user_id`, `expires_at`, `consumed_at`, `created_at`, and `sent_to_email`. Token expiry: 1h per AUTH-11. Single active token per user: minting a new reset token revokes prior unused reset tokens. This avoids Supabase recovery-session coupling while still using Supabase Auth for password storage.
+- **D-10 (Q-10):** **Server route `/auth/reset?token=...` renders new-password form.** Server-side route validates only enough to show an expired/invalid state without leaking account existence, then renders the new-password form (current-password NOT required for reset flow). Submitting to `POST /api/v1/iam/password/reset` validates and consumes the app token in a DB transaction, then updates the password via `supabase.auth.admin.updateUserById(user_id, { password })`. Do not call global sign-out/revoke; existing access JWTs remain valid until normal expiry per AUTH-12.
+- **D-11 (Q-11):** **"Always 200" implementation: enqueue first, look up later.** `POST /api/v1/iam/password/reset-request` immediately responds 200 + emits `iam/password-reset-requested` Inngest event with the email. Inngest function looks up user → if exists AND has password (not OAuth-only) → revokes prior unused reset tokens, inserts a fresh hashed token, and emits `notifications/email.requested` for the password-reset template. Async, no timing-attack signal, no enumeration leak.
 
 ### Per-IP Auth Throttle
 
 - **D-12 (Q-12):** **Postgres atomic counter table for throttle storage.** Table `auth_throttle (ip TEXT, endpoint TEXT, window_start INT8, count INT, PRIMARY KEY (ip, endpoint, window_start))`. UPSERT pattern: `INSERT ... ON CONFLICT (ip, endpoint, window_start) DO UPDATE SET count = auth_throttle.count + 1 RETURNING count`. No new dependency. Cleanup via Inngest cron (or partial index TTL). IP source: `x-forwarded-for` first hop (Vercel sets this).
 - **D-13 (Q-13):** **Fixed bucket per minute** for throttle window. `window_start = floor(now / 60s)`. Primary key `(ip, endpoint, window_start)` makes the UPSERT trivial. Boundary-burst risk accepted as practical-impact-low.
 - **D-14 (Q-14):** **Thresholds: 5 attempts/minute per (ip, endpoint), lockout for 5 minutes after.** Strict but tolerant. CGNAT shared IPs (common in Brazil) may occasionally trip — mitigated by 5-minute lockout (not hours).
-- **D-15 (Q-15):** **Failed-only counting.** Increment counter only on failed signup (validation/dup-email/Supabase reject), failed login (`invalid_credentials` 401), or failed OAuth callback (Supabase OAuth error). Successful logins do not consume the failure budget (per AUTH-10).
+- **D-15 (Q-15):** **Signup counts submitted attempts; login/OAuth count failures.** Signup checks and increments the per-IP bucket before auth user creation so a client cannot flood verification emails with successful signups. Login increments only on `invalid_credentials`/Supabase reject; successful logins do not consume the failure budget (per AUTH-10). OAuth callback increments only on Supabase OAuth error.
 
 ### Inngest Onboarding (first async consumer)
 
-- **D-16 (Q-16):** **Phase 4 implements only `notifications/send-email`; stubs the other 7 MVP functions.** Phase 4 fully implements `notifications/send-email` (consumes Auth Hook event → Resend). The other 7 functions (`care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-push`) are stub-registered with handlers that return `{status: 'not_implemented'}`. Inngest dashboard shows the full topology immediately. Each later phase replaces its stub with a real handler.
+- **D-16 (Q-16):** **Phase 4 implements only `notifications/send-email`; stubs the other 7 MVP functions.** Phase 4 fully implements `notifications/send-email` (consumes Folhário `notifications/email.requested` events → Resend). The other 7 functions (`care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-push`) are stub-registered with handlers that return `{status: 'not_implemented'}`. Inngest dashboard shows the full topology immediately. Each later phase replaces its stub with a real handler.
 - **D-17 (Q-17):** **Per-context exports + central registry pattern.** Each context exports `src/contexts/{ctx}/inngest/functions.ts` returning an array of Inngest functions. `src/shared/inngest/registry.ts` imports each context's array and concatenates. `src/app/api/inngest/route.ts` calls `serve({ functions: registry })`. Clean ownership per Phase 2 D-01 / PRD §3, single serve().
 
 ### Resend & React Email Onboarding
@@ -69,14 +69,14 @@ This phase ALSO onboards two infrastructure services because Phase 4 is their fi
 
 ### Verification Gate Enforcement
 
-- **D-21 (Q-21):** **API: shared `requireVerifiedUser()` helper. UI: server-component check at root layout.** API layer: `requireVerifiedUser(req)` helper called explicitly by every gated handler (returns `email_unverified` 403 if not verified). UI layer: a server component at the App Router root layout reads the user state and renders either children or `<UnverifiedBlocker />` (full-screen blocker per AUTH-15: "Verifique seu e-mail para começar." + resend-verification button + logout link). `src/proxy.ts` stays focused on locale routing only (per Phase 1 D-24).
-- **D-22 (Q-22):** **`public.users.email_verified_at` is the source of truth; read on every gated request.** On verification (D-07 server route), set `public.users.email_verified_at` (and confirm `auth.users.email_confirmed_at` is set by Supabase). Every gated request reads from `public.users` via the IAM repository — always fresh. ~5-10ms DB roundtrip per request is acceptable for an auth check; if hot-path latency needs reduction, add a 60s in-memory cache keyed by JWT id.
-- **D-23 (Q-23):** **Allowlist (default deny).** Single config: `UNVERIFIED_ALLOWED_PATHS = ['/api/v1/iam/resend-verification', '/api/v1/iam/me', '/api/v1/iam/me/password', '/api/v1/iam/logout', '/auth/verify', '/auth/oauth-complete', ...]`. Every new endpoint must opt-in by being added to the allowlist; default behavior is to require verification. Safest by default.
+- **D-21 (Q-21):** **API: shared `requireVerifiedUser()` helper. UI: server-component check at root layout.** API layer: `requireVerifiedUser(req)` helper called explicitly by every gated handler and remains authoritative (returns `unauthenticated` 401 when no Supabase JWT/session exists, `email_unverified` 403 when authenticated but `public.users.email_verified_at IS NULL`). Preserve Phase 2's API-aware `src/proxy.ts` behavior if present as fast missing-bearer rejection only; if the worktree still has the Phase 1 proxy that excludes `/api/*`, plan-phase must add/restore the Phase 2 prerequisite before Phase 4 handlers. UI layer: a server component at the App Router root layout reads the user state and renders either children or `<UnverifiedBlocker />` (full-screen blocker per AUTH-15: "Verifique seu e-mail para começar." + resend-verification button + logout link). Product verification lives in the helper/layout, not in proxy.
+- **D-22 (Q-22):** **`public.users.email_verified_at` is the product source of truth; read on every gated request.** On verification (D-07 server route), set `public.users.email_verified_at`. Do not use `auth.users.email_confirmed_at` for product gating because Phase 4 deliberately sets Supabase email confirmation true at credential creation to allow the authenticated-unverified blocker. Every gated request reads from `public.users` via the IAM repository — always fresh. ~5-10ms DB roundtrip per request is acceptable for an auth check; if hot-path latency needs reduction, add a 60s in-memory cache keyed by JWT id.
+- **D-23 (Q-23):** **Allowlist (default deny).** Single config: `UNVERIFIED_ALLOWED_PATHS = ['/api/v1/iam/resend-verification', '/api/v1/iam/me', '/api/v1/iam/me/password', '/api/v1/iam/logout', '/auth/verify', '/auth/oauth-complete', ...]` plus public auth paths (`/api/v1/iam/signup`, `/api/v1/iam/login`, `/api/v1/iam/password/reset-request`, `/api/v1/iam/password/reset`, `/auth/reset`, `/auth/callback`). Every new endpoint must opt-in by being added to the allowlist; default behavior is to require verification. Safest by default.
 
 ### ConsentLog & Signup Atomicity
 
 - **D-24 (Q-24):** **Two ConsentLog rows recorded at signup.** INSERT (purpose=`terms_of_service`, legal_basis=`contract`, source=`signup`, policy_version=current) and (purpose=`privacy_policy`, legal_basis=`contract`, source=`signup`, policy_version=current). Granular, auditable, future-proof for material-change re-consent (PRD §13 Governance). `policy_version` resolved at signup time via `SELECT id FROM policy_versions WHERE is_current = true` (Phase 2 D-13 already supports `is_current`). Same two rows captured for OAuth users in D-04's completion screen.
-- **D-25 (Q-25): ⚠ OPEN — see Open Questions below.** Signup transaction atomicity (two-phase Supabase-then-DB-tx, single tx including auth.users via SQL, or saga compensation) — load-bearing for failure-mode behavior; partly entangled with D-03.
+- **D-25 (Q-25):** **Two-phase Supabase Auth → DB transaction with compensating delete.** Do not write `auth.users` directly via SQL and do not split user/consent/subscription/token creation into independent best-effort inserts. Signup ordering: (1) Supabase Admin creates credential user with Supabase email confirmation enabled internally; (2) one application DB transaction creates `public.users`, ConsentLog × 2, Subscription, and verification token; (3) after commit, emit Inngest email event and mint/set the current-device Supabase session. If step 2 fails, delete the auth user. If step 3 email dispatch fails, the account remains unverified and resend-verification can recover.
 
 ### Settings Shell
 
@@ -85,7 +85,7 @@ This phase ALSO onboards two infrastructure services because Phase 4 is their fi
 
 ### Testing & Copy Ownership
 
-- **D-28 (Q-28):** **Real local Supabase Auth in integration tests.** Each integration test seeds users via `supabase.auth.admin.createUser` against the local Docker Supabase stack. Test helper truncates `auth.users` + `public.users` between tests (transaction rollback per Phase 2 D-43 doesn't cover auth.users since it's a separate Postgres logical schema; use TRUNCATE for auth-bearing tests). Highest fidelity; matches no-DB-mocking rule from Phase 1 D-25 + Phase 2.
+- **D-28 (Q-28):** **Real local Supabase Auth in integration tests.** Each integration test seeds users via `supabase.auth.admin.createUser` against the local Docker Supabase stack. Test helper truncates `auth.users`, `public.users`, auth token tables, `auth_throttle`, ConsentLog, and Subscription between tests (transaction rollback per Phase 2 D-43 doesn't cover auth.users since it's a separate Postgres logical schema; use TRUNCATE for auth-bearing tests). Highest fidelity; matches no-DB-mocking rule from Phase 1 D-25 + Phase 2.
 - **D-29 (Q-29):** **Mock Resend SDK in unit/integration; one E2E hits sandbox.** Unit + integration tests use `vi.mock('resend')` and assert call args (template id/component, props, to/from/subject). One Playwright E2E spec optionally hits Resend sandbox + verifies a delivery webhook. Fast, deterministic, low quota burn.
 - **D-30 (Q-30):** **Claude proposes initial pt-BR drafts; founder reviews + edits during plan execution.** Claude writes initial drafts in `messages/pt-BR.json` (next-intl) + email template `.tsx` files based on PRD §17 tone (warm, humanist, Brazilian, anti-textbook — "sunlit morning on a Brazilian veranda"). Founder reviews during Phase 4 execution and refines specific phrases. Speed + founder control.
 
@@ -138,35 +138,35 @@ The agent has discretion on (within the locks above):
 - `src/shared/config/errors.ts` — Closed registry; Phase 4 emits `email_unverified`, `invalid_credentials`, `validation_failed`, `invalid_partner_code`, `forbidden`, `consent_required`, `rate_limited`
 - `src/contexts/iam/{domain,application,infrastructure,api,inngest}/` — Currently empty (.gitkeep only); Phase 4 fills
 - `src/app/api/inngest/route.ts` — Does NOT yet exist; Phase 4 creates per INFRA-10
-- `src/proxy.ts` — Locale routing only (Phase 1 D-24 + Phase 2 D-34 may compose auth via runtime helper); D-21 of this phase keeps it locale-only and puts gate in handlers/server-component
+- `src/proxy.ts` — Phase 1 worktree may still be locale-only and exclude `/api/*`; Phase 2 D-34 is expected to add API fast rejection. D-21 keeps product verification in handlers/server components while preserving any Phase 2 proxy fast-rejection behavior.
 
 </canonical_refs>
 
 <code_context>
-## Existing Code Insights
+## Current Code Insights and Dependency Expectations
 
 ### Reusable Assets
 - **Closed error-code registry** at `src/shared/config/errors.ts` (Phase 1 D-10/D-12) — Phase 4 imports the codes it emits; no new ad-hoc codes
 - **Sentry PII scrub module** at `src/shared/telemetry/sentry-scrub.ts` (Phase 1 D-22 / Plan 01-05a) — `email`, `password`, `token`, `Authorization`, `Cookie` already scrubbed; Phase 4's auth flows are protected by default
 - **PostHog server provider** at `src/shared/telemetry/posthog-server.ts` (Plan 01-06) — Phase 4 uses for `signup_completed` (server-fired post-verification), `consent_granted` (per ConsentLog row); `Sentry.setUser({ id })` only — never email
 - **next-intl** wired with `as-needed` locale prefix (Phase 1 D-15) — Phase 4 adds pt-BR strings to `messages/pt-BR.json` for Settings → Account, signup form, unverified blocker, change-password form, OAuth completion screen
-- **Phase 2 AuthAdapter** (D-32) — `verifyJWT` + `getUserById` already work; Phase 4 extends to add: signup orchestration helper, password-reset orchestration helper, change-password helper, logout helper, OAuth completion helper
-- **Phase 2 idempotency_keys table** (D-37/D-38) — POST /api/v1/iam/* mutating endpoints (signup, password-reset-request, change-password) wear `Idempotency-Key` headers per Phase 2 conventions
-- **Phase 2 RLS posture** (D-20/D-21/D-22) — `users` table has owner-only RLS; Phase 4 reads/writes go through service role for admin operations and through user JWT for self-service operations
+- **Phase 2 AuthAdapter** (D-32) — expected upstream dependency by the time Phase 4 executes: `verifyJWT` + `getUserById`. If absent in the worktree, plan-phase must block on Phase 2 or include an explicit prerequisite task before Phase 4 auth handlers. Phase 4 extends it to add: signup orchestration helper, password-reset orchestration helper, change-password helper, logout helper, OAuth completion helper
+- **Phase 2 idempotency_keys table** (D-37/D-38) — expected upstream dependency by the time Phase 4 executes. POST /api/v1/iam/* mutating endpoints (signup, password-reset-request, change-password) wear `Idempotency-Key` headers per Phase 2 conventions
+- **Phase 2 RLS posture** (D-20/D-21/D-22) — expected upstream dependency by the time Phase 4 executes. `users` table has owner-only RLS; Phase 4 reads/writes go through service role for admin operations and through user JWT for self-service operations
 
 ### Established Patterns
 - **No Drizzle in route handlers** (Phase 2 D-17) — Phase 4 IAM api/ files are thin: validate (Zod) → call use-case → map HTTP. Use-cases live in `src/contexts/iam/application/`. Repositories in `src/contexts/iam/infrastructure/db/`
 - **Single shared error-response shape** `{error: {code, message, details?}}` (Phase 1 D-11) — every Phase 4 handler returns this on failure
-- **Per-context schema ownership** (Phase 2 D-01) — Phase 4 owns `src/contexts/iam/infrastructure/db/schema.ts` for User + ConsentLog (PartnerStore + DataExportRequest + DataDeletionRequest are IAM aggregates per PRD §3 — but only User + ConsentLog are written-to in Phase 4; PartnerStore is read-only seed data; DataExport/Deletion land Phase 11)
-- **Inngest event flow (NEW in Phase 4)** — Cross-context events flow through Inngest. Phase 4 emits `user.signed_up`, `user.consent_granted`, `user.consent_revoked` (consent revoke flows partly here; full panel is Phase 11). Phase 4 consumes `subscription.status_changed` (later phases emit; Phase 4 just registers the listener as stub)
+- **Per-context schema ownership** (Phase 2 D-01) — Phase 4 relies on upstream User + ConsentLog + Subscription + PartnerStore schema ownership from Phase 2, then adds IAM operational tables needed by this phase: `email_verification_tokens`, `password_reset_tokens`, and `auth_throttle`. PartnerStore is read-only seed data in Phase 4; DataExport/Deletion land Phase 11.
+- **Inngest event flow (NEW in Phase 4)** — Cross-context events flow through Inngest. Phase 4 emits `user.signed_up`, `user.consent_granted`, `iam/password-reset-requested`, and `notifications/email.requested`. Consent revocation stays Phase 11. Phase 4 consumes `subscription.status_changed` only as a stub listener for later phases.
 
 ### Integration Points
-- `src/app/api/v1/iam/signup/route.ts` — POST signup (per D-03) — orchestrates Supabase admin createUser + DB tx + Inngest event emission
+- `src/app/api/v1/iam/signup/route.ts` — POST signup (per D-03) — orchestrates Supabase admin createUser + DB tx + app verification token + Inngest email event + current-device session minting
 - `src/app/api/v1/iam/login/route.ts` — POST login — Supabase signInWithPassword + per-IP throttle (D-12..D-15)
 - `src/app/api/v1/iam/logout/route.ts` — POST logout — Supabase signOut local-scope (D-05)
-- `src/app/api/v1/iam/resend-verification/route.ts` — POST — Supabase auth.resend signup (D-08)
+- `src/app/api/v1/iam/resend-verification/route.ts` — POST — revoke prior app verification token, mint fresh token, emit `notifications/email.requested` (D-08)
 - `src/app/api/v1/iam/password/reset-request/route.ts` — POST — always-200 enqueue (D-11)
-- `src/app/api/v1/iam/password/reset/route.ts` — POST — token-bearing new password (D-09/D-10)
+- `src/app/api/v1/iam/password/reset/route.ts` — POST — validate/consume app reset token + `supabase.auth.admin.updateUserById` (D-09/D-10)
 - `src/app/api/v1/iam/me/password/route.ts` — PATCH — change-password (current + new), OAuth-only → 403 forbidden
 - `src/app/api/v1/iam/me/route.ts` — GET/PATCH — Settings → Account self-service (timezone edit, name)
 - `src/app/auth/verify/route.ts` — GET (server route per D-07) — verify token, set email_verified_at, redirect /
@@ -176,7 +176,7 @@ The agent has discretion on (within the locks above):
 - `src/app/(unverified)/page.tsx` (or root layout conditional) — full-screen unverified blocker per AUTH-15 (D-21 server-component check)
 - `src/app/settings/[section]/page.tsx` — Settings shell + Account section (D-26/D-27)
 - `src/app/api/inngest/route.ts` — `serve({functions: registry})` (D-17, INFRA-10)
-- `src/app/api/v1/iam/auth-hooks/email/route.ts` (or similar — exact path depends on D-02 outcome) — Supabase Auth Hook receiver that emits Inngest events
+- `src/contexts/iam/infrastructure/db/auth-token-repository.ts` (or equivalent split) — hashes, stores, revokes, consumes, and cleans up verification/reset tokens (D-06/D-09)
 - `src/contexts/iam/inngest/functions.ts` — exports `[notificationsSendEmail, ...stubs]`
 - `src/contexts/notifications/inngest/functions.ts` — exports `notificationsSendEmail` (full impl in Phase 4)
 - `src/contexts/notifications/infrastructure/email-templates/{verification,password-reset}.tsx` — pt-BR React Email templates (D-18)
@@ -190,7 +190,9 @@ The agent has discretion on (within the locks above):
 <specifics>
 ## Specific Ideas
 
-- **OAuth completion is gated by `User.age_confirmed_at IS NULL`** — this same column already exists in PRD §4 data model and Phase 2 schema. No new column needed. Gate page reads from `public.users`; redirect logic in middleware or root layout (server component).
+- **OAuth completion is gated by `User.age_confirmed_at IS NULL`** — this same column already exists in PRD §4 data model and Phase 2 schema. No new column needed. Gate page reads from `public.users`; redirect logic in proxy/helper or root layout (server component). Completing OAuth also sets `public.users.email_verified_at` because Google OAuth accounts are pre-verified for Phase 4.
+- **Supabase email-confirmation state is not product verification.** Phase 4 deliberately allows an authenticated-unverified email/password session so AUTH-15's blocker works. `auth.users.email_confirmed_at` may be set for Supabase login mechanics; only `public.users.email_verified_at` lifts Folhário gates.
+- **Auth token links use raw app tokens, never Supabase OTP params.** Verification links use `/auth/verify?token=...`; password reset links use `/auth/reset?token=...`. Store only SHA-256 hashes server-side and compare with timing-safe equality.
 - **Verification email subject (initial draft):** "Confirme seu e-mail para começar — Folhário"
 - **Password reset email subject (initial draft):** "Redefinir sua senha — Folhário"
 - **Unverified blocker copy** (per AUTH-15 + PRD §16): "Verifique seu e-mail para começar." + "Reenviar e-mail" button + "Sair" link
@@ -205,27 +207,13 @@ The agent has discretion on (within the locks above):
 <deferred>
 ## Deferred Ideas
 
-### Open Questions (load-bearing — must resolve before plan-phase)
+### Resolved Review Adjustments
 
-These three questions were left as "Other" with no text in the power-mode session. They are entangled and load-bearing for Phase 4 implementation. They should be resolved in a short follow-up discussion (or `/gsd:discuss-phase 4 --update` targeting these IDs) before plan-phase runs:
+These three questions were left as "Other" with no text in the power-mode session and were resolved during direct review on 2026-04-26:
 
-- **Q-02 (D-02): Email dispatch path.** Three viable options:
-  - (a) **Supabase Auth Hooks → Inngest event → Resend** (recommended): cleanest separation; we own rendering + delivery, Supabase owns tokens. Requires configuring Supabase `send_email_hook` to point at our Auth Hook receiver endpoint.
-  - (b) **Custom SMTP pointing at Resend**: simplest wiring, but Supabase renders its own HTML — loses pt-BR React Email templates and the single `notifications/send-email` integration point that NOTIF-01 requires.
-  - (c) **Disable Supabase emails entirely; mint our own tokens**: full control, abandons Supabase's confirmation_token machinery; entangled with Q-06 below — if (c) here then Q-06 must be (b).
-  - **Recommendation:** (a) — preserves NOTIF-01's single integration point, keeps tokens in Supabase, lets us own templates.
-
-- **Q-06 (D-06): Verification token mechanism.** Three viable options:
-  - (a) **Supabase confirmation_token via verifyOtp** (recommended): Supabase issues + stores + expires the token; we render the email body. Inherits Supabase default expiry (configurable, default 24h).
-  - (b) **Custom verification_tokens table**: own opaque token, sha256-hashed, full expiry control; required only if Q-02 is (c).
-  - (c) **Magic-link OTP (6-digit code typed in)**: different UX; not implied by AUTH-01.
-  - **Recommendation:** (a) — coupled with Q-02 (a). If Q-02 ends as (c), this must become (b).
-
-- **Q-25 (D-25): Signup transaction atomicity.** Three viable options:
-  - (a) **Two-phase: Supabase Auth → DB tx (User + ConsentLog × 2 + Subscription) → Inngest event** (recommended): clean ordering, partial-state risk addressed by compensating delete on auth.users (or by relying on Phase 2 D-35 trigger as backstop).
-  - (b) **One DB transaction including auth.users via SQL**: bypasses Supabase's password hashing pipeline; brittle.
-  - (c) **Sequential inserts with saga compensation**: complex; only worth it if cross-DB. Overkill here.
-  - **Recommendation:** (a) — mirrors D-03's application-level orchestration with explicit compensating-delete on the unlikely path where the DB tx fails after auth.users insert.
+- **Q-02 / D-02:** Email dispatch path is app-owned auth email events → Inngest `notifications/send-email` → Resend. Supabase Auth Hooks/SMTP/templates are not used for Phase 4 auth emails.
+- **Q-06 / D-06:** Verification uses custom app tokens in `email_verification_tokens`, not Supabase `confirmation_token` / `verifyOtp`. This preserves the authenticated-unverified blocker required by AUTH-15.
+- **Q-25 / D-25:** Signup atomicity is two-phase Supabase Admin user creation followed by one application DB transaction, with compensating `admin.deleteUser` if the DB transaction fails.
 
 ### Future-phase deferrals (out of scope for Phase 4)
 
@@ -251,5 +239,5 @@ These three questions were left as "Other" with no text in the power-mode sessio
 ---
 
 *Phase: 04-iam-auth-verification-consent*
-*Context gathered: 2026-04-26 (power mode, 27/30 answered + 3 open questions)*
-*Note: Three open questions (Q-02, Q-06, Q-25) are entangled and should be resolved before plan-phase. Recommendations included above.*
+*Context gathered: 2026-04-26 (power mode, review-adjusted to 30/30 answered)*
+*Note: Q-02, Q-06, and Q-25 were resolved directly in this file on 2026-04-26 after review found the prior Supabase email-token assumptions conflicted with AUTH-15.*

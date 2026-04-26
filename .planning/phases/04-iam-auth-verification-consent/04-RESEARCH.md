@@ -755,6 +755,46 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 ```
 
+### Pattern 12: OAuth callback - code-for-session exchange
+
+**What:** Convert the `?code=...` query parameter from the Google OAuth redirect into a Supabase session (cookie-based via `@supabase/ssr`).
+**When to use:** Mandatory in `/auth/callback` route handler - without this call, OAuth completes at Google's end but never produces a Folhario session.
+
+```typescript
+// Source: context7.com/supabase/ssr - Server Client + exchangeCodeForSession
+// src/app/auth/callback/route.ts
+import { NextResponse } from "next/server";
+import { getSupabaseServerClient } from "@/contexts/iam/infrastructure/supabase-server";
+
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+
+  if (error || !code) {
+    // OAuth provider rejected - increment per-IP throttle (D-15) and redirect with error
+    return NextResponse.redirect(new URL("/auth/login?error=oauth_failed", url));
+  }
+
+  const supabase = await getSupabaseServerClient();
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (exchangeError) {
+    return NextResponse.redirect(new URL("/auth/login?error=oauth_failed", url));
+  }
+
+  // Cookie now set; check if OAuth completion is still pending (age_confirmed_at IS NULL)
+  // If pending -> redirect to /auth/oauth-complete; else -> /
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.redirect(new URL("/auth/login", url));
+
+  // Read public.users to determine completion state
+  // ...repository call...
+
+  return NextResponse.redirect(new URL("/auth/oauth-complete", url));
+}
+```
+
 ### Anti-Patterns to Avoid
 
 - **Using Supabase's built-in `signUp()` for email+password.** D-03 mandates `admin.createUser({ email_confirm: true })` so Supabase never sends a confirmation email. The non-admin `signUp()` would trigger Supabase SMTP (or no-op if SMTP not configured) AND wouldn't pre-confirm the email — breaking the authenticated-unverified blocker per AUTH-15.
@@ -865,6 +905,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 **How to avoid:** Root layout server component (D-21) extends its check: if `user.age_confirmed_at IS NULL`, redirect to `/auth/oauth-complete` BEFORE the verification check (so OAuth users land there even though they're "verified"). UNVERIFIED_ALLOWED_PATHS extension covers /auth/oauth-complete; INCOMPLETE_ALLOWED_PATHS = same allowlist.
 **Warning signs:** OAuth user has `email_verified_at` set but no ConsentLog rows; LGPD audit fails.
 
+### Pitfall 12: AUTH-14 wording vs Supabase signOut semantics
+
+**What goes wrong:** `signOut({ scope: 'local' })` revokes the **refresh token** for the current device, but the **access token (JWT) remains valid until its `exp`** [CITED: github.com/supabase/supabase/blob/master/apps/docs/content/guides/auth/signout.mdx - "access tokens remain valid until their expiry time even after revocation"]. AUTH-14's wording "revokes that JWT" is **not** what Supabase's API actually does. Subsequent requests with the still-valid access token will succeed until the JWT expires (Supabase default: 1h).
+**Why it happens:** Supabase's session model is "access token + refresh token"; `signOut` deletes the refresh token (so no new access tokens can be minted from it) and clears the cookie, but the JWT itself is stateless and cannot be invalidated without an app-owned denylist (which D-05 forbids).
+**How to avoid:** (a) Phase 4 plan documents this in 04-SUMMARY: AUTH-14's effective behavior is "the cookie is cleared and the refresh token is revoked; the existing JWT will expire at its `exp` (<=1h)"; (b) integration test for AUTH-14 asserts the cookie was cleared and that any subsequent refresh attempt fails - NOT that requests with the existing JWT are rejected; (c) AUTH-12 (password reset doesn't invalidate JWTs) and AUTH-14 (logout this device) actually share the same JWT-layer behavior; the distinction is at the cookie/refresh-token layer.
+**Warning signs:** Plan-phase or test-phase asserts "subsequent request with JWT after logout returns 401"; this assertion will fail until the JWT naturally expires. Surface this to the user during plan-phase via Open Question 6 - they may want to amend AUTH-14's wording or accept the JWT-exp window as the effective logout latency.
+
 ## Validation Architecture
 
 > Required by Nyquist gate per `.planning/config.json` (workflow.nyquist_validation = true).
@@ -936,6 +983,7 @@ All Phase 4 tests are NEW. The current `tests/` directory holds only Phase 1 fix
 - [ ] `tests/e2e/iam-google-oauth.spec.ts` — AUTH-03 (Playwright with stubbed OAuth)
 - [ ] `tests/e2e/settings-account.spec.ts` — UI-13
 - [ ] `tests/integration/setup-supabase-truncate.ts` — D-28 helper that TRUNCATEs auth.users between tests
+- [ ] `vitest.config.ts` extended: integration project gains `setupFiles: ["tests/integration/setup-supabase-truncate.ts"]`. Phase 1 plan 01-04 deliberately moved `setupFiles` off the integration project to keep synthetic env out (Rule 3 fix in 01-04 SUMMARY); Phase 4 re-adds it for the truncate helper but must NOT re-introduce `tests/unit/setup-env.ts` to integration. Read 01-04 SUMMARY before editing.
 
 **Test fixture helpers (shared infrastructure):**
 
@@ -1042,6 +1090,8 @@ All Phase 4 tests are NEW. The current `tests/` directory holds only Phase 1 fix
 | AuthAdapter (verifyJWT, getUserById) | D-32 / Plan 02-07 | Phase 4 extends with `getCurrentUser`, `requireVerifiedUser` |
 | `users` table (full PRD §4 schema) | D-46 / Plan 02-02 | Phase 4 ALTER TABLE adds `email_verified_at TIMESTAMPTZ NULL` |
 | `consent_logs` table | Plan 02-02 | Phase 4 inserts × 2 at signup (D-24) |
+| `consent_logs.purpose` literal union includes `terms_of_service` AND `privacy_policy` | Plan 02-02 (varchar with CHECK-friendly literal union) | D-24 inserts these two values; if Phase 2's enumeration omits them, Phase 4 plan must extend the literal union AND any CHECK constraint. **Verify before drafting Phase 4 schema migration.** |
+| `consent_logs.source` literal union includes `signup` AND `settings` | Plan 02-02 | D-24 uses `signup`; Phase 11 will use `settings`. Same verification step. |
 | `policy_versions` table with `is_current` | D-13 / D-48 / Plan 02-02 | Phase 4 reads at signup time to bind ConsentLog rows |
 | `subscriptions` table | Plan 02-03 | Phase 4 inserts initial `status=trialing` row |
 | `idempotency_keys` table | D-37 / D-38 / Plan 02-06 | Phase 4 mutating routes accept `Idempotency-Key` header |
@@ -1143,6 +1193,11 @@ The following directives from `./CLAUDE.md` are non-negotiable for Phase 4. The 
    - What we know: Production requires `INNGEST_SIGNING_KEY`; dev server doesn't.
    - What's unclear: Does the `serve()` handler need different behavior, or does the SDK auto-detect?
    - Recommendation: SDK auto-detects via the absence of `INNGEST_SIGNING_KEY`. Plan documents in env vars section: `INNGEST_SIGNING_KEY` is REQUIRED in production; OPTIONAL locally (dev server signs with its own key).
+
+6. **AUTH-14 wording - does "revokes that JWT" mean the JWT is invalidated, or just the cookie/refresh-token cleared?**
+   - What we know: Supabase docs explicitly state access tokens remain valid until `exp` even after `signOut` [CITED: github.com/supabase/supabase/blob/master/apps/docs/content/guides/auth/signout.mdx]. D-05 forbids app-owned JWT denylist. JWT default exp is 1h on Supabase.
+   - What's unclear: Does the user (Marco) want the integration test to assert "JWT rejected immediately after logout" (impossible without denylist) or "cookie cleared + refresh fails" (what Supabase actually delivers)?
+   - Recommendation: Plan-phase explicitly asks. Default proposal: amend AUTH-14 SUMMARY to read "logout clears the device's cookie and revokes its refresh token; the existing JWT continues to be valid until its `exp` (<=1h)"; integration test asserts cookie cleared + refresh fails. If user requires immediate JWT invalidation, that's out-of-scope for MVP and rolls into AUTH-v2-02 (logout-all-devices) which would require a JWT-denylist table or Supabase-Auth-Hooks integration. (Linked to Pitfall 12.)
 
 ## Metadata
 

@@ -2,8 +2,11 @@ import {
   boolean,
   index,
   integer,
+  json,
+  jsonb,
   pgEnum,
   pgTable,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -182,4 +185,61 @@ export const dataDeletionRequests = pgTable(
     completedAt: timestamp("completed_at", { withTimezone: true, mode: "string" }),
   },
   (table) => [index("data_deletion_requests_user_id_idx").on(table.userId)],
+);
+
+/**
+ * IAM-support tables (PRD §4 + plan 02-03 acceptance):
+ *
+ * - `offline_sync_failures`: per-user replay log for offline-queued actions.
+ *   D-06: payload is `json` (audit-faithful raw envelope; do not normalize).
+ * - `idempotency_keys`: race-safe replay protection for mutating /api/v1
+ *   endpoints (D-37/D-38). `request_hash` is NOT NULL by REVIEWS.md contract:
+ *   every idempotent write MUST supply a hash; null-hash rows are forbidden.
+ *   `expires_at` is set 7 days out by the API helper at insert time.
+ *
+ * D-07 delete rules: both tables CASCADE on `users.id` deletion (LGPD sweep).
+ */
+
+export const offlineSyncFailures = pgTable(
+  "offline_sync_failures",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    actionType: varchar("action_type", { length: 32 }).notNull(),
+    payload: json("payload").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true, mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("offline_sync_failures_user_id_idx").on(table.userId)],
+);
+
+export const idempotencyKeys = pgTable(
+  "idempotency_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    key: varchar("key", { length: 200 }).notNull(),
+    requestHash: text("request_hash").notNull(),
+    responseStatus: integer("response_status"),
+    responseBody: jsonb("response_body"),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("idempotency_keys_user_key_idx").on(table.userId, table.key),
+    index("idempotency_keys_expires_at_idx").on(table.expiresAt),
+  ],
 );

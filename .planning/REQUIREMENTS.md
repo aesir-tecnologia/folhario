@@ -219,13 +219,13 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 - [x] **INFRA-01**: Next.js 16 App Router project scaffolded with React 19, TS strict (+ `noUncheckedIndexedAccess`), pt-BR locale default, PWA via `@serwist/next` (stack)
 - [x] **INFRA-02**: Repo layout per PRD §2 — `src/contexts/{iam,catalog,species-care,identification,reminders,billing,notifications}/{domain,application,infrastructure,api,inngest}/` + `src/shared/{db,events,adapters,config,telemetry}/` (§2)
-- [ ] **INFRA-03**: Route handlers under `/api/v1` are thin: validate → use-case → HTTP map; no Drizzle in handlers (§2)
-- [ ] **INFRA-04**: Drizzle ORM + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn-pooler compatibility; single shared `db/client.ts` (stack)
-- [ ] **INFRA-05**: Drizzle schema + migrations for all entities in §4 (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription)
-- [ ] **INFRA-06**: Supabase Storage buckets created (private): `plant-photos`, `plant-thumbnails`, `data-exports`; `StorageAdapter` interface with signed URL helpers (§2)
-- [ ] **INFRA-07**: Supabase Auth behind `AuthAdapter`; JWT verification in Next middleware on every `/api/v1/*` except public endpoints (§21)
-- [ ] **INFRA-08**: RLS enabled on all user-owned tables as defense in depth; service-role key server-only (§21)
-- [ ] **INFRA-09**: Zod validation at route-handler body/query boundaries; `drizzle-zod` for DB-schema-derived Zod (stack)
+- [x] **INFRA-03**: Route handlers under `/api/v1` are thin: validate → use-case → HTTP map; no Drizzle in handlers (§2)
+- [x] **INFRA-04**: Drizzle ORM + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn-pooler compatibility; single shared `db/client.ts` (stack)
+- [x] **INFRA-05**: Drizzle schema + migrations for all entities in §4 (User, Plant, Species, CareGuide, PhotoEntry, Identification, Reminder, ReminderLog, PartnerStore, ConsentLog, DataExportRequest, DataDeletionRequest, Subscription, BillingEvent, IdentificationLimit, ProviderBudget, ProviderUsageCounter, OfflineSyncFailure, PushSubscription)
+- [x] **INFRA-06**: Supabase Storage buckets created (private): `plant-photos`, `plant-thumbnails`, `data-exports`; `StorageAdapter` interface with signed URL helpers (§2)
+- [x] **INFRA-07**: Supabase Auth behind `AuthAdapter`; JWT verification in Next middleware on every `/api/v1/*` except public endpoints (§21)
+- [x] **INFRA-08**: RLS enabled on all user-owned tables as defense in depth; service-role key server-only (§21)
+- [x] **INFRA-09**: Zod validation at route-handler body/query boundaries; `drizzle-zod` for DB-schema-derived Zod (stack)
 - [ ] **INFRA-10**: Inngest `serve()` handler at `/api/inngest/route.ts`; all async functions registered: `care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push` (§3)
 - [ ] **INFRA-11**: Vercel hosting configured; Vercel git integration DISABLED (stack)
 - [x] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:17-alpine` service container with Drizzle migrations seeded, build (§20). *(Amended 2026-04-23 per Phase 1 D-25 — parity with local Supabase Postgres 17.)*
@@ -235,12 +235,12 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [x] **INFRA-16**: `IDENTIFICATION_PROVIDER_MODE` env var gates stub vs real providers to prevent accidental spend in preview (§20)
 - [x] **INFRA-17**: All env vars from PRD §20 table configured in Vercel + GitHub secrets; none committed, none logged (§20)
 - [x] **INFRA-18**: Standard security headers via Next.js middleware (CSP, HSTS, X-Frame-Options, etc.) (§21)
-- [ ] **INFRA-19**: Image pipeline — client-side compression to ≤1MB + EXIF/GPS strip → upload → thumbnail generation on upload → originals preserved for ID accuracy (§11)
+- [x] **INFRA-19**: Image pipeline — client-side compression to ≤1MB + EXIF/GPS strip → upload → thumbnail generation on upload → originals preserved for ID accuracy (§11) *(server pipeline; in-browser compression UAT deferred — see 02-10-SUMMARY.md INFRA-19 scoping note)*
 - [x] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
-- [ ] **INFRA-21**: Pagination implemented as opaque cursor `?cursor=&limit=`, default 50 / max 200, `next_cursor` in response; clients never parse cursors (§5)
-- [ ] **INFRA-22**: Idempotency-Key support on mutating endpoints; client UUID is the key for offline queue actions (§5, §10)
+- [x] **INFRA-21**: Pagination implemented as opaque cursor `?cursor=&limit=`, default 50 / max 200, `next_cursor` in response; clients never parse cursors (§5)
+- [x] **INFRA-22**: Idempotency-Key support on mutating endpoints; client UUID is the key for offline queue actions (§5, §10)
 - [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
-- [ ] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
+- [x] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
 - [ ] **INFRA-25**: Launch-blocker checklist surfaced in repo (pricing TBD, NFS-e strategy, DPO appointment, privacy policy + ToS authoring, ≥200 care guides) tracked separately from phases (§24)
 - [x] **INFRA-26**: Local dev environment: `supabase start` launches local Postgres + Auth + Storage + Studio in Docker; `supabase db reset` rebuilds from migrations; developer can run the full app locally against this stack without cloud Supabase (§20)
 
@@ -497,13 +497,13 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | UI-25 | Phase 3 | Pending |
 | INFRA-01 | Phase 1 | Complete (01-03) |
 | INFRA-02 | Phase 1 | Complete (01-02) |
-| INFRA-03 | Phase 2 | Pending |
-| INFRA-04 | Phase 2 | Pending |
-| INFRA-05 | Phase 2 | Pending |
-| INFRA-06 | Phase 2 | Pending |
-| INFRA-07 | Phase 2 | Pending |
-| INFRA-08 | Phase 2 | Pending |
-| INFRA-09 | Phase 2 | Pending |
+| INFRA-03 | Phase 2 | Complete (02-05 + 02-06) |
+| INFRA-04 | Phase 2 | Complete (02-05) |
+| INFRA-05 | Phase 2 | Complete (02-02 + 02-03) |
+| INFRA-06 | Phase 2 | Complete (02-04 + 02-08) |
+| INFRA-07 | Phase 2 | Complete (02-07) |
+| INFRA-08 | Phase 2 | Complete (02-03 + 02-05.5) |
+| INFRA-09 | Phase 2 | Complete (02-06) |
 | INFRA-10 | Phase 4 | Pending |
 | INFRA-11 | Phase 12 | Pending |
 | INFRA-12 | Phase 1 | Complete (01-08) |
@@ -513,12 +513,12 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-16 | Phase 1 | Complete (01-02) |
 | INFRA-17 | Phase 1 | Complete (01-02) |
 | INFRA-18 | Phase 1 | Complete (01-03) |
-| INFRA-19 | Phase 2 | Pending |
+| INFRA-19 | Phase 2 | Complete (02-08; server pipeline — in-browser compression UAT deferred per 02-10-SUMMARY) |
 | INFRA-20 | Phase 1 | Complete (01-02) |
-| INFRA-21 | Phase 2 | Pending |
-| INFRA-22 | Phase 2 | Pending |
+| INFRA-21 | Phase 2 | Complete (02-06) |
+| INFRA-22 | Phase 2 | Complete (02-06) |
 | INFRA-23 | Phase 1 | Pending |
-| INFRA-24 | Phase 2 | Pending |
+| INFRA-24 | Phase 2 | Complete (02-04) |
 | INFRA-25 | Phase 13 | Pending |
 | INFRA-26 | Phase 1 | Complete (01-04) |
 

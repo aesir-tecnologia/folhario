@@ -96,6 +96,9 @@ Cross-cutting constraints:
 - Route handlers validate, call use-cases, and map HTTP; they do not import Drizzle or schema tables.
 - RLS is defense in depth; repositories still apply explicit user scoping.
 - The diagnostic smoke route is `/api/v1/diagnostics/consent`, not `_diagnostics`, because Next App Router ignores underscore-prefixed route segments.
+- Plan 02-05.5 was inserted in revision (HIGH-1 from `02-REVIEWS.md`) to prove RLS denies cross-user reads through Supabase's real auth path with a minted JWT — defense-in-depth verification on top of the `withUnitOfWork` user scoping layer.
+- INFRA-19 in Phase 2 covers the server pipeline (multipart parse, GPS rejection via `exifr`, sharp thumbnailing, `MAX_UPLOAD_BYTES = 1_048_576` enforcement); the in-browser `browser-image-compression` worker path is UAT-deferred to a phase that ships product upload UI (Phase 3+). See `02-10-SUMMARY.md` INFRA-19 scoping note.
+- The LOW-severity `users.partner_code` → `partner_stores.code` no-FK trade-off (raised in `02-REVIEWS.md`) is intentional and stays as a planning-doc note only — no schema change. Partner code is a free-text field at signup and may not match an active `partner_stores.code` row when the user signs up off-channel; enforcing the FK would require a partial-match/lookup flow at signup that contradicts the "capture verbatim, validate at billing" model from PRD §12.
 **UI hint**: no
 
 ### Phase 3: Design System & App Shell
@@ -248,7 +251,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 8/9 | In progress | - |
-| 2. Data Layer & Bounded Contexts | 0/10 | Ready to execute | - |
+| 2. Data Layer & Bounded Contexts | 11/11 | Complete | 2026-04-26 |
 | 3. Design System & App Shell | 0/TBD | Not started | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
 | 5. Catalog — Meu Jardim | 0/TBD | Not started | - |

@@ -49,26 +49,47 @@ vi.mock("exifr", async () => {
   };
 });
 
+type StorageAdapterShape = import("@shared/adapters/storage").StorageAdapter;
+
 interface FakeAdapter {
   uploadObject: ReturnType<typeof vi.fn>;
   createSignedUrl: ReturnType<typeof vi.fn>;
   deletePrefix: ReturnType<typeof vi.fn>;
   listBuckets: ReturnType<typeof vi.fn>;
   listObjectsUnderPrefix: ReturnType<typeof vi.fn>;
+  asAdapter: StorageAdapterShape;
 }
 
 function makeFakeAdapter(): FakeAdapter {
-  return {
-    uploadObject: vi.fn(async ({ bucket, objectKey }: { bucket: string; objectKey: string }) => ({
+  const uploadObject = vi.fn(
+    async ({ bucket, objectKey }: { bucket: string; objectKey: string }) => ({
       bucket,
       objectKey,
-    })),
-    createSignedUrl: vi.fn(async () => ({
-      signedUrl: "https://example.test/signed-url",
-    })),
-    deletePrefix: vi.fn(async () => undefined),
-    listBuckets: vi.fn(async () => []),
-    listObjectsUnderPrefix: vi.fn(async () => []),
+    }),
+  );
+  const createSignedUrl = vi.fn(async () => ({
+    signedUrl: "https://example.test/signed-url",
+  }));
+  const deletePrefix = vi.fn(async () => undefined);
+  const listBuckets = vi.fn(async () => [] as Awaited<ReturnType<StorageAdapterShape["listBuckets"]>>);
+  const listObjectsUnderPrefix = vi.fn(async () => [] as string[]);
+
+  const asAdapter: StorageAdapterShape = {
+    uploadObject: uploadObject as unknown as StorageAdapterShape["uploadObject"],
+    createSignedUrl: createSignedUrl as unknown as StorageAdapterShape["createSignedUrl"],
+    deletePrefix: deletePrefix as unknown as StorageAdapterShape["deletePrefix"],
+    listBuckets: listBuckets as unknown as StorageAdapterShape["listBuckets"],
+    listObjectsUnderPrefix:
+      listObjectsUnderPrefix as unknown as StorageAdapterShape["listObjectsUnderPrefix"],
+  };
+
+  return {
+    uploadObject,
+    createSignedUrl,
+    deletePrefix,
+    listBuckets,
+    listObjectsUnderPrefix,
+    asAdapter,
   };
 }
 
@@ -132,7 +153,7 @@ describe.skipIf(!dbUrl)(
 
     it("rejects GPS-bearing buffer with validation_failed BEFORE any storage write", async () => {
       const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake);
+      setStorageAdapterForTests(fake.asAdapter);
 
       const exifrMod = await import("exifr");
       const gpsFn = exifrMod.gps as unknown as ReturnType<typeof vi.fn>;
@@ -155,7 +176,7 @@ describe.skipIf(!dbUrl)(
 
     it("rejects an oversize buffer (MAX_UPLOAD_BYTES + 1 = 1_048_577) with validation_failed", async () => {
       const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake);
+      setStorageAdapterForTests(fake.asAdapter);
 
       const oversizeBuffer = Buffer.alloc(1_048_577);
       const result = await uploadPhoto({
@@ -174,7 +195,7 @@ describe.skipIf(!dbUrl)(
 
     it("rejects a disallowed MIME type with validation_failed", async () => {
       const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake);
+      setStorageAdapterForTests(fake.asAdapter);
 
       const result = await uploadPhoto({
         userId,
@@ -192,7 +213,7 @@ describe.skipIf(!dbUrl)(
 
     it("rejects an upload to a plant the user does not own with not_found", async () => {
       const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake);
+      setStorageAdapterForTests(fake.asAdapter);
 
       const otherPlantId = randomUUID();
       const result = await uploadPhoto({
@@ -211,7 +232,7 @@ describe.skipIf(!dbUrl)(
 
     it("successful upload calls uploadObject twice (original then thumbnail) and writes a PhotoEntry row", async () => {
       const fake = makeFakeAdapter();
-      setStorageAdapterForTests(fake);
+      setStorageAdapterForTests(fake.asAdapter);
 
       const result = await uploadPhoto({
         userId,

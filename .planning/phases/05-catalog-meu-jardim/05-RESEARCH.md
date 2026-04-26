@@ -2,23 +2,7 @@
 
 **Researched:** 2026-04-26
 **Domain:** Server-state caching (TanStack Query + persister), bottom-sheet/lightbox/combobox accessibility, Inngest event consumer with transactional outbox, two-step photo upload + Plant create, drizzle-zod domain schemas, Service Worker runtime caching.
-**Confidence:** HIGH on locked stack (CONTEXT.md 27/27 answered), MEDIUM on a11y-grade UI primitive choices (Vaul vs hand-rolled), MEDIUM on TQ-persister + Serwist coordination (no canonical reference recipe — pattern is sound but bespoke).
-
-## Summary
-
-Phase 5 is **almost entirely a "wire pre-locked decisions together" phase**. CONTEXT.md (27/27 answered) locked TanStack Query as the project's server-state library, IDB persister via `@tanstack/react-query-persist-client` + `idb-keyval` for offline JSON, Serwist runtime caching for cover/thumbnail images, hybrid optimistic UI (sort + inline edits = optimistic; create + delete = pessimistic), cursor-paginated infinite scroll with the Phase 2 D-36 cursor format, hand-rolled combobox/bottom-sheet/lightbox per WAI-ARIA APG, an Inngest `catalog/cleanup-storage` consumer fed by a durable pending-deletion table written atomically with the plant DELETE, and a `useSubscription()` stub returning `'trialing'` so all read-only-mode UI branches ship now.
-
-The research found:
-
-1. **TanStack Query 5.100.5** is current and works with React 19.2.5 + Next 16.2.3 App Router. The `PersistQueryClientProvider` ships built-in race protection via the internal `useIsRestoring` hook — this is the exact mechanism that prevents the persister-hydration race. Use it; do not hand-roll a `useEffect`-based restorer.
-2. **TQ persister and Serwist do not overlap** — TQ owns JSON in IndexedDB, Serwist owns images in Cache Storage. The two layers cache different MIME types and never collide. Document this explicitly so the planner does not chase phantom dedup work.
-3. **Atomic transaction + Inngest event = two-stage outbox**. The DB transaction commits both the plant DELETE and a `pending_storage_deletion` row; an event is then dispatched. If the event dispatch fails after commit, a reconciler/poller scans for `pending` rows older than threshold. Inngest's `step.sendEvent` is durable when called inside another Inngest function, but the API route handler that originated the DELETE is a one-shot HTTP request — there is no retry loop unless you explicitly build one (or rely on the reconciler).
-4. **Vaul 1.1.2** is a credible accessible bottom-sheet primitive and matches the §17 modal-sheet contract (drag handle, snap points, focus trap, swipe-down). It does NOT ship Inter or override fonts. Recommend adopting it instead of hand-rolling — saves significant a11y testing surface.
-5. **Hand-roll the combobox** per WAI-ARIA APG 1.2 "Editable Combobox with List Autocomplete" pattern (DOM focus stays on input, visual focus moves via `aria-activedescendant`). No good library fits the §17 atmosphere without overriding fonts.
-6. **Hand-roll the lightbox** — `yet-another-react-lightbox` (0.27.19) is current but ships its own font/theme system that conflicts with §17 (Source Serif 4 + Plus Jakarta Sans, no Inter). Use `focus-trap` (7.1.3) for the focus-trap primitive only.
-7. **Two-step Plant create flow has a critical security pitfall** — server MUST verify the storage path prefix `{user_id}/{plant_id}/{photo_id}` in every submitted `photo_url` matches the authenticated user AND the submitted plant id. Otherwise photo-URL spoofing on `POST /api/v1/plants` lets a malicious client claim any other user's photo as part of their plant.
-
-**Primary recommendation:** Plan Phase 5 as a small set of TDD waves: (1) catalog repo + UoW + drizzle-zod domain schemas; (2) `/api/v1/plants*` route handlers with idempotency + ownership validation; (3) Inngest `catalog/cleanup-storage` + outbox table; (4) TQ provider + persister + IDB adapter; (5) Catalog grid + Plant Profile + Manual Add screens; (6) Combobox + Bottom Sheet (Vaul) + Lightbox; (7) Read-only-mode hook + variants; (8) Playwright E2E + a11y smoke. Wave 0 must add the test infrastructure for a11y (axe-core), Vaul, focus-trap, and the IDB-keyval test harness.
+**Confidence:** HIGH on locked stack (CONTEXT.md 27/27 answered), MEDIUM on a11y-grade UI primitive choices (hand-rolled vs Vaul fallback), MEDIUM on TQ-persister + Serwist coordination (no canonical reference recipe — pattern is sound but bespoke).
 
 <user_constraints>
 
@@ -136,7 +120,7 @@ The research found:
 | **CAT-03** | Manual create missing name OR missing photo → `validation_failed`, no row, field highlighted                                                                                             | Standard Stack §"drizzle-zod domain schema", Architecture §"Zod boundary validation in route handler"                                                                                              |
 | **CAT-04** | Plant profile shows name, nickname, room, acquisition_date, notes, cover, care-card link (if CareGuide exists), active reminders, photo journal, identification history                  | Architecture §"Single-scroll Plant Profile with stub sections" (care-card slot hidden, reminders stub, ID-history link conditional)                                                                |
 | **CAT-05** | Location picker shows user's prior locations + defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` + free text; free text becomes reusable                  | Standard Stack §"Combobox primitive", Architecture §"WAI-ARIA APG 1.2 combobox pattern", Code Examples §"Combobox keyboard contract"                                                               |
-| **CAT-06** | Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline                                                 | Architecture §"Two-step PhotoEntry add (D-23)", Standard Stack §"Vaul bottom-sheet" for the add modal                                                                                              |
+| **CAT-06** | Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline                                                 | Architecture §"Two-step PhotoEntry add (D-23)", Standard Stack §"Bottom-sheet (hand-rolled per UI-SPEC, Vaul fallback)" for the add modal                                                          |
 | **CAT-07** | Catalog default sort: `acquisition_date` desc, null dates last                                                                                                                           | Architecture §"Cursor pagination with secondary sort", Pitfall §"Cursor pagination edge case (NULL acquisition_date)"                                                                              |
 | **CAT-08** | Sort control offers name A-Z, name Z-A, date newest, date oldest, location; selected sort persists for session                                                                           | Architecture §"sessionStorage sort persistence", Code Examples §"`useSortPreference` hook"                                                                                                         |
 | **CAT-09** | Deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, sets `Identification.plant_id` NULL but preserves the history row                          | Architecture §"Atomic delete + transactional outbox", Standard Stack §"Inngest event consumer", Pitfall §"Post-commit event-dispatch failure", Code Examples §"`catalog/cleanup-storage` function" |
@@ -146,9 +130,26 @@ The research found:
 | **UI-04**  | Home screen — empty: full-bleed "Identifique sua primeira planta" CTA + camera button + "Adicionar manualmente" text link                                                                | UI-SPEC.md "Empty Home" composition (asymmetric, NOT centered hero stack); D-25 placeholder route at `/identify`                                                                                   |
 | **UI-07**  | Catalog grid responsive breakpoints with card 4:5 photo + name + nickname + location; sort control                                                                                       | Architecture §"Responsive grid", §"Catalog card geometry", Standard Stack §"Next/Image with Supabase loader"                                                                                       |
 | **UI-08**  | Plant profile — cover + thumbnail gallery, inline-edit name/nickname/room/acquisition_date/notes, care card (or hidden), active reminders, photo journal preview, ID history link        | Architecture §"Inline edit pattern (click-to-edit per field, save on blur)", §"Conditional sections (care/ID hidden when empty)"                                                                   |
-| **UI-11**  | Photo journal screen — per-plant chronological list with add entry flow; read-only variant                                                                                               | Standard Stack §"Bottom sheet (Vaul) for add", §"Lightbox (hand-rolled with focus-trap)" for entry view + edit                                                                                     |
+| **UI-11**  | Photo journal screen — per-plant chronological list with add entry flow; read-only variant                                                                                               | Standard Stack §"Bottom-sheet (hand-rolled per UI-SPEC, Vaul fallback)" for add, §"Lightbox (hand-rolled with focus-trap)" for entry view + edit                                                   |
 
 </phase_requirements>
+
+## Summary
+
+Phase 5 is **almost entirely a "wire pre-locked decisions together" phase**. CONTEXT.md (27/27 answered) locked TanStack Query as the project's server-state library, IDB persister via `@tanstack/react-query-persist-client` + `idb-keyval` for offline JSON, Serwist runtime caching for cover/thumbnail images, hybrid optimistic UI (sort + inline edits = optimistic; create + delete = pessimistic), cursor-paginated infinite scroll with the Phase 2 D-36 cursor format, hand-rolled combobox/bottom-sheet/lightbox per WAI-ARIA APG, an Inngest `catalog/cleanup-storage` consumer fed by a durable pending-deletion table written atomically with the plant DELETE, and a `useSubscription()` stub returning `'trialing'` so all read-only-mode UI branches ship now.
+
+The research found:
+
+1. **TanStack Query 5.100.5** is current and works with React 19.2.5 + Next 16.2.3 App Router. The `PersistQueryClientProvider` ships built-in race protection via the internal `useIsRestoring` hook — this is the exact mechanism that prevents the persister-hydration race. Use it; do not hand-roll a `useEffect`-based restorer.
+2. **TQ persister and Serwist do not overlap** — TQ owns JSON in IndexedDB, Serwist owns images in Cache Storage. The two layers cache different MIME types and never collide. Document this explicitly so the planner does not chase phantom dedup work.
+3. **Atomic transaction + Inngest event = two-stage outbox**. The DB transaction commits both the plant DELETE and a `pending_storage_deletion` row; an event is then dispatched. If the event dispatch fails after commit, a reconciler/poller scans for `pending` rows older than threshold. Inngest's `step.sendEvent` is durable when called inside another Inngest function, but the API route handler that originated the DELETE is a one-shot HTTP request — there is no retry loop unless you explicitly build one (or rely on the reconciler).
+4. **Bottom-sheet should be hand-rolled per UI-SPEC.md "Registry Safety" section** ("Modal sheet … hand-rolled per PRD §17 specs"). Use `focus-trap` (7.1.3) for the focus-trap primitive. **Vaul 1.1.2 is the documented fallback** if hand-roll fails Wave 0 axe-core/VoiceOver verification — Vaul matches the §17 modal-sheet contract (drag handle, snap points, focus trap, swipe-down) and does not ship Inter or override fonts. The planner should resolve the UI-SPEC.md hand-rolled-only directive vs CONTEXT D-16's discretion before committing.
+5. **Hand-roll the combobox** per WAI-ARIA APG 1.2 "Editable Combobox with List Autocomplete" pattern (DOM focus stays on input, visual focus moves via `aria-activedescendant`). No good library fits the §17 atmosphere without overriding fonts.
+6. **Hand-roll the lightbox** — `yet-another-react-lightbox` (0.27.19) is current but ships its own font/theme system that conflicts with §17 (Source Serif 4 + Plus Jakarta Sans, no Inter). Use `focus-trap` (7.1.3) for the focus-trap primitive only.
+7. **Two-step Plant create flow has a critical security pitfall** — server MUST verify the storage path prefix `{user_id}/{plant_id}/{photo_id}` in every submitted `photo_url` matches the authenticated user AND the submitted plant id. Otherwise photo-URL spoofing on `POST /api/v1/plants` lets a malicious client claim any other user's photo as part of their plant.
+8. **The Phase 2 cursor format `base64({ id, createdAt })` does NOT accommodate sort by acquisition_date / location / name.** Phase 5 must either extend the cursor shape (Phase 5 expands D-36) OR always tiebreak by `(created_at, id)` regardless of sort key — but the latter requires server-side WHERE-clause expansion that is non-trivial in Drizzle. **This is the single highest-priority planner question** (Open Question 1 below).
+
+**Primary recommendation:** Plan Phase 5 as a small set of TDD waves: (1) catalog repo + UoW + drizzle-zod domain schemas; (2) `/api/v1/plants*` route handlers with idempotency + ownership validation; (3) Inngest `catalog/cleanup-storage` + outbox table + reconciler cron; (4) TQ provider + persister + IDB adapter; (5) Catalog grid + Plant Profile + Manual Add screens; (6) Hand-rolled Combobox + Bottom Sheet (with Vaul fallback path) + Lightbox; (7) Read-only-mode hook + variants; (8) Playwright E2E + a11y smoke. Wave 0 must add the test infrastructure for a11y (axe-core), focus-trap, IDB-keyval test harness (`fake-indexeddb`), and confirm whether Phase 4 ships an Inngest outbox/dispatcher (else Phase 5 owns the reconciler).
 
 ## Architectural Responsibility Map
 
@@ -165,7 +166,7 @@ Phase 5 is a **single-tier full-stack feature** but spans browser/server/storage
 | Catalog grid (initial render)               | Browser (client-component with `useInfiniteQuery`) | API (`GET /api/v1/plants?cursor=&limit=`) | Cursor-paginated; server prefetches first page via RSC for fast first paint.                                                                                                                                               |
 | Sort control                                | Browser (sessionStorage + TQ refetch) | API (server-side ORDER BY)             | Sort key forwarded to API; sessionStorage persists user preference per D-08.                                                                                                                                               |
 | Photo journal — list                        | Browser (TQ query)            | API (`GET /api/v1/plants/:id/photos`)  | Reverse-chronological per CAT-06; cursor-paginated.                                                                                                                                                                        |
-| Photo journal — add entry                   | Browser (Vaul bottom sheet) → API (two-step upload + create) | DB (PhotoEntry row + cover-photo update) | Add modal hosts the photo picker + note input; submit triggers two-step flow.                                                                                                                                              |
+| Photo journal — add entry                   | Browser (hand-rolled bottom-sheet, Vaul fallback) → API (two-step upload + create) | DB (PhotoEntry row + cover-photo update) | Add modal hosts the photo picker + note input; submit triggers two-step flow.                                                                                                                                              |
 | Photo journal — lightbox                    | Browser (hand-rolled with focus-trap) | API (PATCH/DELETE/cover endpoints) | Fullscreen overlay; edit actions issue separate API calls (each idempotent).                                                                                                                                               |
 | Plant delete                                | API (transaction + outbox row + event dispatch) | Inngest (`catalog/cleanup-storage`) + Storage (delete files) | Atomic transaction owns DB cascade + outbox row; Inngest function handles storage deletion async.                                                                                                                          |
 | Offline JSON cache                          | Browser (TQ persister to IDB) | —                                      | TQ persister with `@tanstack/react-query-persist-client` + `idb-keyval`.                                                                                                                                                   |
@@ -186,10 +187,10 @@ Phase 5 is a **single-tier full-stack feature** but spans browser/server/storage
 | `serwist` + `@serwist/next`                   | 9.5.7             | Service Worker runtime caching for cover/thumbnail images        | [VERIFIED: package.json] Already pinned by Phase 1. Phase 3 enables runtime caching; Phase 5 owns the catalog-image route registration.                                                              |
 | `inngest`                                     | 4.2.4             | Durable async event consumer for `catalog/cleanup-storage`       | [VERIFIED: npm registry] Phase 4 onboards (first async consumer = verification email); Phase 5 is second consumer. Use `inngest.createFunction({ triggers: [{ event: "plant.deleted" }] }, ...)`.    |
 | `drizzle-orm` + `drizzle-zod`                 | 0.45.2 + 0.8.3    | Domain schema + zod schema derivation for route validation       | [VERIFIED: npm registry] Phase 2 D-19 mandates `drizzle-zod`-derived domain schemas. `createInsertSchema` / `createSelectSchema` / `createUpdateSchema` are the three primitives. [CITED: drizzle-team/drizzle-orm-docs/zod.mdx] |
-| `vaul`                                        | 1.1.2             | Bottom-sheet primitive (drag handle, snap points, focus trap)    | [VERIFIED: npm registry] Headless, accessible, mobile-friendly; satisfies §17 modal-sheet contract. Does not ship Inter or override fonts. [CITED: vaul.emilkowal.ski]                               |
-| `focus-trap`                                  | 7.1.3             | Vanilla focus-trap primitive for hand-rolled lightbox            | [VERIFIED: npm registry] Maintained by `focus-trap` org (sibling to `tabbable`). Use `createFocusTrap(container, options)` API. [CITED: github.com/focus-trap/focus-trap]                             |
+| `focus-trap`                                  | 7.1.3             | Vanilla focus-trap primitive for hand-rolled bottom-sheet + lightbox | [VERIFIED: npm registry] Maintained by `focus-trap` org (sibling to `tabbable`). Use `createFocusTrap(container, options)` API. [CITED: github.com/focus-trap/focus-trap]                             |
 | `@axe-core/playwright`                        | 4.10.x (verify in Wave 0) | Automated a11y assertions in Playwright E2E                  | Required for §18 a11y verification across catalog flows. Standard for axe-based testing in Playwright.                                                                                               |
 | `date-fns-tz`                                 | 3.2.0             | Server-render user-local times with `User.timezone`              | [VERIFIED: npm registry] Phase 1 INFRA-23 mandate; Phase 5 uses for acquisition date display + photo-journal timestamps.                                                                             |
+| `vaul` (FALLBACK ONLY)                        | 1.1.2             | Bottom-sheet primitive — adopt only if Wave 0 hand-roll fails a11y verification | [VERIFIED: npm registry] Headless, accessible, mobile-friendly; satisfies §17 modal-sheet contract. Does not ship Inter or override fonts. UI-SPEC.md Registry Safety section requires hand-rolled FIRST; Vaul is the documented fallback. [CITED: vaul.emilkowal.ski] |
 
 ### Already in Repo (verify only — Phase 1/2 ships)
 
@@ -214,22 +215,25 @@ Phase 5 is a **single-tier full-stack feature** but spans browser/server/storage
 | `tabbable`                                    | 6.4.0             | Lightweight (no React) tabbable-element finder. Pull in only if hand-rolling combobox needs to query tabbables; `focus-trap` already includes it transitively.                                                       |
 | `@floating-ui/react`                          | 0.27.19           | Optional positioning primitive for combobox dropdown anchor. Phase 5 dropdown is a simple below-input listbox — likely not needed; CSS positioning with `position: absolute; top: 100%;` is enough.                  |
 | `react-aria-components`                       | 1.17.0            | A full headless UI kit with combobox / popover / dialog primitives. **Skip:** kit is heavy, ships its own focus management that conflicts with our hand-rolled approach, and CONTEXT D-15 specifies "custom build". |
+| `fake-indexeddb`                              | latest            | Test-time IndexedDB polyfill for Vitest (jsdom does not ship IDB). Required for unit-testing the persister.                                                                                                          |
 
 ### Alternatives Considered
 
 | Instead of                              | Could Use                                       | Tradeoff                                                                                                                                                                                                                                                                           |
 | --------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vaul bottom-sheet                       | Hand-roll over `focus-trap` + custom drag       | Vaul wins on time-to-ship and a11y maturity. Hand-roll only if Vaul conflicts with §17 motion specs (unlikely — Vaul uses spring physics that match §17's `stiffness: 120, damping: 18, mass: 1`). Recommend Vaul; planner should A/B against UI-SPEC requirements in Wave 0.       |
+| Hand-rolled bottom-sheet                | Vaul                                            | UI-SPEC.md Registry Safety section explicitly says "Modal sheet … hand-rolled per PRD §17 specs". CONTEXT D-16 left implementation to discretion but UI-SPEC.md narrowed it. Vaul is the documented fallback if Wave 0 hand-roll fails axe-core or VoiceOver verification. **Planner must reconcile UI-SPEC vs CONTEXT before committing.** |
 | Hand-roll lightbox                      | `yet-another-react-lightbox` 3.31.0             | YARL ships its own theme tokens and does not respect §17 atmosphere (Source Serif 4 + Plus Jakarta Sans, no Inter). Forking the theme adds maintenance cost. Hand-roll wins; use `focus-trap` for the focus-trap + `IntersectionObserver`/`PointerEvent` for swipe.                  |
 | Hand-roll combobox per APG              | `react-aria-components` Combobox                | RAC is heavier and brings its own popover positioning + portal logic. CONTEXT D-15 explicitly chose hand-rolled. Hand-roll wins.                                                                                                                                                   |
 | `idb-keyval` for TQ persister storage   | `@tanstack/query-async-storage-persister` + custom IDB wrapper | `idb-keyval` is 1.5KB minified, three-method API (`get`/`set`/`del`), exact match for the persister contract documented in TanStack Query docs. CONTEXT D-20 names it. No reason to swap.                                                                                          |
 | `useInfiniteQuery` + IntersectionObserver | `react-intersection-observer` library         | Native `IntersectionObserver` is fine; the library only saves a few lines. CONTEXT does not lock either way; use native to keep deps lean.                                                                                                                                          |
 
-**Installation:**
+**Installation (assuming hand-rolled bottom-sheet path; add `vaul` only if Wave 0 fallback triggered):**
 
 ```bash
-pnpm add @tanstack/react-query @tanstack/react-query-persist-client @tanstack/query-async-storage-persister idb-keyval vaul focus-trap date-fns-tz inngest
-pnpm add -D @axe-core/playwright
+pnpm add @tanstack/react-query @tanstack/react-query-persist-client @tanstack/query-async-storage-persister idb-keyval focus-trap date-fns-tz inngest
+pnpm add -D @axe-core/playwright fake-indexeddb
+# If hand-roll fails Wave 0 a11y verification:
+# pnpm add vaul
 ```
 
 **Version verification (2026-04-26):**
@@ -240,12 +244,12 @@ pnpm add -D @axe-core/playwright
 | `@tanstack/react-query-persist-client` | 5.100.5     | Use this (not `query-persist-client-core`) — it ships `PersistQueryClientProvider`              |
 | `@tanstack/query-async-storage-persister` | 5.100.5  | Required for IDB (returns Promises)                                                            |
 | `idb-keyval`                           | 6.2.2       | Stable, small, exact match for persister contract                                              |
-| `vaul`                                 | 1.1.2       | React 19 compatible                                                                            |
 | `focus-trap`                           | 7.1.3       | Vanilla, no React dependency                                                                   |
 | `date-fns-tz`                          | 3.2.0       | Already considered standard                                                                    |
 | `inngest`                              | 4.2.4       | Phase 4 will pin                                                                               |
 | `drizzle-orm`                          | 0.45.2      | Phase 2 will pin                                                                               |
 | `drizzle-zod`                          | 0.8.3       | Phase 2 will pin                                                                               |
+| `vaul` (fallback)                      | 1.1.2       | React 19 compatible — adopt only if hand-roll fails Wave 0 a11y                                |
 
 **Version-pinning policy:** Per Phase 1 D-04 / Plan 01-04 commits — pin EXACT versions in `package.json` (not `^x.y` ranges) for deterministic CI. Verify the version is current at planning time, not at research time, since this research may sit for days before planning runs.
 
@@ -405,7 +409,8 @@ src/
 │   │   ├── use-set-cover-photo.ts
 │   │   └── use-location-suggestions.ts
 │   └── inngest/
-│       └── cleanup-storage.ts        # 'plant.deleted' consumer (D-04)
+│       ├── cleanup-storage.ts        # 'plant.deleted' consumer (D-04)
+│       └── reconcile-deletions.ts    # cron (every 5min) — picks up orphaned pending rows
 │
 ├── contexts/billing/
 │   └── api/
@@ -417,7 +422,7 @@ src/
 │   │   ├── persist-client-provider.tsx # PersistQueryClientProvider wrapper (client component)
 │   │   └── idb-persister.ts          # idb-keyval-backed persister
 │   ├── ui/                           # Phase 3 owns most of this
-│   │   ├── bottom-sheet.tsx          # thin wrapper around Vaul (Phase 5 owns)
+│   │   ├── bottom-sheet.tsx          # hand-rolled per UI-SPEC (Phase 5 owns); Vaul fallback path documented inline
 │   │   ├── combobox.tsx              # hand-rolled APG combobox (Phase 5 owns)
 │   │   ├── lightbox.tsx              # hand-rolled (Phase 5 owns)
 │   │   └── inline-edit-field.tsx     # click-to-edit + save-on-blur (Phase 5 owns)
@@ -777,67 +782,98 @@ export const cleanupStorage = inngest.createFunction(
 
 **Free-text commit semantics (D-15):** if user types text not in suggestions and presses Enter or blurs while non-empty, commit the typed value as-is (preserve display case; the next render of the picker will show it under "Usados antes" because `SELECT DISTINCT location` returns it).
 
-### Pattern 7: Bottom-sheet via Vaul
+### Pattern 7: Bottom-sheet — hand-rolled (Vaul fallback)
 
-**What:** Adopt Vaul as the bottom-sheet primitive. Vaul matches the §17 modal-sheet contract: drag handle, snap points, focus trap, swipe-down dismiss, configurable scrim.
+**What:** Hand-roll the bottom-sheet primitive per UI-SPEC.md "Registry Safety" section directive ("Modal sheet … hand-rolled per PRD §17 specs"). Use `focus-trap` for the focus trap. Implement drag handle, swipe-down dismiss via `PointerEvent` + `setPointerCapture`, scrim, and "Fechar" labelled close button per §17 modal-sheet contract.
 
-**Why Vaul over hand-rolled:** Battle-tested a11y (focus trap built-in, ESC dismiss, scrim ARIA), spring physics under the hood, no font/theme override conflicts. CONTEXT D-16 left implementation choice to discretion. Vaul is a high-quality fit.
+**When to use:** Photo Journal add-entry (D-16) + delete-confirm modal (D-19).
 
-**Example skeleton:**
+**Vaul fallback path:** If Wave 0 hand-roll fails axe-core verification or VoiceOver manual test, swap to Vaul (1.1.2) — it satisfies all §17 requirements (drag handle, snap points, focus trap, swipe-down) and does not ship Inter or override fonts. The fallback is behavior-equivalent; no API surface area change required if the hand-rolled `BottomSheet` component matches Vaul's prop shape (`open`, `onOpenChange`, `title`, `children`).
+
+**Hand-rolled skeleton:**
 
 ```tsx
 // src/shared/ui/bottom-sheet.tsx
-// Source: vaul docs (vaul.emilkowal.ski)
+// Hand-rolled per UI-SPEC.md Registry Safety + PRD §17 modal-sheet contract.
+// Vaul fallback documented in research; swap requires only internal change, no API change.
+// Source: focus-trap docs + W3C WAI-ARIA dialog pattern
 "use client";
-import { Drawer } from "vaul";
-import type { ReactNode } from "react";
+import { createFocusTrap, type FocusTrap } from "focus-trap";
+import { useEffect, useRef, useId, useState } from "react";
 
-export function BottomSheet({
-  open,
-  onOpenChange,
-  title,
-  children,
-}: {
+type Props = {
   open: boolean;
   onOpenChange: (next: boolean) => void;
   title: string;
-  children: ReactNode;
-}) {
+  children: React.ReactNode;
+};
+
+export function BottomSheet({ open, onOpenChange, title, children }: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const trapRef = useRef<FocusTrap | null>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open || !containerRef.current) return;
+    trapRef.current = createFocusTrap(containerRef.current, {
+      escapeDeactivates: true,
+      clickOutsideDeactivates: false, // require visible "Fechar" per §17
+      onDeactivate: () => onOpenChange(false),
+      returnFocusOnDeactivate: true,
+    });
+    trapRef.current.activate();
+    return () => trapRef.current?.deactivate();
+  }, [open, onOpenChange]);
+
+  if (!open) return null;
   return (
-    <Drawer.Root open={open} onOpenChange={onOpenChange}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-[var(--scrim)]" />
-        <Drawer.Content
-          className="fixed bottom-0 inset-x-0 rounded-t-3xl bg-[var(--surface)] outline-none"
-          // Honor §17 motion: spring stiffness 120 / damping 18 (Vaul defaults are close)
+    <div className="fixed inset-0 z-40">
+      <div
+        className="absolute inset-0 bg-[var(--scrim)]"
+        // Tap scrim allowed only IN ADDITION to visible "Fechar" per §17.
+        onClick={() => onOpenChange(false)}
+        aria-hidden="true"
+      />
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-[var(--surface)] outline-none"
+      >
+        {/* Drag handle (decorative — drag logic via PointerEvent below) */}
+        <div className="mx-auto mt-4 h-1 w-9 rounded-full bg-[var(--hairline)]" aria-hidden="true" />
+        <h2 id={titleId} className="px-5 pt-3 text-2xl font-medium font-serif">
+          {title}
+        </h2>
+        <div className="px-5 pb-[calc(theme(spacing.6)+env(safe-area-inset-bottom))] pt-4">
+          {children}
+        </div>
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="absolute top-4 right-4 text-sm font-semibold text-[var(--canopy)]"
         >
-          <Drawer.Handle className="mx-auto mt-4 h-1 w-9 rounded-full bg-[var(--hairline)]" />
-          <Drawer.Title className="px-5 pt-3 text-2xl font-medium font-serif">
-            {title}
-          </Drawer.Title>
-          <div className="px-5 pb-[calc(theme(spacing.6)+env(safe-area-inset-bottom))] pt-4">
-            {children}
-          </div>
-          <Drawer.Close className="absolute top-4 right-4 text-sm font-semibold text-[var(--canopy)]">
-            Fechar
-          </Drawer.Close>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+          Fechar
+        </button>
+      </div>
+    </div>
   );
 }
 ```
 
-**a11y verification checklist (Wave 0 ADR):**
+**a11y verification checklist (Wave 0 — gates the hand-roll vs Vaul fallback decision):**
 
-- [ ] Vaul's `Drawer.Root` produces `role="dialog"` + `aria-modal="true"` (verify in DevTools).
-- [ ] `Drawer.Title` is wired as `aria-labelledby`.
-- [ ] Tab cycles focus inside; Shift+Tab reverses; ESC closes.
-- [ ] No font override (Vaul ships no CSS fonts; uses `inherit`).
-- [ ] Reduced-motion fallback honored.
+- [ ] `role="dialog"` + `aria-modal="true"` set on container.
+- [ ] `aria-labelledby` wired to title element id.
+- [ ] Focus trap activates on open, deactivates on close, returns focus to trigger.
+- [ ] Tab cycles inside; Shift+Tab reverses; ESC closes.
+- [ ] Swipe-down dismiss works (PointerEvent path).
+- [ ] No font override (component does not declare a `font-family`).
+- [ ] Reduced-motion fallback honored (no slide-in animation when `prefers-reduced-motion: reduce`).
 - [ ] axe-core scan inside open sheet returns 0 violations.
 
-If any check fails, fall back to hand-rolled with `focus-trap` + `dialog`-role wrapper.
+If any check fails after Wave 0 attempts at fix, swap to Vaul (the API surface above is intentionally Vaul-shaped to make the swap a single import-line change).
 
 ### Pattern 8: Hand-rolled lightbox (focus trap + IntersectionObserver swipe)
 
@@ -1089,9 +1125,9 @@ export async function POST(req: NextRequest) {
 | Cursor pagination on the client      | Manual `useEffect` + `cursor` state                    | `useInfiniteQuery`                                   | Built-in `getNextPageParam`, `hasNextPage`, page management, scroll-restore behavior on back-nav.                                                                                |
 | Offline JSON cache                   | Custom IDB wrapper writing TQ cache shape              | `@tanstack/react-query-persist-client` + `idb-keyval` | Race-condition guard via internal `useIsRestoring`, throttled writes (1/s), built-in `buster` versioning, garbage collection.                                                  |
 | Service Worker runtime caching       | Hand-write SW fetch handlers                          | Serwist `runtimeCaching` config (Phase 1 + 3 wire)   | Dehydration is brittle; Serwist provides battle-tested strategies (`StaleWhileRevalidate`, `CacheFirst`, `NetworkFirst`) with `ExpirationPlugin`.                                |
-| Bottom-sheet (drawer)                | Custom drag + scrim + focus trap                      | Vaul                                                 | a11y baseline, spring physics, snap points, swipe-down dismiss — all production-tested.                                                                                          |
 | Focus trap                           | Manual `tabindex` cycling on keydown                   | `focus-trap` (vanilla)                                | Edge cases (shadow DOM, animated trigger return-focus delay, fallback focus when no tabbables) handled.                                                                          |
 | Combobox a11y                        | Native `<select>` or naive `<input>` + `<ul>`         | Hand-rolled per WAI-ARIA APG 1.2 (no library)        | Native `<select>` doesn't support free-text + dropdown filtering. CONTEXT D-15 is explicit: hand-rolled, but FOLLOW THE APG PATTERN — don't invent.                              |
+| Bottom-sheet a11y primitives         | Hand-roll all of dialog ARIA + scrim + drag handle from scratch in isolation | Hand-rolled per UI-SPEC.md, but compose `focus-trap` for the focus trap + adopt §17 motion primitives from Phase 3 | UI-SPEC.md mandates hand-rolled. **Vaul (1.1.2) is the documented fallback** if Wave 0 hand-roll fails axe-core/VoiceOver. Either way, do not hand-roll the focus-trap primitive — use `focus-trap`. |
 | Image optimization for Catalog cards | Hand-roll resizing                                    | Next 16 `<Image>` + Supabase image-loader (or static cover/thumbnail URLs from Phase 2's `sharp` thumbnail generation) | Next/Image handles `srcset`, lazy-loading, blur-up. The thumbnails in `plant-thumbnails` bucket are already correctly-sized.                                                       |
 | ID generation (idempotency keys)     | `Date.now()` + counter                                 | `crypto.randomUUID()`                                | Browser-native, collision-resistant, RFC 4122 v4.                                                                                                                                |
 | Async event consumer / retries       | `setTimeout` + manual retry queue                      | Inngest `createFunction` with `concurrency`/`retries` | Durable, observable, exponential backoff, dead-letter via `onFailure`. Phase 4 onboards.                                                                                          |
@@ -1099,7 +1135,7 @@ export async function POST(req: NextRequest) {
 | Image EXIF strip                     | Custom EXIF parser                                    | `browser-image-compression` (Phase 2 D-28/D-29 ships) | Phase 2 already wires `preserveExif: false`. Phase 5 reuses.                                                                                                                     |
 | Server-side EXIF GPS detection       | Custom binary parsing                                 | `exifr` (Phase 2 D-30 ships)                         | Phase 2 already integrates as defense-in-depth.                                                                                                                                  |
 | Thumbnail generation                 | Browser-side `<canvas>` thumbnail                     | `sharp` server-side (Phase 2 D-31 ships)             | Server-side thumbnails are deterministic, not subject to browser canvas quirks, and live in `plant-thumbnails` bucket.                                                            |
-| Pagination cursor encoding           | Custom `id|date` string                                | `base64(JSON.stringify({ id, createdAt }))` per Phase 2 D-36 | Already specified; reuse the helper Phase 2 ships.                                                                                                                              |
+| Pagination cursor encoding           | Custom `id|date` string                                | `base64(JSON.stringify({ id, createdAt }))` per Phase 2 D-36 | Already specified; reuse the helper Phase 2 ships. **NOTE: cursor extension required for sort-key inclusion — see Open Question 1.**                                              |
 
 **Key insight:** Phase 5 is a **glue phase**. The clever bits (image pipeline, RLS, idempotency, cursor encoding, EXIF, thumbnails, JWT verify) all come from Phase 2. Phase 5 should be ~2000 lines of orchestration + UI, not infrastructure.
 
@@ -1167,7 +1203,7 @@ export async function POST(req: NextRequest) {
 
 - Always include a tiebreaker: `ORDER BY acquisition_date DESC NULLS LAST, created_at DESC, id DESC`.
 - Cursor decode passes BOTH values to the WHERE clause: `(acquisition_date, created_at, id) < (cursor.acquisition_date, cursor.createdAt, cursor.id)` (or for nulls-last, the SQL gets verbose — use a subquery or `ROW(...) < ROW(...)` syntax).
-- Phase 2 D-36 specifies the cursor is `base64({ id, createdAt })`. Phase 5 may need to extend the cursor shape to include the sort key value (e.g., `{ id, createdAt, acquisitionDate, location, name }`) — surface this as an open question for the planner.
+- Phase 2 D-36 specifies the cursor is `base64({ id, createdAt })`. **Phase 5 must extend the cursor shape to include the active sort-key value (e.g., `{ id, createdAt, acquisitionDate }` when sort=acquired_desc; `{ id, createdAt, name }` when sort=name_asc; etc.).** This is Open Question 1 — the highest-priority planner decision.
 
 **Warning signs:** Test fails when N plants share the same `acquisition_date`.
 
@@ -1227,20 +1263,19 @@ export async function POST(req: NextRequest) {
 
 **Warning signs:** Any `new Date(x).toLocaleDateString("pt-BR")` in a component.
 
-### Pitfall 10: Combobox "outro" free-text option vs default suggestion conflict
+### Pitfall 10: Combobox "Outro" — semantic ambiguity vs locked spec
 
-**What goes wrong:** Defaults include "Outro". User types "Outro" — combobox shows it as both a default suggestion and the matched typed value. If the user picks the suggestion, the picker commits "Outro" — but UX-wise "Outro" was meant as a placeholder for free-text, not a real location.
+**What goes wrong:** Defaults include "Outro". A user types "Outro" — combobox shows it as a matched suggestion. If the user picks the suggestion, the picker commits literal "Outro" — which may or may not be the user's intent (they may have wanted free text).
 
-**Why it happens:** "Outro" is one of the 8 defaults but semantically belongs in the picker UI as an opt-out.
+**Why it happens:** "Outro" is one of the 8 defaults but its semantic role (literal location vs free-text trigger) is ambiguous in the spec.
 
 **How to avoid:**
 
-- Treat "Outro" as a suggestion that, when selected, focuses an input for the free text — not as a literal location value.
-- OR: drop "Outro" from the defaults and rely on the combobox's free-text affordance (anything not in suggestions IS the free text path).
-- Recommend the latter: the combobox's free-text contract IS the "outro" path. Defaults stay 7 items.
-- Surface to planner — could change UI-SPEC.md's stated default list. (UI-SPEC.md lists 8 items; CAT-05 also lists 8 items; this is a UX decision the planner should escalate or accept verbatim.)
+- **Default behavior should follow UI-SPEC verbatim:** ship 8 defaults including "Outro" that, when selected, commits literal "Outro" as the location value. The combobox's free-text affordance handles the user's "I want to type something custom" intent — they just don't pick a suggestion.
+- Both UI-SPEC.md and CAT-05 explicitly list 8 defaults including "Outro". Any deviation (e.g., dropping "Outro" or making it focus a free-text input) is a spec change that **must be surfaced to the user before implementation**.
+- Surface as Open Question 4 below.
 
-**Warning signs:** A user types a custom location and then sees "Outro" pre-selected because their input matched the literal string.
+**Warning signs:** Implementation that interprets "Outro" specially (e.g. focuses a free-text input on selection) without explicit user confirmation that the spec was updated.
 
 ## Runtime State Inventory
 
@@ -1327,13 +1362,13 @@ serwist.addEventListeners();
 | WAI-ARIA APG 1.0 "combobox dialog popup"           | WAI-ARIA APG 1.2 "combobox listbox popup"                  | APG 1.2 (2021)   | Use 1.2 pattern. DOM focus stays on input; `aria-activedescendant` for visual focus. [CITED: w3.org/TR/2021/NOTE-wai-aria-practices-1.2-20211129]                    |
 | Sentry next.js 7.x `sentry.client.config.ts`       | Sentry 10.x `instrumentation-client.ts`                    | Sentry SDK v9-10 | Already adopted in Phase 1 (Plan 01-05b). Phase 5 has no Sentry-specific work but inherits this convention.                                                          |
 | `next-pwa`                                          | `@serwist/next` (Workbox fork)                             | Phase 1 D-13     | Already adopted.                                                                                                                                                     |
-| Hand-roll bottom sheet                             | Vaul                                                       | 2024+ adoption   | Vaul is now the dominant React bottom-sheet primitive (Radix-style API, accessible by default).                                                                       |
+| Hand-roll bottom sheet                             | Vaul (popular industry choice; Folhário uses hand-roll first per UI-SPEC, Vaul as fallback) | 2024+ adoption   | Vaul is now the dominant React bottom-sheet primitive. Folhário's design system constraints push us to hand-roll first.                                                |
 
 **Deprecated/outdated (do NOT use):**
 
 - TQ v5 `experimental_createQueryPersister` — works but is per-query, not per-client. CONTEXT D-20 wants whole-client persistence. Use `PersistQueryClientProvider` instead.
 - `react-image-lightbox` — abandoned, ships its own theme system that overrides fonts.
-- `react-modal` — predates `<dialog>` and is aria-modal-fragile compared to Vaul + focus-trap.
+- `react-modal` — predates `<dialog>` and is aria-modal-fragile compared to hand-roll + focus-trap.
 
 ## Assumptions Log
 
@@ -1344,18 +1379,19 @@ serwist.addEventListeners();
 | A3 | Phase 2's `pending_storage_deletions` table (D-04 catalog-local) will be created by Phase 5 because Phase 4 does not provide a generic event outbox. | Architecture §"Outbox pattern"                | If Phase 4 ships a generic outbox/dispatcher, Phase 5 should reuse it. Surface as "verify before planning" item.                                                                                   |
 | A4 | The Supabase Storage signed-URL host pattern is `*.supabase.co` for the Serwist runtime cache rule.                                                  | Code Examples §"Serwist runtime cache"        | Self-hosted Supabase or a CDN proxy would shift the host. Verify in Phase 1 / Phase 2 storage adapter configuration before committing the rule.                                                     |
 | A5 | The catalog application layer can safely emit `plant.deleted` outside the transaction without losing events, because the outbox row IS the source of truth and the reconciler handles dispatch failure. | Architecture §"Atomic plant DELETE pattern"   | If the reconciler is omitted, events lost to dispatch failure leak storage forever. The plan MUST include the reconciler cron OR an in-process retry with backoff.                                  |
-| A6 | The combobox in CAT-05 should drop "Outro" from the defaults and rely on free-text commit semantics for that intent.                                 | Pitfall §"Combobox 'outro' conflict"          | UI-SPEC.md and CAT-05 both list 8 defaults including "Outro". Dropping it changes the spec. Surface to user before implementation.                                                                  |
-| A7 | The cursor format from Phase 2 D-36 (`base64({ id, createdAt })`) needs extension in Phase 5 to include sort-key values when sorting by acquisition_date / location / name. | Pitfall §"Cursor pagination instability"      | If the cursor doesn't include the sort key, pagination drifts when the sort key has duplicates. Either extend the cursor (Phase 5 expands D-36) or always tiebreak by (created_at, id) — verify with planner. |
+| A6 | The combobox "Outro" default commits literal "Outro" when selected (per UI-SPEC + CAT-05 verbatim).                                                  | Pitfall §"Combobox 'Outro' semantic ambiguity" | If the team prefers "Outro" to focus a free-text input, the spec must be amended first. Surfaced as Open Question 4.                                                                              |
+| A7 | The cursor format from Phase 2 D-36 (`base64({ id, createdAt })`) needs extension in Phase 5 to include sort-key values when sorting by acquisition_date / location / name. | Pitfall §"Cursor pagination instability"      | If the cursor doesn't include the sort key, pagination drifts when the sort key has duplicates. **Highest-priority planner question — Open Question 1.**                                          |
 | A8 | The `useSubscription()` hook lives at `src/contexts/billing/api/use-subscription.ts` per CONTEXT D-24 verbatim, even though `api/` is conventionally route handlers. | Pitfall §"useSubscription placement conflict" | If the team prefers `application/` or a new `client/` sub-folder, the file path changes. Surface to planner (or accept CONTEXT verbatim and document the deviation from convention).               |
 | A9 | TanStack Query 5.100.5 + React 19.2.5 + Next 16.2.3 (Turbopack) work together without a known showstopper bug.                                       | Standard Stack §"Core"                         | While the search confirmed TQ v5 works with React 19 and Next 16, there could be subtle Turbopack issues with `dehydrate`/`HydrationBoundary` that surface in production. Smoke-test in Wave 0.    |
-| A10 | Vaul will satisfy §17 modal-sheet requirements (focus trap, ESC dismiss, swipe-down, drag handle, no font override).                                | Standard Stack §"Vaul" + Pattern §"Bottom-sheet" | Verify in Wave 0 with axe-core + manual VoiceOver test. If Vaul fails any check, fall back to hand-rolled with `focus-trap`.                                                                       |
+| A10 | A hand-rolled bottom-sheet using `focus-trap` will satisfy §17 modal-sheet requirements (drag handle, focus trap, ESC, swipe-down, no font override). Vaul is the documented fallback. | Standard Stack §"Vaul fallback" + Pattern §"Bottom-sheet" | UI-SPEC.md mandates hand-rolled. If Wave 0 fails axe-core / VoiceOver, swap to Vaul (1.1.2) — API surface is intentionally Vaul-shaped to enable the swap.                                          |
+| A11 | UI-SPEC.md's "Registry Safety" hand-rolled-only directive overrides CONTEXT D-16's discretion for the bottom-sheet. | Pattern §"Bottom-sheet — hand-rolled"         | If the planner reads CONTEXT D-16 as primary and ships Vaul without resolving the UI-SPEC tension, downstream UI-checker review will flag the registry-safety violation. Surfaced in Summary #4. |
 
 ## Open Questions
 
-1. **Cursor format extension for sort-key inclusion (CAT-07/CAT-08).**
-   - What we know: Phase 2 D-36 specifies `base64({ id, createdAt })`. CAT-07 default sort is `acquisition_date desc nulls last`.
-   - What's unclear: Should the cursor include the sort key value (e.g. `{ id, createdAt, sortValue: "2026-04-12" }`)? Or always tiebreak by `(created_at, id)` regardless of sort?
-   - Recommendation: Extend cursor to include sort key when the sort is not `created_at`-based. Keep `id` + `created_at` as universal tiebreakers. Surface to planner for confirmation.
+1. **[HIGHEST PRIORITY] Cursor format extension for sort-key inclusion (CAT-07/CAT-08).**
+   - What we know: Phase 2 D-36 specifies `base64({ id, createdAt })`. CAT-07 default sort is `acquisition_date desc nulls last`. CAT-08 adds name A-Z, name Z-A, location.
+   - What's unclear: Should the cursor include the sort-key value (e.g. `{ id, createdAt, sortKey: "acquired_desc", sortValue: "2026-04-12" }`)? Or always tiebreak by `(created_at, id)` regardless of sort?
+   - Recommendation: Extend cursor to include the active sort-key value when the sort is not `created_at`-based. Keep `id` + `created_at` as universal tiebreakers. This is a Phase 2 contract amendment that Phase 5 needs — surface to user before any wave starts.
 
 2. **Reconciler placement — Phase 5 cron vs Phase 4 generic outbox dispatcher.**
    - What we know: CONTEXT D-04 says Phase 5 owns its own pending storage-deletion table if Phase 4 does not provide a generic event outbox.
@@ -1367,12 +1403,17 @@ serwist.addEventListeners();
    - What's unclear: `api/` in this repo is conventionally for route handler implementations (Phase 2 D-16). Hooks may belong elsewhere.
    - Recommendation: Planner picks one of: (a) accept CONTEXT verbatim; (b) move to `src/contexts/billing/application/use-subscription.ts`; (c) introduce a new `src/contexts/{ctx}/client/` segment for client-only hooks. Whatever choice is made, apply uniformly (the catalog's `use-plants.ts` etc. should follow the same convention).
 
-4. **Combobox "Outro" default — keep as suggestion or drop in favor of free-text commit?**
+4. **Combobox "Outro" — semantic role (literal value vs free-text trigger)?**
    - What we know: CAT-05 + UI-SPEC.md both list 8 defaults including "Outro".
-   - What's unclear: Whether selecting "Outro" should focus a free-text input or commit literal "Outro" as the location.
-   - Recommendation: Surface to user. Default behavior in code: commit literal "Outro" if selected from the suggestion list (simpler).
+   - What's unclear: Whether selecting "Outro" should commit literal "Outro" as the location value (default behavior per spec) or focus a free-text input.
+   - Recommendation: Implement per spec (commits literal "Outro"). If user wants the free-text behavior, treat as a spec amendment to CAT-05 + UI-SPEC.md.
 
-5. **PostHog `plant_added` event payload shape (PRD §20 taxonomy).**
+5. **Bottom-sheet UI-SPEC vs CONTEXT tension.**
+   - What we know: CONTEXT D-16 leaves implementation to discretion. UI-SPEC.md "Registry Safety" section narrows to hand-rolled only.
+   - What's unclear: Whether the Wave 0 a11y verification gate (if hand-roll fails) is allowed to swap to Vaul, or whether hand-rolled is non-negotiable even if axe scores fail.
+   - Recommendation: Treat hand-rolled as primary, Vaul as documented fallback. The fallback path should be cited in the Phase 5 plan as a known risk-mitigation strategy. If user wants Vaul outright forbidden, that's an explicit decision — surface before Wave 0 starts.
+
+6. **PostHog `plant_added` event payload shape (PRD §20 taxonomy).**
    - What we know: PRD §20 defines the event but not the payload shape. CONTEXT specifics call out emitting from the use-case layer (server-side via `posthog-node`).
    - What's unclear: Should the event include `species_id` (for create-from-identification) vs `null` (for manual)? Should it include source = `"manual" | "from_identification"`?
    - Recommendation: Include `{ source: "manual" | "from_identification", has_species: boolean }`. Phase 13 (analytics rollup) will benefit from the dimension. Surface to planner.
@@ -1390,7 +1431,7 @@ Phase 5 has no NEW external CLI dependencies — every tool used is already pinn
 | `POST /api/v1/photos/upload` route                      | Two-step Plant create + PhotoEntry add                  | ✗ (Phase 2 wave 4)               | Phase 2 D-27 ships server proxy upload                                               |
 | AuthAdapter (JWT verify + `getUserById`)                | RLS-protected `/api/v1/plants*` routes                  | ✗ (Phase 2 wave 4)               | Phase 2 D-32, D-33 ship `jose` + JWKS                                                |
 | Idempotency table + helper                              | All mutating endpoints                                  | ✗ (Phase 2 wave 4/5)             | Phase 2 D-37, D-38 ship table + 7-day TTL                                            |
-| Cursor encode/decode helper                             | List endpoints                                           | ✗ (Phase 2 wave 4/5)             | Phase 2 D-36 ships format                                                            |
+| Cursor encode/decode helper                             | List endpoints                                           | ✗ (Phase 2 wave 4/5)             | Phase 2 D-36 ships format (Phase 5 may need to extend — Open Question 1)             |
 | Closed error registry (`validation_failed`, etc.)       | All routes                                               | ✓                                | Phase 1 D-10/D-11/D-12 (Plan 01-02) ships                                            |
 | `next-intl` setup + pt-BR routing                       | All copy                                                 | ✓                                | Phase 1 D-15 (Plan 01-03) ships                                                      |
 | Design tokens + bottom-nav + app shell                  | Catalog/Home/Profile route shells                        | ✗ (Phase 3)                      | Phase 3 owns                                                                         |
@@ -1446,7 +1487,7 @@ Phase 5 has no NEW external CLI dependencies — every tool used is already pinn
 | CAT-05  | Combobox axe-core a11y scan (open + closed states)                      | a11y                 | `pnpm exec playwright test tests/e2e/catalog/location-picker-a11y.spec.ts` (uses `@axe-core/playwright`)     | ❌ Wave 0           |
 | CAT-06  | PhotoEntry add via two-step flow                                        | integration          | `pnpm exec vitest --run --project=integration tests/integration/catalog/add-photo-entry.integration.test.ts` | ❌ Wave 0           |
 | CAT-06  | Bottom sheet add UX (open/dismiss/submit)                               | e2e                  | `pnpm exec playwright test tests/e2e/catalog/photo-journal-add.spec.ts`                                      | ❌ Wave 0           |
-| CAT-06  | Bottom sheet axe-core scan                                              | a11y                 | `pnpm exec playwright test tests/e2e/catalog/photo-journal-add-a11y.spec.ts`                                 | ❌ Wave 0           |
+| CAT-06  | Bottom sheet axe-core scan (gates hand-roll vs Vaul fallback)          | a11y                 | `pnpm exec playwright test tests/e2e/catalog/photo-journal-add-a11y.spec.ts`                                 | ❌ Wave 0           |
 | CAT-07  | Cursor pagination ORDER BY acquisition_date DESC NULLS LAST + tiebreak  | integration          | `pnpm exec vitest --run --project=integration tests/integration/catalog/list-plants-cursor.integration.test.ts` | ❌ Wave 0      |
 | CAT-08  | sessionStorage sort persistence (write + reload reads back)             | unit                 | `pnpm exec vitest --run --project=unit tests/unit/contexts/catalog/sort-storage.test.ts`                     | ❌ Wave 0           |
 | CAT-08  | Sort persistence across reload within session (Playwright)              | e2e                  | `pnpm exec playwright test tests/e2e/catalog/sort-persistence.spec.ts`                                       | ❌ Wave 0           |
@@ -1497,8 +1538,8 @@ Phase 5 has no NEW external CLI dependencies — every tool used is already pinn
 - [ ] `tests/integration/catalog/` directory + transaction-rollback fixture (per Phase 2 D-43) — depends on Phase 2 wave 5 landing.
 - [ ] `tests/e2e/catalog/` directory + Playwright fixtures (auth bypass for E2E using a test user JWT) — depends on Phase 2 wave 4 (auth) + Phase 4 (verified user).
 - [ ] `@axe-core/playwright` install + helper `expectNoA11yViolations(page)`.
-- [ ] Vaul + focus-trap test harness — initialize Vaul `Drawer.Root` inside JSDOM may need `<dialog>` polyfill.
-- [ ] IDB-keyval test harness — JSDOM does NOT ship IndexedDB; install `fake-indexeddb` dev dep for unit tests of the persister.
+- [ ] `fake-indexeddb` install for unit-testing the persister (jsdom does not ship IDB).
+- [ ] Hand-rolled bottom-sheet test harness — `<dialog>` polyfill in jsdom may be needed.
 - [ ] Test fixtures: a Plant + PhotoEntry seed helper, a stub Inngest send (capture event payload to assert), a fake `User.timezone` user.
 
 ## Security Domain
@@ -1544,7 +1585,7 @@ Phase 5 has no NEW external CLI dependencies — every tool used is already pinn
 - Context7 `/tanstack/query` - App Router prefetch + HydrationBoundary, useInfiniteQuery, persistQueryClient, optimistic updates
 - Context7 `/inngest/inngest-js` - createFunction with concurrency/retries, step.run + step.sendEvent durability
 - Context7 `/serwist/serwist` - runtimeCaching strategies, ExpirationPlugin, recipes
-- Context7 `/emilkowalski/vaul` - Drawer.Root/Content/Handle/Title API + drag handle + snap points
+- Context7 `/emilkowalski/vaul` - Drawer.Root/Content/Handle/Title API + drag handle + snap points (fallback library)
 - Context7 `/focus-trap/focus-trap` - createFocusTrap options API
 - Context7 `/drizzle-team/drizzle-orm-docs` - createInsertSchema/createSelectSchema/createUpdateSchema
 - Context7 `/vercel/next.js` - Image component remote patterns + Supabase loader pattern
@@ -1565,7 +1606,7 @@ Phase 5 has no NEW external CLI dependencies — every tool used is already pinn
 
 ### Tertiary (LOW confidence)
 
-- Vaul medium articles - confirms a11y posture but not authoritative; rely on primary Vaul docs + actual axe scan in Wave 0.
+- Vaul medium articles - confirms a11y posture but not authoritative; rely on primary Vaul docs + actual axe scan in Wave 0 if fallback triggered.
 - Various blog posts on TQ + Next.js 16 - confirm compatibility but specific Turbopack issues should be empirically verified.
 
 ## Metadata
@@ -1575,13 +1616,13 @@ Phase 5 has no NEW external CLI dependencies — every tool used is already pinn
 - Standard stack: HIGH - All versions verified against npm registry on 2026-04-26; TQ + persister + idb-keyval combo is the canonical pattern documented by TanStack.
 - Architecture (TQ + RSC + persister + Serwist coordination): HIGH for individual layers, MEDIUM for the integration as a whole — no canonical reference combines all four. Wave 0 smoke must validate.
 - Combobox / Lightbox / Inline-edit patterns: HIGH (WAI-ARIA APG primary source + focus-trap docs).
-- Bottom sheet via Vaul: MEDIUM-HIGH — Vaul is a credible primitive but the §17 modal-sheet contract has many specific requirements that need a Wave 0 validation pass.
+- Bottom sheet hand-rolled (with Vaul fallback): MEDIUM — hand-roll a11y is non-trivial; Wave 0 axe + VoiceOver gate must pass before declaring done.
 - Atomic transaction + outbox + Inngest: HIGH (well-known pattern, Inngest docs confirm step.sendEvent + createFunction semantics).
 - Pitfalls: HIGH for the stack-coupling pitfalls (TQ persister race, Serwist double-cache, photo-URL spoofing); MEDIUM for the Phase-2-coupling pitfalls (cursor format extension, useSubscription placement) — surface as Open Questions.
 - Validation Architecture: HIGH (mirrors the explicit checklist provided in the research task; concrete file paths + commands).
 - Security Domain: HIGH (ASVS categorization is standard; threat patterns are established for the stack).
 
 **Research date:** 2026-04-26
-**Valid until:** 2026-05-26 (30 days — TQ + Vaul + Inngest are stable libraries; React/Next move faster but the Phase 5 patterns aren't on the bleeding edge).
+**Valid until:** 2026-05-26 (30 days — TQ + Inngest are stable libraries; React/Next move faster but the Phase 5 patterns aren't on the bleeding edge).
 
 ## RESEARCH COMPLETE

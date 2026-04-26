@@ -20,6 +20,12 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:sync-env": "bash scripts/sync-supabase-env.sh",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:setup": "pnpm db:migrate && pnpm db:seed && pnpm db:check-rls && pnpm db:check-seeds",
+    "db:check-rls": "tsx scripts/check-rls.ts",
+    "db:check-seeds": "tsx scripts/check-seeds.ts",
     "supabase": "supabase"
   },
   "lint-staged": {
@@ -34,6 +40,12 @@
   "dependencies": {
     "@sentry/nextjs": "10.48.0",
     "@serwist/next": "9.5.7",
+    "@supabase/supabase-js": "2.104.1",
+    "browser-image-compression": "2.0.2",
+    "drizzle-orm": "0.45.2",
+    "drizzle-zod": "0.8.3",
+    "exifr": "7.1.3",
+    "jose": "6.2.2",
     "next": "16.2.3",
     "next-intl": "4.9.1",
     "postgres": "3.4.9",
@@ -42,6 +54,7 @@
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "serwist": "9.5.7",
+    "sharp": "0.34.5",
     "zod": "4.3.6"
   },
   "devDependencies": {
@@ -52,6 +65,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitest/ui": "4.1.4",
+    "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.3",
     "eslint-config-prettier": "10.1.8",
@@ -59,6 +73,7 @@
     "lint-staged": "16.4.0",
     "prettier": "3.8.3",
     "supabase": "2.95.0",
+    "tsx": "4.21.0",
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "4.1.4"

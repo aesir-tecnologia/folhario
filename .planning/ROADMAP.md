@@ -69,7 +69,7 @@ Plans:
 - [x] 02-01-PLAN.md -- Tooling and migration bootstrap
 
 **Wave 2 _(blocked on Wave 1 completion)_**
-- [ ] 02-02-PLAN.md -- Core schema modules and migration-only registry
+- [x] 02-02-PLAN.md -- Core schema modules and migration-only registry
 
 **Wave 3 _(blocked on Wave 2 completion)_**
 - [ ] 02-03-PLAN.md -- Operational schema, generated migration, RLS/custom SQL, and domain events

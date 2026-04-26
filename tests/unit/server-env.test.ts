@@ -5,6 +5,7 @@ describe("INFRA-16 + INFRA-17 server env validation (D-29 revised, Action 4)", (
   const valid = {
     DATABASE_URL: "postgres://u:p@localhost:5432/db",
     DATABASE_POOL_URL: "postgres://u:p@localhost:5432/db",
+    NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
     SUPABASE_SERVICE_ROLE_KEY: "k",
     IDENTIFICATION_PROVIDER_MODE: "stub",
   };

@@ -66,7 +66,7 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 02-01-PLAN.md -- Tooling and migration bootstrap
+- [x] 02-01-PLAN.md -- Tooling and migration bootstrap
 
 **Wave 2 _(blocked on Wave 1 completion)_**
 - [ ] 02-02-PLAN.md -- Core schema modules and migration-only registry

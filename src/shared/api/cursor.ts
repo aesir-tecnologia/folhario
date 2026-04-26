@@ -36,26 +36,35 @@ export type DecodeResult =
   | { ok: false; error: typeof ErrorCode.ValidationFailed };
 
 /**
- * Encode a `{ id, createdAt }` tuple as an opaque base64 cursor.
+ * Encode a `{ id, createdAt }` tuple as an opaque URL-safe base64url cursor.
  * Caller is responsible for supplying a UTC `Z` datetime; this function
  * does not re-validate the input.
+ *
+ * Uses base64url (IN-03) so the resulting cursor is URL-safe by definition
+ * (no `+` or `/` characters that would need percent-encoding when placed in
+ * a `?cursor=...` query string). `decodeCursor` accepts both standard and
+ * URL-safe forms for backwards compatibility.
  */
 export function encodeCursor(payload: CursorPayload): string {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
 }
 
 /**
- * Decode a base64 cursor produced by `encodeCursor`. Returns a discriminated
+ * Decode a base64url cursor produced by `encodeCursor`. Returns a discriminated
  * union: `{ ok: true, value }` on success, `{ ok: false, error: ValidationFailed }`
  * on any malformed input (bad base64, bad JSON, wrong shape, off-spec datetime).
  *
  * The function never throws; route handlers can map a non-ok result directly
  * to a `validation_failed` 400 response without try/catch.
+ *
+ * `Buffer.from(input, "base64url")` accepts both URL-safe and standard
+ * base64 strings, so legacy clients that may have stored standard-base64
+ * cursors continue to decode correctly.
  */
 export function decodeCursor(encoded: string): DecodeResult {
   let json: string;
   try {
-    json = Buffer.from(encoded, "base64").toString("utf8");
+    json = Buffer.from(encoded, "base64url").toString("utf8");
   } catch {
     return { ok: false, error: ErrorCode.ValidationFailed };
   }

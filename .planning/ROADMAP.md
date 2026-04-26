@@ -107,7 +107,32 @@ Cross-cutting constraints:
   3. Loading states render as skeletal shimmers (never circular spinners) with a 300ms threshold and 120ms fade-in, reducing to static blocks + 80ms fade under `prefers-reduced-motion`; the capture-button 1.00→1.03 bounce, 3.2s breathing loop on empty CTA, and 60ms cascade on list reveal all honor reduced motion.
   4. Placeholder screens demonstrate every composed primitive: empty state (Sage line-art + Source Serif headline + Calm Slate hint + single Canopy CTA), inline calm error (never full-screen red wall, cause + recovery copy, retry path exposed), persistent offline banner, safe-area-respecting `min-h-[100dvh]` layout with no horizontal scroll, and strings piped through the i18n layer with `dd/MM/yyyy` dates, 24h times, and `R$ 29,90` currency.
   5. When a new service worker version is detected, a non-blocking bottom toast "Nova versão disponível" + "Atualizar" appears, tapping triggers `skipWaiting` + reload, and the app never auto-reloads mid-session; a design-system lint confirms absence of emoji, pure black/white, gradient text, glassmorphism, neumorphism, Inter, and generic serifs.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+- [ ] 03-01-PLAN.md -- Tooling foundation: Tailwind v4 + tokens + Stylelint + ESLint better-tailwindcss + Vitest jsdom + matchMedia mock + banned-patterns snapshot
+
+**Wave 2 _(blocked on Wave 1 completion)_**
+- [ ] 03-02-PLAN.md -- Theme cookie Server Action (TDD), root layout extension (cookie + fonts + dual theme-color), pt-BR.json populate (~34 keys), format.ts Intl helpers (TDD), /api/v1/health/connectivity heartbeat (TDD), ScientificName
+
+**Wave 3 _(blocked on Wave 2 completion)_**
+- [ ] 03-03-PLAN.md -- Motion springs + 11 UI primitives: Button (4 variants), TextInput, Select, Toggle, ModalSheet, Skeleton (TDD 300ms gate), EmptyState (TDD single-CTA), InlineError (TDD slots+Rust), CaptureButton (TDD breathing-loop reduced-motion)
+
+**Wave 4 _(blocked on Wave 3 completion)_**
+- [ ] 03-04-PLAN.md -- App shell: useOnlineStatus (TDD backoff), 4 banners/toasts, BottomNav + scroll-restore (TDD), SW rewrite skipWaiting:false + SKIP_WAITING handler (TDD), AppUpdateToast, (app) layout group + 4 placeholder pages + /offline, manifest rewrite (TDD shape), pwa-asset-generator install
+
+**Wave 5 _(blocked on Wave 4 completion; checkpoint:human-action for visual baselines)_**
+- [ ] 03-05-PLAN.md -- E2E lockdown: 20 visual snapshots * 4 theme/motion combos (Docker baseline gen), horizontal-scroll guard, sw-update-toast smoke, offline-fallback, bottom-nav scroll-restore, 4 axe specs (placeholder/modal/route-focus/skip-link)
+
+Cross-cutting constraints:
+- D-32 substitution (Open Risk #1): `eslint-plugin-better-tailwindcss@4.4.1` replaces `eslint-plugin-tailwindcss` (no Tailwind v4 stable). Plan 01 summary updates CONTEXT.md retroactively.
+- Open Risk #2: manifest drops monochrome icon (pwa-asset-generator can't produce). manifest-shape.test.ts asserts NO monochrome required.
+- Open Risk #3: EmptyState ships inline-coded leaf SVG fallback when public/illustrations/* missing.
+- Open Risk #4: cookie read MUST be in src/app/layout.tsx (root). (app)/layout.tsx MUST NOT call getTheme().
+- Open Risk #5: visual baselines via Docker (`pnpm visual:baseline:docker` -- Plan 04 adds script; Plan 05 Task 2 is human-supervised).
+- Open Risk #7: globals.css MUST exist with @import "tailwindcss" BEFORE eslint-plugin-better-tailwindcss is wired (Task 1 -> Task 3 ordering in Plan 01).
+- Threat models: T-03-02-01 cookie injection (allowlist guard), T-03-02-02 heartbeat info disclosure (no env field, no IPs), T-03-04-01 SW SKIP_WAITING type guard, T-03-04-02 heartbeat backoff DoS mitigation.
 **UI hint**: yes
 
 ### Phase 4: IAM — Auth, Verification, Consent
@@ -248,7 +273,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation | 8/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/10 | Ready to execute | - |
-| 3. Design System & App Shell | 0/TBD | Not started | - |
+| 3. Design System & App Shell | 0/5 | Ready to execute | - |
 | 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
 | 5. Catalog — Meu Jardim | 0/TBD | Not started | - |
 | 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |

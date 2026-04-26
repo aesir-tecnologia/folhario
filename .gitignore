@@ -22,6 +22,7 @@ coverage/
 playwright-report/
 test-results/
 .vitest-cache/
+tests/e2e/.tmp-*.json
 
 # env (NEVER commit .env — real creds live there)
 .env

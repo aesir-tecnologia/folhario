@@ -4,6 +4,8 @@ import {
   consentLogs,
   dataDeletionRequests,
   dataExportRequests,
+  idempotencyKeys,
+  offlineSyncFailures,
   partnerStores,
   policyVersions,
   users,
@@ -46,3 +48,13 @@ export const dataDeletionRequestSelectSchema = createSelectSchema(dataDeletionRe
 export const dataDeletionRequestInsertSchema = createInsertSchema(dataDeletionRequests);
 export type DataDeletionRequest = ReturnType<typeof dataDeletionRequestSelectSchema.parse>;
 export type DataDeletionRequestInsert = ReturnType<typeof dataDeletionRequestInsertSchema.parse>;
+
+export const offlineSyncFailureSelectSchema = createSelectSchema(offlineSyncFailures);
+export const offlineSyncFailureInsertSchema = createInsertSchema(offlineSyncFailures);
+export type OfflineSyncFailure = ReturnType<typeof offlineSyncFailureSelectSchema.parse>;
+export type OfflineSyncFailureInsert = ReturnType<typeof offlineSyncFailureInsertSchema.parse>;
+
+export const idempotencyKeySelectSchema = createSelectSchema(idempotencyKeys);
+export const idempotencyKeyInsertSchema = createInsertSchema(idempotencyKeys);
+export type IdempotencyKey = ReturnType<typeof idempotencyKeySelectSchema.parse>;
+export type IdempotencyKeyInsert = ReturnType<typeof idempotencyKeyInsertSchema.parse>;

@@ -16,7 +16,9 @@ export {
   consentLogs,
   dataDeletionRequests,
   dataExportRequests,
+  idempotencyKeys,
   legalBasisEnum,
+  offlineSyncFailures,
   partnerStores,
   policyVersions,
   users,
@@ -31,3 +33,24 @@ export {
   careGuides,
   species,
 } from "@contexts/species-care/infrastructure/db/schema";
+
+export {
+  identificationLimits,
+  identifications,
+  providerBudgets,
+  providerUsageCounters,
+} from "@contexts/identification/infrastructure/db/schema";
+
+export {
+  reminderLogs,
+  reminders,
+} from "@contexts/reminders/infrastructure/db/schema";
+
+export {
+  billingEvents,
+  subscriptions,
+} from "@contexts/billing/infrastructure/db/schema";
+
+export {
+  pushSubscriptions,
+} from "@contexts/notifications/infrastructure/db/schema";

@@ -40,6 +40,20 @@ import { idempotencyKeys } from "@contexts/iam/infrastructure/db/schema";
  * only one gets the RETURNING row; the other reads the stored response
  * via the SELECT-on-conflict branch.
  *
+ * WR-06 RLS coupling: every operation here (INSERT, SELECT FOR UPDATE,
+ * UPDATE) executes inside the user's `withUnitOfWork` transaction, which
+ * runs under `SET LOCAL ROLE authenticated` with `request.jwt.claim.sub`
+ * bound. The `idempotency_keys_owner_all` policy in
+ * `drizzle/migrations/0001_phase_02_rls_policies.sql` is therefore
+ * load-bearing for this helper — it must permit the user to INSERT/SELECT/
+ * UPDATE rows where `user_id = auth.uid()`. If the policy is narrowed
+ * (e.g. to SELECT-only, or with a status filter) without updating this
+ * helper, the INSERT will silently fail in unexpected ways. The migration
+ * itself carries the matching note. Any change here or there MUST be
+ * reviewed against both files together, and the integration test at
+ * `tests/integration/idempotency.integration.test.ts` is the regression
+ * gate that pins the behaviour.
+ *
  * `request_hash` is REQUIRED on every call — `idempotency_keys.request_hash`
  * is NOT NULL (locked in Plan 02-03 by REVIEWS contract). Callers must
  * compute a stable hash of the request body (e.g., `sha256(canonicalJson(body))`)

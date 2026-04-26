@@ -180,6 +180,18 @@ DO $$ BEGIN
 END $$;
 
 -- idempotency_keys
+--
+-- WR-06 coupling note: `withIdempotency` (src/shared/api/idempotency.ts) runs
+-- the INSERT/SELECT-FOR-UPDATE/UPDATE on this table inside the user's
+-- `withUnitOfWork` transaction, which means those statements execute under
+-- `SET LOCAL ROLE authenticated` with `request.jwt.claim.sub` bound — i.e.
+-- they hit this policy. The policy MUST therefore allow the authenticated
+-- subject to INSERT, SELECT (FOR UPDATE), and UPDATE rows where
+-- `user_id = auth.uid()`. If this policy is ever narrowed to FOR SELECT-only
+-- or restricted by a status field, `withIdempotency` will silently start
+-- failing the INSERT in unexpected ways. Any change to this policy MUST be
+-- reviewed against the helper's behaviour and the integration test at
+-- `tests/integration/idempotency.integration.test.ts`.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'idempotency_keys_owner_all') THEN
     CREATE POLICY "idempotency_keys_owner_all" ON public.idempotency_keys

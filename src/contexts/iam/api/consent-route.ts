@@ -5,7 +5,7 @@ import { withUnitOfWork } from "@shared/db/unit-of-work";
 import { requireApiUser } from "@shared/api/auth";
 import { withIdempotency } from "@shared/api/idempotency";
 import { parseJsonBody } from "@shared/api/request";
-import { DEFAULT_LIMIT, decodeCursor, encodeCursor, normalizeLimit } from "@shared/api/cursor";
+import { decodeCursor, encodeCursor, normalizeLimit } from "@shared/api/cursor";
 import { consentLogInsertSchema } from "@contexts/iam/domain/consent-schemas";
 import { recordConsent } from "@contexts/iam/application/record-consent";
 import { listByUser } from "@contexts/iam/infrastructure/db/consent-logs";
@@ -137,7 +137,11 @@ export async function getHandler(request: Request): Promise<Response> {
   const limitParam = url.searchParams.get(RAW_QUERY_LIMIT);
   const cursorParam = url.searchParams.get(RAW_QUERY_CURSOR);
 
-  const limit = normalizeLimit(limitParam) || DEFAULT_LIMIT;
+  // IN-01: normalizeLimit's contract guarantees a positive integer in
+  // [1, MAX_LIMIT] for every input — empty/null/non-numeric collapses to
+  // DEFAULT_LIMIT, negatives clamp to 1, over-MAX clamps to MAX_LIMIT.
+  // No `|| DEFAULT_LIMIT` fallback is needed; that operator was unreachable.
+  const limit = normalizeLimit(limitParam);
   let cursor: { id: string; createdAt: string } | undefined;
 
   if (cursorParam !== null && cursorParam !== "") {

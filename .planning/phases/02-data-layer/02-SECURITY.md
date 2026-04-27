@@ -1,8 +1,8 @@
 ---
 phase: 02
 slug: data-layer
-status: blocked
-threats_open: 2
+status: verified
+threats_open: 0
 asvs_level: 1
 created: 2026-04-27
 ---
@@ -11,7 +11,7 @@ created: 2026-04-27
 
 > Per-phase security contract: threat register, accepted risks, and audit trail.
 
-> **Status: BLOCKED.** Two threats from PLAN.md remain open against the implementation contract: T-02-32 (plan-05) and T-02-33 (plan-05). Phase advancement gated until mitigations are restored OR risks formally accepted with PLAN.md amendments.
+> **Status: VERIFIED.** All 44 threats from the PLAN.md threat register have a disposition. Mitigations for T-02-32 and T-02-33 were restored in commit `57699b3` and re-verified on 2026-04-27.
 
 > Reused threat IDs (`T-02-02`, `T-02-03`, `T-02-41`) appear in multiple plans with different meanings — disambiguated by `(plan-NN)`.
 
@@ -58,8 +58,8 @@ created: 2026-04-27
 | T-02-11 (plan-05) | Tampering | Route-layer data bypass | mitigate | `eslint.config.mjs:33-40` `no-restricted-imports`; `tests/unit/no-drizzle-in-routes.test.ts:25` regex scanner | closed |
 | T-02-12 (plan-05) | Elevation of Privilege | RLS-only authorization assumption | mitigate | `src/contexts/iam/infrastructure/db/users.ts:19-20` explicit `eq(users.id, userId)`; UnitOfWork sets request context | closed |
 | T-02-13 (plan-05) | Denial of Service | Connection storm | mitigate | `src/shared/db/client.ts:30-42` lazy global singleton client | closed |
-| **T-02-32 (plan-05)** | **Tampering** | **`withUnitOfWork` userId guard** | **mitigate** | **PLAN named `z.string().uuid()` Zod guard at entrypoint throwing `validation_failed` BEFORE `set_config`. Implementation at `src/shared/db/unit-of-work.ts:44-51` only checks `typeof string` and non-empty `trim()` — no Zod, no UUID regex. Non-UUID strings reach `set_config('request.jwt.claim.sub', ...)` and bind silently.** | **OPEN** |
-| **T-02-33 (plan-05)** | **Tampering** | **Transaction-scope leakage** | **mitigate** | **PLAN named (a) runtime assertion the helper is in an active transaction (e.g. `isTransactionalClient(tx)`) and (b) unit test `tests/unit/unit-of-work-leak.test.ts`. Implementation only carries the TS structural type `TransactionalDb` (compile-time, erased at runtime); `isTransactionalClient` runtime predicate does not exist; the named leak test does not exist on disk.** | **OPEN** |
+| T-02-32 (plan-05) | Tampering | `withUnitOfWork` userId guard | mitigate | `src/shared/db/unit-of-work.ts:49` — `userIdSchema = z.string().uuid()`; `:51-65` `assertValidUserId` runs `safeParse` and throws `UnitOfWorkError` (with `code = "validation_failed"` at line 42) on failure; `:88-89` validation runs BEFORE `db.transaction()`. Behavioral proof: `tests/unit/unit-of-work-leak.test.ts:71-84` asserts the callback never opens (`opened === false`) for non-UUID input and the error matches `/validation_failed/`. | closed |
+| T-02-33 (plan-05) | Tampering | Transaction-scope leakage | mitigate | `src/shared/db/unit-of-work.ts:80-86` exports `isTransactionalClient(value)` runtime predicate (`typeof value.rollback === "function"` — distinguishes Drizzle `PgTransaction` from base `PgDatabase`); `:91-96` the `db.transaction(...)` callback throws `UnitOfWorkError` if `!isTransactionalClient(tx)`; `:99` preserves `set_config('request.jwt.claim.sub', ${userId}, true)` (is_local; transaction-scoped). Tests: `tests/unit/unit-of-work-leak.test.ts:38-44` asserts source uses `set_config(..., true)`; `:46-49` asserts source guards tx callback; `:51-55` asserts `isTransactionalClient(db) === false` (singleton lacks rollback); `:57-69` exercises positive/negative shape cases. | closed |
 | T-02-34 (plan-05.5) | Spoofing | RLS-policy semantic drift | mitigate | `tests/integration/rls-real-jwt.integration.test.ts` uses `auth.admin.createUser` + `signInWithPassword` for cross-user denial through real Supabase Auth | closed |
 | T-02-35 (plan-05.5) | Spoofing | False-pass via misconfigured "deny all" | mitigate | Same file: baseline subtest asserts user A CAN read its own row (anchors against silent deny-all) | closed |
 | T-02-14 (plan-06) | Tampering | Cursor tampering | mitigate | `src/shared/api/cursor.ts:29` `z.string().datetime({ offset: false })`; `:35-36` `ValidationFailed` return | closed |
@@ -105,25 +105,22 @@ created: 2026-04-27
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
 | 2026-04-27 | 44 | 42 | 2 | gsd-security-auditor |
+| 2026-04-27 | 44 | 44 | 0 | gsd-security-auditor (re-audit, commit `57699b3`) |
 
-### Open Threat Resolution Path
+### Resolution of Previously Open Threats
 
-Either of the following clears the gate:
+T-02-32 and T-02-33 were closed via fix commit `57699b3` (`fix(phase-02): restore T-02-32 + T-02-33 mitigations in withUnitOfWork`):
 
-1. **Restore the named mitigations** in `src/shared/db/unit-of-work.ts`:
-   - Add `z.string().uuid()` validation at `withUnitOfWork(userId, fn)` entry that throws `validation_failed` BEFORE `set_config` runs (T-02-32).
-   - Add a runtime predicate (e.g. `isTransactionalClient(tx)`) plus `tests/unit/unit-of-work-leak.test.ts` proving a repository called against `db` directly (not via `withUnitOfWork`) does not carry a leftover JWT claim from a prior UoW call (T-02-33).
-2. **Formally accept** both deviations in this file's Accepted Risks Log with a documented rationale (the SUMMARY argues UUID format is enforced upstream by JWT verification and that the structural `TransactionalDb` type is sufficient), AND amend `02-05-PLAN.md`'s `<threat_model>` so the contract matches the implementation.
-
-Re-run `/gsd:secure-phase 2` after either path.
+- **T-02-32**: `z.string().uuid()` Zod guard added at `withUnitOfWork` entry; `UnitOfWorkError` carries `code = "validation_failed"`; rejection happens before `db.transaction(...)` opens. Proven by `tests/unit/unit-of-work-leak.test.ts:71-90`.
+- **T-02-33**: Exported `isTransactionalClient()` runtime predicate added (checks for Drizzle `PgTransaction.rollback()`, which `PgDatabase` lacks); `db.transaction(...)` callback throws if the argument is not transactional; `set_config(..., true)` (is_local) preserved. Proven by `tests/unit/unit-of-work-leak.test.ts` (7 cases, all green). Full unit suite green (207/207); `tsc --noEmit` clean.
 
 ---
 
 ## Sign-Off
 
-- [ ] All threats have a disposition (mitigate / accept / transfer)
-- [ ] Accepted risks documented in Accepted Risks Log
-- [ ] `threats_open: 0` confirmed
-- [ ] `status: verified` set in frontmatter
+- [x] All threats have a disposition (mitigate / accept / transfer)
+- [x] Accepted risks documented in Accepted Risks Log
+- [x] `threats_open: 0` confirmed
+- [x] `status: verified` set in frontmatter
 
-**Approval:** pending — blocked on T-02-32 + T-02-33 resolution.
+**Approval:** verified 2026-04-27.

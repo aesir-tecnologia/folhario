@@ -28,7 +28,9 @@
     "db:check-rls": "tsx --env-file-if-exists=.env.local scripts/check-rls.ts",
     "db:check-seeds": "tsx --env-file-if-exists=.env.local scripts/check-seeds.ts",
     "supabase": "supabase",
-    "lint:styles": "stylelint 'src/**/*.css'"
+    "lint:styles": "stylelint 'src/**/*.css'",
+    "icons:generate": "pwa-asset-generator public/brand/logo.svg public/icons --manifest public/manifest.webmanifest --background \"#FBF7EF\" --opaque false --maskable true --favicon --icon-only",
+    "visual:baseline:docker": "docker run --rm -v $(pwd):/app -w /app mcr.microsoft.com/playwright:v1.59.1-jammy npx playwright test --update-snapshots"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs}": [
@@ -93,6 +95,7 @@
     "lint-staged": "16.4.0",
     "postcss": "8.5.12",
     "prettier": "3.8.3",
+    "pwa-asset-generator": "8.1.4",
     "stylelint": "17.9.0",
     "stylelint-config-standard": "40.0.0",
     "supabase": "2.95.0",

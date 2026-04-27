@@ -33,11 +33,13 @@ describe("UI-24 /api/v1/health/connectivity contract — public, side-effect-fre
   });
 
   it("module exports ONLY GET — no POST/PUT/DELETE/PATCH", async () => {
-    const mod = await import("../../src/app/api/v1/health/connectivity/route");
+    const mod: Record<string, unknown> = await import(
+      "../../src/app/api/v1/health/connectivity/route"
+    );
     expect(typeof mod.GET).toBe("function");
-    expect((mod as any).POST).toBeUndefined();
-    expect((mod as any).PUT).toBeUndefined();
-    expect((mod as any).DELETE).toBeUndefined();
-    expect((mod as any).PATCH).toBeUndefined();
+    expect(mod.POST).toBeUndefined();
+    expect(mod.PUT).toBeUndefined();
+    expect(mod.DELETE).toBeUndefined();
+    expect(mod.PATCH).toBeUndefined();
   });
 });

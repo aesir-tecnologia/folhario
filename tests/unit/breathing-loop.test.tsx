@@ -4,8 +4,17 @@ import { render } from "@testing-library/react";
 // vi.hoisted ensures this mock factory runs before the vi.mock hoist.
 // Without hoisted(), motionButtonMock would be in the temporal dead zone
 // when the hoisted vi.mock factory references it (Rule 1 fix).
+interface MockButtonProps {
+  children?: React.ReactNode;
+  animate?: unknown;
+  transition?: unknown;
+  className?: string;
+  "aria-label"?: string;
+  [key: string]: unknown;
+}
+
 const { motionButtonMock } = vi.hoisted(() => {
-  const motionButtonMock = vi.fn(({ children, ...props }: any) => (
+  const motionButtonMock = vi.fn(({ children, ...props }: MockButtonProps) => (
     <button
       data-testid="captured"
       data-animate-prop={JSON.stringify(props.animate ?? null)}

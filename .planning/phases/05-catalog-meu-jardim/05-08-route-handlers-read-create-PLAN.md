@@ -30,20 +30,90 @@ requirements:
   - CAT-04
   - CAT-07
 decisions:
-  http_error_mapper_location: "src/shared/api/http-error-map.ts — exports `httpMapDomainError(err)` returning a NextResponse via errorResponse(...). Maps DomainError.code → ErrorCode literal. NEW shared module; consumed by all Phase 5 route handlers (Plans 05-08 and 05-09)."
+  http_error_mapper_location: "src/shared/api/http-error-map.ts — exports `httpMapDomainError(err)` returning a NextResponse via errorResponse(...). Maps DomainError.code → ErrorCode literal AND maps auth-helper errors (`UnauthenticatedError`, `TokenExpiredError`) thrown by `requireUser` into `ErrorCode.Unauthenticated` / `ErrorCode.TokenExpired` 401 responses. NEW shared module; consumed by all Phase 5 route handlers (Plans 05-08 and 05-09). Codex 05-08 — auth errors must be mapped, NOT bubble up as 500."
+  idempotency_scoping: |
+    **Codex review HIGH cross-cutting Decision 5** — idempotency keys are
+    user-scoped at the helper layer. Auth runs FIRST; the user id is passed
+    into the idempotency helper EXPLICITLY:
+
+    ```ts
+    export async function POST(req: NextRequest) {
+      try {
+        const user = await requireUser(req); // FIRST — auth before idempotency
+        return idempotent(req, user.id, async () => {
+          // idempotency lookup is keyed on (Idempotency-Key header, user.id, route).
+          // Phase 2 D-37/D-38 idempotency table has user_id NOT NULL.
+          const body = await req.json().catch(() => null);
+          // ... validate + call use case + return ...
+        });
+      } catch (err) {
+        return httpMapDomainError(err); // Auth errors land here (Codex 05-08).
+      }
+    }
+    ```
+
+    The previous Phase 2 D-37/D-38 idempotency helper signature `idempotent(req, fn)`
+    is REPLACED with `idempotent(req, userId, fn)`. The helper composes the
+    idempotency key as `${headerKey}:${userId}:${route}` so two users with the
+    same Idempotency-Key cannot collide. Phase 2 owns the helper change; Phase 5
+    consumes it.
+  auth_error_mapping: |
+    Codex review 05-08 — `requireUser` throws on missing/invalid/expired token.
+    `httpMapDomainError` MUST handle these cases:
+    - `UnauthenticatedError` → 401 with `ErrorCode.Unauthenticated`
+    - `TokenExpiredError` → 401 with `ErrorCode.TokenExpired`
+    - Any other auth-helper error → 401 `Unauthenticated` (default)
+
+    The handler in this plan returns the auth error EXACTLY through
+    `httpMapDomainError(err)` so the closed error registry stays the single
+    boundary contract. NEVER returns 500 on auth failure.
+  http_response_serializer: |
+    **Codex review HIGH Decision 1/2** — route handlers serialize camelCase
+    repository rows to snake_case JSON responses BEFORE returning. The
+    `data` envelope contains snake_case keys; the `next_cursor` is the
+    encoded base64 string (Plan 05-02 cursor codec).
+
+    Concrete mapping for `Plant`:
+    ```
+    coverPhotoUrl       → cover_photo_url
+    acquisitionDate     → acquisition_date
+    speciesId           → species_id
+    userId              → user_id
+    createdAt           → created_at
+    identificationCount → identification_count
+    ```
+    Concrete mapping for `PhotoEntry`:
+    ```
+    photoUrl       → photo_url
+    thumbnailUrl   → thumbnail_url
+    plantId        → plant_id
+    userId         → user_id
+    createdAt      → created_at
+    ```
+    Helper: `src/shared/api/snake-case-serializer.ts` exports `toSnakePlant`,
+    `toSnakePhotoEntry`, and a generic `toSnakeKeys(obj)` for ad-hoc rows.
+    Route handlers call these once at the response edge.
+  stub_policy: |
+    **Codex review HIGH cross-cutting Decision 4 — stub policy**: Phase 4
+    Auth (`requireUser`) is a BLOCKING dependency. There is NO silent stub.
+    If Phase 4 has not landed at execution time, this plan halts and the
+    SUMMARY records the blocker. Do NOT create a stub `requireUser` that
+    returns a hardcoded user — that would mask auth integration failures and
+    let the integration test suite produce false positives.
   endpoint_paths_verbatim: "GET /api/v1/plants, GET /api/v1/plants/:plantId, GET /api/v1/plants/:plantId/photos, POST /api/v1/plants, POST /api/v1/plants/from-identification (CONTEXT D-23B verbatim)"
   cursor_query_param: "?cursor=<base64>&limit=<int>&sort=<sortKey>; defaults: cursor=null, limit=50 (max 200), sort=acquired_desc. Invalid sort value → validation_failed."
   thin_handler_pattern: "Per Phase 2 D-17 + PRD §2: handler validates → use case → HTTP map. NO Drizzle imports in handlers (ESLint guard). NO business logic — entirely orchestration."
   identification_count_query_param: "GET /api/v1/plants accepts ?include=identification_count to enable the includeIdentificationCount flag in listPlants (Plan 05-07). Off by default; the catalog grid (5b) doesn't need it; the plant profile detail endpoint always includes the count for the conditional ID-history link visibility (CAT-04)."
 must_haves:
   truths:
-    - "GET /api/v1/plants validates JWT → calls listPlants(userId, sortKey, cursor, limit) → returns { data: rows, next_cursor: string|null }"
-    - "GET /api/v1/plants/:plantId validates JWT → calls listPlants({ userId, plantIdFilter: plantId, includeIdentificationCount: true, sortKey: 'created_desc', cursor: null, limit: 1 }) — plantIdFilter param is shipped by Plan 05-07 — → 404 when not found → returns the Plant + identification_count"
-    - "GET /api/v1/plants/:plantId/photos validates JWT → calls listPhotoEntries(plantId, userId, cursor, limit) → returns { data: rows, next_cursor: string|null } in reverse-chrono order"
+    - "GET /api/v1/plants validates JWT → calls listPlants({ userId, sortKey, cursor, limit, includeIdentificationCount? }) — object-form per Codex Decision 3, no positional overload — → returns `{ data: rows.map(toSnakePlant), next_cursor: string|null }`"
+    - "GET /api/v1/plants/:plantId validates JWT → calls listPlants({ userId, plantIdFilter: plantId, includeIdentificationCount: true, sortKey: 'created_desc', cursor: null, limit: 1 }) — plantIdFilter param is shipped by Plan 05-07 — → 404 when not found → returns `toSnakePlant(plant)` (snake_case + identification_count)"
+    - "GET /api/v1/plants/:plantId/photos validates JWT → calls listPhotoEntries({ plantId, userId, cursor, limit }) — object-form — → returns `{ data: rows.map(toSnakePhotoEntry), next_cursor: string|null }` in reverse-chrono order"
     - "POST /api/v1/plants validates JWT + Idempotency-Key + zod (PlantCreateInputSchema) → calls createPlantManual → 201 + Plant"
     - "POST /api/v1/plants/from-identification validates JWT + Idempotency-Key + zod → calls createPlantFromIdentification → 201 + Plant"
-    - "All 5 handlers map DomainError to closed-registry ErrorCodes via httpMapDomainError"
-    - "All POST handlers wrap their work in `idempotent(req, async () => ...)` per Phase 2 D-37/D-38"
+    - "All 5 handlers map DomainError AND auth-helper errors (UnauthenticatedError, TokenExpiredError) to closed-registry ErrorCodes via httpMapDomainError (Codex 05-08 — auth errors do NOT bubble as 500)"
+    - "**Codex Decision 5 — All POST handlers use `idempotent(req, userId, fn)` with userId extracted from `requireUser` BEFORE the idempotency wrapper** (per Phase 2 D-37/D-38 amended helper signature). The idempotency key is composed as `${headerKey}:${userId}:${route}` — two users with the same Idempotency-Key cannot collide."
+    - "**Codex Decision 1/2 — All response handlers serialize camelCase repo rows to snake_case JSON via `toSnakePlant`/`toSnakePhotoEntry`** before returning. The wire envelope is `{ data, next_cursor }` for lists; raw snake-case Plant for detail GETs and POST 201."
   artifacts:
     - path: "src/app/api/v1/plants/route.ts"
       provides: "GET (list with cursor + sort) and POST (Plant create)"
@@ -146,6 +216,7 @@ import { requireUser } from "@shared/auth/require-user"; // Phase 2 D-32/D-33
 import { idempotent } from "@shared/api/idempotent"; // Phase 2 D-37/D-38
 import { errorResponse, ErrorCode } from "@shared/config/errors";
 import { httpMapDomainError } from "@shared/api/http-error-map";
+import { toSnakePlant, toSnakePhotoEntry } from "@shared/api/snake-case-serializer"; // Codex Decision 1/2
 import { PlantCreateInputSchema } from "@contexts/catalog/domain/plant";
 import { createPlantManual } from "@contexts/catalog/application/create-plant-manual";
 import { listPlants } from "@contexts/catalog/application/list-plants";
@@ -175,23 +246,36 @@ export async function GET(req: NextRequest) {
       limit,
       includeIdentificationCount: includeIdent,
     });
-    return NextResponse.json({ data: result.rows, next_cursor: result.nextCursor });
+    // Codex Decision 1/2: serialize camelCase PlantRow → snake_case JSON before returning.
+    return NextResponse.json({
+      data: result.rows.map(toSnakePlant),
+      next_cursor: result.nextCursor, // already a string|null from cursor codec
+    });
   } catch (err) {
-    return httpMapDomainError(err);
+    return httpMapDomainError(err); // Codex 05-08: auth errors map here, never 500.
   }
 }
 
 export async function POST(req: NextRequest) {
-  return idempotent(req, async () => {
+  // Codex Decision 5: auth FIRST so the idempotency key can be user-scoped.
+  let userId: string;
+  try {
+    const user = await requireUser(req);
+    userId = user.id;
+  } catch (err) {
+    return httpMapDomainError(err);
+  }
+
+  return idempotent(req, userId, async () => {
     try {
-      const user = await requireUser(req);
       const body = await req.json().catch(() => null);
       const parsed = PlantCreateInputSchema.safeParse(body);
       if (!parsed.success) {
         return errorResponse(ErrorCode.ValidationFailed, "input_invalid", { issues: parsed.error.issues });
       }
-      const plant = await createPlantManual({ userId: user.id, input: parsed.data, uow });
-      return NextResponse.json(plant, { status: 201 });
+      const plant = await createPlantManual({ userId, input: parsed.data, uow });
+      // Codex Decision 1/2: snake_case JSON for the wire envelope.
+      return NextResponse.json(toSnakePlant(plant), { status: 201 });
     } catch (err) {
       return httpMapDomainError(err);
     }
@@ -357,15 +441,30 @@ NOTE: Next 16 App Router uses `params: Promise<{...}>` — verify with the Phase
 2. `pnpm exec tsc --noEmit` exits 0.
 3. `grep -rl "drizzle-orm" src/app/api/v1/plants` returns no files (Phase 2 D-17 ESLint guard satisfied).
 4. All 4 route handler files exist; httpMapDomainError + requireUser + idempotent wired uniformly.
+5. **Codex Decision 5 grep gate (idempotency ordering)**: `grep -E "idempotent\\(req,\\s*\\w+\\.id" src/app/api/v1/plants/route.ts src/app/api/v1/plants/from-identification/route.ts` matches in EVERY POST handler — confirms `userId` is passed BEFORE the callback. Inverse gate: `grep -E "idempotent\\(req,\\s*async" src/app/api/v1/plants/` returns 0 (no callsite uses the old 2-arg form).
+6. **Codex Decision 1/2 grep gate (snake_case serializer)**: `grep -E "toSnakePlant|toSnakePhotoEntry" src/app/api/v1/plants/route.ts src/app/api/v1/plants/from-identification/route.ts src/app/api/v1/plants/\[plantId\]/route.ts src/app/api/v1/plants/\[plantId\]/photos/route.ts` matches in every handler that returns a row.
+7. **Codex 05-08 grep gate (auth error mapping)**: `grep -E "UnauthenticatedError|TokenExpiredError" src/shared/api/http-error-map.ts` matches; integration test asserts `requireUser` failure produces 401 (not 500).
+8. **Codex Decision 4 grep gate (no requireUser stub)**: `find src/shared/auth -name "*.stub.*"` returns 0 results; `grep -rE "requireUser.*=.*\\(\\)\\s*=>\\s*\\{ id" src/` returns 0.
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **Codex Decision 5 — Idempotency contract scoping**: `decisions.idempotency_scoping` documents the new helper signature `idempotent(req, userId, fn)`. Every POST handler in this plan extracts `user.id` BEFORE the idempotency wrapper. Phase 2 D-37/D-38 helper now composes the idempotency key as `${headerKey}:${userId}:${route}` so two users cannot collide on the same Idempotency-Key.
+- **Codex 05-08 — Auth/domain error mapping (`requireUser` failures must NOT bubble as 500)**: Resolved by `decisions.auth_error_mapping` + the updated `httpMapDomainError` that explicitly maps `UnauthenticatedError`/`TokenExpiredError` to 401. The implementation snippet wraps `requireUser` in its own try/catch BEFORE the idempotency wrapper so auth errors get the closed-registry response.
+- **Codex Decision 1/2 — HTTP envelope and field-naming**: `decisions.http_response_serializer` ships `toSnakePlant`/`toSnakePhotoEntry` adapters at `src/shared/api/snake-case-serializer.ts`. Every list/detail handler maps `result.rows.map(toSnakePlant)` before serializing the JSON envelope `{ data, next_cursor }`. Internal repo rows stay camelCase; HTTP wire is snake_case.
+- **Codex Decision 3 — `listPlants` argument signature**: GET handler calls `listPlants({ userId, sortKey, cursor, limit, includeIdentificationCount })`; detail handler passes `plantIdFilter`. Wire query param is `?sort=` (existing UX), use-case argument is `sortKey`.
+- **Codex Decision 4 — Stub policy**: `decisions.stub_policy` declares `requireUser` as a BLOCKING Phase 4 dependency. No silent stub.
+</reviews_addressed>
 
 <success_criteria>
 - 5 endpoints shipped: GET /api/v1/plants, GET /api/v1/plants/:plantId, GET /api/v1/plants/:plantId/photos, POST /api/v1/plants, POST /api/v1/plants/from-identification.
-- httpMapDomainError shared helper consumed by all handlers + by Plan 05-09.
+- httpMapDomainError shared helper consumed by all handlers + by Plan 05-09; auth-helper errors map to closed-registry 401 (NOT 500) per Codex 05-08.
 - ErrorCode.Conflict added to closed registry if Phase 1 hadn't shipped it.
-- All POSTs wrapped in idempotent (Phase 2 D-37/D-38).
+- All POSTs follow Codex Decision 5 ordering: `requireUser` FIRST → `idempotent(req, userId, fn)` (user-scoped key).
+- All handlers serialize camelCase repo rows to snake_case JSON via `toSnakePlant` / `toSnakePhotoEntry` (Codex Decision 1/2). The `{ data, next_cursor }` envelope is canonical.
 - All handlers thin: validate → use case → HTTP map (Phase 2 D-17 enforced — no Drizzle imports).
-- 5 integration test files cover the per-endpoint behaviors specified in 05-VALIDATION.md for CAT-01/02/04/07.
+- 5 integration test files cover the per-endpoint behaviors specified in 05-VALIDATION.md for CAT-01/02/04/07; auth-failure path explicitly asserted to return 401.
 </success_criteria>
 
 <output>

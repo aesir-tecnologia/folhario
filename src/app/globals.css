@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+/* Hybrid dark variant: manual [data-theme=dark] always wins; otherwise media query. */
+/* Source: RESEARCH.md hybrid @custom-variant pattern (canonical, verified). */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme] *)) { @slot; }
+  }
+}
+
+/* ============================================================
+ * Design tokens — PRD §17 Paper Cream / Night Cream
+ * Light defaults via @theme (Tailwind v4 utility derivation).
+ * Dark counterparts via 3 blocks: auto media-query + manual override.
+ * Source: PRD §17 (canonical) + RESEARCH.md lines 310-349.
+ * ============================================================ */
+
+@theme {
+  /* Light palette — Paper Cream (60/30/10 dominant, secondary, accent) */
+  --color-paper: #FBF7EF;
+  --color-ivory: #FFFDF7;
+  --color-hairline: #E8E1D0;
+  --color-canopy: #1F4D35;
+  --color-forest: #143424;
+  --color-slate: #5A6358;
+  --color-sage: #8AA593;
+  --color-terracotta: #C96F4A;
+  --color-honey: #D4A340;
+  --color-poppy: #C73E1D;
+  --color-rust: #A14A2C;
+  --color-trust: #2B6F7A;
+
+  /* Typography — variable fonts wired via next/font in src/app/layout.tsx (Plan 02). */
+  --font-serif: var(--font-source-serif), serif;
+  --font-sans: var(--font-plus-jakarta), system-ui, sans-serif;
+
+  /* Safe-area inset spacing — UI-21. Tailwind v4 doesn't ship pb-safe-bottom built-in. */
+  --spacing-safe-top: env(safe-area-inset-top);
+  --spacing-safe-bottom: env(safe-area-inset-bottom);
+  --spacing-safe-left: env(safe-area-inset-left);
+  --spacing-safe-right: env(safe-area-inset-right);
+}
+
+/* Auto dark via system preference (no [data-theme] override). */
+/* :where(:not([data-theme])) ensures explicit data-theme="light" wins over OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-paper: #1A1613;
+    --color-ivory: #231E1A;
+    --color-hairline: #3A332B;
+    --color-canopy: #6FAE8A;
+    --color-forest: #F2EADB;
+    --color-slate: #B8B0A5;
+    --color-sage: #A6BFAE;
+    --color-terracotta: #E08B66;
+    --color-honey: #E8BC5E;
+    --color-poppy: #E8593A;
+    --color-rust: #C96A44;
+    --color-trust: #5BA5B0;
+  }
+}
+
+/* Manual dark override — same dark values; explicit attribute always wins. */
+[data-theme="dark"] {
+  --color-paper: #1A1613;
+  --color-ivory: #231E1A;
+  --color-hairline: #3A332B;
+  --color-canopy: #6FAE8A;
+  --color-forest: #F2EADB;
+  --color-slate: #B8B0A5;
+  --color-sage: #A6BFAE;
+  --color-terracotta: #E08B66;
+  --color-honey: #E8BC5E;
+  --color-poppy: #E8593A;
+  --color-rust: #C96A44;
+  --color-trust: #5BA5B0;
+}
+
+/* Manual light override — explicit re-declaration so OS dark doesn't bleed through. */
+[data-theme="light"] {
+  --color-paper: #FBF7EF;
+  --color-ivory: #FFFDF7;
+  --color-hairline: #E8E1D0;
+  --color-canopy: #1F4D35;
+  --color-forest: #143424;
+  --color-slate: #5A6358;
+  --color-sage: #8AA593;
+  --color-terracotta: #C96F4A;
+  --color-honey: #D4A340;
+  --color-poppy: #C73E1D;
+  --color-rust: #A14A2C;
+  --color-trust: #2B6F7A;
+}
+
+/* Global focus ring — PRD §17 GLOBAL: 3px Canopy @ 40% opacity, 2px offset, 8px radius. */
+:where(:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--color-canopy) 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* HTML/body baseline so Paper/Night Cream fills viewport (UI-21 — no h-screen). */
+html,
+body {
+  background-color: var(--color-paper);
+  color: var(--color-forest);
+  min-height: 100dvh;
+}
+
+/* ============================================================
+ * Skeleton shimmer — UI-17 / Plan 03 consumer.
+ * Lives here so globals.css is owned by Plan 01 only (file-ownership rule
+ * — advisor flag during planning).
+ * Plan 03 Skeleton primitive consumes the `animate-shimmer` utility class.
+ * Under reduced-motion, the Skeleton component DROPS the animate-shimmer class
+ * entirely (JS gate via useReducedMotion); this @keyframes block is unreferenced
+ * for those users.
+ *
+ * The linear-gradient call below is a decorative background-image (shimmer),
+ * NOT a banned text fill. Stylelint's narrowed gradient ban targets gradient
+ * TEXT (background-clip: text + -webkit-text-fill-color: transparent) per
+ * MEDIUM 8 (codex review), so this declaration passes without an inline disable.
+ * ============================================================ */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@utility animate-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-hairline) 0%,
+    var(--color-ivory) 50%,
+    var(--color-hairline) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* ============================================================
+ * D-08 layer 3 — paired reduced-motion sibling for @keyframes shimmer.
+ *
+ * The Skeleton primitive (Plan 03) already drops the `animate-shimmer` class
+ * via the `useReducedMotion()` hook (layer 1). This CSS block is a defense-in-
+ * depth: any consumer that adds an `animate-shimmer` element via raw CSS or
+ * a stylesheet outside the Skeleton primitive will still respect the user
+ * preference. The custom Stylelint rule
+ * `folhario/keyframes-requires-reduced-motion-fallback` enforces that every
+ * @keyframes ships a sibling block like this one.
+ * ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer,
+  [class*="animate-shimmer"] {
+    animation: none !important;
+    background-image: none !important;
+  }
+}

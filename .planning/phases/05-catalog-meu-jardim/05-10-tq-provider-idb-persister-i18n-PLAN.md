@@ -49,10 +49,39 @@ decisions:
     RESEARCH Pattern 2. `gcTime: 24h`, `staleTime: 5min`,
     `refetchOnWindowFocus: true`.
   persister_storage_key: |
-    `idb-keyval` key = `"folhario:tq-cache"` (top-level idbValidKey for the
-    whole-client persister payload). Single-key pattern matches RESEARCH
-    Pattern 2 verbatim — TQ writes the entire dehydrated client to one key
-    with internal throttling.
+    Per Codex review HIGH 05-10 (cross-user data leak on shared devices /
+    LGPD posture): `idb-keyval` key is USER-SCOPED — `folhario:tq-cache:${userId}`.
+    Each authenticated user gets a distinct IDB entry. When the user logs
+    out or switches accounts, the prior user's persister is removed (see
+    `auth_state_clearing` decision below) BEFORE the new user's persister
+    activates. The factory `createIdbPersister(userId)` constructs the
+    full key from the userId argument; there is no global single-key
+    persister.
+
+    For the unauthenticated render path (e.g., a public `/login` route
+    rendered server-side before auth), the ReactQueryProvider receives
+    `userId={null}` and DOES NOT mount a persister at all (the QueryClient
+    runs in-memory). This avoids both an empty key collision (`folhario:tq-cache:`)
+    and accidental persistence of a logged-out user's stale state.
+  auth_state_clearing: |
+    Per Codex review HIGH 05-10 (LGPD Art. 18 consent revocation /
+    user-switch leak): on every auth state transition (logout, account
+    switch, token expiry, consent revocation), the ReactQueryProvider
+    invokes `persister.removeClient()` for the CURRENT (about-to-be-stale)
+    userId BEFORE swapping in the next userId's persister. Phase 4
+    AuthAdapter is the source of truth — `persist-client-provider.tsx`
+    subscribes to its auth-state stream (or, if Phase 4 ships a polling
+    helper, polls it) and reacts on transitions. If the new state is
+    unauthenticated, the persister is removed and not replaced.
+
+    PHASE-4-DEPENDENCY: this hook requires the AuthAdapter subscription
+    primitive that Phase 4 ships. If Phase 4 has not landed at execution
+    time, the ReactQueryProvider falls back to a `useEffect` that listens
+    on `window.addEventListener('storage', ...)` for an explicit
+    `folhario:auth-state-changed` event the app can dispatch — this is
+    a documented BLOCKING contingency, not a silent stub. The fallback
+    path's correctness is verified by Plan 05-18 e2e/persister-hydration
+    when run with the user-switch fixture.
   layout_wrap_order: |
     Per 05-PATTERNS.md § "TanStack Query providers > Where to wire it":
     `<NextIntlClientProvider>` (server-rendered outermost) →
@@ -65,27 +94,30 @@ decisions:
 must_haves:
   truths:
     - "TanStack Query 5.100.5 + persist-client + async-storage-persister + idb-keyval are installed at exact pinned versions"
-    - "src/shared/react-query/idb-persister.ts exports createIdbPersister() returning a Persister with persistClient/restoreClient/removeClient backed by idb-keyval"
-    - "src/shared/react-query/persist-client-provider.tsx exports a 'use client' ReactQueryProvider component that wraps children in <PersistQueryClientProvider> with the per-render QueryClient and the IDB persister"
-    - "src/app/layout.tsx wraps PostHogProvider's children in <ReactQueryProvider> (TQ provider INSIDE PostHog INSIDE NextIntlClientProvider)"
+    - "src/shared/react-query/idb-persister.ts exports `createIdbPersister(userId: string)` returning a Persister bound to the key `folhario:tq-cache:${userId}` (Codex review HIGH 05-10 — per-user scoping; NO global single-key persister)"
+    - "src/shared/react-query/persist-client-provider.tsx exports a 'use client' ReactQueryProvider component that accepts `userId: string | null` as a prop. When userId is non-null, the persister is mounted with the user-scoped key. When userId is null (unauthenticated render path), the QueryClient runs in-memory with NO persister."
+    - "src/shared/react-query/persist-client-provider.tsx subscribes to auth state transitions (logout, user-switch, token expiry, consent revocation). On each transition, it calls `persister.removeClient()` for the OUTGOING userId BEFORE mounting (or NOT mounting, if logging out) the persister for the new state. Phase 4 AuthAdapter is the source of truth; documented PHASE-4-DEPENDENCY contingency falls back to a `folhario:auth-state-changed` window event."
+    - "src/app/layout.tsx is async (RSC) and resolves the current userId server-side via Phase 4 `requireUser` (or `tryGetUser` for the unauthenticated path), then passes `userId={user?.id ?? null}` to `<ReactQueryProvider>`."
+    - "src/app/layout.tsx wraps PostHogProvider's children in <ReactQueryProvider userId={...}> (TQ provider INSIDE PostHog INSIDE NextIntlClientProvider)"
     - "src/messages/pt-BR.json contains the COMPLETE catalog.* namespace covering every UI-SPEC § Copywriting Contract row (page titles, sort labels, headlines, hints, CTAs, modal copy, validation copy, banners) so subsequent 5b plans consume only"
     - "useSubscription hook PATH for 5b is locked at src/contexts/billing/api/use-subscription.ts (Q3 resolution; consumed by 05-11)"
-    - "IDB persister behavior: writing to and reading from `folhario:tq-cache` key roundtrips a PersistedClient object (3 RED→GREEN tests)"
+    - "IDB persister behavior: writing to and reading from `folhario:tq-cache:${userId}` key roundtrips a PersistedClient object (4 RED→GREEN tests including a cross-user-isolation test)"
+    - "LGPD posture (Codex review 05-10): one user's IDB key cannot be read by removing/operating on another user's key — verified by the cross-user-isolation unit test"
   artifacts:
     - path: "src/shared/react-query/idb-persister.ts"
-      provides: "createIdbPersister(idbValidKey) — Persister implementation backed by idb-keyval"
-      min_lines: 18
+      provides: "createIdbPersister(userId: string) — Persister implementation backed by idb-keyval; key is `folhario:tq-cache:${userId}` (Codex 05-10 user-scoping)"
+      min_lines: 22
       contains: "createIdbPersister"
     - path: "src/shared/react-query/query-client.ts"
       provides: "createQueryClient() factory returning QueryClient with default gcTime=24h, staleTime=5min, refetchOnWindowFocus=true"
       min_lines: 18
       contains: "QueryClient"
     - path: "src/shared/react-query/persist-client-provider.tsx"
-      provides: "ReactQueryProvider 'use client' wrapper using PersistQueryClientProvider with buster='folhario-catalog-v1', maxAge=24h, IDB persister"
-      min_lines: 30
+      provides: "ReactQueryProvider 'use client' wrapper accepting `userId: string | null` prop. When userId is non-null: PersistQueryClientProvider with buster='folhario-catalog-v1', maxAge=24h, user-scoped IDB persister. When userId is null: QueryClientProvider only (no persister). Auth-state transitions removeClient() on outgoing userId BEFORE swap (Codex 05-10)."
+      min_lines: 60
       contains: "PersistQueryClientProvider"
     - path: "src/app/layout.tsx"
-      provides: "Layout wraps PostHogProvider children in ReactQueryProvider; preserves NextIntlClientProvider outermost"
+      provides: "Async layout. Resolves userId server-side via Phase 4 tryGetUser; wraps PostHogProvider children in <ReactQueryProvider userId={userId}>; preserves NextIntlClientProvider outermost"
       contains: "ReactQueryProvider"
     - path: "src/messages/pt-BR.json"
       provides: "Top-level catalog.* namespace with all 5b copy strings (page titles, sort labels, headlines, hints, CTAs, modal copy, validation copy, banners verbatim per UI-SPEC § Copywriting Contract)"
@@ -232,14 +264,16 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
     - .planning/phases/01-foundation/01-CONTEXT.md (Phase 1 D-04 EXACT version-pinning policy)
   </read_first>
   <behavior>
-    - Test 1 (`createIdbPersister default key roundtrip`): persistClient writes a PersistedClient to default key `folhario:tq-cache`; restoreClient returns the SAME PersistedClient object (deep-equal)
-    - Test 2 (`createIdbPersister custom key`): when called with `createIdbPersister("custom-key")`, all three methods operate against `custom-key`, not the default
-    - Test 3 (`restoreClient returns undefined when no key set`): fresh fake-indexeddb, no prior write → restoreClient resolves to `undefined`
-    - Test 4 (`removeClient clears the entry`): persistClient → removeClient → restoreClient returns `undefined`
+    - Test 1 (`createIdbPersister(userId) roundtrip`): `createIdbPersister("user-abc")` writes a PersistedClient that restoreClient returns deep-equal. The key inspected directly via `idb-keyval get('folhario:tq-cache:user-abc')` returns the same payload.
+    - Test 2 (`per-userId isolation`): `createIdbPersister("user-abc").persistClient(clientA)` then `createIdbPersister("user-xyz").restoreClient()` returns `undefined` — user-xyz's persister cannot read user-abc's key. Conversely, calling `createIdbPersister("user-xyz").removeClient()` does NOT clear user-abc's persisted state — `createIdbPersister("user-abc").restoreClient()` still returns clientA.
+    - Test 3 (`restoreClient returns undefined when no key set`): fresh fake-indexeddb, no prior write → `createIdbPersister("user-abc").restoreClient()` resolves to `undefined`.
+    - Test 4 (`removeClient clears the user-scoped entry`): `createIdbPersister("user-abc").persistClient(...)` → `.removeClient()` → `.restoreClient()` returns `undefined`.
 
-    Tests use `import { createIdbPersister } from "@shared/react-query/idb-persister"` — module does NOT exist yet (RED). Tests use the global fake-indexeddb polyfill from `tests/helpers/idb-test-setup.ts` (already registered in 5a 05-01 vitest unit project setupFiles). Each test wraps body in `beforeEach` that calls `await del("folhario:tq-cache")` and `await del("custom-key")` to isolate state across tests.
+    Tests use `import { createIdbPersister } from "@shared/react-query/idb-persister"` — module does NOT exist yet (RED). Tests use the global fake-indexeddb polyfill from `tests/helpers/idb-test-setup.ts` (already registered in 5a 05-01 vitest unit project setupFiles). Each test wraps body in `beforeEach` that calls `await del("folhario:tq-cache:user-abc")` and `await del("folhario:tq-cache:user-xyz")` to isolate state across tests.
 
     Assert PersistedClient shape via `expect(restored).toEqual({ buster: "test-buster", timestamp: ..., clientState: { mutations: [], queries: [] } })`.
+
+    **Codex 05-10 cross-user isolation guard**: Test 2 is load-bearing — its failure means the persister is leaking across users (the bug Codex flagged). Verification block grep-asserts the persister source contains the user-scoped key template.
   </behavior>
   <action>
     **RED step (write failing tests + install deps):**
@@ -257,7 +291,7 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
     3. Create `tests/unit/shared/react-query/idb-persister.test.ts` (NEW directory required):
        ```ts
        import { describe, it, expect, beforeEach } from "vitest";
-       import { del } from "idb-keyval";
+       import { del, get } from "idb-keyval";
        import { createIdbPersister } from "@shared/react-query/idb-persister";
        import type { PersistedClient } from "@tanstack/react-query-persist-client";
 
@@ -267,34 +301,53 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
          clientState: { mutations: [], queries: [] },
        };
 
+       const sampleClientB: PersistedClient = {
+         buster: "test-buster",
+         timestamp: 1_700_000_001_000,
+         clientState: { mutations: [], queries: [{ queryKey: ["plants", "user-xyz"] }] },
+       };
+
        beforeEach(async () => {
-         await del("folhario:tq-cache");
-         await del("custom-key");
+         await del("folhario:tq-cache:user-abc");
+         await del("folhario:tq-cache:user-xyz");
        });
 
-       describe("createIdbPersister", () => {
-         it("roundtrips PersistedClient via the default key", async () => {
-           const persister = createIdbPersister();
+       describe("createIdbPersister(userId)", () => {
+         it("Test 1: roundtrips PersistedClient via the user-scoped key", async () => {
+           const persister = createIdbPersister("user-abc");
            await persister.persistClient(sampleClient);
            const restored = await persister.restoreClient();
            expect(restored).toEqual(sampleClient);
+           // Direct IDB inspection verifies the actual key shape.
+           const direct = await get<PersistedClient>("folhario:tq-cache:user-abc");
+           expect(direct).toEqual(sampleClient);
          });
 
-         it("uses the custom key when provided", async () => {
-           const persister = createIdbPersister("custom-key");
-           await persister.persistClient(sampleClient);
-           const restored = await persister.restoreClient();
-           expect(restored).toEqual(sampleClient);
+         it("Test 2 (LOAD-BEARING — Codex 05-10 cross-user isolation): one user's persister cannot read or remove another user's key", async () => {
+           const persisterA = createIdbPersister("user-abc");
+           const persisterB = createIdbPersister("user-xyz");
+
+           await persisterA.persistClient(sampleClient);
+           await persisterB.persistClient(sampleClientB);
+
+           // user-xyz never sees user-abc's data even when sharing the IDB store.
+           expect(await persisterB.restoreClient()).toEqual(sampleClientB);
+           expect(await persisterA.restoreClient()).toEqual(sampleClient);
+
+           // Removing user-xyz's persister does NOT touch user-abc's data.
+           await persisterB.removeClient();
+           expect(await persisterA.restoreClient()).toEqual(sampleClient);
+           expect(await persisterB.restoreClient()).toBeUndefined();
          });
 
-         it("returns undefined when no client persisted", async () => {
-           const persister = createIdbPersister();
+         it("Test 3: returns undefined when no client persisted for that userId", async () => {
+           const persister = createIdbPersister("user-abc");
            const restored = await persister.restoreClient();
            expect(restored).toBeUndefined();
          });
 
-         it("removeClient clears the entry", async () => {
-           const persister = createIdbPersister();
+         it("Test 4: removeClient clears the user-scoped entry", async () => {
+           const persister = createIdbPersister("user-abc");
            await persister.persistClient(sampleClient);
            await persister.removeClient();
            const restored = await persister.restoreClient();
@@ -332,30 +385,40 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
     - src/app/posthog-provider.tsx (Phase 1 Plan 01-06 — ANALOG for the "use client" provider style)
   </read_first>
   <behavior>
-    - On import, `createIdbPersister()` (no args) returns a Persister whose 3 methods operate on the literal key `"folhario:tq-cache"`
-    - On import, `createIdbPersister("custom")` returns a Persister whose 3 methods operate on the literal key `"custom"`
+    - `createIdbPersister(userId)` returns a Persister whose 3 methods operate on the literal key `folhario:tq-cache:${userId}` (Codex 05-10)
+    - `createIdbPersister` MUST require a `userId` argument; calling it with no args is a TypeScript compile error (the function signature is `(userId: string) => Persister`).
     - `createQueryClient()` returns a fresh QueryClient with `gcTime: 24*60*60*1000`, `staleTime: 5*60*1000`, `refetchOnWindowFocus: true`
-    - `ReactQueryProvider` wraps children in `<PersistQueryClientProvider>` with `buster: "folhario-catalog-v1"`, `maxAge: 24*60*60*1000`, the IDB persister (per-render), and the per-render QueryClient
-    - `src/app/layout.tsx` JSX has `<ReactQueryProvider>` directly INSIDE `<PostHogProvider>` and OUTSIDE `<NextIntlClientProvider>` — preserves the wrap order: NextIntl > PostHog > ReactQuery > children
+    - `ReactQueryProvider` props: `{ userId: string | null; children: React.ReactNode }`. When `userId` is non-null, mounts `<PersistQueryClientProvider>` with `buster: "folhario-catalog-v1"`, `maxAge: 24*60*60*1000`, `persister: createIdbPersister(userId)`, and the per-render QueryClient. When `userId` is null, mounts `<QueryClientProvider>` (NO persistence — Codex 05-10 unauthenticated path).
+    - `ReactQueryProvider` subscribes to auth state transitions (Phase 4 AuthAdapter or the documented contingency event `folhario:auth-state-changed`). On a transition where the OUTGOING userId was non-null, the outgoing user's persister is removed via `createIdbPersister(outgoingUserId).removeClient()` BEFORE the new userId's persister mounts.
+    - `src/app/layout.tsx` is async. It resolves `userId = (await tryGetUser())?.id ?? null` server-side and passes it as a prop to `<ReactQueryProvider userId={userId}>`. Wrap order preserved: NextIntl > PostHog > ReactQuery > children.
   </behavior>
   <action>
     **GREEN step (minimal code to pass RED tests + wire into layout):**
 
-    1. Create `src/shared/react-query/idb-persister.ts` (copy verbatim from RESEARCH Pattern 2 line 502-518):
+    1. Create `src/shared/react-query/idb-persister.ts` (Codex 05-10 — user-scoped key):
        ```ts
        import { get, set, del } from "idb-keyval";
        import type { PersistedClient, Persister } from "@tanstack/react-query-persist-client";
 
-       export function createIdbPersister(idbValidKey: IDBValidKey = "folhario:tq-cache"): Persister {
+       /**
+        * Codex review HIGH 05-10: persister keys are user-scoped to prevent
+        * cross-user data leak on shared devices. Each authenticated user
+        * gets a distinct IDB entry at `folhario:tq-cache:${userId}`.
+        */
+       export function createIdbPersister(userId: string): Persister {
+         if (!userId) {
+           throw new Error("createIdbPersister requires a non-empty userId");
+         }
+         const key: IDBValidKey = `folhario:tq-cache:${userId}`;
          return {
            persistClient: async (client: PersistedClient) => {
-             await set(idbValidKey, client);
+             await set(key, client);
            },
            restoreClient: async () => {
-             return (await get<PersistedClient>(idbValidKey)) ?? undefined;
+             return (await get<PersistedClient>(key)) ?? undefined;
            },
            removeClient: async () => {
-             await del(idbValidKey);
+             await del(key);
            },
          };
        }
@@ -378,24 +441,69 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
        }
        ```
 
-    3. Create `src/shared/react-query/persist-client-provider.tsx`:
+    3. Create `src/shared/react-query/persist-client-provider.tsx` (Codex 05-10 — userId prop + auth-state clearing):
        ```tsx
        "use client";
        import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-       import { useState } from "react";
+       import { QueryClientProvider } from "@tanstack/react-query";
+       import { useEffect, useRef, useState } from "react";
        import { createIdbPersister } from "./idb-persister";
        import { createQueryClient } from "./query-client";
 
-       export function ReactQueryProvider({ children }: { children: React.ReactNode }) {
+       type Props = { userId: string | null; children: React.ReactNode };
+
+       /**
+        * Codex review HIGH 05-10:
+        *  - User-scoped persister key (`createIdbPersister(userId)`)
+        *  - Unauthenticated render path uses in-memory QueryClient only (no persister)
+        *  - Auth-state transitions remove the outgoing user's persister BEFORE swapping
+        */
+       export function ReactQueryProvider({ userId, children }: Props) {
          // Per-render so SSR cannot leak QueryClient across users.
          const [queryClient] = useState(createQueryClient);
-         const [persister] = useState(() => createIdbPersister());
+         const lastUserIdRef = useRef<string | null>(null);
 
+         // Auth-state transition: clear the OUTGOING user's persister BEFORE the new state mounts.
+         useEffect(() => {
+           const previous = lastUserIdRef.current;
+           if (previous !== null && previous !== userId) {
+             // user-switch or logout — clear previous user's persisted cache
+             createIdbPersister(previous).removeClient().catch(() => {
+               // best-effort; not blocking the render path
+             });
+             // Reset in-memory cache too, so the new user sees a clean slate.
+             queryClient.clear();
+           }
+           lastUserIdRef.current = userId;
+         }, [userId, queryClient]);
+
+         // Listener for the contingency `folhario:auth-state-changed` event when Phase 4
+         // AuthAdapter has not landed yet. The dispatched event signals the app should
+         // reconsider auth state — the layout will re-resolve userId on next navigation;
+         // here we proactively clear the current persister.
+         useEffect(() => {
+           if (typeof window === "undefined") return;
+           const handler = () => {
+             if (userId) {
+               createIdbPersister(userId).removeClient().catch(() => {});
+               queryClient.clear();
+             }
+           };
+           window.addEventListener("folhario:auth-state-changed", handler);
+           return () => window.removeEventListener("folhario:auth-state-changed", handler);
+         }, [userId, queryClient]);
+
+         if (userId === null) {
+           // Codex 05-10: unauthenticated render path — no persister, in-memory only.
+           return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+         }
+
+         // Authenticated render path — user-scoped persister.
          return (
            <PersistQueryClientProvider
              client={queryClient}
              persistOptions={{
-               persister,
+               persister: createIdbPersister(userId),
                maxAge: 1000 * 60 * 60 * 24,
                buster: "folhario-catalog-v1",
              }}
@@ -406,10 +514,13 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
        }
        ```
 
-    4. Patch `src/app/layout.tsx` — INSERT `<ReactQueryProvider>` INSIDE `<PostHogProvider>`:
+    4. Patch `src/app/layout.tsx` — INSERT `<ReactQueryProvider userId={userId}>` INSIDE `<PostHogProvider>`:
+       - The layout becomes `async` (it already is async for `getMessages()` — keep that).
        - Add `import { ReactQueryProvider } from "@shared/react-query/persist-client-provider";`
-       - Wrap `{children}` inside PostHogProvider with `<ReactQueryProvider>{children}</ReactQueryProvider>`
-       - Wrap order MUST stay: `<NextIntlClientProvider>` > `<PostHogProvider>` > `<ReactQueryProvider>` > children
+       - Add `import { tryGetUser } from "@contexts/iam/api/try-get-user";` (Phase 4 helper that returns `{ id } | null` without throwing on unauthenticated requests). PHASE-4-DEPENDENCY note: if Phase 4 has not landed, fall back to `const userId = null;` and document the fallback in 05-10-SUMMARY.md.
+       - Resolve userId server-side: `const user = await tryGetUser(); const userId = user?.id ?? null;`
+       - Wrap `{children}` with `<ReactQueryProvider userId={userId}>{children}</ReactQueryProvider>` inside PostHogProvider.
+       - Wrap order MUST stay: `<NextIntlClientProvider>` > `<PostHogProvider>` > `<ReactQueryProvider userId={userId}>` > children
        - Do NOT touch `<html lang={locale}>` or `/manifest.webmanifest` link or NextIntlClientProvider (Plan 01-03 invariants).
 
     5. Run `pnpm exec vitest --run --project=unit tests/unit/shared/react-query/idb-persister.test.ts` — MUST PASS (4 green tests).
@@ -644,7 +755,8 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-5b-10-01 | Information Disclosure | Persister IDB cache contains plant names + photo URLs | accept | Same data is already rendered in DOM; IDB is per-origin sandboxed; LGPD posture remains "user owns their device" per PRD §11. Buster `folhario-catalog-v1` enables cache wipe on schema changes. |
+| T-5b-10-01 | Information Disclosure | Persister IDB cache contains plant names + photo URLs | mitigate | Same data is already rendered in DOM; IDB is per-origin sandboxed; LGPD posture remains "user owns their device" per PRD §11. Buster `folhario-catalog-v1` enables cache wipe on schema changes. **Codex 05-10 mitigation**: persister key is user-scoped (`folhario:tq-cache:${userId}`) and the outgoing user's persister is removed on every auth-state transition (logout, user-switch, token expiry, consent revocation). Verified by unit Test 2 (cross-user-isolation) + e2e/persister-hydration in 05-18. |
+| T-5b-10-05 | Information Disclosure | Cross-user data leak on shared device (one user's plants visible in another user's session) | mitigate | Codex review HIGH 05-10. Mitigation: per-user IDB key + auth-state removeClient + LGPD Art. 18 compliance via consent-revocation event. |
 | T-5b-10-02 | Tampering / Spoofing | SSR QueryClient leak across users (Pattern 2 anti-pattern) | mitigate | `useState(() => createQueryClient())` per-render, NOT module-level singleton. Verified by acceptance criteria asserting `createQueryClient` factory function (not exported singleton). |
 | T-5b-10-03 | Tampering | i18n interpolation XSS via `{name}` token (e.g., `delete.modal.title`) | mitigate | next-intl auto-escapes interpolated values via React JSX (no dangerouslySetInnerHTML). Plant name capped at 80 chars by Phase 5a 05-04 schema. No active mitigation needed at THIS layer; downstream consumers must pass user input through JSX as text node, not raw HTML. |
 | T-5b-10-04 | Information Disclosure | Sentry breadcrumb may capture IDB write payloads (PersistedClient contains query data) | accept | Phase 1 LGPD-13 scrub module (Plan 01-05a) drops `request.cookies` and redacts identification payloads. IDB write breadcrumbs do NOT contain image URLs (they contain query keys + small metadata); risk is low. If a future regression surfaces, extend scrub-fields list — not in scope here. |
@@ -653,20 +765,35 @@ From src/shared/telemetry/posthog-server.ts (Phase 1 Plan 01-06 — NO direct de
 
 <verification>
 Run after all 3 tasks:
-- `pnpm exec vitest --run --project=unit tests/unit/shared/react-query/idb-persister.test.ts` exits 0 (4 tests pass)
+- `pnpm exec vitest --run --project=unit tests/unit/shared/react-query/idb-persister.test.ts` exits 0 (4 tests pass, including Test 2 — cross-user isolation)
 - `pnpm exec tsc --noEmit` exits 0
 - `node -e "JSON.parse(require('fs').readFileSync('src/messages/pt-BR.json','utf8'))"` exits 0
 - `grep -c "ReactQueryProvider" src/app/layout.tsx` returns ≥ 2 (import + JSX)
+- **Codex 05-10 user-scoping guard**: `grep -E 'folhario:tq-cache:\\$\\{userId\\}|folhario:tq-cache:\\$\\{user' src/shared/react-query/idb-persister.ts` matches (template literal with userId)
+- **Codex 05-10 user-scoping guard**: `grep -E "createIdbPersister\\(\\)" src/shared/react-query/` returns 0 matches across the source tree (no caller invokes the factory without a userId)
+- **Codex 05-10 unauthenticated path guard**: `grep -E "QueryClientProvider" src/shared/react-query/persist-client-provider.tsx` matches (the no-persister branch is present)
+- **Codex 05-10 auth-state clearing guard**: `grep -E "removeClient" src/shared/react-query/persist-client-provider.tsx` matches at least once (the on-transition clearing path is present)
 - `grep -nE "(NextIntlClientProvider|PostHogProvider|ReactQueryProvider)" src/app/layout.tsx` shows three providers in correct nesting order
+- `grep -E "userId=\\{" src/app/layout.tsx` matches (layout passes userId prop)
 - `grep -E "@tanstack/react-query.*5\.100\.5" package.json` matches
 </verification>
 
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-10 HIGH — Global IDB key `folhario:tq-cache` persists multiple users' data on shared devices (LGPD risk)**: Resolved by user-scoping the persister key — `createIdbPersister(userId)` constructs `folhario:tq-cache:${userId}` and the factory throws on missing userId. The unauthenticated render path explicitly skips the persister (in-memory QueryClient only). Test 2 is a load-bearing cross-user-isolation guard.
+- **05-10 HIGH (LGPD Art. 18 consent revocation / user-switch leak)**: Resolved by `useEffect` in `ReactQueryProvider` that calls `createIdbPersister(previous).removeClient()` whenever the layout's `userId` prop changes (and clears the in-memory `queryClient`). A second `useEffect` listens on the `folhario:auth-state-changed` window event as a documented Phase-4-dependency contingency. Both paths are verified by the e2e/persister-hydration spec in Plan 05-18 (with a user-switch fixture).
+- **05-10 stub policy** (cross-cutting Decision 4): The PHASE-4-DEPENDENCY for `tryGetUser` is now an explicit BLOCKING dependency at execution time, not a silent stub. The contingency event-based fallback is named, documented, and verified.
+</reviews_addressed>
+
 <success_criteria>
 - TanStack Query 5.100.5 + persist-client + async-storage-persister + idb-keyval installed at exact pins
-- `createIdbPersister()` works against `folhario:tq-cache` key with fake-indexeddb in unit tests (RED→GREEN proven)
-- ReactQueryProvider is mounted in layout.tsx INSIDE PostHogProvider INSIDE NextIntlClientProvider
+- `createIdbPersister(userId)` works against `folhario:tq-cache:${userId}` key with fake-indexeddb in unit tests (4 RED→GREEN tests, including cross-user isolation)
+- ReactQueryProvider props include `userId: string | null`; unauthenticated path mounts in-memory QueryClient (no persister); auth state transitions clear outgoing user's persister BEFORE swapping
+- ReactQueryProvider is mounted in layout.tsx INSIDE PostHogProvider INSIDE NextIntlClientProvider, with userId resolved server-side from Phase 4 `tryGetUser`
 - pt-BR.json has the COMPLETE catalog namespace; subsequent 5b plans consume keys without re-modifying the file
 - Q3 resolved: `useSubscription` will land at `src/contexts/billing/api/use-subscription.ts` (option a, accept CONTEXT D-24 verbatim) — documented in `decisions.use_subscription_location`
+- LGPD posture (Codex 05-10): cross-user IDB key isolation verified by Test 2 + grep gates
 - All commits prefixed `test(05-10):` (RED), `feat(05-10):` (GREEN), `feat(05-10):` (i18n)
 </success_criteria>
 

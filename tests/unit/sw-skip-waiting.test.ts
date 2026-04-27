@@ -31,6 +31,9 @@ describe("OFF-10 + T-03-04-01 SW SKIP_WAITING handler — guards event.data.type
       function FakeNetworkOnly() {
         return {};
       }
+      function FakeNetworkFirst() {
+        return {};
+      }
       function FakeStaleWhileRevalidate() {
         return {};
       }
@@ -38,6 +41,7 @@ describe("OFF-10 + T-03-04-01 SW SKIP_WAITING handler — guards event.data.type
         Serwist: FakeSerwist,
         StaleWhileRevalidate: FakeStaleWhileRevalidate,
         NetworkOnly: FakeNetworkOnly,
+        NetworkFirst: FakeNetworkFirst,
       };
     });
     vi.doMock("@serwist/next/worker", () => ({ defaultCache: [] }));

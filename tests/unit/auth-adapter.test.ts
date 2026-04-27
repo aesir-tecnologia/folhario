@@ -256,25 +256,27 @@ describe("AuthAdapter — verifyBearer", () => {
  */
 
 function buildFakeUserRow(id: string): UserRow {
-  // Minimal partial — only the fields we read are required at runtime; the
-  // rest are typed but unused by the helper. Build with a structural cast.
-  const now = new Date();
+  // IN-02: construct directly from the real `users` schema shape so a
+  // future column rename/addition fails at compile time instead of being
+  // silently absorbed by `as unknown as UserRow`. Timestamp columns are
+  // declared as `mode: "string"` in the schema, so ISO strings are the
+  // correct type here.
+  const now = new Date().toISOString();
   return {
     id,
     email: `user+${id}@example.test`,
     name: "Test User",
+    locale: "pt-BR",
     timezone: "America/Sao_Paulo",
     notificationTimeLocal: "09:00",
-    plan: "trial",
-    trialEndsAt: null,
+    trialSource: "organic",
     partnerCode: null,
-    consentVersionId: null,
-    notificationOptIn: false,
-    pendingDeletionAt: null,
-    locale: "pt-BR",
+    ageConfirmedAt: null,
+    toxicityDisclaimerAcknowledgedAt: null,
+    deletionRequestedAt: null,
     createdAt: now,
     updatedAt: now,
-  } as unknown as UserRow;
+  };
 }
 
 describe("requireApiUser — protected API helper", () => {

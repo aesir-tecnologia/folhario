@@ -22,18 +22,57 @@ requirements:
   - CAT-02
   - CAT-03
 decisions:
-  zod_derivation_pattern: "Per Phase 2 D-19 — every domain module derives schemas via createInsertSchema/createSelectSchema/createUpdateSchema from drizzle-zod. Routes import domain schemas, NEVER raw table definitions."
-  storage_path_validator_signature: "validateStoragePathOwnership({ paths: string[], userId: string, plantId: string }): { ok: true } | { ok: false, badPaths: string[] }. Path expected shape: `{user_id}/{plant_id}/{file_id}.{ext}` per Phase 2 D-26. Both photo_url and thumbnail_url paths are validated against the same prefix."
+  zod_derivation_pattern: |
+    Per Phase 2 D-19 + Codex review HIGH 05-04: TWO-LAYER schema architecture.
+
+    **Internal layer (camelCase, drizzle-zod)** — `PlantSchema`, `PhotoEntrySchema`, etc.
+    are `createSelectSchema(plants)`, `createSelectSchema(photoEntries)`, etc.
+    These produce camelCase field names matching the Drizzle table property names
+    (`coverPhotoUrl`, `acquisitionDate`, `createdAt`, `photoUrl`, `thumbnailUrl`).
+    `Plant`, `PhotoEntry` types are `z.infer<typeof ...>` of these. Used by repos
+    + use cases internally.
+
+    **HTTP boundary layer (snake_case, plain Zod, `.strict()`)** —
+    `PlantCreateInputSchema`, `PlantPatchSchema`, `PhotoEntryCreateSchema`,
+    `PhotoEntryNotePatchSchema`, `SetCoverPhotoSchema` are plain `z.object({...})`
+    with snake_case field names matching the wire JSON: `cover_photo_url`,
+    `acquisition_date`, `photo_url`, `thumbnail_url`, `initial_photos: [{ photo_url, thumbnail_url }]`.
+    Each schema is `.strict()` so unknown keys reject (mass-assignment defense).
+    These are NOT derived from drizzle-zod — Codex 05-04 HIGH flagged that
+    `createInsertSchema(plants).omit({ cover_photo_url: true })` would not compile
+    because the inferred field name is `coverPhotoUrl` (camelCase property), not
+    `cover_photo_url` (DB column name).
+
+    Route handlers parse the request body with the HTTP-boundary schema, then
+    map to camelCase before calling the use case. This separation also lets the
+    HTTP schema diverge from the DB shape when needed (e.g., extension fields like
+    `initial_photos` for the two-step create flow).
+  storage_path_validator_signature: "validateStoragePathOwnership({ paths: string[], userId: string, plantId: string }): { ok: true } | { ok: false, badPaths: string[] }. Path expected shape: `{user_id}/{plant_id}/{file_id}.{ext}` per Phase 2 D-26 + Codex Decision 6. Both photo_url and thumbnail_url paths are validated against the same prefix. Bucket name is NEVER part of the path string."
   pitfall_1_mitigation_layer: "Storage-path ownership is a USE-CASE concern (Pitfall 1). The validator helper lives at src/contexts/catalog/domain/storage-path.ts so it's importable by both createPlantManual (Plan 05-05) and addPhotoEntry (Plan 05-07). The route handler does NOT call it directly."
-  events_module_scope: "src/contexts/catalog/domain/events.ts exports type-only event payload shapes for `plant.created` and `plant.deleted` per Phase 2 D-42. Inngest createFunction triggers (Plan 05-06) reference these types."
-  patch_schema_field_set: "PlantPatchSchema is .pick({ name, nickname, location, acquisitionDate, notes }) — server-controlled fields (id, userId, speciesId, coverPhotoUrl, createdAt) explicitly NOT patchable. Mass-assignment defense per RESEARCH § Security Domain T-5 mass-assignment row."
+  events_module_scope: |
+    src/contexts/catalog/domain/events.ts exports type-only event payload shapes:
+
+    - `PlantCreatedEvent` + `PlantCreatedEventName = "plant.created"`
+    - `PlantDeletedEvent` + `PlantDeletedEventName = "plant.deleted"` — payload `{ user_id, plant_id, storage_deletion_job_id, storage_paths[] }` (CONTEXT D-04 specifics)
+    - **Codex review HIGH 05-09 — separate event for per-PhotoEntry cleanup**:
+      `PhotoEntryDeletedEvent` + `PhotoEntryDeletedEventName = "photo_entry.deleted"` —
+      payload `{ user_id, plant_id, photo_entry_id, storage_deletion_job_id, storage_paths[] }`.
+      Plan 05-09's `deletePhotoEntryWithStorageCleanup` use case dispatches THIS event
+      (NOT `plant.deleted`). Plan 05-06's `catalog/cleanup-storage` Inngest function
+      registers `photo_entry.deleted` as a SECOND trigger so the same handler body
+      processes both event types via the shared `storage_deletion_job_id`.
+
+    Inngest createFunction triggers (Plan 05-06) reference these types.
+  patch_schema_field_set: "PlantPatchSchema is plain Zod `z.object({ name?, nickname?, location?, acquisition_date?, notes? }).strict()` — server-controlled fields (id, user_id, species_id, cover_photo_url, created_at) explicitly NOT in the schema (`.strict()` rejects unknown keys). Mass-assignment defense per RESEARCH § Security Domain T-5 mass-assignment row."
 must_haves:
   truths:
     - "Every catalog mutating route handler can import a single Zod schema (PlantCreateInputSchema, PlantPatchSchema, PhotoEntryCreateSchema, PhotoEntryNotePatchSchema, SetCoverPhotoSchema) and call .safeParse before invoking the use case"
-    - "validateStoragePathOwnership returns { ok: false, badPaths } for any path not starting with `{userId}/{plantId}/` — including identification-owned paths from a different plant or another user's photos (T-5-01 mitigation, Pitfall 1)"
-    - "PlantPatchSchema rejects unknown keys (mass-assignment T-5 mitigation): an input with `userId` or `coverPhotoUrl` fields fails parse"
-    - "Domain types `Plant`, `PhotoEntry`, `PendingStorageDeletion` are inferred from the Zod select schemas (single source of truth)"
-    - "events.ts exports type-only `PlantCreatedEvent`, `PlantDeletedEvent` payload types matching the canonical event names from CONTEXT D-04 specifics"
+    - "**HTTP-boundary schemas use snake_case + .strict() (Codex 05-04 HIGH + Decision 2)**: `PlantCreateInputSchema`, `PlantPatchSchema`, `PhotoEntryCreateSchema`, etc. are PLAIN Zod `z.object({...}).strict()` — NOT drizzle-zod-derived. Field names match the wire JSON: `cover_photo_url`, `acquisition_date`, `photo_url`, `thumbnail_url`, `initial_photos`. Mass-assignment defense via `.strict()`."
+    - "**Internal types use camelCase (Codex Decision 1/2)**: `Plant = z.infer<PlantSchema>` where `PlantSchema = createSelectSchema(plants)` — drizzle-zod produces camelCase property names matching the Drizzle table object (`coverPhotoUrl`, `acquisitionDate`, `createdAt`). Repos/use-cases consume the camelCase type."
+    - "validateStoragePathOwnership returns { ok: false, badPaths } for any path not starting with `{userId}/{plantId}/` — including identification-owned paths from a different plant or another user's photos (T-5-01 mitigation, Pitfall 1, Codex Decision 6 canonical format)"
+    - "PlantPatchSchema rejects unknown keys (mass-assignment T-5 mitigation): an input with `user_id`, `cover_photo_url`, `species_id`, `id`, or `created_at` fields fails parse"
+    - "Domain types `Plant`, `PhotoEntry`, `PendingStorageDeletion` are inferred from the Zod select schemas (drizzle-zod) — camelCase, single source of truth for the internal layer"
+    - "events.ts exports type-only `PlantCreatedEvent`, `PlantDeletedEvent` PLUS `PhotoEntryDeletedEvent` (Codex review HIGH 05-09) payload types with the canonical event names `plant.created`, `plant.deleted`, `photo_entry.deleted`"
   artifacts:
     - path: "src/contexts/catalog/domain/plant.ts"
       provides: "PlantSchema (select), PlantCreateInputSchema (insert + initial_photos refinement), PlantPatchSchema (update, picked fields), Plant type"
@@ -45,8 +84,8 @@ must_haves:
       provides: "PendingStorageDeletionSchema, PendingStorageDeletion type"
       min_lines: 15
     - path: "src/contexts/catalog/domain/events.ts"
-      provides: "PlantCreatedEvent, PlantDeletedEvent, PlantCreatedEventName, PlantDeletedEventName"
-      min_lines: 25
+      provides: "PlantCreatedEvent + PlantCreatedEventName, PlantDeletedEvent + PlantDeletedEventName, PhotoEntryDeletedEvent + PhotoEntryDeletedEventName (Codex review HIGH 05-09)"
+      min_lines: 35
     - path: "src/contexts/catalog/domain/storage-path.ts"
       provides: "validateStoragePathOwnership, parseStoragePath helpers + StoragePathOwnership type"
       min_lines: 35
@@ -97,37 +136,48 @@ Output: 5 domain modules (~170 lines), 4 unit test files (~210 lines).
 @.planning/phases/05-catalog-meu-jardim/05-02-pending-deletions-schema-cursor-PLAN.md
 
 <interfaces>
-src/contexts/catalog/domain/plant.ts (final shape):
+src/contexts/catalog/domain/plant.ts (final shape — Codex 05-04 HIGH two-layer architecture):
+
 ```ts
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
+import { createSelectSchema } from "drizzle-zod";
 import { plants } from "@contexts/catalog/infrastructure/db/schema";
 import { z } from "zod";
 
+// === INTERNAL LAYER (camelCase, drizzle-zod) ===
+// PlantSchema produces camelCase fields: { id, userId, speciesId, name, nickname, location, acquisitionDate, notes, coverPhotoUrl, createdAt }
+// Used by repositories + use cases. NEVER serialized directly to HTTP JSON.
 export const PlantSchema = createSelectSchema(plants);
 export type Plant = z.infer<typeof PlantSchema>;
 
-export const PlantCreateInputSchema = createInsertSchema(plants, {
-  name: (s) => s.min(1, { message: "name_required" }).max(80),
-  nickname: (s) => s.max(80).nullable().optional(),
-  location: (s) => s.max(40).nullable().optional(),
-  notes: (s) => s.max(2000).nullable().optional(),
-})
-  .extend({
-    initial_photos: z
-      .array(
-        z.object({
-          photo_url: z.string().min(1),
-          thumbnail_url: z.string().min(1),
-        }),
-      )
-      .min(1, { message: "photo_required" }),
-  })
-  .omit({
-    cover_photo_url: true, // server-set from initial_photos[0]
-    created_at: true,
-    user_id: true, // server-set from JWT
-  })
-  .strict(); // reject unknown keys
+// === HTTP BOUNDARY LAYER (snake_case, plain Zod, .strict()) ===
+// Codex 05-04 HIGH: drizzle-zod uses Drizzle property camelCase, NOT DB snake_case.
+// `createInsertSchema(plants).omit({ cover_photo_url: true })` would fail to compile
+// because the inferred field is `coverPhotoUrl`. Define HTTP schemas directly.
+
+export const PlantCreateInputSchema = z.object({
+  name: z.string().min(1, { message: "name_required" }).max(80),
+  nickname: z.string().max(80).nullable().optional(),
+  location: z.string().max(40).nullable().optional(),
+  acquisition_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "validation_failed" }).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  initial_photos: z
+    .array(
+      z.object({
+        photo_url: z.string().min(1),
+        thumbnail_url: z.string().min(1),
+      }).strict(),
+    )
+    .min(1, { message: "photo_required" }),
+}).strict(); // reject unknown keys (mass-assignment defense)
+
+// PlantPatchSchema — only fields user can patch; .strict() rejects user_id, cover_photo_url, species_id, id, created_at.
+export const PlantPatchSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  nickname: z.string().max(80).nullable().optional(),
+  location: z.string().max(40).nullable().optional(),
+  acquisition_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+}).strict();
 
 export type PlantCreateInput = z.infer<typeof PlantCreateInputSchema>;
 
@@ -205,6 +255,11 @@ src/contexts/catalog/domain/events.ts:
 ```ts
 export const PlantCreatedEventName = "plant.created" as const;
 export const PlantDeletedEventName = "plant.deleted" as const;
+// Codex review HIGH 05-09: per-PhotoEntry deletion uses a DEDICATED event,
+// NOT the reused `plant.deleted` event (which is semantically dangerous for
+// future subscribers/metrics — `plant.deleted` should mean a Plant aggregate
+// was deleted, not a single PhotoEntry).
+export const PhotoEntryDeletedEventName = "photo_entry.deleted" as const;
 
 export type PlantCreatedEvent = {
   name: typeof PlantCreatedEventName;
@@ -221,6 +276,21 @@ export type PlantDeletedEvent = {
   data: {
     user_id: string;
     plant_id: string;
+    storage_deletion_job_id: string;
+    storage_paths: string[];
+  };
+};
+
+// Codex review HIGH 05-09. Plan 05-06's `catalog/cleanup-storage` Inngest
+// function registers BOTH `plant.deleted` AND `photo_entry.deleted` as triggers
+// because both carry `storage_deletion_job_id` and use the shared
+// `pending_storage_deletions` outbox.
+export type PhotoEntryDeletedEvent = {
+  name: typeof PhotoEntryDeletedEventName;
+  data: {
+    user_id: string;
+    plant_id: string;
+    photo_entry_id: string;
     storage_deletion_job_id: string;
     storage_paths: string[];
   };
@@ -391,13 +461,25 @@ export type PlantDeletedEvent = {
 2. `pnpm exec tsc --noEmit` exits 0.
 3. All 5 domain modules exist with the named exports.
 4. PlantCreateInputSchema + PlantPatchSchema + PhotoEntryCreateSchema + PhotoEntryNotePatchSchema all use `.strict()`.
+5. **Codex 05-04 grep gate**: HTTP-boundary schemas use snake_case field names verbatim. `grep -E "(cover_photo_url|acquisition_date|photo_url|thumbnail_url|species_id|user_id)" src/contexts/catalog/domain/plant.ts src/contexts/catalog/domain/photo-entry.ts` matches; `grep -E "(coverPhotoUrl|acquisitionDate|photoUrl|thumbnailUrl|speciesId|userId)" src/contexts/catalog/domain/plant.ts src/contexts/catalog/domain/photo-entry.ts | grep -v "^.*PlantSchema\\|^.*PhotoEntrySchema\\|^.*createSelectSchema\\|^.*z\\.infer\\|^.*type Plant\\|^.*type PhotoEntry"` returns 0 matches in HTTP-boundary schema definitions (camelCase only appears in the `createSelectSchema(...)` lines + their inferred types).
+6. **Codex 05-09 grep gate**: `grep -q "PhotoEntryDeletedEventName.*photo_entry.deleted" src/contexts/catalog/domain/events.ts` matches; `grep -q "PhotoEntryDeletedEvent" src/contexts/catalog/domain/events.ts` matches.
+7. **Codex Decision 6 grep gate**: `validateStoragePathOwnership` test cases use only canonical `${userId}/${plantId}/...` paths; no `'plant-photos/...'` or `'/path/...'` literals appear in the test fixture.
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-04 HIGH — `drizzle-zod` field names use Drizzle property names, not DB snake_case**: Resolved via the two-layer architecture documented in `decisions.zod_derivation_pattern`. Internal types (`Plant`, `PhotoEntry`) are `z.infer<typeof createSelectSchema(...)>` (camelCase). HTTP-boundary schemas (`PlantCreateInputSchema`, `PlantPatchSchema`, `PhotoEntryCreateSchema`, `PhotoEntryNotePatchSchema`, `SetCoverPhotoSchema`) are PLAIN Zod with explicit snake_case fields and `.strict()`. The previous `createInsertSchema(plants).omit({ cover_photo_url: ... })` pattern (which would not compile) is replaced with `z.object({...})`. Verification adds a grep gate that catches camelCase leakage in the HTTP layer.
+- **05-09 HIGH — `plant.deleted` reused for single PhotoEntry deletion is semantically dangerous**: Resolved by adding `PhotoEntryDeletedEvent` + `PhotoEntryDeletedEventName = "photo_entry.deleted"` to events.ts. Plan 05-06 expands the `catalog/cleanup-storage` Inngest function to register both `plant.deleted` and `photo_entry.deleted` as triggers. Plan 05-09's PhotoEntry-delete use case dispatches the new event.
+- **Codex Decision 6 — canonical storage path format `{user_id}/{plant_id}/{file}`**: All `validateStoragePathOwnership` test cases use the canonical bucket-relative form. The implementation rejects bucket-prefixed (`plant-photos/...`) or absolute-path (`/path/...`) values. Documented in `storage_path_validator_signature` decision.
+</reviews_addressed>
 
 <success_criteria>
 - Five domain modules in src/contexts/catalog/domain/ (plant, photo-entry, pending-storage-deletion, events, storage-path).
-- PlantCreateInputSchema + PlantPatchSchema + PhotoEntryCreateSchema all `.strict()`-protected against mass-assignment.
-- validateStoragePathOwnership available for Plans 05-05 and 05-07 (T-5-01 / Pitfall 1 mitigation shipped here).
-- events.ts type-only exports for `plant.created` and `plant.deleted` payload shapes.
+- TWO-LAYER architecture per Codex 05-04: internal `Plant`/`PhotoEntry` types via drizzle-zod (camelCase); HTTP-boundary schemas as plain Zod with snake_case + `.strict()`.
+- PlantCreateInputSchema + PlantPatchSchema + PhotoEntryCreateSchema all `.strict()`-protected against mass-assignment; HTTP request bodies parse with snake_case field names matching Codex Decision 2.
+- validateStoragePathOwnership available for Plans 05-05 and 05-07 (T-5-01 / Pitfall 1 mitigation shipped here); only canonical `{userId}/{plantId}/{file}` form (Codex Decision 6).
+- events.ts type-only exports for `plant.created`, `plant.deleted`, AND `photo_entry.deleted` (Codex 05-09) payload shapes.
 - 4 unit test files cover ≥30 behaviors total; all pass.
 </success_criteria>
 

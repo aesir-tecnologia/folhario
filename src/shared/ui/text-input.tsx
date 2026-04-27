@@ -43,12 +43,12 @@ export function TextInput({
         {label}
       </label>
       <input
+        {...rest}
         id={inputId}
         autoComplete={autoComplete}
         aria-invalid={Boolean(error)}
         aria-describedby={errorId}
         className={`bg-ivory border-[1.5px] ${strokeClass} rounded-lg px-4 py-3 text-base text-forest min-h-[48px] ${className ?? ""}`.trim()}
-        {...rest}
         onFocus={(e) => { setFocused(true); rest.onFocus?.(e); }}
         onBlur={(e) => { setFocused(false); rest.onBlur?.(e); }}
       />

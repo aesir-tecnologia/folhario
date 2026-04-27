@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 
 import { db, type DbClient } from "@shared/db/client";
 
@@ -18,59 +19,83 @@ import { db, type DbClient } from "@shared/db/client";
  * open a transaction. The integration test proves the GUC is set inside
  * the callback and reset afterwards.
  *
- * `SET LOCAL ROLE authenticated` resets at COMMIT/ROLLBACK so the next
- * checkout from the postgres-js pool starts as the connection's base role
- * again. Without this, `auth.uid() = user_id` policies are silently
- * skipped because the postgres superuser carries `rolbypassrls=true`
- * (CR-02 from 02-REVIEW.md).
+ * Threat T-02-32 mitigation: `userId` is parsed with `z.string().uuid()`
+ * BEFORE `db.transaction(...)` is called. A non-UUID string would otherwise
+ * be silently bound to `request.jwt.claim.sub`, where any RLS policy
+ * comparing `auth.uid() = user_id` would either match nothing (silent
+ * deny-all) or, with a colliding string, match the wrong row. Failure
+ * surfaces as `UnitOfWorkError` whose `code` is `validation_failed`.
  *
- * `set_config('request.jwt.claim.sub', $userId, true)` uses `is_local=true`
- * so the setting is scoped to the current transaction.
- *
- * `userId` is validated at runtime because the value can flow in from
- * JWT-derived sources where TypeScript can no longer vouch for it.
+ * Threat T-02-33 mitigation: `set_config(..., true)` is `is_local = true`
+ * (transaction-scoped); the binding evaporates at COMMIT/ROLLBACK and
+ * cannot leak across pooled-connection checkouts. As defense in depth we
+ * also assert `isTransactionalClient(tx)` inside the `db.transaction(...)`
+ * callback so a future change exposing a shape-mismatched argument
+ * (e.g. a stub passed via `as any`) is caught at runtime, not silently
+ * accepted.
  */
 export type TransactionalDb = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
 
 export type UnitOfWorkCallback<T> = (tx: TransactionalDb) => Promise<T>;
 
 export class UnitOfWorkError extends Error {
+  readonly code = "validation_failed" as const;
   constructor(message: string) {
     super(message);
     this.name = "UnitOfWorkError";
   }
 }
 
+const userIdSchema = z.string().uuid();
+
 function assertValidUserId(userId: unknown): asserts userId is string {
+  if (userIdSchema.safeParse(userId).success) return;
+
   if (typeof userId !== "string") {
-    throw new UnitOfWorkError(`withUnitOfWork: userId must be a string (got ${typeof userId})`);
+    throw new UnitOfWorkError(
+      `withUnitOfWork: userId must be a string (got ${userId === null ? "null" : typeof userId})`,
+    );
   }
   if (userId.trim() === "") {
     throw new UnitOfWorkError("withUnitOfWork: userId must be a non-empty string");
   }
+  throw new UnitOfWorkError(
+    "withUnitOfWork: userId must be a valid UUID (validation_failed; T-02-32)",
+  );
+}
+
+/**
+ * Runtime predicate distinguishing a Drizzle transactional client (`tx`,
+ * the parameter of `db.transaction(cb)`) from the bare singleton `db`.
+ *
+ * Drizzle's `PgTransaction` extends `PgDatabase` and adds `rollback()` /
+ * `setTransaction()`. The base `PgDatabase` has neither. The runtime
+ * `typeof rollback === "function"` check therefore separates a real `tx`
+ * from `db` even when TypeScript has been bypassed.
+ *
+ * Exported so callers (and the leak unit test) can guard against a future
+ * change that would let a non-transactional client reach a code path that
+ * relies on `is_local` GUCs.
+ */
+export function isTransactionalClient(value: unknown): value is TransactionalDb {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { rollback?: unknown }).rollback === "function"
+  );
 }
 
 export async function withUnitOfWork<T>(userId: string, fn: UnitOfWorkCallback<T>): Promise<T> {
   assertValidUserId(userId);
 
-  // Drizzle's `.transaction()` opens a `BEGIN`/`COMMIT` envelope before
-  // invoking the callback; the `tx: TransactionalDb` parameter is the
-  // structural assertion that we are inside that envelope. There is no
-  // public API path that yields a `TransactionalDb` outside an open
-  // transaction. The integration test in
-  // `tests/integration/unit-of-work.integration.test.ts` exercises the
-  // GUC end-to-end inside the callback (`current_setting('request.jwt.claim.sub')`
-  // returns the supplied userId), which is the behavioral proof.
   return db.transaction(async (tx) => {
-    // Switch to the `authenticated` role for the duration of this
-    // transaction so RLS policies actually engage (CR-02 mitigation).
-    // The pooled connection authenticates as `postgres` which carries
-    // BYPASSRLS — without this switch, every owner policy is silently
-    // skipped at runtime.
-    await tx.execute(sql`set local role authenticated`);
+    if (!isTransactionalClient(tx)) {
+      throw new UnitOfWorkError(
+        "withUnitOfWork: transaction callback received a non-transactional client (T-02-33)",
+      );
+    }
 
-    // Bind the JWT sub claim for RLS / auth.uid()-style policies.
-    // Parameterize userId; keep `true` (is_local) as a SQL literal.
+    await tx.execute(sql`set local role authenticated`);
     await tx.execute(sql`select set_config('request.jwt.claim.sub', ${userId}, true)`);
 
     return fn(tx);

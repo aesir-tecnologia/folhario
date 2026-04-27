@@ -37,6 +37,8 @@ updated: 2026-04-26
 
 ## Per-Task Verification Map
 
+> **Row-vs-task aggregation:** Each row covers 1+ plan tasks via `threat_ref` grouping. Tasks 9 (Plan 03), 4 (Plan 06), 3 (Plan 07), 3 (Plan 08), and 3 (Plan 09) are bundled into their preceding rows because they share the same threat_ref (e.g., e2e specs verifying multiple STRIDE entries). The 32 rows below cover all 37 plan tasks.
+
 | Task ID   | Plan | Wave | Requirement     | Threat Ref                     | Secure Behavior                                                                  | Test Type    | Automated Command                                                                                          | File Exists | Status     |
 | --------- | ---- | ---- | --------------- | ------------------------------ | -------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
 | 4-01-01   | 01   | 1    | (gate)          | T-04-01-01..03                 | Audit verdict computed from concrete checks; binary GO/BLOCKED                   | manual       | (audit document inspection by reviewer)                                                                    | ❌ W0       | ⬜ pending |
@@ -62,14 +64,14 @@ updated: 2026-04-26
 | 4-06-02   | 06   | 6    | AUTH-01,06,07,08,09 | T-04-06-01,03..09             | Signup orchestration with D-25 atomicity + ConsentLog × 2                        | integration  | `pnpm test:integration tests/integration/iam-signup.integration.test.ts tests/integration/iam-consent-log.integration.test.ts tests/integration/iam-verify-token.integration.test.ts` | ❌ W0       | ⬜ pending |
 | 4-06-03   | 06   | 6    | AUTH-02,04      | T-04-06-10                     | Verification gate + verify route + resend route                                  | integration  | `pnpm test:integration tests/integration/iam-verification-gate.integration.test.ts`                        | ❌ W0       | ⬜ pending |
 | 4-07-01   | 07   | 6    | AUTH-05,14      | T-04-07-04                     | login + logout use-cases ship with resolved Q-AUTH-14 semantics                  | tsc          | `pnpm typecheck`                                                                                           | ❌ W0       | ⬜ pending |
-| 4-07-02   | 07   | 6    | AUTH-05,14      | T-04-07-01,02,03               | Routes + integration tests assert cookie+refresh logout (not JWT rejection)      | integration  | `pnpm test:integration tests/integration/iam-login.integration.test.ts tests/integration/iam-logout.integration.test.ts` | ❌ W0       | ⬜ pending |
+| 4-07-02   | 07   | 6    | AUTH-05,14      | T-04-07-01,02,03               | Routes + integration tests assert cookie+refresh logout (not JWT rejection); logout coverage via Playwright E2E (vitest is repo-tests-only) | integration + e2e | `pnpm test:integration tests/integration/iam-login.integration.test.ts && pnpm test:e2e tests/e2e/auth-login-logout.spec.ts` | ❌ W0       | ⬜ pending |
 | 4-08-01   | 08   | 7    | AUTH-11,12      | T-04-08-01,02,03               | Reset token repo + always-200 + consume use-cases                                | tsc + lint   | `pnpm typecheck && pnpm lint`                                                                              | ❌ W0       | ⬜ pending |
-| 4-08-02   | 08   | 7    | AUTH-11,12      | T-04-08-04,05,06               | Inngest function real impl; routes + integration test                            | integration  | `pnpm test:integration tests/integration/iam-password-reset.integration.test.ts`                           | ❌ W0       | ⬜ pending |
+| 4-08-02   | 08   | 7    | AUTH-11,12      | T-04-08-04,05,06               | Inngest function real impl; routes + integration tests (incl. D-11 anti-enumeration constant-time route timing) | integration  | `pnpm test:integration tests/integration/iam-password-reset.integration.test.ts tests/integration/iam-password-reset-route-timing.integration.test.ts` | ❌ W0       | ⬜ pending |
 | 4-09-01   | 09   | 7    | AUTH-13         | T-04-09-01,02                  | Change-password use-case + OAuth-complete use-case                               | tsc          | `pnpm typecheck`                                                                                           | ❌ W0       | ⬜ pending |
 | 4-09-02   | 09   | 7    | AUTH-03,13      | T-04-09-03..06                 | Routes + OAuth callback (resolved Q4 ordering)                                   | integration  | `pnpm test:integration tests/integration/iam-change-password.integration.test.ts tests/integration/iam-oauth.integration.test.ts` | ❌ W0       | ⬜ pending |
 | 4-10-01   | 10   | 8    | AUTH-15,UI-13   | T-04-10-05,06                  | Hand-rolled UI primitives; UnverifiedBlocker + 8 form components                 | tsc + lint   | `pnpm typecheck && pnpm lint`                                                                              | ❌ W0       | ⬜ pending |
 | 4-10-02   | 10   | 8    | AUTH-15,UI-13   | T-04-10-01,02,03,04            | 6 auth pages (signup, login, forgot-password, reset, verify-error, oauth-complete) + Settings shell + root layout with (a)-tier JWT redirect + resolved Q4 gate ordering | tsc + build  | `pnpm exec next build --webpack`                                                                           | ❌ W0       | ⬜ pending |
-| 4-10-03   | 10   | 8    | AUTH-15,UI-13   | T-04-10-01..06                 | Visual + functional E2E verification of UI surfaces                              | e2e + manual | `pnpm test:e2e tests/e2e/iam-unverified-blocker.spec.ts tests/e2e/settings-account.spec.ts tests/e2e/iam-google-oauth.spec.ts` | ❌ W0       | ⬜ pending |
+| 4-10-03   | 10   | 8    | AUTH-15,UI-13   | T-04-10-01..06                 | Visual + functional E2E verification of UI surfaces (UnverifiedBlocker, Settings, T&C/Privacy hyperlinks per Codex MEDIUM consent UX fix). OAuth E2E lives in Plan 09's `auth-google-oauth.spec.ts`. | e2e + manual | `pnpm test:e2e tests/e2e/iam-unverified-blocker.spec.ts tests/e2e/settings-account.spec.ts tests/e2e/legal-links.spec.ts` | ❌ W0       | ⬜ pending |
 | 4-11-01   | 11   | 9    | (doc-fix)       | T-04-11-01                     | REQUIREMENTS.md + ROADMAP.md + PRD §4 amendments per resolved Q-AUTH-14 + Q3      | grep         | `grep -E "clears the device's cookie and revokes its refresh token" .planning/REQUIREMENTS.md && grep -E "email_verified_at TIMESTAMPTZ" docs/CAVE-PRD.md` returns matches in both | ❌ W0       | ⬜ pending |
 
 _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
@@ -78,18 +80,20 @@ _Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky_
 
 ## Wave 0 Requirements
 
-Phase 4 introduces ~20 new test files. All are NEW (Phase 1's tests/ directory only contains diagnostics + errors fixtures).
+Phase 4 introduces ~30 new test files. All are NEW (Phase 1's tests/ directory only contains diagnostics + errors fixtures).
 
 - [ ] `tests/integration/iam-schema-phase4.integration.test.ts` — schema migration smoke (Plan 02)
 - [ ] `tests/integration/setup-supabase-truncate.ts` — TRUNCATE helper (Plan 03)
 - [ ] `tests/integration/global-setup.ts` — vitest integration global setup placeholder (Plan 03)
 - [ ] `tests/integration/fixtures/seed-policy-version.ts` — Plan 03
 - [ ] `tests/integration/fixtures/seed-user.ts` — Plan 03
+- [ ] `tests/integration/fixtures/seed-partner-code.ts` — Plan 03 (per D-32 partner_code path)
 - [ ] `tests/integration/fixtures/mock-resend.ts` — Plan 03
 - [ ] `tests/integration/fixtures/mock-inngest.ts` — Plan 03
 - [ ] `tests/unit/tokens.test.ts` — Plan 03
 - [ ] `tests/unit/auth-throttle-math.test.ts` — Plan 03
 - [ ] `tests/unit/iam-signup-schema.test.ts` — Plan 03
+- [ ] `tests/unit/auth-adapter.test.ts` — Plan 03 (per Codex HIGH #3 AuthAdapter contract)
 - [ ] `tests/unit/email-templates.test.ts` — Plan 05
 - [ ] `tests/integration/iam-throttle.integration.test.ts` — Plan 03
 - [ ] `tests/integration/inngest-serve.integration.test.ts` — Plan 04
@@ -99,13 +103,18 @@ Phase 4 introduces ~20 new test files. All are NEW (Phase 1's tests/ directory o
 - [ ] `tests/integration/iam-verify-token.integration.test.ts` — Plan 06
 - [ ] `tests/integration/iam-verification-gate.integration.test.ts` — Plan 06
 - [ ] `tests/integration/iam-login.integration.test.ts` — Plan 07
-- [ ] `tests/integration/iam-logout.integration.test.ts` — Plan 07
 - [ ] `tests/integration/iam-password-reset.integration.test.ts` — Plan 08
+- [ ] `tests/integration/iam-password-reset-route-timing.integration.test.ts` — Plan 08 (D-11 constant-time anti-enumeration verification)
 - [ ] `tests/integration/iam-change-password.integration.test.ts` — Plan 09
 - [ ] `tests/integration/iam-oauth.integration.test.ts` — Plan 09
+- [ ] `tests/e2e/auth-signup-verification.spec.ts` — Plan 06 (per Codex HIGH #6 cookie-bearing E2E)
+- [ ] `tests/e2e/auth-login-logout.spec.ts` — Plan 07 (per Codex HIGH #6 cookie-bearing E2E)
+- [ ] `tests/e2e/auth-password-reset.spec.ts` — Plan 08 (per Codex HIGH #6 cookie-bearing E2E)
+- [ ] `tests/e2e/auth-change-password.spec.ts` — Plan 09 (per Codex HIGH #6 cookie-bearing E2E)
+- [ ] `tests/e2e/auth-google-oauth.spec.ts` — Plan 09 (per Codex HIGH #6 cookie-bearing E2E)
 - [ ] `tests/e2e/iam-unverified-blocker.spec.ts` — Plan 10
 - [ ] `tests/e2e/settings-account.spec.ts` — Plan 10
-- [ ] `tests/e2e/iam-google-oauth.spec.ts` — Plan 10
+- [ ] `tests/e2e/legal-links.spec.ts` — Plan 10 (per Codex MEDIUM consent UX fix)
 - [ ] `vitest.config.ts` extension: integration project gains `setupFiles: ["./tests/integration/global-setup.ts"]` — Plan 03
 
 **Test infrastructure already in place** (no Wave 0 work needed):
@@ -132,7 +141,7 @@ Phase 4 introduces ~20 new test files. All are NEW (Phase 1's tests/ directory o
 
 - [x] All tasks have `<automated>` verify or Wave 0 dependencies — every task in 04-NN-PLAN.md has a `<verify><automated>...</automated></verify>` block. Plan 01 (audit) and Plan 11 (doc-fix) are manual-checkpoint plans whose verification is the document content itself, validated by grep.
 - [x] Sampling continuity: no 3 consecutive tasks without automated verify — every plan has at least 1 task with an automated verification command.
-- [x] Wave 0 covers all MISSING references — see Wave 0 Requirements section above (~20 NEW test files; all tracked).
+- [x] Wave 0 covers all MISSING references — see Wave 0 Requirements section above (~30 NEW test files; all tracked).
 - [x] No watch-mode flags — all `pnpm test:unit` and `pnpm test:integration` commands use `--run` mode (project-wide config).
 - [x] Feedback latency < 90s — unit tests ~5s, integration ~60-90s; full suite ~3 min.
 - [x] `nyquist_compliant: true` set in frontmatter.

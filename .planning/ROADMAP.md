@@ -118,7 +118,7 @@ Plans:
 - [x] 03-01-PLAN.md -- Tooling foundation: Tailwind v4 + tokens + Stylelint + ESLint better-tailwindcss + Vitest jsdom + matchMedia mock + banned-patterns snapshot
 
 **Wave 2 _(blocked on Wave 1 completion)_**
-- [ ] 03-02-PLAN.md -- Theme cookie Server Action (TDD), root layout extension (cookie + fonts + dual theme-color), pt-BR.json populate (~34 keys), format.ts Intl helpers (TDD), /api/v1/health/connectivity heartbeat (TDD), ScientificName
+- [x] 03-02-PLAN.md -- Theme cookie Server Action (TDD), root layout extension (cookie + fonts + dual theme-color), pt-BR.json populate (~34 keys), format.ts Intl helpers (TDD), /api/v1/health/connectivity heartbeat (TDD), ScientificName
 
 **Wave 3 _(blocked on Wave 2 completion)_**
 - [ ] 03-03-PLAN.md -- Motion springs + 11 UI primitives: Button (4 variants), TextInput, Select, Toggle, ModalSheet, Skeleton (TDD 300ms gate), EmptyState (TDD single-CTA), InlineError (TDD slots+Rust), CaptureButton (TDD breathing-loop reduced-motion)

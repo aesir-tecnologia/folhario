@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Hybrid dark variant: manual [data-theme=dark] always wins; otherwise media query. */
+/* Source: RESEARCH.md hybrid @custom-variant pattern (canonical, verified). */
+@custom-variant dark {
+  &:where([data-theme='dark'], [data-theme='dark'] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:not([data-theme] *)) { @slot; }
+  }
+}
+
+/* Paper Cream / Night Cream token blocks land in Task 5. */
+/* This file MUST exist with the @import line BEFORE eslint-plugin-better-tailwindcss
+   is wired in Task 3, or the plugin throws on load (Open Risk #7). */

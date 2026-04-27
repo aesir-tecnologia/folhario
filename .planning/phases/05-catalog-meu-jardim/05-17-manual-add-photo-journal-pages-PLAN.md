@@ -15,7 +15,8 @@ depends_on:
   - 05-16    # use-plant.ts (consumed by photo-journal page for plant.name in alt text); also avoids file overlap on hooks
   # PHASE-2-DEPENDENCY (BLOCKING execution): requires Phase 2 to ship POST /api/v1/photos/upload (D-27) for two-step upload flow + browser-image-compression (D-28) + exifr (D-29) for client-side EXIF strip.
 files_modified:
-  - src/app/catalog/new/page.tsx
+  - src/app/catalog/new/page.tsx                  # RSC wrapper — calls requireUser, redirects to /login on failure, mounts ManualAddClient (Codex 05-17)
+  - src/app/catalog/new/manual-add-client.tsx     # Client island — receives userId as prop; the form, draft management, photo upload (Codex 05-17 — replaces previous all-in-one client component)
   - src/app/catalog/[plantId]/photos/page.tsx
   - src/app/catalog/[plantId]/photos/photo-journal-client.tsx
   - src/contexts/catalog/api/use-create-plant.ts
@@ -48,6 +49,35 @@ decisions:
     name + nickname + location + acquisition_date + notes (photo upload state
     is NOT in the draft — uploaded photos are persisted via the upload route's
     own idempotency).
+
+    **Codex review HIGH 05-17 — userId source**: the draft key MUST use the
+    authenticated user's id. There is NO `anonymous-draft` fallback (the
+    previous design fell back to a sentinel string when window.__user was
+    undefined; that violates per-user isolation and conflicts with Plan
+    05-10's user-scoped IDB persister).
+
+    Implementation: `src/app/catalog/new/page.tsx` is a SERVER component
+    that calls Phase 4 `requireUser(req)` and passes `userId` as a prop
+    to the client island `ManualAddClient`. If `requireUser` throws
+    (no auth), the RSC redirects to /login BEFORE the island renders.
+    The client island NEVER receives `userId === null` — it's always a
+    real authenticated user id from the server-rendered prop.
+
+    `useManualAddDraft(userId)` enforces this at the type level: the hook
+    requires `userId: string` (no fallback default). PHASE-4-DEPENDENCY:
+    if Phase 4 hasn't shipped `requireUser`, this plan halts execution.
+  manual_add_rsc_wrapper: |
+    The Manual Add route at `/catalog/new` is split:
+
+    - `src/app/catalog/new/page.tsx` (RSC) — `async` server component.
+      Calls `await requireUser()`; on throw, redirects to /login. On success,
+      renders `<ManualAddClient userId={user.id} />`.
+    - `src/app/catalog/new/manual-add-client.tsx` (Client island) — the
+      form, draft management, photo upload, useCreatePlant call. Receives
+      `userId` as a prop; uses it for the draft key.
+
+    This RSC split eliminates the previous `getCurrentUserId()` window-walking
+    fallback that defaulted to `'anonymous-draft'` (Codex review HIGH 05-17).
   two_step_upload_flow: |
     Per CONTEXT D-22 + D-23 + Phase 2 D-27 + D-29:
     1. Client compresses image to ≤1MB + strips EXIF/GPS via
@@ -80,6 +110,17 @@ decisions:
     "PATCH cover photo from lightbox (D-17 'Definir como capa')" →
     OPTIMISTIC. onMutate updates cover_photo_url on the plant detail
     cache.
+
+    **Codex review HIGH 05-17 fix**: the optimistic update writes the
+    PhotoEntry's `photo_url` (full image URL) to `Plant.cover_photo_url`,
+    NOT the `thumbnail_url`. The server uses `photo_url` as the
+    authoritative cover image (Plan 05-07 setCoverPhoto resolves
+    photoEntry.photoUrl as the new cover). Using `thumbnailUrl` for the
+    optimistic flash would render the small CDN-resized thumbnail in
+    the full-bleed cover slot until the server response arrives —
+    visible flicker for the user. The hook signature takes
+    `{ plantId, photoEntryId, photoUrl }` — the caller passes the
+    PhotoEntry's `photo_url` field.
   swipe_deferred_consumer_buttons: |
     Per Plan 05-14 decisions.lightbox_swipe_deferred — touch swipe is
     deferred. Photo Journal page passes `prevLabel`/`nextLabel` props to
@@ -688,7 +729,12 @@ typo — replace with the correct relative path before committing.
     import { useMutation, useQueryClient } from "@tanstack/react-query";
     import type { PlantDetail } from "./use-plant";
 
-    type Input = { plantId: string; photoEntryId: string; thumbnailUrl: string };
+    // Codex review HIGH 05-17: optimistic update field is `photo_url` (server's
+    // `Plant.cover_photo_url` source of truth) — NOT `thumbnailUrl` (which is the
+    // CDN-resized thumbnail and would break the full-bleed cover photo render).
+    // The caller passes the PhotoEntry's `photo_url` for the optimistic flash;
+    // server-side response carries the authoritative value (which usually matches).
+    type Input = { plantId: string; photoEntryId: string; photoUrl: string };
 
     export function useSetCoverPhoto() {
       const queryClient = useQueryClient();
@@ -706,13 +752,13 @@ typo — replace with the correct relative path before committing.
           if (!res.ok) throw new Error(`set_cover_failed_${res.status}`);
           return (await res.json()) as PlantDetail;
         },
-        onMutate: async ({ plantId, thumbnailUrl }) => {
+        onMutate: async ({ plantId, photoUrl }) => {
           await queryClient.cancelQueries({ queryKey: ["plants", "detail", plantId] });
           const previous = queryClient.getQueryData<PlantDetail>(["plants", "detail", plantId]);
           if (previous) {
             queryClient.setQueryData<PlantDetail>(["plants", "detail", plantId], {
               ...previous,
-              cover_photo_url: thumbnailUrl,
+              cover_photo_url: photoUrl, // Codex 05-17: full photo_url, NOT thumbnail_url.
             });
           }
           return { previous };
@@ -770,21 +816,17 @@ typo — replace with the correct relative path before committing.
     import { useLocationSuggestions } from "@contexts/catalog/api/use-location-suggestions";
     import { Combobox } from "@shared/ui/combobox";
 
-    // NOTE: userId is not server-available in this client page. In production we would
-    // read it from a client-side auth context (Phase 4 ships SessionProvider). For now,
-    // accept userId via window-side prop or fall back to a sentinel "anonymous-draft"
-    // value. Plan 05-17 SUMMARY documents this hand-off for Phase 4.
-    function getCurrentUserId(): string {
-      if (typeof window === "undefined") return "anonymous-draft";
-      // Phase 4 will inject window.__user.id via SessionProvider; placeholder for now
-      const anyWin = window as unknown as { __user?: { id?: string } };
-      return anyWin.__user?.id ?? "anonymous-draft";
-    }
+    // Codex review HIGH 05-17: NO `anonymous-draft` fallback. The draft key MUST
+    // use the authenticated user's id. The Manual Add page is split into a
+    // server component (RSC wrapper) that calls Phase 4 `requireUser(req)` and
+    // passes `userId` as a prop to this client island. If the user is not
+    // authenticated, the RSC wrapper REDIRECTS to /login BEFORE the island renders.
+    // The client island NEVER renders without a real userId.
+    type ManualAddClientProps = { userId: string };
 
-    export default function ManualAddPage() {
+    export default function ManualAddClient({ userId }: ManualAddClientProps) {
       const t = useTranslations("catalog");
       const router = useRouter();
-      const userId = getCurrentUserId();
       const { draft, setDraft, clearDraft } = useManualAddDraft(userId);
       const { data: priorLocations = [] } = useLocationSuggestions();
       const createPlant = useCreatePlant();
@@ -956,9 +998,14 @@ typo — replace with the correct relative path before committing.
                 {t("manualAdd.fields.location")}
               </label>
               <Combobox
+                // Codex review HIGH 05-12: typing fires onInputValueChange (updates form state);
+                // commit fires onCommit (locks the value — no PATCH for manual add since
+                // the network call is the form submit at the bottom).
                 inputId={locationId}
-                value={location}
-                onChange={setLocation}
+                inputValue={location}
+                onInputValueChange={setLocation}
+                value={location || null}
+                onCommit={setLocation}
                 priorItems={priorLocations}
                 defaultItems={defaultLocations}
                 placeholder={t("locationPicker.placeholder")}
@@ -1538,12 +1585,25 @@ typo — replace with the correct relative path before committing.
   - `grep -E "onMutate" src/contexts/catalog/api/use-create-plant.ts | grep -v '^//' | grep -c ''` returns 0 (NOT optimistic)
   - `grep -E "onMutate" src/contexts/catalog/api/use-add-photo-entry.ts | grep -v '^//' | grep -c ''` returns 0 (NOT optimistic)
   - `grep -E "onMutate" src/contexts/catalog/api/use-delete-photo-entry.ts | grep -v '^//' | grep -c ''` returns 0 (NOT optimistic)
-- Manual Add page exists at /catalog/new with all hooks wired
+- Manual Add page exists at /catalog/new (RSC wrapper) with `<ManualAddClient userId={user.id} />` mount
 - Photo Journal page exists with BottomSheet add + Lightbox + 4 mutation flows
+- **Codex 05-17 grep gate (no anonymous-draft)**: `grep -E "anonymous-draft|getCurrentUserId" src/app/catalog/new/` returns 0; `grep -E "ManualAddClient.*userId=" src/app/catalog/new/page.tsx` matches.
+- **Codex 05-17 grep gate (cover photo_url not thumbnailUrl)**: `grep -E "cover_photo_url:\\s*thumbnailUrl|cover_photo_url:\\s*thumbnail_url" src/contexts/catalog/api/use-set-cover-photo.ts` returns 0; `grep -E "cover_photo_url:\\s*photoUrl" src/contexts/catalog/api/use-set-cover-photo.ts` matches.
+- **Codex 05-12 grep gate (Combobox onCommit in Manual Add)**: `grep -E "<Combobox" src/app/catalog/new/manual-add-client.tsx` matches; the same component block contains `onCommit=` AND `onInputValueChange=` AND does NOT contain `onChange=`.
 - All 5 Playwright specs collect via `--list`
 - Integration test passes or skips depending on DATABASE_POOL_URL
 - date-fns-tz used for date rendering (Pitfall 9 mitigation): `grep -c "formatInTimeZone" src/app/catalog/[plantId]/photos/photo-journal-client.tsx` ≥ 1
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-17 HIGH — Manual Add `anonymous-draft` fallback violates per-user draft-key isolation**: Resolved by `decisions.manual_add_draft_key` + `decisions.manual_add_rsc_wrapper`. The page is split into a SERVER component (RSC) that calls `requireUser` and redirects to /login on failure, plus a client island `ManualAddClient` that receives `userId: string` as a prop (typed — never null). The previous `getCurrentUserId()` window-walking helper that defaulted to `'anonymous-draft'` is REMOVED. Verification grep gate enforces.
+- **05-17 HIGH — Optimistic cover update writes `thumbnailUrl` to `cover_photo_url`**: Resolved by changing the `useSetCoverPhoto` hook input from `thumbnailUrl` to `photoUrl`, and the `onMutate` cache update writes the full `photo_url` (server's source of truth) — no thumbnail flicker on the cover slot. Verification grep gate enforces.
+- **Codex review HIGH 05-12 — Combobox commit API**: Manual Add location field uses the new two-callback API. `inputValue` + `onInputValueChange` track typing into `location` form state; `onCommit` locks the value (still updates `location`, but it signals user-committed intent — distinct from typing). For Manual Add, both callbacks update the SAME `location` state because there is no save-on-commit (form submit is the only network call); the API is consistent with Plan 05-12 + Plan 05-16.
+- **Codex Decision 1/2 — HTTP envelope and field-naming**: All HTTP responses are read with snake_case field names (`photo_url`, `thumbnail_url`, `cover_photo_url`, `acquisition_date`); the upload route returns snake_case JSON; the create-plant request body uses snake_case fields.
+- **Codex Decision 6 — canonical storage path format**: The plant-id passed to `/api/v1/photos/upload` is the freshly-generated UUID (`crypto.randomUUID()`); the upload route stores under `${userId}/${plantId}/{uuid}.{ext}` per Phase 2 D-27. The hook never constructs the path itself — it consumes the server-returned `photo_url`/`thumbnail_url` strings.
+</reviews_addressed>
 
 <success_criteria>
 - Manual Add full-screen page (D-13) with 5 fields + sessionStorage draft (D-27) + 2-step upload (D-22) + 3-signal validation

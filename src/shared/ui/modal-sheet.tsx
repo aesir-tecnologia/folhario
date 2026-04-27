@@ -28,6 +28,13 @@ export interface ModalSheetProps {
   title: string;
   closeLabel: string;
   children: ReactNode;
+  /**
+   * Forwarded to Radix `Dialog.Content`. Radix only restores focus to the
+   * trigger when `Dialog.Trigger` was used to open the dialog. Controlled
+   * callers (LGPD consent modal in Phase 4, test harness) can use this hook
+   * to `event.preventDefault()` and focus a stored invoker ref themselves.
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function ModalSheet({
@@ -36,12 +43,16 @@ export function ModalSheet({
   title,
   closeLabel,
   children,
+  onCloseAutoFocus,
 }: ModalSheetProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-forest/50 z-50" />
-        <Dialog.Content className="fixed bottom-0 left-0 right-0 z-50 bg-ivory rounded-t-[24px] p-6 max-h-[80dvh] overflow-y-auto">
+        <Dialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
+          className="fixed bottom-0 left-0 right-0 z-50 bg-ivory rounded-t-[24px] p-6 max-h-[80dvh] overflow-y-auto"
+        >
           {/* Drag handle (visual only) */}
           <div
             className="mx-auto mb-4 h-[4px] w-[36px] rounded-full bg-hairline"

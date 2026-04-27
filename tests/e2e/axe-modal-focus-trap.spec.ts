@@ -5,9 +5,11 @@ test("UI-22 — ModalSheet focus trap cycles inside Dialog and returns focus to 
 }) => {
   // Plan 03 Task 6 ships a test-only route at /modal-sheet (under the (test)
   // route group, so it does not appear in the user-facing nav). The harness
-  // mounts ModalSheet open by default with three focusable children:
-  // [data-testid=modal-input], [data-testid=modal-checkbox], [data-testid=modal-button].
+  // autofocuses the invoker on mount and starts with the dialog CLOSED — we
+  // click the invoker to open it so Radix can snapshot the invoker as the
+  // "previously focused element" and return focus to it on close.
   await page.goto("/modal-sheet");
+  await page.getByTestId("modal-invoker").click();
 
   // Wait for Dialog to mount + Radix focus-trap initial focus.
   await page.waitForSelector('[role="dialog"]');

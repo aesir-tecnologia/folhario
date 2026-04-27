@@ -35,3 +35,9 @@ supabase/.branches/
 
 # ephemeral GSD subagent worktrees
 .claude/worktrees/
+
+# pnpm store created by Docker bind-mount install
+.pnpm-store/
+
+# Playwright MCP debug artifacts
+.playwright-mcp/

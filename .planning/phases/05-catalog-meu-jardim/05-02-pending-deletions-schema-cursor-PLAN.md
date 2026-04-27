@@ -19,16 +19,19 @@ requirements:
   - OFF-08
 decisions:
   resolves_open_question_q1: "Cursor extension shape for sort-key inclusion. Extend Phase 2 D-36 cursor format from `base64(JSON.stringify({ id, createdAt }))` to `base64(JSON.stringify({ id, createdAt, sortKey, sortValue }))`. `sortKey` ∈ {'acquired_desc' | 'acquired_asc' | 'name_asc' | 'name_desc' | 'location_asc' | 'created_desc'} (catalog-only set; CAT-08 5b plans extend the union if needed). `sortValue` is the sort column's value at the cursor row, encoded as ISO-8601 string for dates / lowercased string for text. Decoder rejects unknown sortKey with `validation_failed`. Universal tiebreaker remains `(created_at DESC, id DESC)`. Phase 2 D-36 amendment captured in this plan's decisions; supersedes-note in 05-RESEARCH supplement."
-  pending_storage_deletions_schema: "Catalog-local outbox table per CONTEXT D-04 fallback path. Columns: id uuid PK gen_random_uuid(), user_id uuid NOT NULL → users(id) ON DELETE CASCADE, plant_id uuid NOT NULL (no FK — the plant row is being deleted in the same transaction), storage_paths text[] NOT NULL CHECK(array_length(storage_paths,1) > 0), status varchar(16) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','complete','failed')), created_at timestamptz NOT NULL DEFAULT now(), completed_at timestamptz NULL, last_error text NULL. Index on (status, created_at) for the reconciler scan."
+  pending_storage_deletions_schema: "Catalog-local outbox table per CONTEXT D-04 fallback path. Columns: id uuid PK gen_random_uuid(), user_id uuid NOT NULL → users(id) ON DELETE CASCADE, plant_id uuid NOT NULL (no FK — the plant row is being deleted in the same transaction), storage_paths text[] NOT NULL CHECK(cardinality(storage_paths) > 0), status varchar(16) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','dispatching','complete','failed')), created_at timestamptz NOT NULL DEFAULT now(), dispatched_at timestamptz NULL, completed_at timestamptz NULL, last_error text NULL. Index on (status, created_at) for the reconciler scan. **Codex review HIGH 05-02**: `array_length(storage_paths, 1)` returns NULL for empty arrays in Postgres, defeating the non-empty CHECK; replaced with `cardinality(storage_paths)` (NULL-safe — returns 0 for empty arrays). **Codex review HIGH 05-06**: `dispatched_at` column added so the reconciler can skip recently-dispatched rows (prevents repeated re-dispatch on every cron tick); `dispatching` is also added to the status CHECK enum so the reconciler can mark rows in-flight via UPDATE before sending the Inngest event."
   schema_push_command: "npx drizzle-kit push --force (non-TTY); BLOCKING — Phase 5 cannot pass verification without the live DB schema matching the .ts schema. Build/typecheck pass without the push (types come from the file, not the DB), creating a false-positive verification state."
   cursor_helper_path: "src/shared/api/cursor.ts (NOT src/shared/db/) — cursor is an API concern, not a DB concern. Phase 2 D-36 left placement open; Phase 5 picks api/ to match Phase 2 D-19 (domain-layer Zod schemas; api-layer cursors)."
 must_haves:
   truths:
     - "src/contexts/catalog/infrastructure/db/schema.ts exports the `pendingStorageDeletions` Drizzle table with the columns and indexes specified in `decisions.pending_storage_deletions_schema`"
+    - "Codex 05-02 HIGH: the schema CHECK constraint on storage_paths uses `cardinality(storage_paths) > 0` (NOT `array_length(storage_paths, 1) > 0`); migration SQL grep-asserts this exact text"
+    - "Codex 05-06 HIGH: the schema includes `dispatched_at timestamptz NULL` column and the (status, created_at) index PLUS a separate index on (dispatched_at); the status CHECK enum includes 'dispatching'"
     - "src/shared/api/cursor.ts exports `encodeCursor({ id, createdAt, sortKey, sortValue })` and `decodeCursor(cursor: string)` returning the same shape; round-trip is lossless for all 6 sortKey values"
     - "decodeCursor throws an error with the literal string `validation_failed` (or returns a typed result the route handler maps to `validation_failed`) for malformed base64, malformed JSON, missing fields, or unknown sortKey"
-    - "drizzle/migrations contains a generated migration whose SQL CREATEs `pending_storage_deletions` and the (status, created_at) index"
-    - "After `npx drizzle-kit push --force`, the live DB has the table; integration test connects and successfully INSERTs + SELECTs a row"
+    - "drizzle/migrations contains a generated migration whose SQL CREATEs `pending_storage_deletions` with `cardinality(storage_paths) > 0` CHECK + (status, created_at) index + dispatched_at column + (dispatched_at) index"
+    - "After `pnpm db:setup` (or `npx drizzle-kit push --force`), the live DB has the table; integration test connects and successfully INSERTs + SELECTs a row whose `dispatched_at` defaults to NULL"
+    - "Codex Decision 6 storage path format: integration test fixtures use bucket-relative `{userId}/{plantId}/{file}` paths — NO bucket prefix (`plant-photos/...`) anywhere in path string values"
     - "Phase 2 D-36 cursor format remains backward-compatible: a legacy cursor with only `{ id, createdAt }` decodes successfully with `sortKey` defaulting to 'created_desc' and `sortValue` defaulting to `createdAt`"
   artifacts:
     - path: "src/contexts/catalog/infrastructure/db/schema.ts"
@@ -139,13 +142,19 @@ export const pendingStorageDeletions = pgTable(
     storagePaths: text("storage_paths").array().notNull(),
     status: varchar("status", { length: 16 }).notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    dispatchedAt: timestamp("dispatched_at", { withTimezone: true }), // Codex 05-06: reconciler skips rows where dispatched_at is recent
     completedAt: timestamp("completed_at", { withTimezone: true }),
     lastError: text("last_error"),
   },
   (t) => ({
     statusCreatedAtIdx: index("pending_storage_deletions_status_created_at_idx").on(t.status, t.createdAt),
-    statusCheck: check("pending_storage_deletions_status_check", sql`${t.status} IN ('pending','complete','failed')`),
-    pathsNonEmpty: check("pending_storage_deletions_paths_nonempty", sql`array_length(${t.storagePaths}, 1) > 0`),
+    // Codex 05-06: also index dispatched_at for the reconciler scan
+    dispatchedAtIdx: index("pending_storage_deletions_dispatched_at_idx").on(t.dispatchedAt),
+    // Codex 05-02 + 05-06: 'dispatching' state for in-flight rows the reconciler has claimed
+    statusCheck: check("pending_storage_deletions_status_check", sql`${t.status} IN ('pending','dispatching','complete','failed')`),
+    // Codex 05-02 HIGH: array_length returns NULL for empty arrays in Postgres, defeating the constraint.
+    // cardinality(text[]) returns 0 for empty arrays — NULL-safe.
+    pathsNonEmpty: check("pending_storage_deletions_paths_nonempty", sql`cardinality(${t.storagePaths}) > 0`),
   }),
 );
 ```
@@ -423,17 +432,22 @@ export const pendingStorageDeletions = pgTable(
           `;
           const userId = userRow[0]!.id;
 
+          // Codex 05-02 (Decision 6): storage paths are bucket-relative — `{user_id}/{plant_id}/{file}` form, NO bucket prefix.
+          const plantId = "11111111-1111-1111-1111-111111111111";
+          const path = `${userId}/${plantId}/photo-1.jpg`;
           const inserted = await tx`
             INSERT INTO pending_storage_deletions
               (user_id, plant_id, storage_paths, status)
             VALUES
-              (${userId}, gen_random_uuid(), ARRAY['plant-photos/u/p/x.jpg'], 'pending')
-            RETURNING id, status, storage_paths, created_at
+              (${userId}, ${plantId}::uuid, ARRAY[${path}], 'pending')
+            RETURNING id, status, storage_paths, created_at, dispatched_at
           `;
           expect(inserted.length).toBe(1);
           expect(inserted[0]!.status).toBe("pending");
-          expect(inserted[0]!.storage_paths).toEqual(["plant-photos/u/p/x.jpg"]);
+          expect(inserted[0]!.storage_paths).toEqual([path]);
           expect(inserted[0]!.created_at).toBeInstanceOf(Date);
+          // Codex 05-06: dispatched_at defaults to NULL on insert
+          expect(inserted[0]!.dispatched_at).toBeNull();
         });
       });
 
@@ -530,10 +544,20 @@ After all five tasks land:
 1. `pnpm exec vitest --run --project=unit tests/unit/shared/api/cursor.test.ts` exits 0 with 14 passing tests.
 2. `pnpm exec vitest --run --project=integration tests/integration/catalog/pending-storage-deletions-schema.integration.test.ts` exits 0 with 4 passing tests.
 3. `pnpm exec tsc --noEmit` exits 0.
-4. `psql "$DATABASE_URL" -c "\\d pending_storage_deletions"` shows the table with 8 columns + index + 2 CHECK constraints.
+4. `psql "$DATABASE_URL" -c "\\d pending_storage_deletions"` shows the table with 9 columns (incl. `dispatched_at`) + 2 indexes + 2 CHECK constraints.
 5. drizzle/migrations contains a generated SQL file for the new table.
-6. git log shows three commits: RED (failing test), GREEN (implementation), and the integration-test commit.
+6. **Codex 05-02 grep gate**: `grep -E "cardinality\\(.*storage_paths" drizzle/migrations/*.sql` matches AND `grep -E "array_length\\(.*storage_paths.*1\\)" drizzle/migrations/*.sql` returns 0 matches.
+7. **Codex 05-06 grep gate**: `grep -E "dispatched_at" drizzle/migrations/*.sql` matches AND `grep -E "dispatched_at" src/contexts/catalog/infrastructure/db/schema.ts` matches.
+8. git log shows three commits: RED (failing test), GREEN (implementation), and the integration-test commit.
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-02 HIGH — `array_length(storage_paths, 1) > 0` returns NULL for empty arrays in Postgres, defeating the non-empty CHECK**: Resolved by replacing the predicate with `cardinality(storage_paths) > 0` (NULL-safe — returns 0 for empty arrays). Updated in `decisions.pending_storage_deletions_schema`, the Drizzle table snippet (`<interfaces>`), and verification grep gates.
+- **05-06 HIGH — reconciler references missing `dispatched_at` column**: Resolved by adding `dispatched_at timestamptz NULL` column to the `pending_storage_deletions` table in this plan, plus a separate index on `dispatched_at`, plus expanding the status CHECK enum to include `'dispatching'` so the reconciler can mark in-flight rows. Plan 05-03 ships `markDispatched(tx, id)` repo helper; Plan 05-06 wires it into the dispatch flow.
+- **Decision 6 — canonical storage path format `{user_id}/{aggregate_id}/{file_id}.{ext}`**: Integration test fixtures changed from `'plant-photos/u/p/x.jpg'` (bucket-prefixed, ambiguous) to `${userId}/${plantId}/photo-1.jpg` (bucket-relative, matches Phase 2 D-27 verbatim). All path strings inside any test's expected values use this format; no bucket prefix appears in any path value.
+</reviews_addressed>
 
 <success_criteria>
 - src/shared/api/cursor.ts ships with `encodeCursor` + `decodeCursor` + `SortKey` + `ExtendedCursor`, all 14 unit tests pass.

@@ -32,6 +32,8 @@ files_modified:
   - tests/e2e/catalog/lightbox-swipe.spec.ts
   - tests/e2e/catalog/lightbox-a11y.spec.ts
   - tests/e2e/catalog/add-photo-entry.integration.test.ts
+  - package.json  # CONDITIONAL (resolves plan-checker WARNING for 5b round): Task 4 may install date-fns + date-fns-tz IF Phase 1 INFRA-23 has not already shipped them. Executor MUST first grep package.json for "date-fns-tz" — if found, skip the install entirely; if absent, run `pnpm add date-fns@4.1.0 date-fns-tz@3.2.0` and include package.json + pnpm-lock.yaml in the commit. The acceptance criterion verifies either pre-existence OR successful install.
+  - pnpm-lock.yaml  # CONDITIONAL — committed alongside package.json IF the install path is taken.
 autonomous: true
 requirements:
   - CAT-02   # Manual create UX (form + 2-step upload + redirect to detail)

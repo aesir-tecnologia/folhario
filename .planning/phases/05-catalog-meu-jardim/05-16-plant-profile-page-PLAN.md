@@ -18,6 +18,9 @@ files_modified:
   - src/contexts/catalog/api/use-update-plant.ts
   - src/contexts/catalog/api/use-delete-plant.ts
   - src/contexts/catalog/api/use-location-suggestions.ts
+  # The following two files (route handler + thin use case wrapper) sit in 5a-territory paths but are SHIPPED BY 5b 05-16 (resolves plan-checker BLOCKER for 5b round). Rationale: 5a 05-03 ships the location-suggestions repository, and 5a 05-07/05-08 do NOT ship a wrapping use case + route. Re-opening 5a to add them would invalidate the 5a verification pass; instead, 05-16 takes explicit ownership. Architectural-tier deviation acknowledged in decisions.location_suggestions_endpoint_url block below.
+  - src/contexts/catalog/application/list-location-suggestions.ts  # NEW — thin use case wrapping 5a 05-03's locationSuggestions.distinctByUser repo function. ~10 lines.
+  - src/app/api/v1/plants/locations/route.ts  # NEW — GET handler returning string[] of distinct locations for the authenticated user. Calls listLocationSuggestions use case. ~30 lines.
   - tests/e2e/catalog/plant-profile-render.spec.ts
   - tests/e2e/catalog/inline-edit-per-field.spec.ts
   - tests/e2e/catalog/inline-edit-announcements.spec.ts
@@ -68,31 +71,36 @@ decisions:
     on success, removes plant from all list pages via setQueriesData +
     removeQueries.
   location_suggestions_endpoint_url: |
-    Plan 05-08 ships GET /api/v1/plants but does not explicitly ship
-    /api/v1/locations or /api/v1/plants/locations endpoint for the
-    distinctByUser query. Per 05-PATTERNS.md § "Repositories" line 78
-    (Phase 5 owns location-suggestions repo) and 05-RESEARCH.md
-    Architectural Map row "Location picker" — the location-suggestions
-    query lives at the use-case layer (5a 05-07) but no dedicated route
-    handler was planned in 5a. Plan 05-16 ships use-location-suggestions
-    hook that calls a NEW lightweight endpoint at
-    /api/v1/plants/locations (GET, returns string[]).
-    The route handler creation is OUT OF SCOPE for this plan (UI plan);
-    add as a contingent edit OR defer to a 5a follow-up. Document the
-    chosen path in 05-16-SUMMARY.md.
+    LOCKED (resolves plan-checker BLOCKER for 5b round): Plan 05-16 takes
+    explicit ownership of TWO files in 5a-territory paths because 5a 05-03
+    ships the location-suggestions REPO (`distinctByUser(db, userId)` per
+    05-PATTERNS.md line 78) but neither 5a 05-07 (use cases) nor 05-08 (read
+    routes) ships a wrapping use case + route handler. Re-opening 5a to add
+    these would invalidate the 5a verification pass; the cleaner fix is to
+    surface the architectural-tier deviation here and own the gap from 5b.
 
-    PROVISIONAL APPROACH (executor decides at execution time):
-    Option A: Create the route handler `src/app/api/v1/plants/locations/route.ts`
-      in this plan as a contingent edit (~30 lines, calls the
-      location-suggestions repo from Plan 05-03).
-    Option B: Embed the distinct locations in the GET /api/v1/plants/:plantId
-      response payload via a `locations_used: string[]` field — requires
-      amending Plan 05-08's payload shape.
-    Option C: Defer location combobox prior-items to Phase 6+; ship with
-      defaults only (degraded but functional CAT-05 — does NOT meet the
-      "shows user's prior locations" verbatim requirement).
-    Recommended: Option A (smallest scope, properly RLS-scoped, parallels
-    other GET handlers).
+    OPTION A IS CHOSEN (locked at planning time):
+    - File 1: `src/contexts/catalog/application/list-location-suggestions.ts`
+      — thin use case (~10 lines) wrapping `locationSuggestions.distinctByUser`.
+      Imported by the route handler. NO business logic; just calls repo +
+      returns `string[]`.
+    - File 2: `src/app/api/v1/plants/locations/route.ts` — GET handler
+      (~30 lines), pattern matches 5a 05-08's other GET handlers (requireUser
+      via JWT → call use case → return JSON). NO Idempotency-Key (read-only,
+      Phase 2 D-37 contract restricts idempotency to mutating endpoints).
+      Returns `{ data: string[] }` shape consistent with 5a list responses.
+      RLS already enforced at repo layer per 5a 05-03 + Phase 2 D-22.
+
+    OPTIONS B AND C REJECTED:
+    - Option B (embed in GET /:plantId payload): would force every plant
+      detail roundtrip to compute the distinct query even when not editing —
+      wasteful + couples unrelated concerns + amends 5a 05-08's shipped
+      payload.
+    - Option C (defer prior-items to Phase 6+): violates CAT-05 verbatim
+      ("shows user's prior locations as quick-select").
+
+    Both new files are declared in `files_modified` above. Architectural-tier
+    deviation (5b owning 5a paths) is the lesser evil vs the alternatives.
   delete_confirm_uses_bottom_sheet: |
     Per CONTEXT D-19 + UI-SPEC § "Modal sheet" — delete confirmation is
     a §17 destructive modal (which IS a BottomSheet on mobile). Reuses

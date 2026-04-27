@@ -83,15 +83,20 @@ export async function POST(request: Request): Promise<Response> {
     return errorResponse(result.code, result.reason);
   }
 
+  // WR-01 (iter5): snake_case response keys per PRD §5 (and matching the
+  // /api/v1/diagnostics/consent route's convention — see consent-route.ts:52).
+  // The PRD pins `next_cursor` snake_case and the consent route was the first
+  // /api/v1 route to land; keeping every /api/v1/* response shape on a single
+  // naming convention prevents per-route lookup tables in clients.
   return Response.json(
     {
-      photoEntry: {
+      photo_entry: {
         id: result.photoEntry.id,
-        plantId: result.photoEntry.plantId,
-        photoUrl: result.photoEntry.photoUrl,
-        thumbnailUrl: result.photoEntry.thumbnailUrl,
+        plant_id: result.photoEntry.plantId,
+        photo_url: result.photoEntry.photoUrl,
+        thumbnail_url: result.photoEntry.thumbnailUrl,
         note: result.photoEntry.note,
-        createdAt: result.photoEntry.createdAt,
+        created_at: result.photoEntry.createdAt,
       },
     },
     { status: 201 },

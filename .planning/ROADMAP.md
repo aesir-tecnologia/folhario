@@ -172,7 +172,25 @@ Plans:
   3. A plant profile opens with cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link placeholder, and a delete overflow; the location picker shows the user's prior locations as quick-select plus defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` plus free text that becomes reusable next time.
   4. A user adds a new photo-journal entry with an optional note (creating a `PhotoEntry` linked to the plant), and the photo journal screen lists entries reverse-chronologically; a sort control offers name A-Z, name Z-A, date newest, date oldest, location, and the selection persists for the session.
   5. Deleting a plant cascades its PhotoEntry + Reminder rows, schedules its storage objects for deletion, sets `Identification.plant_id` NULL while preserving the history row, and a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.
-**Plans**: TBD
+**Plans**: 18 plans (5a + 5b)
+- [ ] 05-01-wave0-test-infra-PLAN.md - Wave 0 test infra (axe-core + fake-indexeddb + transaction-rollback fixture + test directories + Playwright auth-bypass fixture)
+- [ ] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
+- [ ] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
+- [ ] 05-04-domain-zod-schemas-PLAN.md - Domain Zod schemas + validateStoragePathOwnership helper
+- [ ] 05-05-plant-create-use-cases-PLAN.md - Plant create use cases (manual + from-identification) + PostHog plant_added (Open Q6)
+- [ ] 05-06-plant-delete-inngest-cleanup-PLAN.md - Plant delete + Inngest catalog/cleanup-storage + reconciler cron (Open Q2)
+- [ ] 05-07-patch-photo-entry-cover-use-cases-PLAN.md - PATCH/PhotoEntry/cover use cases + listPlants/listPhotoEntries
+- [ ] 05-08-route-handlers-read-create-PLAN.md - Route handlers (5 read + create endpoints)
+- [ ] 05-09-route-handlers-mutate-delete-PLAN.md - Route handlers (6 mutate + delete endpoints)
+- [ ] 05-10-tq-provider-idb-persister-i18n-PLAN.md - TanStack Query provider + IDB persister + i18n catalog namespace (Open Q3 resolution)
+- [ ] 05-11-use-subscription-stub-PLAN.md - useSubscription() stub + read-only mode test harness
+- [ ] 05-12-combobox-primitive-PLAN.md - Combobox primitive per WAI-ARIA APG 1.2 (Open Q4 resolution)
+- [ ] 05-13-bottom-sheet-primitive-PLAN.md - BottomSheet primitive [BLOCKING axe + VoiceOver/TalkBack gate] (Open Q5 resolution)
+- [ ] 05-14-lightbox-inline-edit-primitives-PLAN.md - Lightbox + InlineEditField primitives (Pitfall 6 a11y guard)
+- [ ] 05-15-catalog-page-grid-sort-PLAN.md - Catalog page + responsive grid + sort + sessionStorage hook
+- [ ] 05-16-plant-profile-page-PLAN.md - Plant Profile page (single-scroll + inline edits + delete confirm + ID-history conditional)
+- [ ] 05-17-manual-add-photo-journal-pages-PLAN.md - Manual Add page + Photo Journal page (2-step upload + bottom-sheet + lightbox)
+- [ ] 05-18-home-identify-serwist-offline-banners-PLAN.md - Home empty + /identify placeholder + Serwist runtime cache + offline + read-only banners
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls

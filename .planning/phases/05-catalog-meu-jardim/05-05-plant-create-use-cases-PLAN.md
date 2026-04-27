@@ -24,6 +24,30 @@ requirements:
   - CAT-02
 decisions:
   resolves_open_question_q6: "PostHog plant_added event payload shape: { source: 'manual' | 'from_identification', has_species: boolean }. Server-side capture via posthog-node (Phase 1 Plan 01-06 ships getPostHog()) per CONTEXT D-21 client posture (server-side capture is the production path; client-side identified_only person_profiles)."
+  posthog_serverless_flush: |
+    Codex review 05-05: Vercel serverless functions terminate promptly after the
+    response is sent. Fire-and-forget `getPostHog().capture(...)` calls are
+    DROPPED — the capture happens asynchronously and the runtime tears down the
+    function before the HTTP request to PostHog completes.
+
+    Mitigation: after `capture(...)`, `await getPostHog().shutdown()` (or
+    `flush()` per posthog-node 4.x API) inside the route handler / use case
+    BEFORE returning. `posthog-node` documents `shutdown()` as the explicit
+    flush+close call. The shared helper `getPostHog()` in
+    `src/shared/telemetry/posthog-server.ts` SHOULD also expose
+    `flushPostHog()` so use cases can call it without coupling to the SDK.
+
+    The use cases here (createPlantManual + createPlantFromIdentification)
+    invoke `await flushPostHog()` after `capture(...)` — this guarantees the
+    event reaches PostHog even on the cold-start serverless path.
+  result_shape_phase_6_contract: |
+    Codex review 05-05: `createPlantFromIdentification` returns the standard
+    `Plant` type (camelCase PlantRow per Plan 05-03). It does NOT invent a
+    Phase-6-specific result shape (e.g., bundled identification metadata). The
+    HTTP route handler in Plan 05-08 serializes the standard `Plant` to
+    snake_case JSON. Phase 6's caller is responsible for any additional
+    response-shaping it needs in its own caller code; this Phase 5 use case
+    has a stable, minimal contract.
   cross_context_identification_update: "createPlantFromIdentification UPDATEs Identification.plant_id within the same UoW transaction as the Plant INSERT. Re-checks Identification.user_id === authenticated user_id BEFORE updating (T-5-02 IDOR mitigation per RESEARCH § Security Domain row 'Cross-context Identification.plant_id link'). Re-checks Identification.plant_id IS NULL before updating (rejects 'already linked' with conflict)."
   storage_path_ownership_call_site: "Both use cases call validateStoragePathOwnership BEFORE the SQL transaction opens. Failure throws a domain error mapped to validation_failed by the route handler (Plans 05-08/09)."
   application_errors_module: "src/contexts/catalog/application/errors.ts exports typed throwable functions: validationFailed(message, details?), notFound(message), forbidden(message), conflict(message). Route handler (Plans 05-08/09) catches and maps to closed-registry ErrorCode codes via httpMapError."
@@ -107,7 +131,7 @@ import { validateStoragePathOwnership } from "@contexts/catalog/domain/storage-p
 import type { PlantCreateInput } from "@contexts/catalog/domain/plant";
 import type { Plant } from "@contexts/catalog/domain/plant";
 import { validationFailed } from "./errors";
-import { getPostHog } from "@shared/telemetry/posthog-server";
+import { getPostHog, flushPostHog } from "@shared/telemetry/posthog-server";
 
 export async function createPlantManual(args: {
   userId: string;
@@ -151,7 +175,10 @@ export async function createPlantManual(args: {
     return created;
   });
 
-  // PostHog server-side analytics — fire AFTER commit
+  // PostHog server-side analytics — fire AFTER commit.
+  // Codex review 05-05 — Vercel serverless terminates promptly. After capture(),
+  // `await flushPostHog()` (or `await ph.shutdown()`) BEFORE returning so the
+  // event reaches PostHog. Fire-and-forget capture is dropped by the runtime.
   const ph = getPostHog();
   if (ph) {
     ph.capture({
@@ -159,6 +186,9 @@ export async function createPlantManual(args: {
       event: "plant_added",
       properties: { source: "manual", has_species: false },
     });
+    // posthog-node 4.x: shutdown() flushes pending events + closes the client.
+    // The shared helper exposes flushPostHog() for use-case callers.
+    await flushPostHog();
   }
 
   return plant;
@@ -350,6 +380,8 @@ export type UnitOfWork = {
              event: "plant_added",
              properties: { source: "from_identification", has_species: true },
            });
+           // Codex review 05-05 — flush before returning so the event survives Vercel cold-start teardown.
+           await flushPostHog();
          }
          return plant;
        }
@@ -400,15 +432,27 @@ export type UnitOfWork = {
 2. `pnpm exec vitest --run --project=integration tests/integration/catalog/create-plant-manual.integration.test.ts tests/integration/catalog/create-plant-from-identification.integration.test.ts` exits 0.
 3. `pnpm exec tsc --noEmit` exits 0.
 4. Open Question Q6 resolved in this plan's `decisions.resolves_open_question_q6` block.
+5. **Codex 05-05 PostHog flush guard**: `grep -c "flushPostHog\\|posthog\\.shutdown" src/contexts/catalog/application/create-plant-manual.ts` returns ≥ 1; same for `create-plant-from-identification.ts`. Unit test mocks `flushPostHog` and asserts it was awaited after `capture` in both use cases.
+6. **Codex Decision 6 storage path**: integration test fixtures use canonical `${userId}/${plantId}/...` paths; no bucket-prefixed (`plant-photos/...`) literals appear.
+7. **Codex 05-05 result shape**: `createPlantFromIdentification` return type is `Promise<Plant>` (the standard PlantRow type from Plan 05-03), not a custom Phase-6 hybrid.
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-05 — PostHog serverless flush behavior**: Resolved by `decisions.posthog_serverless_flush` + `await flushPostHog()` after every `capture()` call in both use cases. Vercel cold-start teardown no longer drops the `plant_added` event. The shared helper `flushPostHog()` is added to `src/shared/telemetry/posthog-server.ts` so use cases stay decoupled from the SDK API surface (which differs across posthog-node versions).
+- **05-05 — `create-from-identification` invents a result JSON shape that may not match Phase 6**: Resolved by `decisions.result_shape_phase_6_contract` — the use case returns the standard `Plant` type (camelCase PlantRow). Phase 6 controls its own caller and any extra response shaping it needs; Phase 5 does NOT invent a hybrid contract. The route handler in 05-08 serializes Plant to snake_case JSON via the standard envelope.
+- **Codex Decision 6 — canonical storage path format**: Integration test fixtures use bucket-relative `${userId}/${plantId}/{file}` paths. Verification adds a grep gate.
+</reviews_addressed>
 
 <success_criteria>
 - createPlantManual + createPlantFromIdentification + application/errors.ts shipped.
 - T-5-01 storage-path validation wired in createPlantManual (Pitfall 1 mitigation).
 - T-5-02 cross-context Identification ownership re-check wired in createPlantFromIdentification (RESEARCH § Security Domain row).
-- PostHog `plant_added` event emitted server-side with the Q6-resolved payload `{ source, has_species }`.
+- PostHog `plant_added` event emitted server-side with the Q6-resolved payload `{ source, has_species }`, AND `await flushPostHog()` is called before returning to survive Vercel serverless cold-start teardown (Codex 05-05).
 - Both use cases use UnitOfWork.transaction (Phase 2 D-18) for multi-row writes.
-- All 4 test files green (2 unit with mocked repos + 2 integration with real DB).
+- `createPlantFromIdentification` returns `Promise<Plant>` (standard PlantRow), no custom Phase-6 hybrid (Codex 05-05).
+- All 4 test files green (2 unit with mocked repos + 2 integration with real DB); test path fixtures use canonical `{userId}/{plantId}/{file}` format (Codex Decision 6).
 </success_criteria>
 
 <output>

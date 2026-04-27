@@ -11,11 +11,19 @@ import {
 } from "@contexts/iam/infrastructure/db/schema";
 
 /**
- * Domain Zod schemas derived from drizzle-zod (D-19, D-40).
+ * Phase 2 scope: scaffolding only — no consumers in Phase 02 (IN-03,
+ * mirroring the 6 other context `domain/schemas.ts` modules). Routes/
+ * use-cases in later phases will import from here, not from the table
+ * modules. Until a consumer lands, adding refinements here has no effect
+ * because nothing imports them.
  *
- * Routes/use-cases import these — never raw table definitions. Refinements
+ * IAM domain Zod schemas derived from drizzle-zod (D-19, D-40). Refinements
  * (cross-field rules, formats not encodable at the column type) belong here,
  * one layer above the column-faithful generated shape.
+ *
+ * The IAM consent-log Zod root lives in `consent-schemas.ts` (the
+ * route-consumed module — WR-01 cleanup); do NOT re-derive
+ * `createInsertSchema(consentLogs)` here.
  */
 
 export const userSelectSchema = createSelectSchema(users);
@@ -28,11 +36,6 @@ export const policyVersionInsertSchema = createInsertSchema(policyVersions);
 export type PolicyVersion = ReturnType<typeof policyVersionSelectSchema.parse>;
 export type PolicyVersionInsert = ReturnType<typeof policyVersionInsertSchema.parse>;
 
-// Note: consentLog{Insert,Select}Schema live in `consent-schemas.ts` — that
-// is the canonical, route-consumed module (D-19, WR-01). Do NOT re-derive
-// `createInsertSchema(consentLogs)` here; a duplicate root re-creates the
-// drift hazard where a refinement added in one module silently fails to
-// propagate to the route.
 export const partnerStoreSelectSchema = createSelectSchema(partnerStores);
 export const partnerStoreInsertSchema = createInsertSchema(partnerStores);
 export type PartnerStore = ReturnType<typeof partnerStoreSelectSchema.parse>;

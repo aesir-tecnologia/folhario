@@ -1,12 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 
-// Mock motion/react to capture animate/transition props passed to motion.button.
-const motionButtonMock = vi.fn(({ children, ...props }: any) => (
-  <button data-testid="captured" data-animate-prop={JSON.stringify(props.animate ?? null)} data-transition-prop={JSON.stringify(props.transition ?? null)}>
-    {children}
-  </button>
-));
+// vi.hoisted ensures this mock factory runs before the vi.mock hoist.
+// Without hoisted(), motionButtonMock would be in the temporal dead zone
+// when the hoisted vi.mock factory references it (Rule 1 fix).
+const { motionButtonMock } = vi.hoisted(() => {
+  const motionButtonMock = vi.fn(({ children, ...props }: any) => (
+    <button
+      data-testid="captured"
+      data-animate-prop={JSON.stringify(props.animate ?? null)}
+      data-transition-prop={JSON.stringify(props.transition ?? null)}
+    >
+      {children}
+    </button>
+  ));
+  return { motionButtonMock };
+});
 
 vi.mock("motion/react", () => ({
   motion: {

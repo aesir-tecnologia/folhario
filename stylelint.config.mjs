@@ -15,6 +15,8 @@ export default {
     "comment-empty-line-before": null,
     // Allow at-rules without preceding empty line for Tailwind v4 blocks
     "at-rule-empty-line-before": null,
+    // Allow keyframe percentage selectors (0%, 100%) without preceding empty lines
+    "rule-empty-line-before": null,
     "declaration-property-value-disallowed-list": {
       "color": [
         "/^#000000$/i",

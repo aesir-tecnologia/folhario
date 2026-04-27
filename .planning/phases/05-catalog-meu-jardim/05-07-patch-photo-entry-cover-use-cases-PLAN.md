@@ -33,20 +33,81 @@ requirements:
   - CAT-04
   - CAT-06
 decisions:
-  add_photo_entry_storage_path_check: "addPhotoEntry calls validateStoragePathOwnership BEFORE the INSERT (T-5-01 mitigation, mirrors createPlantManual)"
-  set_cover_photo_validation: "setCoverPhoto verifies the requested photo_url exists as a PhotoEntry of THIS plant (cross-plant defense). The existing photo_entries.findByPlant query works; or a tiny SELECT 1 from photo_entries WHERE photo_url = $1 AND plant_id = $2 AND user_id = $3 helper."
-  list_plants_cursor_consumption: "list-plants accepts a wire cursor string, decodes via decodeCursor (Plan 05-02), maps to ExtendedCursor, calls plants.findByCursor; returns { rows, nextCursor: encoded string | null }"
+  add_photo_entry_storage_path_check: "addPhotoEntry calls validateStoragePathOwnership BEFORE the INSERT (T-5-01 mitigation, mirrors createPlantManual). Uses canonical `{userId}/{plantId}/{file}` path format (Codex Decision 6)."
+  set_cover_photo_validation: |
+    **Codex review HIGH 05-07** — `setCoverPhoto` MUST NOT contain raw SQL or
+    direct Drizzle access in the use-case layer. Phase 2 D-17 ESLint guard
+    forbids Drizzle in route handlers AND application-layer code (use cases
+    are application layer; they call repos, not SQL).
+
+    Implementation pattern:
+    1. Use case calls `photoEntries.findById(db, { photoEntryId, plantId, userId })`
+       (new repo helper shipped by Plan 05-03) to verify the requested PhotoEntry
+       belongs to THIS plant + THIS user. Returns null if not found → throws
+       `not_found` (cross-plant + cross-user defense).
+    2. Use case extracts the matching `photoUrl` from the returned PhotoEntryRow.
+    3. Use case calls `plants.setCoverPhoto(tx, { plantId, userId, coverPhotoUrl })`
+       (single repo UPDATE; shipped by Plan 05-03) inside the transaction.
+
+    The use case never writes SQL or accesses Drizzle directly. The set-cover-photo.ts
+    file imports ONLY `* as plants from "@contexts/catalog/infrastructure/db/plants"`
+    and `* as photoEntries from "@contexts/catalog/infrastructure/db/photo-entries"` —
+    no `import { sql } from "drizzle-orm"` or similar.
+  list_plants_cursor_consumption: "list-plants accepts a wire cursor string, decodes via decodeCursor (Plan 05-02), maps to ExtendedCursor, calls plants.findByCursor; returns { rows, nextCursor: encoded string | null }. The nextCursor field is internal camelCase; the route handler in 05-08 maps it to snake_case `next_cursor` in the JSON envelope (Codex Decision 1)."
+  list_plants_argument_signature: |
+    **Codex review HIGH cross-cutting Decision 3** — single canonical signature:
+    ```ts
+    listPlants(args: {
+      userId: string;
+      sortKey: SortKey;
+      cursor: ExtendedCursor | null;
+      limit: number;
+      plantIdFilter?: string;
+      includeIdentificationCount?: boolean;
+    }): Promise<{ rows: PlantRow[]; nextCursor: ExtendedCursor | null }>
+    ```
+
+    All consumers (route handlers, RSC prefetch, hooks) MUST use this signature.
+    The HTTP query parameter is `?sort=...` (a wire-level convention), but the
+    use-case argument is `sortKey` (single canonical name). Route handlers map
+    `req.searchParams.get('sort')` → `args.sortKey`. There is NO positional
+    overload; there is NO `sort` argument; there is NO route-only-detail-fetch
+    side path (the detail fetch passes `plantIdFilter` to the same listPlants
+    function).
   id_history_visibility_query: "list-plants accepts an optional `includeIdentificationCount` flag. When set, the query joins identifications and returns each plant's identification_count. Plant Profile (5b) consumes this to hide the ID-history link when count=0 (CAT-04 / CONTEXT D-26)."
   list_photo_entries_sort: "Always reverse-chronological (CAT-06). Cursor format is the SIMPLE Phase 2 D-36 shape `base64({ id, createdAt })` since there's no sort variation. Reuses encodeCursor with sortKey='created_desc'."
-  delete_photo_entry_storage_cleanup: "deletePhotoEntry returns the deleted row's photo + thumbnail paths. Plan 05-09's route handler can dispatch a per-photo cleanup event OR Phase 5 can defer per-photo storage cleanup (only plant-level cleanup is in scope per CONTEXT D-04). DECISION: Phase 5 ships the use case returning the paths but does NOT auto-delete from storage — orphaned per-photo objects are an acceptable trade-off vs. building a second outbox table. Captured as deferred follow-up: per-photo storage cleanup can be added in a later phase if storage costs justify it."
+  delete_photo_entry_storage_cleanup: |
+    **Codex review HIGH 05-09 — per-PhotoEntry deletion MUST clean up storage** via
+    a dedicated outbox + event. Earlier draft deferred per-photo cleanup; that
+    decision is REVERSED per Codex review. Per-photo deletion now follows the
+    same outbox pattern as plant deletion:
+
+    1. `deletePhotoEntry({ id, plantId, userId, uow })` opens a transaction.
+    2. Reads the PhotoEntry's photo + thumbnail paths.
+    3. Inserts a `pending_storage_deletions` row with the paths AND the userId/plantId.
+    4. DELETEs the PhotoEntry.
+    5. Commits.
+    6. Dispatches the **`photo_entry.deleted`** Inngest event (NOT `plant.deleted` —
+       Codex review HIGH 05-09; events.ts ships the new event type per Plan 05-04).
+    7. Calls `pendingDeletions.markDispatched(tx, jobId)` (Codex 05-06 mitigation).
+
+    Plan 05-06's `catalog/cleanup-storage` Inngest function processes both
+    `plant.deleted` and `photo_entry.deleted` via the shared
+    `storage_deletion_job_id`. Plan 05-09's PATCH/DELETE route handler invokes
+    THIS use case (not a per-handler outbox). The decision to move the
+    storage-cleanup integration into 05-07's `deletePhotoEntry` (instead of
+    overriding inside 05-09's route handler) follows Codex's recommendation to
+    keep the cleanup decision adjacent to the data deletion.
 must_haves:
   truths:
     - "updatePlant({ plantId, userId, patch, uow }) updates only the patched fields scoped to userId; throws not_found when no row matches; ignores any keys not in PlantPatchSchema (defense in depth — schema already strips them)"
-    - "addPhotoEntry({ plantId, userId, input, uow }) validates storage path ownership, then inserts a PhotoEntry row in transaction; throws not_found when plant doesn't exist or doesn't belong to user"
+    - "addPhotoEntry({ plantId, userId, input, uow }) validates storage path ownership using canonical `{userId}/{plantId}/{file}` form (Codex Decision 6), then inserts a PhotoEntry row in transaction; throws not_found when plant doesn't exist or doesn't belong to user"
     - "updatePhotoEntryNote({ id, plantId, userId, note, uow }) updates the note (or sets NULL); throws not_found when no row matches the (id, plantId, userId) triple"
-    - "deletePhotoEntry({ id, plantId, userId, uow }) deletes the row, returns the deleted storage paths; throws not_found when no row matches"
-    - "setCoverPhoto({ plantId, userId, photoUrl, uow }) verifies photoUrl belongs to a PhotoEntry of THIS plant (NOT a different plant — cross-plant defense), then sets Plant.cover_photo_url"
-    - "listPlants({ userId, sortKey, cursor, limit }) returns paginated rows + nextCursor (encoded string or null); respects all 6 sortKey values via plants.findByCursor"
+    - "**Codex review HIGH 05-09 — deletePhotoEntry follows the storage-cleanup outbox pattern**: opens transaction → reads photo+thumbnail paths → inserts `pending_storage_deletions` row → DELETEs the PhotoEntry → commits → dispatches `photo_entry.deleted` Inngest event → calls markDispatched. NOT plant.deleted; NOT a fire-and-forget cleanup."
+    - "**Codex review HIGH 05-07 — setCoverPhoto contains NO raw SQL or Drizzle access**: imports only `plants` and `photoEntries` repository modules; calls `photoEntries.findById(db, { photoEntryId, plantId, userId })` for ownership verification, then `plants.setCoverPhoto(tx, { plantId, userId, coverPhotoUrl })` for the UPDATE. Phase 2 D-17 (no Drizzle in app layer) is satisfied."
+    - "setCoverPhoto({ plantId, userId, photoEntryId, uow }) — argument is `photoEntryId` (NOT `photoUrl`); use case looks up the PhotoEntry by id and uses its `photoUrl` as the new cover. The HTTP request body is `{ photo_entry_id }` not `{ photo_url }` (the client never sends an arbitrary URL — it sends the PhotoEntry id, server resolves to URL)."
+    - "**Codex review HIGH cross-cutting Decision 3 — listPlants single canonical signature**: `listPlants({ userId, sortKey, cursor, limit, plantIdFilter?, includeIdentificationCount? })`. NO `sort` argument; NO positional overload; NO route-only-detail side path. Detail fetch goes through the same listPlants with `plantIdFilter`."
+    - "listPlants returns `{ rows: PlantRow[], nextCursor: ExtendedCursor | null }` (camelCase internal). Route handler in 05-08 serializes to `{ data: snake_case_rows, next_cursor: string | null }` (Codex Decision 1)."
     - "listPhotoEntries({ plantId, userId, cursor, limit }) returns reverse-chronological PhotoEntries scoped to plantId+userId"
   artifacts:
     - path: "src/contexts/catalog/application/update-plant.ts"
@@ -278,19 +339,46 @@ For listPlants `includeIdentificationCount=true`, extend the SQL query in plants
   <action>
     1. Implement the 5 use-case modules per the `<interfaces>` block. Each is short (25-50 lines). Use the same `args.uow.transaction(async (tx) => ...)` wrapping for any multi-step write. Call `validateStoragePathOwnership` from `@contexts/catalog/domain/storage-path` in addPhotoEntry BEFORE opening the transaction.
 
-       For setCoverPhoto, the cross-plant defense — easier query is a small helper added to photo-entries.ts repo OR an inline raw SQL inside the use case (the repo already has `findByPlant`; iterate the limited rows is fine for small volumes; for large plants prefer SELECT 1):
+       **Codex review HIGH 05-07** — setCoverPhoto MUST NOT contain raw SQL. The use case stitches two repo helpers:
        ```ts
-       // Inside transaction:
-       const matchingPhoto = await tx`
-         SELECT 1 FROM photo_entries
-         WHERE photo_url = ${args.photoUrl} AND plant_id = ${args.plantId} AND user_id = ${args.userId}
-         LIMIT 1
-       `;
-       if (matchingPhoto.length === 0) validationFailed("photo_not_in_plant");
-       const updated = await plants.setCoverPhoto(tx, { plantId: args.plantId, userId: args.userId, photoUrl: args.photoUrl });
-       if (!updated) notFound("plant_not_found");
-       return updated;
+       // src/contexts/catalog/application/set-cover-photo.ts
+       import * as plants from "@contexts/catalog/infrastructure/db/plants";
+       import * as photoEntries from "@contexts/catalog/infrastructure/db/photo-entries";
+       import { notFound, validationFailed } from "./errors";
+       import type { UnitOfWork } from "@shared/db/unit-of-work";
+
+       export async function setCoverPhoto(args: {
+         plantId: string;
+         userId: string;
+         photoEntryId: string;
+         uow: UnitOfWork;
+       }) {
+         return await args.uow.transaction(async (tx) => {
+           // 1. Verify the PhotoEntry belongs to THIS plant + user (cross-plant + cross-user defense).
+           //    Plan 05-03 ships photoEntries.findById(db, args) — single repo call, NO raw SQL.
+           const photoEntry = await photoEntries.findById(tx, {
+             photoEntryId: args.photoEntryId,
+             plantId: args.plantId,
+             userId: args.userId,
+           });
+           if (!photoEntry) validationFailed("photo_not_in_plant");
+
+           // 2. Update plants.cover_photo_url with the resolved photo's photoUrl.
+           //    Plan 05-03 ships plants.setCoverPhoto(tx, args) — single repo UPDATE, NO raw SQL.
+           const updated = await plants.setCoverPhoto(tx, {
+             plantId: args.plantId,
+             userId: args.userId,
+             coverPhotoUrl: photoEntry.photoUrl,
+           });
+           if (!updated) notFound("plant_not_found");
+           return updated;
+         });
+       }
        ```
+
+       **Notes:**
+       - The HTTP request body is `{ photo_entry_id }` (snake_case wire), parsed by `SetCoverPhotoSchema` in Plan 05-04. The route handler in 05-09 maps `photo_entry_id` → `photoEntryId` and calls this use case.
+       - The use case file imports ONLY repo modules + error helpers + UoW type. It does NOT import `drizzle-orm`, `sql`, or any DB client primitive. Verification grep gate enforces this.
 
     2. Write the 5 unit test files. Use vi.mock for repositories. Each file covers the bullet behaviors above. ~25-45 lines each.
 
@@ -405,7 +493,7 @@ For listPlants `includeIdentificationCount=true`, extend the SQL query in plants
 
 <threat id="T-5-16" severity="medium" stride="T">
   <description>Cross-plant cover-photo tampering on PATCH /api/v1/plants/:id/cover-photo — client submits a photo_url belonging to a different plant of theirs (or another user's plant), hoping the cover gets set without ownership re-check.</description>
-  <mitigation file="src/contexts/catalog/application/set-cover-photo.ts">setCoverPhoto's first action inside the transaction is a SELECT 1 FROM photo_entries WHERE photo_url = $photoUrl AND plant_id = $plantId AND user_id = $userId LIMIT 1. If no row matches, throws validationFailed("photo_not_in_plant"). The combined plant_id + user_id WHERE clause means the photo MUST belong to the targeted plant AND the authenticated user. Unit test covers the cross-plant rejection path.</mitigation>
+  <mitigation file="src/contexts/catalog/application/set-cover-photo.ts">**Codex review HIGH 05-07 fix**: setCoverPhoto's first action inside the transaction is `photoEntries.findById(tx, { photoEntryId, plantId, userId })` (single repo call, NO raw SQL). The repository function (Plan 05-03) executes the SQL `WHERE id = $photoEntryId AND plant_id = $plantId AND user_id = $userId LIMIT 1`. If no row matches, the use case throws `validationFailed("photo_not_in_plant")`. The combined plant_id + user_id WHERE clause means the photo MUST belong to the targeted plant AND the authenticated user. Unit test covers the cross-plant rejection path. Use case file contains zero `drizzle-orm` imports (verification grep gate).</mitigation>
 </threat>
 
 <threat id="T-5-17" severity="low" stride="I">
@@ -419,12 +507,27 @@ For listPlants `includeIdentificationCount=true`, extend the SQL query in plants
 2. `pnpm exec vitest --run --project=integration tests/integration/catalog/` exits 0 (CAT-07 cursor + CAT-04 ID-history visibility tests green).
 3. `pnpm exec tsc --noEmit` exits 0.
 4. All 7 use-case files exist and export the named functions.
+5. **Codex 05-07 grep gate (no raw SQL/Drizzle in setCoverPhoto)**: `grep -E "from \\\"drizzle-orm" src/contexts/catalog/application/set-cover-photo.ts` returns 0; `grep -E "import \\{ sql \\}" src/contexts/catalog/application/set-cover-photo.ts` returns 0. The file imports ONLY repo modules.
+6. **Codex Decision 3 grep gate (listPlants signature)**: `grep -E "listPlants\\(\\{" src/contexts/catalog/application/list-plants.ts` matches; the function uses object-form arguments. `grep -nE "sortKey" src/contexts/catalog/application/list-plants.ts` returns ≥ 1 (parameter is `sortKey`, not `sort`).
+7. **Codex 05-09 grep gate (deletePhotoEntry dispatches photo_entry.deleted)**: `grep -E "photo_entry\\.deleted|PhotoEntryDeletedEventName" src/contexts/catalog/application/delete-photo-entry.ts` matches; `grep -E "plant\\.deleted|PlantDeletedEventName" src/contexts/catalog/application/delete-photo-entry.ts` returns 0.
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-07 HIGH — `setCoverPhoto` may use raw SQL in the use-case layer**: Resolved by `decisions.set_cover_photo_validation`. Implementation pattern: use case calls `photoEntries.findById(db, args)` (new Plan 05-03 helper) for ownership verification, then `plants.setCoverPhoto(tx, args)` (new Plan 05-03 single-UPDATE helper). The use-case file imports only repo modules; verification adds a grep gate that catches `drizzle-orm` imports in `set-cover-photo.ts`.
+- **Codex Decision 3 — `listPlants` argument-name drift (`sort` vs `sortKey`, plantIdFilter inconsistency)**: Resolved by `decisions.list_plants_argument_signature` — single canonical object-form signature. Wire HTTP query is `?sort=`, but the use-case argument is `sortKey`. Detail fetch uses `plantIdFilter` on the same listPlants function. No positional overload, no route-only side path.
+- **05-09 HIGH — `plant.deleted` reused for single PhotoEntry deletion is semantically dangerous**: Resolved by `decisions.delete_photo_entry_storage_cleanup` — `deletePhotoEntry` now dispatches `photo_entry.deleted` (NOT `plant.deleted`). The cleanup decision moves into THIS plan's use case (where the data deletion happens), instead of being injected at the route handler in 05-09. Plan 05-06's `catalog/cleanup-storage` Inngest function handles both event types via the shared `storage_deletion_job_id`.
+- **Codex Decision 1/2 — repository return shape & route serializer**: `list-plants` returns `{ rows, nextCursor }` (camelCase internal); the route handler in 05-08 serializes to `{ data, next_cursor }` snake_case (camelCase repo rows → snake_case wire keys via the route adapter).
+- **Codex Decision 6 — canonical storage path format**: `addPhotoEntry` validates with `{userId}/{plantId}/{file}` form via `validateStoragePathOwnership`.
+</reviews_addressed>
 
 <success_criteria>
 - 7 use-case modules: updatePlant, addPhotoEntry, updatePhotoEntryNote, deletePhotoEntry, setCoverPhoto, listPlants, listPhotoEntries.
-- T-5-01 storage-path validation wired in addPhotoEntry.
-- Cross-plant cover-photo defense (T-5-16) wired in setCoverPhoto.
+- T-5-01 storage-path validation wired in addPhotoEntry (canonical path format per Codex Decision 6).
+- Codex 05-07 — setCoverPhoto contains zero raw SQL/Drizzle access; uses photoEntries.findById + plants.setCoverPhoto repo helpers only.
+- Codex 05-09 — deletePhotoEntry uses the same outbox + Inngest cleanup pattern as deletePlant, but dispatches `photo_entry.deleted`.
+- Codex Decision 3 — listPlants single canonical signature (object-form, `sortKey`, optional `plantIdFilter` + `includeIdentificationCount`).
 - Cursor codec correctly wraps Plan 05-02's encodeCursor/decodeCursor in listPlants/listPhotoEntries.
 - includeIdentificationCount path supports CAT-04 conditional ID-history link visibility.
 - 11 test files cover 35+ behaviors total; all green.

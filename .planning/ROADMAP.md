@@ -145,7 +145,21 @@ Cross-cutting constraints:
   3. Returning users log in with email+password via per-device JWT (no server sessions), log out of the current device (revoking that JWT and its push subscription only), request a password reset from a public endpoint that always returns 200 (no enumeration) and — when the email exists — receive a Resend email with a single-use hashed token expiring in 1h that lets them set a new password while existing JWTs remain valid.
   4. From `Settings → Account`, an email+password user changes their password with current + new (wrong current → `invalid_credentials` 401); OAuth-only accounts see the change-password UI hidden and the endpoint rejects with `forbidden`; the Settings shell renders with placeholder sections for Notifications, Subscription & billing, Privacy & LGPD, Needs attention, and App info that later phases will fill.
   5. The signup, login, and OAuth callback endpoints enforce a narrow per-IP attempt throttle returning `rate_limited` 429 when tripped, independent of the target account and without consuming the failure budget on successful logins, and `notifications/send-email` Inngest function is wired to Resend with pt-BR React Email templates for verification + password-reset as the first consumers (later phases add templates).
-**Plans**: TBD
+**Plans**: 11 plans
+
+Plans:
+- [ ] 04-01-PLAN.md -- Phase 2/3 prerequisite gate
+- [ ] 04-02-PLAN.md -- Schema additions (email_verified_at + 3 tables) + drizzle-kit push
+- [ ] 04-03-PLAN.md -- Shared foundation (env vars, helpers, Zod, fixtures, locale)
+- [ ] 04-04-PLAN.md -- Inngest serve handler + 8 functions registered (1 real cron + 7 stubs)
+- [ ] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function
+- [ ] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
+- [ ] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)
+- [ ] 04-08-PLAN.md -- Password reset (always-200 + Inngest async lookup + consume)
+- [ ] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete
+- [ ] 04-10-PLAN.md -- UI surfaces (auth pages + Settings shell + UnverifiedBlocker + root layout gate)
+- [ ] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
+
 **UI hint**: yes
 
 ### Phase 5: Catalog — Meu Jardim
@@ -274,7 +288,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Foundation | 8/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 0/10 | Ready to execute | - |
 | 3. Design System & App Shell | 0/5 | Ready to execute | - |
-| 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
+| 4. IAM — Auth, Verification, Consent | 0/11 | Ready to execute | - |
 | 5. Catalog — Meu Jardim | 0/TBD | Not started | - |
 | 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |
 | 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |

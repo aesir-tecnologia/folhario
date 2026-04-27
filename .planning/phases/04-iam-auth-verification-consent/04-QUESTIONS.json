@@ -1,0 +1,972 @@
+{
+  "phase": "04-iam-auth-verification-consent",
+  "generated_at": "2026-04-26T00:00:00Z",
+  "stats": {
+    "total": 30,
+    "answered": 27,
+    "chat_more": 0,
+    "remaining": 3
+  },
+  "sections": [
+    {
+      "id": "supabase-auth-boundary",
+      "title": "Supabase Auth Integration Boundary",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Auth backend",
+          "context": "Phase 2 D-32 wired AuthAdapter to verify Supabase JWTs via JWKS (D-33). D-35 added an auth.users → public.users insert trigger. The data layer is fully oriented around Supabase Auth. PRD §12 doesn't explicitly mandate Supabase Auth.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Supabase Auth (full) — recommended",
+              "description": "Use supabase.auth.signUp / signInWithPassword / signInWithOAuth / updateUser / admin.* end-to-end. Accept Supabase-issued JWT (verified via Phase 2 JWKS). Lean on Supabase OAuth for Google. Phase 4 wires custom email dispatch via Auth Hooks. Minimal divergence from Phase 2 commitments."
+            },
+            {
+              "id": "b",
+              "label": "Hybrid (OAuth via Supabase, email/password custom)",
+              "description": "Roll our own bcrypt/argon2id email+password flow + JWT minting; keep Supabase only for Google OAuth. Larger attack surface, more bespoke crypto code, breaks Phase 2 D-32/D-35 cleanliness."
+            },
+            {
+              "id": "c",
+              "label": "Custom-rolled all",
+              "description": "Bypass Supabase Auth entirely. Mint our own JWTs, hash with argon2id, manage refresh-token rotation. Maximum control, biggest delta from Phase 2 + scope creep into Phase 4."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Email dispatch path",
+          "context": "PRD §20 mandates Resend + React Email pt-BR templates. AUTH-01/AUTH-11 require Resend dispatch. Supabase Auth has a built-in email service (configurable SMTP) that we need to either replace or override. NOTIF-01 demands all transactional email flow through `notifications/send-email` Inngest function.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Supabase Auth Hooks → Inngest event → Resend — recommended",
+              "description": "Configure Supabase Auth Hook (`send_email_hook`) to receive every auth-email trigger (signup confirm, magic link, recovery, email change). Hook payload emits an Inngest event. Inngest `notifications/send-email` looks up pt-BR React Email template + sends via Resend. Supabase still owns tokens; we own rendering + delivery."
+            },
+            {
+              "id": "b",
+              "label": "Custom SMTP pointing at Resend",
+              "description": "Set Supabase Auth's SMTP server to Resend's SMTP endpoint. Loses React Email templates (Supabase renders its own HTML), loses pt-BR override, loses Inngest visibility, loses single `notifications/send-email` integration point."
+            },
+            {
+              "id": "c",
+              "label": "Disable Supabase emails; mint our own tokens",
+              "description": "Disable Supabase's email confirmation. Our signup endpoint mints a verification_tokens row (sha256-hashed token + 24h expiry). Inngest dispatches Resend email with our link. Full control, more code, abandons Supabase's token machinery."
+            },
+            {
+              "id": "d",
+              "label": "Supabase-owned tokens + Inngest/Resend dispatch",
+              "description": "Keep Supabase as the token authority, but do not rely on signup email hooks for the initial app-orchestrated signup. The signup endpoint generates a Supabase confirmation link/token_hash with the Admin API after app data is durable, then emits an Inngest event consumed by notifications/send-email. Supabase Send Email Hook remains configured for auth-triggered resend/recovery/email-change flows so every delivered email still goes through Inngest + Resend + pt-BR React Email."
+            }
+          ],
+          "answer": "d",
+          "chat_more": "",
+          "status": "unanswered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Signup orchestration vs Phase 2 trigger",
+          "context": "Phase 2 D-35 added a DB trigger that copies auth.users → public.users on insert. Phase 4 must atomically write User (with age_confirmed_at, timezone, partner_code, trial_source), ConsentLog rows (T&C, privacy_policy), and Subscription (status=trialing, trial_end_date). The trigger doesn't know about these fields.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Application-level signup endpoint — recommended",
+              "description": "POST /api/v1/iam/signup orchestrates Supabase Auth user/link creation, then in one DB transaction UPSERTs/UPDATEs the public.users row created by the Phase 2 auth.users trigger with full fields, writes ConsentLog × 2, and creates Subscription. The trigger remains the safety net for OAuth/direct Auth inserts; Phase 4 must not plain-INSERT public.users after auth.users is created because the trigger may already own the row."
+            },
+            {
+              "id": "b",
+              "label": "Trigger authoritative, app updates after",
+              "description": "Trigger creates public.users (minimal). Endpoint UPDATEs with age/tz/partner/trial_source, separately INSERTs ConsentLog + Subscription. Two writes per signup, partial-state risk if second write fails."
+            },
+            {
+              "id": "c",
+              "label": "Drop the trigger; app code only",
+              "description": "Remove Phase 2's auth.users → public.users trigger. Only application code creates public.users. Simpler mental model, but explicitly breaks Phase 2 D-35 commitment and leaves OAuth signups (where Supabase creates auth.users without our endpoint) without a public.users row."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-04",
+          "title": "OAuth post-callback flow (where age/T&C/privacy/timezone get collected)",
+          "context": "PRD §12 says OAuth (Google) signups are pre-verified. But Google doesn't ask for age confirmation ≥13, T&C+privacy acceptance, timezone, or optional partner code. These are LGPD Art. 14 (children) + Art. 7 (legal basis) requirements that MUST be captured before app use.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mandatory post-callback completion screen — recommended",
+              "description": "After Google OAuth callback, route to `/auth/oauth-complete`. Google users are email-verified immediately and receive no verification email, but app/API access remains blocked by an onboarding-complete gate until age/T&C/privacy/timezone are captured (partner code optional). Submitting writes the missing User fields + ConsentLog + Subscription; only then are gated endpoints reachable."
+            },
+            {
+              "id": "b",
+              "label": "Inline modal on first app shell visit",
+              "description": "OAuth user lands in app shell; a blocking modal appears collecting the same fields. Higher friction at the worst moment (just signed in)."
+            },
+            {
+              "id": "c",
+              "label": "Defer collection to first action",
+              "description": "Let OAuth users into app immediately. Capture T&C+privacy when they hit the consent modal at first identification (Phase 6). Legally weak: T&C not accepted before catalog actions; doesn't capture age ≥13 before any data-bearing action."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Per-device JWT semantics",
+          "context": "AUTH-14 — logout (this device) revokes that JWT and its push subscription only. Supabase already issues per-session refresh-tokens (one session per browser/device by default). PushSubscription doesn't ship until Phase 8.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Supabase session = device — recommended",
+              "description": "Each Supabase auth session represents one device. Logout calls `supabase.auth.signOut({scope: 'local'})` killing only this session's refresh token. Phase 8 ties PushSubscription.device_id to session_id. JWT shape unchanged — Supabase JWT only, no custom claims for device_id."
+            },
+            {
+              "id": "b",
+              "label": "Custom device_id claim + sessions registry",
+              "description": "Issue our own UUID device_id per login, stored in a `device_sessions` table. Custom Supabase JWT template embeds the claim. Useful for a future 'logged-in devices' UI; over-engineers Phase 4."
+            },
+            {
+              "id": "c",
+              "label": "Mint our own JWT alongside Supabase",
+              "description": "After Supabase auth completes, our endpoint issues a separate JWT with device_id, signed with our HS256 secret. Maximum control, redundant verification path, breaks Phase 2 D-33 JWKS posture."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "verification-flow",
+      "title": "Email Verification Flow",
+      "questions": [
+        {
+          "id": "Q-06",
+          "title": "Verification token mechanism",
+          "context": "Q-02 commits us to Supabase Auth Hooks → Inngest → Resend for dispatch (assuming option a). The token itself still has to come from somewhere.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Supabase confirmation_token via verifyOtp — recommended",
+              "description": "Supabase issues + stores + expires the token. We render the email body (via Auth Hook payload) and link target. Token expiry inherits Supabase default (configurable in dashboard, default 24h). No custom token table."
+            },
+            {
+              "id": "b",
+              "label": "Custom verification_tokens table",
+              "description": "Own opaque token (32+ random bytes), sha256-hash on disk, expiry column, single-use guarantee. More code; only worth it if Q-02 chose (c) — disable Supabase emails."
+            },
+            {
+              "id": "c",
+              "label": "Magic-link OTP (6-digit code typed in)",
+              "description": "User types 6-digit code from email instead of clicking a link. Different UX. Not implied by AUTH-01."
+            },
+            {
+              "id": "d",
+              "label": "Supabase Admin Generate Link token_hash",
+              "description": "Use Supabase Admin generateLink for signup confirmation so Supabase creates/stores/expires the confirmation token and returns token_hash/action link without sending email. The verification email links to our route with token_hash + type=signup, and our server verifies via verifyOtp. No custom token table."
+            }
+          ],
+          "answer": "d",
+          "chat_more": "",
+          "status": "unanswered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Verification link landing route",
+          "context": "When the user clicks the verification email link, where do they land?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Server route /auth/verify?token_hash=...&type=signup — recommended",
+              "description": "Server route validates token_hash via supabase.auth.verifyOtp({ type: 'signup' }), mirrors verification to public.users.email_verified_at, and redirects to /. Server-side handler keeps verification off the client and makes it easy to instrument the PostHog signup_completed event."
+            },
+            {
+              "id": "b",
+              "label": "Client-side /auth/verify route",
+              "description": "Client component calls supabase.auth.verifyOtp from the browser (Supabase JS lib parses URL hash). More client-only state, harder to add PostHog server event."
+            },
+            {
+              "id": "c",
+              "label": "Supabase hosted page",
+              "description": "Default Supabase 'email confirmed' page. Not pt-BR. No brand. Sends user back via redirect-after-confirm URL."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-08",
+          "title": "Resend-verification UX behavior",
+          "context": "User on the unverified blocker (AUTH-15) taps 'Reenviar e-mail' — what happens?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Invalidate prior token, mint new — recommended",
+              "description": "Calls Supabase resend/generateLink to mint a new signup token and emits a new verification email. Single-token-active is a product requirement, but it must be pinned by an integration test: if Supabase does not invalidate the prior token in the local stack, implement an app-side latest-token guard or switch resend to Admin generateLink. Combine with per-user rate-limit (1/min) to defend against email-flood."
+            },
+            {
+              "id": "b",
+              "label": "Mint additional token, both valid until expiry",
+              "description": "Both tokens work until they hit expiry. Safer if user's email lands late; more ambiguous state."
+            },
+            {
+              "id": "c",
+              "label": "Per-user rate-limited resend (1/min)",
+              "description": "Combine with (a) or (b). Defends against email-flood + Resend cost spike. Counter stored in same throttle backend as Q-12."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "password-reset-flow",
+      "title": "Password Reset Flow",
+      "questions": [
+        {
+          "id": "Q-09",
+          "title": "Reset token mechanism",
+          "context": "AUTH-11/AUTH-12 — single-use, hashed storage, 1h expiry, public endpoint always returns 200 (no enumeration), OAuth-only accounts get no email.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Supabase resetPasswordForEmail (built-in) — recommended",
+              "description": "Supabase issues + hashes + expires the reset token (configurable expiry, can be set to 1h). Auth Hook from Q-02 renders the email body. Single token mechanism shared with verification."
+            },
+            {
+              "id": "b",
+              "label": "Custom password_reset_tokens table",
+              "description": "Full control: 32-byte random token, sha256 on disk, exactly 1h expiry, single-use enforcement, per-user-invalidation on successful password change. Required only if Q-01 is hybrid/custom."
+            },
+            {
+              "id": "c",
+              "label": "OTP-style 6-digit code typed in",
+              "description": "Different UX. Not implied by PRD."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "Reset link landing route",
+          "context": "Where does the user land after clicking the reset email link?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Server route /auth/reset?token_hash=...&type=recovery — recommended",
+              "description": "Server-side route validates token_hash via supabase.auth.verifyOtp({ type: 'recovery' }), establishes the recovery session/cookies needed by Supabase, and renders the new-password form (current-password NOT required for reset flow). Submitting updates the password via the Supabase Auth adapter. Brand UX, full pt-BR."
+            },
+            {
+              "id": "b",
+              "label": "Client-side /auth/reset route",
+              "description": "Client component calls supabase.auth.updateUser({password}) after verifyOtp. Browser-side flow. Slightly faster; still needs server-side validation as defense in depth."
+            },
+            {
+              "id": "c",
+              "label": "Supabase hosted page",
+              "description": "No brand, no pt-BR."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-11",
+          "title": "Always-200 implementation (no enumeration)",
+          "context": "AUTH-11 — endpoint always returns 200 regardless of whether email matches. Email only sent when (a) email exists AND (b) account has a password (not OAuth-only).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Endpoint enqueues Inngest event + returns 200; Inngest function looks up user — recommended",
+              "description": "POST /api/v1/iam/password/reset-request immediately responds 200 + emits `iam/password-reset-requested` Inngest event with the email. Inngest function: lookup user → if exists AND has password → trigger Supabase resetPasswordForEmail (Auth Hook → Resend). Async, no timing-attack signal."
+            },
+            {
+              "id": "b",
+              "label": "Synchronous lookup, conditional enqueue, return 200",
+              "description": "Endpoint synchronously looks up user; if match, kicks off Resend; either way returns 200. Risk: response time could leak existence (mitigatable with constant-time delay, but more work)."
+            },
+            {
+              "id": "c",
+              "label": "Always send; email body says 'if you have an account...'",
+              "description": "Always emit Resend regardless. Email tells the recipient nothing. Wastes Resend quota; some users get phantom 'reset' emails."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "per-ip-throttle",
+      "title": "Per-IP Auth Throttle",
+      "questions": [
+        {
+          "id": "Q-12",
+          "title": "Throttle storage backend",
+          "context": "AUTH-10 — narrow per-IP throttle on signup/login/OAuth callbacks. Must work in Vercel serverless (no shared memory between invocations). PRD §5 confirms `rate_limited` 429 is only emitted here in MVP. Phase 2 ships Postgres via Supavisor txn pooler.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Postgres atomic counter table — recommended",
+              "description": "Postgres-backed throttle with atomic counters plus explicit lockout state: `auth_throttle (ip TEXT, endpoint TEXT, window_start INT8, count INT, blocked_until TIMESTAMPTZ, PRIMARY KEY (ip, endpoint, window_start))` or an equivalent companion lockout table. UPSERT increments count and sets/reads blocked_until when the threshold trips. No new dependency. Requires periodic cleanup via Inngest cron."
+            },
+            {
+              "id": "b",
+              "label": "Vercel KV (Redis-compatible)",
+              "description": "Fast, well-suited for rate limiting (INCR + EXPIRE). New service, new env vars, new Phase 4 onboarding. Not yet in tech stack. Vercel-vendor-locked."
+            },
+            {
+              "id": "c",
+              "label": "Upstash Redis (REST API)",
+              "description": "Same shape as KV but explicit Upstash dep. Free tier available. Adds new external service."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Throttle window strategy",
+          "context": "Choice affects query/storage shape and edge-case behavior at window boundaries.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Fixed bucket per minute — recommended",
+              "description": "window_start = floor(now / 60s). Primary key (ip, endpoint, window_start). Simple INSERT/UPDATE. User can theoretically burst across boundary (5 attempts at 0:59 + 5 at 1:00 = 10 in 2s) but the practical impact is limited and the simplicity wins."
+            },
+            {
+              "id": "b",
+              "label": "Sliding window (last 60s)",
+              "description": "Query: count(*) WHERE created_at > now - interval '60s' AND ip = ? AND endpoint = ?. Tighter accuracy. Requires storing each attempt as a row + indexes; more cleanup pressure."
+            },
+            {
+              "id": "c",
+              "label": "Token bucket (refill rate)",
+              "description": "Each IP has a token bucket with refill rate. More config, complex math, overkill for narrow throttle."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-14",
+          "title": "Throttle thresholds",
+          "context": "PRD §5 doesn't give exact numbers. Defenders against credential stuffing typically use 5-10 attempts per minute per IP. Tighter = more security, more false-positives behind shared NAT (corporate/uni networks, mobile carrier CGNAT in Brazil is common).",
+          "options": [
+            {
+              "id": "a",
+              "label": "5 attempts/minute, lockout for 5 minutes after — recommended",
+              "description": "Strict but tolerant. Most legitimate users won't hit 5 failures/min. When the threshold trips, persist `blocked_until = now() + 5 minutes` and reject matching public-auth attempts until that timestamp. CGNAT shared IPs may occasionally trip — mitigated by 5-minute lockout (not hours)."
+            },
+            {
+              "id": "b",
+              "label": "10 attempts/minute, lockout for 5 minutes",
+              "description": "Looser. Lower false-positive rate for shared IPs. Slightly more password-spray budget for attackers."
+            },
+            {
+              "id": "c",
+              "label": "3/min, 30/15min",
+              "description": "Very strict. Higher false-positive rate on shared IPs, especially CGNAT. Defends against patient password-spray."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": "Specify your own values"
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Failed-only counting",
+          "context": "AUTH-10 — successful logins do not consume the failure budget.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Increment only on failed login (invalid_credentials 401) — recommended",
+              "description": "On signup endpoint: increment on every attempt (validation fails / dup email / etc.). On login: increment ONLY on invalid_credentials. On OAuth callback: increment on Supabase OAuth error responses. Simplest, no race."
+            },
+            {
+              "id": "b",
+              "label": "Increment on every attempt; decrement on success",
+              "description": "Race condition between increment + decrement. Risk: two parallel requests where one succeeds and one fails could leave miscounted state."
+            },
+            {
+              "id": "c",
+              "label": "Two separate counters: total + failed",
+              "description": "Over-engineered. Returns 429 only when failed counter exceeds threshold."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "inngest-onboarding",
+      "title": "Inngest Onboarding (first async consumer)",
+      "questions": [
+        {
+          "id": "Q-16",
+          "title": "Phase 4 Inngest function scope (stub vs implement)",
+          "context": "INFRA-10 says all 8 MVP functions are registered: care-guide/augment, iam/process-deletion, iam/generate-export, billing/process-webhook, billing/trial-ending-notifier, reminders/dispatch, notifications/send-email, notifications/send-push. Most are owned by later phases.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Implement only notifications/send-email; stubs for the rest — recommended",
+              "description": "Phase 4 fully implements `notifications/send-email` (consumes Auth Hook → Resend). The other 7 functions are stub-registered (handler returns `{status: 'not_implemented'}`). Inngest dashboard shows the full topology immediately. Each later phase replaces its stub with a real handler."
+            },
+            {
+              "id": "b",
+              "label": "Register only notifications/send-email",
+              "description": "Minimal. Other functions get registered when their phase ships. Risk: Inngest function registry drifts from the canonical INFRA-10 list across phases."
+            },
+            {
+              "id": "c",
+              "label": "Implement notifications/send-email + iam/process-deletion + iam/generate-export",
+              "description": "IAM-context completeness — Phase 4 owns the IAM bounded context. Risk: scope creep into Phase 11 (LGPD data rights). Phase 11 still owns the orchestration and consent logic."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "Function registration shape",
+          "context": "All 8 functions need to land at /api/inngest/route.ts via Inngest's `serve({ functions: [...] })`.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Per-context exports + central registry — recommended",
+              "description": "Each context exports `src/contexts/{ctx}/inngest/functions.ts` returning an array of Inngest functions. `src/shared/inngest/registry.ts` imports each context's array and concatenates. `src/app/api/inngest/route.ts` calls serve({ functions: registry }). Clean ownership, single serve()."
+            },
+            {
+              "id": "b",
+              "label": "Flat src/shared/inngest/functions/*.ts",
+              "description": "All functions live in shared/inngest/functions/. Easier to grep + see the full topology in one folder. Breaks bounded-context ownership (D-01 from Phase 2 / PRD §3)."
+            },
+            {
+              "id": "c",
+              "label": "Inline definitions in route.ts",
+              "description": "All functions defined inline in route.ts. Quick but coupling-heavy and breaks bounded contexts entirely."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "resend-onboarding",
+      "title": "Resend & React Email Onboarding",
+      "questions": [
+        {
+          "id": "Q-18",
+          "title": "React Email setup depth",
+          "context": "Phase 4 needs verification + password-reset templates in pt-BR with brand styling. Founder will iterate copy.",
+          "options": [
+            {
+              "id": "a",
+              "label": "@react-email/components only (no preview server) — recommended",
+              "description": "Install `@react-email/components` (component library). Templates live as `.tsx` and render via `render(<Template />)`. No local preview server — iterate via render-to-stdout in dev or hit the actual Resend sandbox. Minimal Phase 4 surface."
+            },
+            {
+              "id": "b",
+              "label": "Full react-email package + preview server",
+              "description": "`pnpm email` runs `react-email dev` on localhost:3001 — visual preview as you edit templates. Best DX for copy iteration. Adds dev dependency, dev port to coordinate."
+            },
+            {
+              "id": "c",
+              "label": "Raw HTML strings or MJML",
+              "description": "Skip React Email entirely. Slower iteration. No JSX type-safety. Pt-BR strings via next-intl message format."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-19",
+          "title": "From address in Phase 4",
+          "context": "Production verified domain is gated on launch blockers (DPO, privacy policy publication). Phase 4 must function before those land.",
+          "options": [
+            {
+              "id": "a",
+              "label": "onboarding@resend.dev (Resend sandbox) — recommended",
+              "description": "Works out-of-the-box. Resend sandbox restricts recipient domain to the account owner's verified email. Production swap to a verified domain (e.g., noreply@folhario.com.br) lands in Phase 12 alongside Vercel project + production env vars. Phase 4 Settings → App info doesn't expose the dev address."
+            },
+            {
+              "id": "b",
+              "label": "Founder verifies folhario.com.br on Resend now",
+              "description": "Production-realistic from Phase 4. Adds founder-side blocker: domain ownership + DNS records (SPF, DKIM, DMARC). May overlap with launch-blocker work on privacy policy."
+            },
+            {
+              "id": "c",
+              "label": "Resend sandbox for dev/CI; verified domain for preview/prod (Phase 12 onboards)",
+              "description": "Same as (a). Just clarifying the split."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-20",
+          "title": "Local dev / CI test send behavior",
+          "context": "Where do emails go during development and CI runs? Resend sandbox restricts recipient domains.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Local dev: console-log payload (skip network). CI: Resend with sandbox 'from' + 'to' aliased to test inbox — recommended",
+              "description": "RESEND_API_KEY empty locally → adapter logs full payload to stdout. Devs verify content visually. CI sets RESEND_API_KEY to sandbox key, sends to a fixed test recipient (founder's email or a Resend webhook capture). Minimizes Resend quota burn from local iteration."
+            },
+            {
+              "id": "b",
+              "label": "Local + CI both hit Resend sandbox always",
+              "description": "Every commit pings Resend. Faster fidelity; quota concerns; potentially noisy."
+            },
+            {
+              "id": "c",
+              "label": "Mailpit/Mailhog local SMTP catcher; Resend everywhere else",
+              "description": "Add Mailpit container to docker-compose. Adapter switches between Mailpit (DEV) and Resend (CI/preview/prod). Best dev fidelity. New service to run locally."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "verification-gate",
+      "title": "Verification Gate Enforcement",
+      "questions": [
+        {
+          "id": "Q-21",
+          "title": "Where the gate lives",
+          "context": "AUTH-02 — gated endpoints return email_unverified 403 for unverified email+password users. AUTH-15 — app shell is replaced by full-screen blocker. Two layers (API + UI) need enforcement. Phase 1 D-24 keeps src/proxy.ts focused on locale routing only.",
+          "options": [
+            {
+              "id": "a",
+              "label": "API: shared route guard helper. UI: server-component check at root layout — recommended",
+              "description": "API layer: `requireVerifiedUser(req)` helper called explicitly by every gated handler (returns email_unverified 403 if not verified). UI layer: a server component at the App Router root layout reads the user state and renders either children or `<UnverifiedBlocker />`. Explicit per-route + per-page. Easy to audit."
+            },
+            {
+              "id": "b",
+              "label": "Next middleware (src/proxy.ts) blocks both API and pages",
+              "description": "Central enforcement. Middleware runs on edge runtime — DB lookups are slow/limited. Forces verified-state into JWT. Mixes locale routing with auth, conflicting with Phase 1 D-24."
+            },
+            {
+              "id": "c",
+              "label": "API: middleware. UI: client-side check",
+              "description": "Middleware blocks API routes (edge, JWT-claim only). UI relies on a client component (`useSession`) that flashes content briefly before redirect. Worse UX, less consistent."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-22",
+          "title": "How verified is detected per request",
+          "context": "Server needs to know on every request whether the user is verified.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mirror to public.users.email_verified_at; read on every request — recommended",
+              "description": "On verification (Q-07 server route), set public.users.email_verified_at + auth.users.email_confirmed_at. Every gated request reads from public.users via repository. Always fresh. ~5-10ms DB roundtrip per request — acceptable for an auth check; cache per JWT id with 60s TTL if hot path matters."
+            },
+            {
+              "id": "b",
+              "label": "JWT custom claim email_verified",
+              "description": "Encode `email_verified: true` in the Supabase JWT via Auth Hook on token issuance. Fast (no DB roundtrip). Risk: stale claim until token refresh — user may see blocker for ~minutes after verification."
+            },
+            {
+              "id": "c",
+              "label": "Both — JWT claim with DB fallback when claim missing/stale",
+              "description": "Robust but more complex. Useful only if (a) measurably slow."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-23",
+          "title": "Allowed-endpoints policy (allowlist vs denylist)",
+          "context": "AUTH-02 — only resend-verification, Settings/account, and logout endpoints reachable when unverified. New endpoints added later need to be classified.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Allowlist (default deny; explicit list of reachable paths) — recommended",
+              "description": "A single config (`UNVERIFIED_ALLOWED = ['/api/v1/iam/resend-verification', '/api/v1/iam/me', '/api/v1/iam/logout', '/api/v1/iam/me/password', ...]`). Every new endpoint must opt-in. Safest by default."
+            },
+            {
+              "id": "b",
+              "label": "Denylist (default allow; block known mutation paths)",
+              "description": "Easier to break — devs forget to add new endpoints to the deny list. Subtle security holes."
+            },
+            {
+              "id": "c",
+              "label": "Per-handler metadata flag (requires_verified: boolean export)",
+              "description": "Each handler exports a boolean. Clean inversion of control. Requires every handler to remember to set it. New handlers default to `true` in code reviews."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "consentlog-atomicity",
+      "title": "ConsentLog & Signup Atomicity",
+      "questions": [
+        {
+          "id": "Q-24",
+          "title": "Initial ConsentLog rows recorded at signup",
+          "context": "PRD §13 lists legal-basis purposes. T&C and privacy policy = CONTRACT basis (account/auth/catalog). identification_third_party = CONSENT basis, captured at first identify (Phase 6). Push = CONSENT basis, at first reminder (Phase 8). Phase 2 D-13 seeded policy_versions + legal_basis enum.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Two rows: terms_of_service + privacy_policy at signup — recommended",
+              "description": "INSERT ConsentLog rows: (purpose=terms_of_service, legal_basis=contract, source=signup, policy_version=current) and (purpose=privacy_policy, legal_basis=contract, source=signup, policy_version=current). Granular, auditable, future-proof for material-change re-consent (PRD §13 Governance). If Phase 2's operational consent-purpose enum/check does not already include these two purposes, Phase 4 must migrate it before signup writes."
+            },
+            {
+              "id": "b",
+              "label": "One combined row signup_terms_and_privacy",
+              "description": "Simpler, less granular. Material change to one but not the other becomes ambiguous at re-consent time."
+            },
+            {
+              "id": "c",
+              "label": "No rows at signup; ConsentLog only for revocable consents",
+              "description": "Skip T&C + privacy logging at signup. Under-records under LGPD Art. 8 §1 demonstration burden — operator must prove consent existed."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-25",
+          "title": "Signup transaction atomicity",
+          "context": "Signup writes: User row, ConsentLog × 2, Subscription. Plus Supabase Auth user/link creation. Plus Inngest event emission for verification email.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Two-phase: Supabase Auth → DB tx (User + ConsentLog + Subscription) → Inngest event — recommended",
+              "description": "Phase 1: supabase.auth.admin.createUser (creates auth.users + sends nothing). Phase 2: single DB transaction inserting public.users (full row) + ConsentLog × 2 + Subscription. Phase 3: emit Inngest event `user.signed_up` (Inngest handler triggers verification email). If phase 2 fails after phase 1, compensating delete on auth.users (or accept orphan + Phase 2 trigger covers it)."
+            },
+            {
+              "id": "b",
+              "label": "One DB transaction including auth.users (via SQL)",
+              "description": "Use admin.createUser less; insert directly into auth.users via Drizzle/Supabase service role. True single-tx atomicity. Bypasses Supabase Auth's password hashing pipeline (it'd still need to be invoked separately for the password). Brittle."
+            },
+            {
+              "id": "c",
+              "label": "Sequential inserts with saga compensation",
+              "description": "Each step independent; on failure, run compensating delete. Complex; only worth it if cross-DB. Overkill here."
+            },
+            {
+              "id": "d",
+              "label": "Generate Supabase link → DB tx → Inngest email",
+              "description": "Phase 1: use Supabase Admin generateLink({ type: 'signup', email, password }) or equivalent Supabase-token API that creates auth.users and returns token_hash/action_link without sending email. The Phase 2 trigger may create a minimal public.users row. Phase 2: single DB transaction UPSERTs/UPDATEs public.users full fields + ConsentLog × 2 + Subscription. Phase 3: emit `iam/verification-email-requested` carrying user id/email/token_hash/link data to notifications/send-email. If phase 2 fails after auth creation, delete the auth user and do not send email."
+            }
+          ],
+          "answer": "d",
+          "chat_more": "",
+          "status": "unanswered"
+        }
+      ]
+    },
+    {
+      "id": "settings-shell",
+      "title": "Settings Shell",
+      "questions": [
+        {
+          "id": "Q-26",
+          "title": "Settings routing pattern",
+          "context": "AUTH-13 / UI-13 — Settings shell renders with placeholder sections for Notifications (Phase 8), Subscription & billing (Phase 10), Privacy & LGPD (Phase 11), Needs attention (Phase 9), App info. Phase 4 builds Account section (change password, timezone, logout) plus the shell.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Sub-routes /settings/[section] — recommended",
+              "description": "Each section is its own route: /settings/account, /settings/notifications, /settings/subscription, /settings/privacy, /settings/needs-attention, /settings/app-info. Deep-linkable. Cleaner code split. /settings root redirects to /settings/account."
+            },
+            {
+              "id": "b",
+              "label": "Single page /settings with anchor scrolling",
+              "description": "All sections render on one long page. Simpler routing. Bad mobile UX (long scroll). Hard to deep-link from email/push."
+            },
+            {
+              "id": "c",
+              "label": "Tabs/segmented control on /settings",
+              "description": "Accessibility-fragile (tabs need full ARIA). Crowded on narrow mobile widths. Doesn't deep-link."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-27",
+          "title": "Placeholder content for not-yet-built sections",
+          "context": "Phase 4 ships the Settings shell. Notifications/Subscription/Privacy/NeedsAttention/AppInfo are owned by later phases. Phase 4 must render something at those routes.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Brand-consistent 'Em breve' card per section — recommended",
+              "description": "Each route renders a Warm Ivory Surface card with the section title in Source Serif 4 + a Calm Slate body 'Em breve' or section-specific stub message + back link. Visible scaffolding, no fake controls. Matches design-system primitives from Phase 3."
+            },
+            {
+              "id": "b",
+              "label": "Section omitted (404)",
+              "description": "User can browse to /settings, sees only 'Account' working, others 404. Confusing — feels broken."
+            },
+            {
+              "id": "c",
+              "label": "Disabled placeholder controls (greyed-out toggles)",
+              "description": "Looks broken / shippable-but-buggy. Risk of users tapping disabled controls and concluding the app is unfinished."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "testing-and-copy",
+      "title": "Testing & Copy Ownership",
+      "questions": [
+        {
+          "id": "Q-28",
+          "title": "Auth integration testing approach",
+          "context": "Phase 1 D-25 + Phase 2 mandate real Postgres (no DB mocking). Local Supabase Docker stack runs Auth service. Phase 2 D-44 took a HYBRID posture (most tests mock JWT; one path verifies real JWKS).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Real local Supabase Auth in integration tests — recommended",
+              "description": "Integration tests run against the local Supabase stack. Each test seeds users via supabase.auth.admin.createUser. Test helper truncates auth.users + public.users between tests. Highest fidelity; matches no-DB-mocking rule. Slower (~50-200ms per test) but acceptable."
+            },
+            {
+              "id": "b",
+              "label": "Mock Supabase Auth at the AuthAdapter boundary; only the adapter is tested against real Auth",
+              "description": "Faster tests; less coverage. Risk of adapter and consumer drifting. Phase 2 D-44 took this for JWKS."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid CI-safe + one real Supabase Auth path — recommended",
+              "description": "CI keeps most auth endpoint tests at the AuthAdapter boundary so it can run against the existing Postgres-only service. One canonical local/optional E2E path exercises real Supabase Auth signup→verify→login against the local Supabase stack and is documented as a required pre-merge/manual verification until CI provisions Supabase Auth."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-29",
+          "title": "Resend testing approach",
+          "context": "Resend SDK is a network-bound dependency. Unit + integration tests need to verify email payloads (subject, recipient, template, data) without burning Resend quota.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Mock Resend SDK in unit/integration; one E2E hits sandbox — recommended",
+              "description": "Unit + integration: vi.mock('resend') and assert call args (template id/component, props, to/from/subject). One Playwright E2E spec optionally hits Resend sandbox + verifies a delivery webhook. Fast, deterministic, low quota burn."
+            },
+            {
+              "id": "b",
+              "label": "Always hit Resend sandbox",
+              "description": "Slower, network-dependent. Sandbox quota concerns. Higher fidelity."
+            },
+            {
+              "id": "c",
+              "label": "Local Mailpit + always real send (env-aware adapter)",
+              "description": "Adapter sends to Mailpit in dev, sandbox in CI/preview, prod elsewhere. Highest fidelity. Mailpit setup required."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-30",
+          "title": "pt-BR copy ownership for emails + Settings strings",
+          "context": "Phase 4 ships verification email + password-reset email + Settings → Account labels + unverified blocker text + change-password form. PRD doesn't dictate exact copy. next-intl mandates pt-BR strings via locale files (Phase 1 D-15).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Claude proposes initial pt-BR drafts; founder reviews + edits during plan execution — recommended",
+              "description": "Claude writes initial drafts in `messages/pt-BR.json` + email template tsx files based on PRD tone (warm, humanist, Brazilian, anti-textbook). Founder reviews during Phase 4 execution and refines specific phrases. Speed + founder control. Matches sketch-style 'sunlit morning on a Brazilian veranda' tone from PRD §17."
+            },
+            {
+              "id": "b",
+              "label": "Founder authors all copy upfront before phase execution",
+              "description": "Highest quality, slowest. Adds upfront work to the phase critical path. Founder is presumably busy with launch-blocker work (DPO appointment, ≥200 care guides)."
+            },
+            {
+              "id": "c",
+              "label": "Use English placeholders, add pt-BR in a later i18n pass",
+              "description": "Violates 'next-intl mandatory day one' constraint. Don't do this."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}

@@ -20,14 +20,26 @@ describe("OFF-10 + T-03-04-01 SW SKIP_WAITING handler — guards event.data.type
     };
 
     // Stub Serwist module so importing sw.ts doesn't run real serwist init.
-    vi.doMock("serwist", () => ({
-      Serwist: vi.fn().mockImplementation(() => ({
-        addEventListeners: vi.fn(),
-        registerCapture: vi.fn(),
-      })),
-      StaleWhileRevalidate: vi.fn(),
-      NetworkOnly: vi.fn(),
-    }));
+    // Use a real constructor function so `new Serwist(...)` works under Vitest.
+    vi.doMock("serwist", () => {
+      function FakeSerwist() {
+        return {
+          addEventListeners: vi.fn(),
+          registerCapture: vi.fn(),
+        };
+      }
+      function FakeNetworkOnly() {
+        return {};
+      }
+      function FakeStaleWhileRevalidate() {
+        return {};
+      }
+      return {
+        Serwist: FakeSerwist,
+        StaleWhileRevalidate: FakeStaleWhileRevalidate,
+        NetworkOnly: FakeNetworkOnly,
+      };
+    });
     vi.doMock("@serwist/next/worker", () => ({ defaultCache: [] }));
 
     vi.resetModules();

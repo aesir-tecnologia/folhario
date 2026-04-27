@@ -60,7 +60,7 @@ function extFromMime(mime: AllowedMime): "jpg" | "png" | "webp" {
       return "webp";
     default: {
       const _exhaustive: never = mime;
-      throw new Error(`extFromMime: unhandled MIME ${_exhaustive as string}`);
+      throw new Error(`extFromMime: unhandled MIME ${String(_exhaustive)}`);
     }
   }
 }

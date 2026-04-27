@@ -44,7 +44,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html
       lang={locale}
       {...(dataTheme ? { "data-theme": dataTheme } : {})}
-      className={`${sourceSerif.variable} ${plusJakarta.variable}`}
+      className={`
+        ${sourceSerif.variable}
+        ${plusJakarta.variable}
+      `}
     >
       <head>
         {/* PWA contract — D-18 dual <meta theme-color> superseding Phase 1's #FFFFFF placeholder. */}

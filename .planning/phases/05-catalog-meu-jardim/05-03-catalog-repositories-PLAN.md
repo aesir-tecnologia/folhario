@@ -24,27 +24,65 @@ requirements:
 decisions:
   repository_pattern: "Functional modules per Phase 2 D-16. Each function takes a Drizzle client (or transaction) as first argument. NO classes."
   cursor_consumption: "Repositories import SortKey + ExtendedCursor + decodeCursor from @shared/api/cursor (Plan 05-02). findByCursor accepts a parsed ExtendedCursor + SortKey + userId; route handler decodes the wire cursor before calling the repo."
+  http_boundary_note: |
+    Codex Decision 1/2 — repositories return camelCase TypeScript types (`PlantRow.coverPhotoUrl`, `PhotoEntryRow.photoUrl`, `PendingDeletionRow.dispatchedAt`, etc.). The HTTP boundary lives at the route handlers in Plans 05-08/09 — those convert camelCase repo rows to snake_case JSON responses (`cover_photo_url`, `photo_url`, etc.) and return the unified envelope `{ data, next_cursor }`. Never serialize a repo row directly to JSON; always pass it through the route handler's serializer.
   null_acquisition_date_handling: "ORDER BY uses CASE WHEN acquisition_date IS NULL THEN 1 ELSE 0 END, acquisition_date DESC, created_at DESC, id DESC for the 'acquired_desc' sort (NULLS LAST). For 'acquired_asc': CASE WHEN acquisition_date IS NULL THEN 1 ELSE 0 END, acquisition_date ASC, created_at DESC, id DESC."
+  cursor_tiebreak_per_sort_key: |
+    Codex review 05-03 — cursor pagination for nullable / acquired / name / location sorts is under-specified.
+    Each `sortKey` MUST have a deterministic tiebreaker chain. The universal final tiebreaker is `(created_at DESC, id DESC)` so the cursor's `id` is always sufficient to identify a unique row.
+
+    | sortKey          | Primary ORDER BY                                                       | Secondary tiebreak | Final tiebreak | sortValue type | NULLS placement |
+    |------------------|------------------------------------------------------------------------|--------------------|----------------|----------------|-----------------|
+    | acquired_desc    | CASE WHEN acquisition_date IS NULL THEN 1 ELSE 0 END, acquisition_date DESC | created_at DESC | id DESC | ISO-8601 date or null | NULLS LAST |
+    | acquired_asc     | CASE WHEN acquisition_date IS NULL THEN 1 ELSE 0 END, acquisition_date ASC  | created_at DESC | id DESC | ISO-8601 date or null | NULLS LAST |
+    | name_asc         | lower(name) ASC                                                        | created_at DESC | id DESC | lowercased name | (no NULL — name is NOT NULL) |
+    | name_desc        | lower(name) DESC                                                       | created_at DESC | id DESC | lowercased name | (no NULL — name is NOT NULL) |
+    | location_asc     | CASE WHEN location IS NULL THEN 1 ELSE 0 END, lower(location) ASC      | created_at DESC | id DESC | lowercased location or null | NULLS LAST |
+    | created_desc     | created_at DESC                                                        | id DESC          | (n/a)          | ISO-8601 timestamp | (no NULL) |
+
+    Cursor predicate WHERE clause for "give me rows AFTER this cursor row":
+    - For each sortKey, generate a strict-greater compound predicate matching the ORDER BY using `(col, created_at, id) > (sortValue, cursorCreatedAt, cursorId)` (Postgres row-value comparison) — handles ties cleanly. NULL sortValue is encoded as a sentinel placed last in the order direction; the predicate uses `(IS NULL, col, created_at, id)` row comparison.
+    - Example acquired_desc: `(acquisition_date IS NULL, acquisition_date, created_at, id) < (cursor.acquisitionDateIsNull, cursor.acquisitionDate, cursor.createdAt, cursor.id)` (strict-less because acquired_desc is descending).
+
+    Date serialization: dates round-trip via ISO-8601 `YYYY-MM-DD` (no time component) to match Phase 2 D-03 column type `date`. Timestamps use ISO-8601 UTC `Z`. The encoder/decoder in Plan 05-02 already enforces this; the repo never reformats sortValue.
   location_dedupe_strategy: "distinctByUser performs case-insensitive dedupe via SELECT DISTINCT ON (lower(location)) location FROM plants WHERE user_id = $1 AND location IS NOT NULL ORDER BY lower(location), created_at DESC. Returns user's display-case (latest version preserved per CONTEXT D-01)."
-  pending_deletions_repo_scope: "Three functions: insert(tx, job), findById(db, id), findOlderThan(db, thresholdSeconds, status?), markComplete(tx, id), markFailed(tx, id, errorMessage). The reconciler in Plan 05-06 calls findOlderThan; the cleanup function calls findById + markComplete; the delete-plant use case calls insert."
+  pending_deletions_repo_scope: |
+    Codex review 05-06 HIGH expansion: SIX functions, not four.
+    - insert(tx, job)
+    - findById(db, id)
+    - findOlderThan(db, thresholdSeconds, status?) — selects rows with `status='pending' AND (dispatched_at IS NULL OR dispatched_at < now() - thresholdSeconds * INTERVAL '1 second')` so recently-dispatched rows are skipped (Codex 05-06 fix).
+    - markDispatched(tx, id) — updates `status='dispatching'`, `dispatched_at=now()` and returns the updated row. Called by the reconciler in Plan 05-06 BEFORE sending the Inngest event.
+    - markComplete(tx, id) — updates `status='complete'`, `completed_at=now()`. Called by the cleanup-storage Inngest function on success.
+    - markFailed(tx, id, errorMessage) — updates `status='failed'`, `last_error=errorMessage`. Called by the cleanup-storage function on terminal failure.
+  photo_entries_repo_scope: |
+    Codex review 05-07 HIGH expansion — `setCoverPhoto` use case must NOT use raw SQL. To enforce that, this plan ships:
+    - `photoEntries.findById(db, args: { photoEntryId, plantId, userId })` — returns the PhotoEntry row scoped to the user's plant. Used by the 05-07 use case to verify ownership before plants.setCoverPhoto runs (replaces the previous "raw SELECT 1" inside the use case).
+    - `plants.setCoverPhoto(tx, args: { plantId, userId, coverPhotoUrl })` — single UPDATE that changes cover_photo_url on the user's plant row. Returns the updated PlantRow or null if not found.
+    These two repo functions together let the 05-07 use case stay free of raw SQL/Drizzle.
 must_haves:
   truths:
     - "Each catalog repository file exports the named functions specified in `decisions` and the per-file action blocks below"
     - "Every repo function takes a Drizzle client or transaction as the FIRST argument; no global db import inside the repo body"
-    - "plants.findByCursor accepts an ExtendedCursor + SortKey + userId and returns up to N rows ordered correctly per sortKey, including the NULLS-LAST behavior for acquisition_date"
+    - "plants.findByCursor accepts an ExtendedCursor + SortKey + userId and returns up to N rows ordered correctly per sortKey, including the NULLS-LAST behavior for acquisition_date and per-sortKey tiebreakers per `decisions.cursor_tiebreak_per_sort_key` (Codex review 05-03)"
+    - "plants.setCoverPhoto(tx, { plantId, userId, coverPhotoUrl }) is a SINGLE UPDATE repo function — Plan 05-07's use case calls this; no raw SQL in 05-07 use case (Codex review HIGH 05-07)"
+    - "photoEntries.findById(db, { photoEntryId, plantId, userId }) returns a PhotoEntryRow scoped to the user's plant — Plan 05-07's setCoverPhoto use case calls this for ownership verification (replaces previous raw `SELECT 1` inside the use case)"
     - "location-suggestions.distinctByUser returns at most one entry per case-insensitive location, preserving the user's display case from the most recent row"
-    - "pending-storage-deletions.findOlderThan returns rows where status='pending' AND created_at < now() - thresholdSeconds, ordered by created_at ASC"
+    - "pending-storage-deletions.findOlderThan returns rows where status='pending' AND (dispatched_at IS NULL OR dispatched_at < now() - thresholdSeconds * INTERVAL '1 second'), ordered by created_at ASC (Codex review HIGH 05-06 — recently-dispatched rows are skipped)"
+    - "pending-storage-deletions.markDispatched(tx, id) updates status='dispatching' AND dispatched_at=now() AND returns the updated row; called by the reconciler BEFORE sending the Inngest event (Codex review HIGH 05-06)"
+    - "PendingDeletionRow type includes `dispatchedAt: string | null` field (Codex review HIGH 05-06)"
+    - "Codex Decision 6 — every test fixture path string uses bucket-relative `{userId}/{plantId}/{file}` form; no bucket prefix (`plant-photos/...`) appears in any path value"
+    - "Repository return shapes are camelCase TypeScript objects (`{ rows, nextCursor }` for cursor reads; `PlantRow` / `PhotoEntryRow` / `PendingDeletionRow` for single-row reads). Route handlers in 05-08/09 convert to snake_case JSON envelopes (`{ data, next_cursor }`) — repos never serialize directly to wire format (Codex Decision 1/2)"
     - "All repos pass an integration test against the live DB using the transaction-rollback fixture"
   artifacts:
     - path: "src/contexts/catalog/infrastructure/db/plants.ts"
-      provides: "findByIdAndUser, findByCursor, create, updatePartial, deleteByIdAndUser, setCoverPhoto"
-      min_lines: 80
+      provides: "findByIdAndUser, findByCursor, create, updatePartial, deleteByIdAndUser, setCoverPhoto (single UPDATE — Codex 05-07 mitigation)"
+      min_lines: 90
     - path: "src/contexts/catalog/infrastructure/db/photo-entries.ts"
-      provides: "findByPlant (cursor), listStoragePathsForPlant, create, updateNote, deleteByIdAndPlant"
-      min_lines: 60
+      provides: "findById (Codex 05-07 mitigation), findByPlant (cursor), listStoragePathsForPlant, create, updateNote, deleteByIdAndPlant"
+      min_lines: 70
     - path: "src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts"
-      provides: "insert, findById, findOlderThan, markComplete, markFailed"
-      min_lines: 50
+      provides: "insert, findById, findOlderThan (skip recently-dispatched — Codex 05-06), markDispatched (Codex 05-06), markComplete, markFailed; PendingDeletionRow includes dispatchedAt"
+      min_lines: 70
     - path: "src/contexts/catalog/infrastructure/db/location-suggestions.ts"
       provides: "distinctByUser"
       min_lines: 20
@@ -407,11 +445,22 @@ export async function distinctByUser(db: Sql, userId: string): Promise<string[]>
 
 <success_criteria>
 - Four catalog repository files (plants, photo-entries, pending-storage-deletions, location-suggestions) shipped per the Phase 2 D-16 functional-module contract.
-- Cursor pagination orders rows correctly per all 6 SortKey values, with NULL acquisition_date treated as last in acquired_desc/asc.
+- Cursor pagination orders rows correctly per all 6 SortKey values per `decisions.cursor_tiebreak_per_sort_key` (Codex 05-03), with NULL acquisition_date treated as last in acquired_desc/asc and per-sortKey tiebreak chains documented.
 - Case-insensitive location dedupe with display-case preservation working.
-- pending-storage-deletions.findOlderThan respects the threshold + status filter.
-- All four repos covered by integration tests using the transaction-rollback fixture from Plan 05-01.
+- pending-storage-deletions.findOlderThan respects the threshold + skips recently-dispatched rows (Codex 05-06).
+- pending-storage-deletions.markDispatched + photoEntries.findById + plants.setCoverPhoto repo functions shipped (Codex 05-06 + 05-07 mitigations).
+- All four repos covered by integration tests using the transaction-rollback fixture from Plan 05-01; all path fixtures use canonical `{userId}/{plantId}/{file}` form (Codex Decision 6).
 </success_criteria>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-03 finding — Cursor pagination for nullable / acquired_date / name / location sorts is under-specified**: Resolved by `decisions.cursor_tiebreak_per_sort_key` — explicit ORDER BY + tiebreaker chain table for all 6 sortKey values, plus a row-value comparison predicate for the cursor "after" filter that handles NULLS deterministically.
+- **05-06 HIGH — reconciler references missing `dispatched_at`**: Resolved by adding `dispatchedAt: string | null` to `PendingDeletionRow` and shipping a new `markDispatched(tx, id)` repo function. `findOlderThan` is updated to skip rows where `dispatched_at` is recent. `pending_deletions_repo_scope` documents the six-function repo surface.
+- **05-07 HIGH — `setCoverPhoto` uses raw SQL in the use-case layer (violates Phase 2 D-17)**: Resolved by shipping `plants.setCoverPhoto(tx, args)` (single UPDATE) AND `photoEntries.findById(db, args)` (ownership verification). The 05-07 use case stitches these two repo calls together — no Drizzle/SQL in the application layer.
+- **Codex Decision 1/2 — HTTP envelope/field-naming**: `decisions.http_boundary_note` documents that repos return camelCase and route handlers (05-08/09) serialize to snake_case JSON `{ data, next_cursor }`. Repository signatures (`findByCursor` returns `{ rows, nextCursor }`) reflect this — the route handler is the only adapter.
+- **Codex Decision 6 — storage path canonical format `{user_id}/{aggregate_id}/{file_id}.{ext}`**: All test fixture paths in `tests/integration/catalog/*-repo.integration.test.ts` use the bucket-relative form. Documented in must_haves truths.
+</reviews_addressed>
 
 <output>
 After completion, create `.planning/phases/05-catalog-meu-jardim/05-03-SUMMARY.md` capturing:

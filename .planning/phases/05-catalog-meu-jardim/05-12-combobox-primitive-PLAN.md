@@ -24,6 +24,29 @@ decisions:
     UI-SPEC § "Location picker combobox" + RESEARCH Pitfall 10. Documenting
     the choice here so consumers (Plan 05-16 Plant Profile + Plan 05-17
     Manual Add) know NOT to special-case "Outro".
+  commit_api_two_callbacks: |
+    RESOLVED via Codex review HIGH 05-12 — the Combobox separates TYPING
+    state from COMMIT state. Two independent callbacks:
+
+    - `onInputValueChange(v)` fires on every keystroke. Consumers use this
+      to update their local input/draft state. NEVER wire this to a
+      mutation/PATCH — typing-frequency callback.
+    - `onCommit(v)` fires only on (a) clicking/selecting an option, (b)
+      pressing Enter with non-empty input, or (c) blurring with non-empty
+      input that is not already in the suggestion list. Consumers wire
+      this to their save/PATCH mutation.
+
+    There is NO `onChange` prop. The previous design (single onChange
+    firing on both keystroke and commit) caused Plant Profile to PATCH
+    location while typing — Codex review HIGH 05-12.
+
+    Consumer ergonomics:
+    - InlineEditField (Plan 05-16 location): `onInputValueChange` updates
+      the field's draft state; `onCommit` is the InlineEditField's onSave
+      trigger (so the field exits edit mode + invokes useUpdatePlant).
+    - Manual Add (Plan 05-17 location): `onInputValueChange` updates the
+      form state; `onCommit` validates + locks the value (no network call
+      until Salvar is pressed).
   apg_pattern: |
     WAI-ARIA APG 1.2 "Editable Combobox with List Autocomplete" pattern.
     DOM focus stays on the input; visual focus moves through
@@ -47,18 +70,22 @@ decisions:
 must_haves:
   truths:
     - "filter(query, { priorItems, defaultItems }) is a pure function exported from combobox module; case-insensitive includes match; dedupes prior over default for same case-insensitive key (D-01 mitigation)"
+    - "Combobox component props use the TWO-CALLBACK API (Codex review HIGH 05-12): `inputValue: string`, `onInputValueChange: (v: string) => void`, `value: string | null`, `onCommit: (v: string) => void`. There is NO `onChange` prop."
+    - "`onInputValueChange` fires on every keystroke (typing in the input updates the consumer's draft state). NEVER wired to PATCH mutations."
+    - "`onCommit` fires ONLY on: (a) click / mouseDown on a `<li role='option'>`, (b) Enter key with a focused option, (c) Enter key with non-empty inputValue that is not in the suggestion list, (d) blur with non-empty inputValue that is not in the suggestion list. Wired by consumers to their save/PATCH mutation."
     - "Combobox component renders <input role='combobox' aria-autocomplete='list' aria-controls={listboxId} aria-expanded={open}> + <ul role='listbox' aria-label={ariaLabel}> + <li role='option' id={optionId}> per APG 1.2"
     - "ArrowDown opens dropdown + focuses first option (visual via aria-activedescendant; DOM focus stays on input)"
     - "ArrowUp opens dropdown + focuses last option"
-    - "Enter on a focused option commits that option, closes listbox, returns DOM focus position to input cursor at end"
-    - "Enter with non-empty input text not in suggestions commits typed value (free-text path); preserves display case as typed"
-    - "Escape closes listbox without committing (returns DOM focus to input — already there)"
-    - "Selecting literal 'Outro' suggestion commits string 'Outro' (Q4 resolution; NOT a free-text trigger)"
+    - "Enter on a focused option commits that option (calls onCommit), closes listbox, returns DOM focus position to input cursor at end"
+    - "Enter with non-empty input text not in suggestions commits typed value via onCommit (free-text path); preserves display case as typed"
+    - "Escape closes listbox WITHOUT calling onCommit (returns DOM focus to input — already there)"
+    - "ArrowDown/ArrowUp navigation does NOT call onCommit (only updates aria-activedescendant)"
+    - "Selecting literal 'Outro' suggestion commits string 'Outro' via onCommit (Q4 resolution; NOT a free-text trigger)"
     - "Combobox passes axe-core scan in both open and closed states (verified by tests/e2e/catalog/location-picker-a11y.spec.ts deferred to consumer plans 05-16/05-17)"
     - "Default placeholder + section labels + 8 default options come from i18n catalog.locationPicker.* keys landed in Plan 05-10's pt-BR.json"
   artifacts:
     - path: "src/shared/ui/combobox.tsx"
-      provides: "Combobox<T> primitive component (props: value, onChange, priorItems, defaultItems, placeholder, ariaLabel, sectionLabels) + filter() pure helper export for testing"
+      provides: "Combobox<T> primitive component (props: inputValue, onInputValueChange, value, onCommit, priorItems, defaultItems, placeholder, ariaLabel, sectionLabels — Codex 05-12 two-callback API) + filter() pure helper export for testing"
       min_lines: 150
       contains: "Combobox"
     - path: "tests/unit/shared/ui/combobox-filter.test.ts"
@@ -136,16 +163,21 @@ Output: 1 component (~150 lines) + 2 unit test files (~150 lines combined). NO T
 // src/shared/ui/combobox.tsx (THIS PLAN)
 "use client";
 
+// Codex review HIGH 05-12 — two-callback API: separate typing from commit.
+// There is NO `onChange` prop.
 export type ComboboxProps = {
-  value: string;                        // controlled value
-  onChange: (next: string) => void;     // commit (selection or free-text)
-  priorItems: string[];                 // user's prior locations (from CAT-05 endpoint)
-  defaultItems: string[];               // 8 defaults (from i18n catalog.locationPicker.defaults)
-  placeholder: string;                  // i18n catalog.locationPicker.placeholder
-  ariaLabel: string;                    // i18n catalog.locationPicker.ariaListboxLabel
+  inputValue: string;                                  // controlled input string (typing state)
+  onInputValueChange: (next: string) => void;          // fires on every keystroke; consumers update local draft state
+  value: string | null;                                // last committed value (or null if not yet committed)
+  onCommit: (next: string) => void;                    // fires on option click / Enter / blur with new free-text — wire to save mutation
+  priorItems: string[];                                // user's prior locations (from CAT-05 endpoint)
+  defaultItems: string[];                              // 8 defaults (from i18n catalog.locationPicker.defaults)
+  placeholder: string;                                 // i18n catalog.locationPicker.placeholder
+  ariaLabel: string;                                   // i18n catalog.locationPicker.ariaListboxLabel
   sectionLabels: { prior: string; defaults: string };  // i18n catalog.locationPicker.sections
-  inputId?: string;                     // optional id for label-for association
+  inputId?: string;                                    // optional id for label-for association
   // Note: NO `onOutroSelected` — Q4 resolution forbids special-casing
+  // Note: NO `onChange` — Codex review HIGH 05-12 forbids combined typing-and-commit callback
 };
 
 export function Combobox(props: ComboboxProps): JSX.Element;
@@ -283,17 +315,19 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
   </read_first>
   <behavior>
     - filter() pure helper makes 7 RED tests green
-    - Component RED → GREEN tests:
+    - Component RED → GREEN tests (Codex 05-12 two-callback API: onInputValueChange vs onCommit):
+      - Test C0 (LOAD-BEARING — Codex 05-12): typing into the input fires `onInputValueChange` on every keystroke and DOES NOT fire `onCommit`. After typing "Sa", `onInputValueChange` is called twice (once per character), `onCommit` is called zero times.
       - Test C1: renders input with role="combobox" + aria-autocomplete="list"
-      - Test C2: ArrowDown when closed → opens listbox + focuses first option (verified via aria-activedescendant attribute on input)
-      - Test C3: ArrowUp when closed → opens listbox + focuses last option
-      - Test C4: ArrowDown when open at last option → wraps to first
-      - Test C5: ArrowUp when open at first option → wraps to last
-      - Test C6: Enter on focused option → calls onChange with that option's value, listbox closes
-      - Test C7: Enter with typed text NOT in suggestions → calls onChange with typed value (free-text path)
-      - Test C8: Escape when open → listbox closes, no onChange call
-      - Test C9: Selecting literal "Outro" suggestion → calls onChange("Outro") (Q4 resolution; no special handling)
+      - Test C2: ArrowDown when closed → opens listbox + focuses first option (verified via aria-activedescendant attribute on input). DOES NOT fire onCommit.
+      - Test C3: ArrowUp when closed → opens listbox + focuses last option. DOES NOT fire onCommit.
+      - Test C4: ArrowDown when open at last option → wraps to first. DOES NOT fire onCommit.
+      - Test C5: ArrowUp when open at first option → wraps to last. DOES NOT fire onCommit.
+      - Test C6: Enter on focused option → calls `onCommit` with that option's value, listbox closes
+      - Test C7: Enter with typed text NOT in suggestions → calls `onCommit` with typed value (free-text path)
+      - Test C8: Escape when open → listbox closes, NO onCommit call
+      - Test C9: Selecting literal "Outro" suggestion → calls `onCommit("Outro")` (Q4 resolution; no special handling)
       - Test C10: priorItems + defaultItems both render under their section labels with proper a11y associations
+      - Test C13 (LOAD-BEARING — Codex 05-12 follow-up): blur with inputValue equal to a suggestion (case-insensitive) does NOT fire onCommit. Blur with inputValue equal to current `value` prop does NOT fire onCommit. Blur with NEW free-text DOES fire onCommit exactly once.
   </behavior>
   <action>
     **GREEN step — Part A: implement filter()**
@@ -331,9 +365,13 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
 
     Add to same file:
     ```tsx
+    // Codex review HIGH 05-12: two-callback API — `onInputValueChange` (typing)
+    // is independent from `onCommit` (selection / Enter / blur-with-new-free-text).
     export type ComboboxProps = {
-      value: string;
-      onChange: (next: string) => void;
+      inputValue: string;
+      onInputValueChange: (next: string) => void;
+      value: string | null;
+      onCommit: (next: string) => void;
       priorItems: string[];
       defaultItems: string[];
       placeholder: string;
@@ -343,8 +381,10 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
     };
 
     export function Combobox({
+      inputValue,
+      onInputValueChange,
       value,
-      onChange,
+      onCommit,
       priorItems,
       defaultItems,
       placeholder,
@@ -359,14 +399,16 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
       const listboxId = `combobox-listbox-${generatedListboxId}`;
       const optionId = (i: number) => `combobox-option-${generatedListboxId}-${i}`;
 
-      const buckets = filter(value, { priorItems, defaultItems });
+      const buckets = filter(inputValue, { priorItems, defaultItems });
       const flat: { item: string; section: "prior" | "defaults" }[] = [
         ...buckets.prior.map((item) => ({ item, section: "prior" as const })),
         ...buckets.defaults.map((item) => ({ item, section: "defaults" as const })),
       ];
 
       function commit(next: string) {
-        onChange(next);
+        onCommit(next);
+        // Sync the input string to the committed value (so the field shows the committed text)
+        onInputValueChange(next);
         setOpen(false);
         setFocusedIdx(-1);
       }
@@ -394,8 +436,8 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
           e.preventDefault();
           if (open && focusedIdx >= 0 && flat[focusedIdx]) {
             commit(flat[focusedIdx].item);
-          } else if (value.trim().length > 0) {
-            commit(value);
+          } else if (inputValue.trim().length > 0) {
+            commit(inputValue);
           }
         } else if (e.key === "Escape") {
           if (open) {
@@ -412,15 +454,17 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
       }
 
       function onBlur() {
-        // Free-text commit on blur if text not empty AND not exact match (case-insensitive).
+        // Free-text commit on blur if text not empty AND not exact match (case-insensitive)
+        // AND differs from the last committed value (avoid duplicate commits).
+        const trimmed = inputValue.trim();
         const exists = [...priorItems, ...defaultItems].some(
-          (it) => it.toLowerCase().trim() === value.toLowerCase().trim(),
+          (it) => it.toLowerCase().trim() === trimmed.toLowerCase(),
         );
-        if (value.trim().length > 0 && !exists) {
-          // Commit as-typed; preserves user display case
-          onChange(value);
+        const alreadyCommitted = value !== null && value.toLowerCase().trim() === trimmed.toLowerCase();
+        if (trimmed.length > 0 && !exists && !alreadyCommitted) {
+          onCommit(inputValue);
         }
-        // Always close on blur
+        // Always close on blur (do NOT call onInputValueChange — keep typed text visible)
         setOpen(false);
         setFocusedIdx(-1);
       }
@@ -439,10 +483,13 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
             aria-controls={listboxId}
             aria-expanded={open}
             aria-activedescendant={activeDescendant}
-            value={value}
+            value={inputValue}
             placeholder={placeholder}
             onChange={(e) => {
-              onChange(e.target.value);
+              // Native input onChange — typing path. Codex 05-12: this calls
+              // onInputValueChange ONLY (NOT onCommit). Consumers wire onCommit
+              // to PATCH mutations; this never triggers them.
+              onInputValueChange(e.target.value);
               if (!open) setOpen(true);
               setFocusedIdx(-1);
             }}
@@ -529,24 +576,43 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
       defaultItems: ["Sala", "Varanda", "Quarto", "Banheiro", "Cozinha", "Escritório", "Jardim", "Outro"],
     };
 
+    // Codex 05-12 two-callback API: separate onInputValueChange (typing) from onCommit (commit).
     function setup(overrides: Partial<React.ComponentProps<typeof Combobox>> = {}) {
-      const onChange = vi.fn();
+      const onInputValueChange = vi.fn();
+      const onCommit = vi.fn();
       const utils = render(
-        <Combobox value="" onChange={onChange} {...baseProps} {...overrides} />,
+        <Combobox
+          inputValue=""
+          onInputValueChange={onInputValueChange}
+          value={null}
+          onCommit={onCommit}
+          {...baseProps}
+          {...overrides}
+        />,
       );
       const input = utils.getByRole("combobox");
-      return { ...utils, input, onChange };
+      return { ...utils, input, onInputValueChange, onCommit };
     }
 
-    describe("Combobox component (APG 1.2)", () => {
+    describe("Combobox component (APG 1.2 + Codex 05-12 two-callback API)", () => {
+      it("C0 (LOAD-BEARING — Codex 05-12): typing fires onInputValueChange on every keystroke; NEVER fires onCommit", () => {
+        const { input, onInputValueChange, onCommit } = setup();
+        fireEvent.change(input, { target: { value: "S" } });
+        fireEvent.change(input, { target: { value: "Sa" } });
+        expect(onInputValueChange).toHaveBeenCalledTimes(2);
+        expect(onInputValueChange).toHaveBeenNthCalledWith(1, "S");
+        expect(onInputValueChange).toHaveBeenNthCalledWith(2, "Sa");
+        expect(onCommit).not.toHaveBeenCalled();
+      });
+
       it("C1: renders input with role=combobox + aria-autocomplete=list", () => {
         const { input } = setup();
         expect(input).toHaveAttribute("aria-autocomplete", "list");
         expect(input).toHaveAttribute("aria-expanded", "false");
       });
 
-      it("C2: ArrowDown when closed opens listbox + focuses first option", () => {
-        const { input } = setup();
+      it("C2: ArrowDown when closed opens listbox + focuses first option (no onCommit)", () => {
+        const { input, onCommit } = setup();
         fireEvent.focus(input);
         fireEvent.keyDown(input, { key: "ArrowDown" });
         const listbox = screen.getByRole("listbox");
@@ -554,59 +620,60 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
         expect(input).toHaveAttribute("aria-expanded", "true");
         const activeDesc = input.getAttribute("aria-activedescendant");
         expect(activeDesc).toBeTruthy();
+        expect(onCommit).not.toHaveBeenCalled();
       });
 
-      it("C3: ArrowUp when closed opens listbox + focuses last option", () => {
-        const { input } = setup({ value: "" });
+      it("C3: ArrowUp when closed opens listbox + focuses last option (no onCommit)", () => {
+        const { input, onCommit } = setup({ inputValue: "" });
         fireEvent.focus(input);
-        // Note: focus already opens via onFocus — call once explicitly
         fireEvent.keyDown(input, { key: "ArrowUp" });
         const options = screen.getAllByRole("option");
         const lastOption = options[options.length - 1];
         expect(lastOption).toHaveAttribute("aria-selected", "true");
+        expect(onCommit).not.toHaveBeenCalled();
       });
 
-      it("C6: Enter on focused option commits", () => {
-        const { input, onChange } = setup();
+      it("C6: Enter on focused option fires onCommit with that option's value", () => {
+        const { input, onCommit } = setup();
         fireEvent.focus(input);
         fireEvent.keyDown(input, { key: "ArrowDown" });
         fireEvent.keyDown(input, { key: "Enter" });
-        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onCommit).toHaveBeenCalledTimes(1);
       });
 
-      it("C7: Enter with typed text not in suggestions commits free-text", () => {
-        const { input, onChange } = setup({ value: "Garagem" });
+      it("C7: Enter with typed text not in suggestions fires onCommit with typed value", () => {
+        const { input, onCommit } = setup({ inputValue: "Garagem" });
         fireEvent.focus(input);
         fireEvent.keyDown(input, { key: "Enter" });
-        expect(onChange).toHaveBeenCalledWith("Garagem");
+        expect(onCommit).toHaveBeenCalledWith("Garagem");
       });
 
-      it("C8: Escape when open closes listbox without onChange", () => {
-        const { input, onChange } = setup();
+      it("C8: Escape when open closes listbox without firing onCommit", () => {
+        const { input, onCommit } = setup();
         fireEvent.focus(input);
         fireEvent.keyDown(input, { key: "Escape" });
         expect(input).toHaveAttribute("aria-expanded", "false");
-        expect(onChange).not.toHaveBeenCalled();
+        expect(onCommit).not.toHaveBeenCalled();
       });
 
-      it("C9 (Q4): selecting literal 'Outro' suggestion commits string 'Outro' — no special handling", () => {
-        const { input, onChange } = setup();
+      it("C9 (Q4): selecting literal 'Outro' suggestion fires onCommit('Outro') — no special handling", () => {
+        const { input, onCommit } = setup();
         fireEvent.focus(input);
         const outroOption = screen.getByRole("option", { name: "Outro" });
         fireEvent.mouseDown(outroOption);
-        expect(onChange).toHaveBeenCalledWith("Outro");
-        expect(onChange).toHaveBeenCalledTimes(1);
+        expect(onCommit).toHaveBeenCalledWith("Outro");
+        expect(onCommit).toHaveBeenCalledTimes(1);
       });
 
       it("C10: priorItems render under prior section, defaults under defaults section", () => {
-        const { input } = setup({ priorItems: ["Garagem"], value: "" });
+        const { input } = setup({ priorItems: ["Garagem"], inputValue: "" });
         fireEvent.focus(input);
         expect(screen.getByText("Usados antes")).toBeInTheDocument();
         expect(screen.getByText("Sugestões")).toBeInTheDocument();
       });
 
       it("C11 (D-01 dedupe via filter): when priorItems = [Cozinha] and defaults includes Cozinha, only one rendered (prior preserved)", () => {
-        const { input } = setup({ value: "" });
+        const { input } = setup({ inputValue: "" });
         fireEvent.focus(input);
         const cozinhaOptions = screen.getAllByRole("option").filter(
           (o) => o.textContent === "Cozinha",
@@ -615,34 +682,56 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
       });
 
       it("C12: ArrowDown wraps from last option to first", () => {
-        const { input } = setup({ value: "" });
+        const { input } = setup({ inputValue: "" });
         fireEvent.focus(input);
-        // Open + focus last
         fireEvent.keyDown(input, { key: "ArrowUp" });
         const initialActive = input.getAttribute("aria-activedescendant");
-        // Press ArrowDown to wrap to first
         fireEvent.keyDown(input, { key: "ArrowDown" });
         const wrappedActive = input.getAttribute("aria-activedescendant");
         expect(wrappedActive).not.toBe(initialActive);
       });
+
+      it("C13a (LOAD-BEARING — Codex 05-12): blur with inputValue equal to existing suggestion does NOT fire onCommit", () => {
+        const { input, onCommit } = setup({ inputValue: "Sala" });
+        fireEvent.focus(input);
+        fireEvent.blur(input);
+        expect(onCommit).not.toHaveBeenCalled();
+      });
+
+      it("C13b (LOAD-BEARING — Codex 05-12): blur with inputValue equal to current `value` does NOT fire onCommit", () => {
+        const { input, onCommit } = setup({ inputValue: "Garagem", value: "Garagem" });
+        fireEvent.focus(input);
+        fireEvent.blur(input);
+        expect(onCommit).not.toHaveBeenCalled();
+      });
+
+      it("C13c (LOAD-BEARING — Codex 05-12): blur with NEW free-text fires onCommit exactly once", () => {
+        const { input, onCommit } = setup({ inputValue: "Garagem", value: null });
+        fireEvent.focus(input);
+        fireEvent.blur(input);
+        expect(onCommit).toHaveBeenCalledTimes(1);
+        expect(onCommit).toHaveBeenCalledWith("Garagem");
+      });
     });
     ```
 
-    Run all combobox tests: `pnpm exec vitest --run --project=unit tests/unit/shared/ui/`. MUST PASS (7 filter + 9 component = 16+ green; some it.each may expand the count).
+    Run all combobox tests: `pnpm exec vitest --run --project=unit tests/unit/shared/ui/`. MUST PASS (7 filter + 14 component = 21+ green).
     Run typecheck: `pnpm exec tsc --noEmit` exits 0.
 
     Commit GREEN:
     `git add src/shared/ui/combobox.tsx tests/unit/shared/ui/combobox.test.ts`
-    `git commit -m "feat(05-12): hand-roll APG 1.2 combobox primitive (Q4 resolution: 'Outro' literal commit)"`
+    `git commit -m "feat(05-12): hand-roll APG 1.2 combobox - two-callback API (Codex)"`
   </action>
   <verify>
-    <automated>pnpm exec vitest --run --project=unit tests/unit/shared/ui/ &amp;&amp; pnpm exec tsc --noEmit &amp;&amp; grep -c 'role="combobox"' src/shared/ui/combobox.tsx | grep -qE "^[1-9]" &amp;&amp; grep -c 'aria-activedescendant' src/shared/ui/combobox.tsx | grep -qE "^[1-9]"</automated>
+    <automated>pnpm exec vitest --run --project=unit tests/unit/shared/ui/ &amp;&amp; pnpm exec tsc --noEmit &amp;&amp; grep -c 'role="combobox"' src/shared/ui/combobox.tsx | grep -qE "^[1-9]" &amp;&amp; grep -c 'aria-activedescendant' src/shared/ui/combobox.tsx | grep -qE "^[1-9]" &amp;&amp; grep -c "onInputValueChange" src/shared/ui/combobox.tsx | grep -qE "^[2-9]" &amp;&amp; grep -c "onCommit" src/shared/ui/combobox.tsx | grep -qE "^[2-9]" &amp;&amp; ! grep -E "^\s*onChange:" src/shared/ui/combobox.tsx</automated>
   </verify>
   <done>
     - `src/shared/ui/combobox.tsx` exists, ~150+ lines
     - Exports both `Combobox` and `filter`
+    - Component props use the TWO-CALLBACK API (Codex 05-12): `inputValue` + `onInputValueChange` + `value` + `onCommit`. NO `onChange` prop anywhere in the component file.
+    - Native input `onChange` handler calls ONLY `onInputValueChange` (NEVER `onCommit`).
     - Component renders APG 1.2 ARIA contract: role="combobox" + aria-autocomplete + aria-controls + aria-expanded + aria-activedescendant + role="listbox" + role="option" + aria-selected
-    - All 7 filter tests + ≥9 component tests pass
+    - All 7 filter tests + 14 component tests pass (including C0 + C13a/b/c load-bearing Codex guards)
     - tsc --noEmit exits 0
     - Q4 documented in plan frontmatter `decisions.outro_semantics`
     - Commit message starts with `feat(05-12):`
@@ -650,6 +739,12 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
 </task>
 
 </tasks>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-12 HIGH — Combobox `onChange` fires on every keystroke + Plant Profile treats it as commit (causes PATCH while typing)**: Resolved by replacing the single `onChange` prop with a two-callback API: `inputValue` + `onInputValueChange` (typing-frequency, never wired to mutations) and `value` + `onCommit` (commit-frequency, wired to PATCH/save). The component implementation calls `onInputValueChange` on every native input change and calls `onCommit` ONLY on (a) option click, (b) Enter on focused option, (c) Enter with non-empty free-text, (d) blur with new free-text not in suggestions and not equal to current `value`. `decisions.commit_api_two_callbacks` documents the rationale and consumer contract for Plans 05-16 and 05-17. Tests C0 and C13a/b/c are load-bearing regression guards. The `<verify>` block grep-asserts the component file contains zero `onChange:` lines.
+</reviews_addressed>
 
 <threat_model>none — pure interaction primitive with no user-data flow. Plant location strings (untrusted input) flow through React JSX text nodes (auto-escaped) and are never evaluated as HTML. Combobox does not call any server endpoint; it surfaces values its consumers (Plans 05-16, 05-17) commit via separate hooks (useUpdatePlant, useCreatePlant) which carry their own threat models.
 
@@ -669,11 +764,13 @@ Keyboard contract (RESEARCH Pattern 6 line 771-781):
 
 <success_criteria>
 - Combobox primitive implements WAI-ARIA APG 1.2 list-autocomplete contract (input role + listbox + options + aria-activedescendant focus model)
+- Component props use the TWO-CALLBACK API (Codex 05-12): `inputValue` / `onInputValueChange` (typing) + `value` / `onCommit` (commit). NO `onChange` prop.
+- Typing fires `onInputValueChange` only — NEVER fires `onCommit` (load-bearing guard against PATCH-while-typing regression)
 - `filter()` pure helper case-insensitively dedupes prior over default per D-01
-- Q4 resolved: literal "Outro" commits as string, no special handling
-- 16+ unit tests green (7 filter + 9 component)
+- Q4 resolved: literal "Outro" commits via `onCommit("Outro")`, no special handling
+- 21 unit tests green (7 filter + 14 component, including C0 + C13a/b/c Codex guards)
 - Component uses `var(--canopy, fallback)` etc. so Phase 3 design tokens drop in cleanly
-- Component is consumed by Plans 05-16 (Plant Profile inline-edit location) and 05-17 (Manual Add location field)
+- Component is consumed by Plans 05-16 (Plant Profile inline-edit location) and 05-17 (Manual Add location field) using `onCommit` (NOT `onInputValueChange`) for save-mutation triggers
 - Commits prefixed `test(05-12):` (RED), `feat(05-12):` (GREEN)
 </success_criteria>
 

@@ -121,6 +121,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 1. **Bump GitHub Actions to v5/v7 to escape Node 20 deprecation** (tooling) — `.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`
+2. **Replace vite-tsconfig-paths plugin with native Vite resolve.tsconfigPaths** (tooling) — `.planning/todos/pending/2026-04-27-replace-vite-tsconfig-paths-plugin-with-native-vite-resolve-tsconfigpaths.md`
 
 ### Blockers/Concerns
 

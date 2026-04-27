@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, act } from "@testing-library/react";
 
 // Mock the motion hook for deterministic reduced-motion test.
 vi.mock("motion/react", () => ({
@@ -27,10 +27,10 @@ describe("UI-17 SkeletonGroup — 300ms client gate + reduced-motion fallback", 
     );
     expect(container.querySelector('[data-testid="sk"]')).toBeNull();
 
-    vi.advanceTimersByTime(299);
+    act(() => { vi.advanceTimersByTime(299); });
     expect(container.querySelector('[data-testid="sk"]')).toBeNull();
 
-    vi.advanceTimersByTime(2);
+    act(() => { vi.advanceTimersByTime(2); });
     expect(container.querySelector('[data-testid="sk"]')).not.toBeNull();
   });
 

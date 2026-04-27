@@ -1,7 +1,6 @@
 import { createSelectSchema, createInsertSchema } from "drizzle-zod";
 
 import {
-  consentLogs,
   dataDeletionRequests,
   dataExportRequests,
   idempotencyKeys,
@@ -29,11 +28,11 @@ export const policyVersionInsertSchema = createInsertSchema(policyVersions);
 export type PolicyVersion = ReturnType<typeof policyVersionSelectSchema.parse>;
 export type PolicyVersionInsert = ReturnType<typeof policyVersionInsertSchema.parse>;
 
-export const consentLogSelectSchema = createSelectSchema(consentLogs);
-export const consentLogInsertSchema = createInsertSchema(consentLogs);
-export type ConsentLog = ReturnType<typeof consentLogSelectSchema.parse>;
-export type ConsentLogInsert = ReturnType<typeof consentLogInsertSchema.parse>;
-
+// Note: consentLog{Insert,Select}Schema live in `consent-schemas.ts` — that
+// is the canonical, route-consumed module (D-19, WR-01). Do NOT re-derive
+// `createInsertSchema(consentLogs)` here; a duplicate root re-creates the
+// drift hazard where a refinement added in one module silently fails to
+// propagate to the route.
 export const partnerStoreSelectSchema = createSelectSchema(partnerStores);
 export const partnerStoreInsertSchema = createInsertSchema(partnerStores);
 export type PartnerStore = ReturnType<typeof partnerStoreSelectSchema.parse>;

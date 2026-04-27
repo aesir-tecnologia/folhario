@@ -53,31 +53,74 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   // Scroll restoration on tab change (D-23 — useLayoutEffect to avoid jump).
+  // The capture-phase listener consumes the synthetic scroll event triggered
+  // by the upcoming scrollTo (calls stopImmediatePropagation so the bubble-phase
+  // onScroll handler in the save effect never sees it). This avoids the
+  // "synthetic scroll fires save → overwrites saved Y with the clipped value"
+  // race when returning to a route whose document is shorter than the saved
+  // scroll. We only install the listener when the scrollTo is actually going
+  // to move the page (computed against the current scrollHeight − innerHeight
+  // ceiling). When the target equals the current Y after clamping, no scroll
+  // event will fire, and an installed listener would erroneously consume the
+  // user's NEXT real scroll instead.
   useLayoutEffect(() => {
-    const y = restoreScroll(pathname);
-    window.scrollTo(0, y);
+    const targetY = restoreScroll(pathname);
+    const currentY = window.scrollY;
+    const maxY = Math.max(
+      0,
+      document.documentElement.scrollHeight - window.innerHeight,
+    );
+    const clampedTarget = Math.min(targetY, maxY);
+
+    if (currentY === clampedTarget) {
+      // No scroll movement — no event will fire, so do not install a listener.
+      return;
+    }
+
+    let removed = false;
+    const consumeOnce = (event: Event) => {
+      event.stopImmediatePropagation();
+      if (!removed) {
+        window.removeEventListener("scroll", consumeOnce, true);
+        removed = true;
+      }
+    };
+    window.addEventListener("scroll", consumeOnce, true);
+    window.scrollTo(0, targetY);
+    return () => {
+      if (!removed) {
+        window.removeEventListener("scroll", consumeOnce, true);
+      }
+    };
   }, [pathname]);
 
   // Debounced scroll save (~150ms per UI-14 pitfall).
-  // MEDIUM 5 (codex review) — debounced listener tracks ongoing scroll, but if
-  // the user navigates mid-debounce the cleanup used to clearTimeout the pending
-  // save, dropping the last scrollY. Fix: flush pending save in cleanup AND
-  // additionally wire pagehide + visibilitychange listeners (below) which save
-  // immediately for tab-hide / hard-nav / bfcache cases.
+  // MEDIUM 5 (codex review) — debounced listener tracks ongoing scroll. If the
+  // user navigates mid-debounce we MUST flush the pending save under the OLD
+  // pathname before the cleanup clears the timer; otherwise the last scrollY is
+  // dropped. But we must ALSO avoid overwriting an already-flushed save with a
+  // stale value: by the time React runs effect cleanups, the useLayoutEffect
+  // restore for the new pathname has already called window.scrollTo(0, ...),
+  // so reading window.scrollY here returns the NEW route's restored position
+  // (typically 0) — that would clobber the OLD pathname's correctly saved Y.
+  // The `pending` flag tracks whether a debounce timer is still queued so the
+  // cleanup only flushes when there is genuinely unsaved work.
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let pending = false;
     function onScroll() {
       if (timer) clearTimeout(timer);
+      pending = true;
       timer = setTimeout(() => {
         saveScroll(pathname, window.scrollY);
+        pending = false;
+        timer = null;
       }, 150);
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      if (timer) {
-        clearTimeout(timer);
-        saveScroll(pathname, window.scrollY);
-      }
+      if (timer) clearTimeout(timer);
+      if (pending) saveScroll(pathname, window.scrollY);
       window.removeEventListener("scroll", onScroll);
     };
   }, [pathname]);

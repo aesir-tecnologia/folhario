@@ -2,17 +2,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, cleanup } from "@testing-library/react";
 
 const fetchMock = vi.fn();
-const setTimeoutSpy = vi.spyOn(global, "setTimeout");
+let setTimeoutSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   vi.useFakeTimers();
+  // Spy must be installed AFTER fake timers replace globalThis.setTimeout, so
+  // calls made through the fake-timer setTimeout are observable.
+  setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
   fetchMock.mockReset();
-  setTimeoutSpy.mockClear();
   global.fetch = fetchMock as never;
   Object.defineProperty(navigator, "onLine", { writable: true, value: true });
 });
 
 afterEach(() => {
+  setTimeoutSpy.mockRestore();
   vi.useRealTimers();
   cleanup();
 });

@@ -12,8 +12,8 @@ describe("UI-23 formatCurrencyBRL", () => {
     [100000, "R$ 1.000,00"],
     [0, "R$ 0,00"],
   ])("formatCurrencyBRL(%i) returns %s", (cents, expected) => {
-    // Note: Intl may use NBSP (U+00A0) between R$ and digits; normalize.
-    expect(formatCurrencyBRL(cents).replace(/ /g, " ")).toBe(expected);
+    // Intl uses NBSP (U+00A0) between R$ and digits on this ICU version; normalize all whitespace.
+    expect(formatCurrencyBRL(cents).replace(/ /g, " ")).toBe(expected);
   });
 });
 

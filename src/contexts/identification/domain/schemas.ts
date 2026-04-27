@@ -8,11 +8,13 @@ import {
 } from "@contexts/identification/infrastructure/db/schema";
 
 /**
- * Identification domain Zod schemas (D-19, D-40).
+ * Phase 2 scope: scaffolding only — no consumers in Phase 02 (IN-03).
  *
- * Routes/use-cases import from here, not from the table modules. Refinements
+ * Identification domain Zod schemas (D-19, D-40). Routes/use-cases in later
+ * phases import from here, not from the table modules. Refinements
  * (e.g. result-array shape, min_confidence range, failure_reason coupling
- * with status) belong here, one layer above the column-faithful generated shape.
+ * with status) belong here once a consumer lands; until then, refinements
+ * added here have no effect because nothing imports them.
  */
 
 export const identificationSelectSchema = createSelectSchema(identifications);

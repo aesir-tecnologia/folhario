@@ -3,9 +3,11 @@ import { createSelectSchema, createInsertSchema } from "drizzle-zod";
 import { photoEntries, plants } from "@contexts/catalog/infrastructure/db/schema";
 
 /**
- * Catalog domain Zod schemas (D-19, D-40).
+ * Phase 2 scope: scaffolding only — no consumers in Phase 02 (IN-03).
  *
- * Routes/use-cases import from here, not from the table modules.
+ * Catalog domain Zod schemas (D-19, D-40). Routes/use-cases in later phases
+ * import from here, not from the table modules. Until a consumer lands,
+ * adding refinements here has no effect because nothing imports them.
  */
 
 export const plantSelectSchema = createSelectSchema(plants);

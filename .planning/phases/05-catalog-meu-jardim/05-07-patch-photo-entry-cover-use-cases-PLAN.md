@@ -202,10 +202,13 @@ export async function listPlants(args: {
   cursor: string | null; // wire cursor (base64)
   limit: number; // capped 1..200; default 50
   includeIdentificationCount?: boolean;
+  plantIdFilter?: string;  // when set, returns 0 or 1 row (the matching plant); ignores cursor + sortKey for the single-row lookup but still enforces userId
 }): Promise<{ rows: Array<Plant & { identificationCount?: number }>; nextCursor: string | null }>;
-// 1. if cursor provided, decodeCursor (throws "validation_failed" on bad cursor)
-// 2. plants.findByCursor (or extended variant when includeIdentificationCount=true)
-// 3. if rows yielded a nextCursor object, encode it; else null
+// 1. if cursor provided AND plantIdFilter NOT set, decodeCursor (throws "validation_failed" on bad cursor)
+// 2. if plantIdFilter set: plants.findByIdAndUser(userId, plantIdFilter) returning 0|1 row, then optionally LEFT JOIN identifications for the count when includeIdentificationCount=true
+// 3. else: plants.findByCursor (or extended variant when includeIdentificationCount=true)
+// 4. if rows yielded a nextCursor object, encode it; else null
+// NOTE (resolves plan-checker BLOCKER 2): the GET /api/v1/plants/:plantId route handler in Plan 05-08 calls listPlants({ userId, plantIdFilter, includeIdentificationCount: true }) — this is the chosen path. Plan 05-08 (Wave 3) appends src/contexts/catalog/application/list-plants.ts to its files_modified with an "append-only optional parameter" override note. The Wave 2 owner (this plan) ships the parameter as optional with default undefined; Wave 3 consumes it with no runtime impact when other call sites don't pass it.
 
 // src/contexts/catalog/application/list-photo-entries.ts
 export async function listPhotoEntries(args: {

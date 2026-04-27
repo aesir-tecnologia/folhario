@@ -1386,37 +1386,45 @@ serwist.addEventListeners();
 | A10 | A hand-rolled bottom-sheet using `focus-trap` will satisfy §17 modal-sheet requirements (drag handle, focus trap, ESC, swipe-down, no font override). Vaul is the documented fallback. | Standard Stack §"Vaul fallback" + Pattern §"Bottom-sheet" | UI-SPEC.md mandates hand-rolled. If Wave 0 fails axe-core / VoiceOver, swap to Vaul (1.1.2) — API surface is intentionally Vaul-shaped to enable the swap.                                          |
 | A11 | UI-SPEC.md's "Registry Safety" hand-rolled-only directive overrides CONTEXT D-16's discretion for the bottom-sheet. | Pattern §"Bottom-sheet — hand-rolled"         | If the planner reads CONTEXT D-16 as primary and ships Vaul without resolving the UI-SPEC tension, downstream UI-checker review will flag the registry-safety violation. Surfaced in Summary #4. |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Q1, Q2, Q6 resolved by Phase 5 batch 5a plans (06-08-2a). Q3, Q4, Q5 deferred to Phase 5 batch 5b plans (to be written in a follow-up planning run).
 
 1. **[HIGHEST PRIORITY] Cursor format extension for sort-key inclusion (CAT-07/CAT-08).**
    - What we know: Phase 2 D-36 specifies `base64({ id, createdAt })`. CAT-07 default sort is `acquisition_date desc nulls last`. CAT-08 adds name A-Z, name Z-A, location.
    - What's unclear: Should the cursor include the sort-key value (e.g. `{ id, createdAt, sortKey: "acquired_desc", sortValue: "2026-04-12" }`)? Or always tiebreak by `(created_at, id)` regardless of sort?
    - Recommendation: Extend cursor to include the active sort-key value when the sort is not `created_at`-based. Keep `id` + `created_at` as universal tiebreakers. This is a Phase 2 contract amendment that Phase 5 needs — surface to user before any wave starts.
+   - **RESOLVED by Plan 05-02:** Catalog cursor extended to `base64(JSON.stringify({ id, createdAt, sortKey, sortValue }))`. `(createdAt, id)` are universal tiebreakers; `sortKey` ∈ `acquired_desc | acquired_asc | name_asc | name_desc | location_asc`; `sortValue` is the typed value of the active sort key (ISO date for acquired_*, lowercased trimmed string for name_* / location_*). Phase 2 D-36 reference amendment captured in plan `decisions.cursor_extension` block; encoder/decoder live at `src/contexts/catalog/infrastructure/cursor.ts` with TDD coverage.
 
 2. **Reconciler placement — Phase 5 cron vs Phase 4 generic outbox dispatcher.**
    - What we know: CONTEXT D-04 says Phase 5 owns its own pending storage-deletion table if Phase 4 does not provide a generic event outbox.
    - What's unclear: Phase 4's plans haven't been written yet. If Phase 4 ships a generic dispatcher, Phase 5 should reuse it (less code). If not, Phase 5 owns a small Inngest cron `catalog/reconcile-deletions`.
    - Recommendation: Write Phase 5 to expect Phase 4 NOT to ship a generic outbox (defensive default). If Phase 4 lands one first, Phase 5 plan can collapse the cron.
+   - **RESOLVED by Plan 05-06:** Phase-5-local Inngest cron `catalog/reconcile-deletions` (every 5 minutes, concurrency=1 per env) picks up `pending_storage_deletions` rows where `status='pending'` AND `dispatched_at IS NULL` older than 60s. If Phase 4 later ships a generic outbox dispatcher, the cron retires in a follow-up phase. Plan `decisions.reconciler_placement = "phase-5-local-defensive"`.
 
 3. **`useSubscription()` location.**
    - What we know: CONTEXT D-24 says `src/contexts/billing/api/use-subscription.ts`.
    - What's unclear: `api/` in this repo is conventionally for route handler implementations (Phase 2 D-16). Hooks may belong elsewhere.
    - Recommendation: Planner picks one of: (a) accept CONTEXT verbatim; (b) move to `src/contexts/billing/application/use-subscription.ts`; (c) introduce a new `src/contexts/{ctx}/client/` segment for client-only hooks. Whatever choice is made, apply uniformly (the catalog's `use-plants.ts` etc. should follow the same convention).
+   - **DEFERRED to Phase 5 batch 5b (Plan 05.2-01):** This is a client-side concern; 5a does not ship any React hooks. Will be resolved before any 5b UI plan ships a hook.
 
 4. **Combobox "Outro" — semantic role (literal value vs free-text trigger)?**
    - What we know: CAT-05 + UI-SPEC.md both list 8 defaults including "Outro".
    - What's unclear: Whether selecting "Outro" should commit literal "Outro" as the location value (default behavior per spec) or focus a free-text input.
    - Recommendation: Implement per spec (commits literal "Outro"). If user wants the free-text behavior, treat as a spec amendment to CAT-05 + UI-SPEC.md.
+   - **DEFERRED to Phase 5 batch 5b (Plan 05.2-03):** Client-side combobox concern; 5a only ships the server-side `location-suggestions` query.
 
 5. **Bottom-sheet UI-SPEC vs CONTEXT tension.**
    - What we know: CONTEXT D-16 leaves implementation to discretion. UI-SPEC.md "Registry Safety" section narrows to hand-rolled only.
    - What's unclear: Whether the Wave 0 a11y verification gate (if hand-roll fails) is allowed to swap to Vaul, or whether hand-rolled is non-negotiable even if axe scores fail.
    - Recommendation: Treat hand-rolled as primary, Vaul as documented fallback. The fallback path should be cited in the Phase 5 plan as a known risk-mitigation strategy. If user wants Vaul outright forbidden, that's an explicit decision — surface before Wave 0 starts.
+   - **DEFERRED to Phase 5 batch 5b (Plan 05.2-04):** Client-side primitive concern; 5a does not ship any UI primitives. Plan 05.2-04 will own the [BLOCKING] axe + VoiceOver/TalkBack gate and the Vaul fallback path.
 
 6. **PostHog `plant_added` event payload shape (PRD §20 taxonomy).**
    - What we know: PRD §20 defines the event but not the payload shape. CONTEXT specifics call out emitting from the use-case layer (server-side via `posthog-node`).
    - What's unclear: Should the event include `species_id` (for create-from-identification) vs `null` (for manual)? Should it include source = `"manual" | "from_identification"`?
    - Recommendation: Include `{ source: "manual" | "from_identification", has_species: boolean }`. Phase 13 (analytics rollup) will benefit from the dimension. Surface to planner.
+   - **RESOLVED by Plan 05-05:** Server-side `plant_added` PostHog event payload is `{ source: "manual" | "from_identification", has_species: boolean }`, captured via `posthog-node` from the catalog use-case layer (`src/contexts/catalog/application/create-plant-manual.ts` and `create-plant-from-identification.ts`). `Sentry.setUser({ id })` only — never email. Plan `decisions.posthog_plant_added_payload` block.
 
 ## Environment Availability
 

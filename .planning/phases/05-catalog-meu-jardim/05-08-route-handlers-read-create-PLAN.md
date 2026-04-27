@@ -17,6 +17,7 @@ files_modified:
   - src/app/api/v1/plants/[plantId]/photos/route.ts
   - src/app/api/v1/plants/from-identification/route.ts
   - src/shared/api/http-error-map.ts
+  - src/contexts/catalog/application/list-plants.ts  # CONSUMPTION-ONLY (resolves plan-checker BLOCKER 2): Plan 05-07 (Wave 2) ships `plantIdFilter?: string` as an optional parameter on listPlants; this Plan 05-08 (Wave 3) consumes it from the GET /api/v1/plants/:plantId handler. Wave 3 does NOT modify the use case implementation — Plan 05-07 owns implementation; this entry is the cross-plan-traceability anchor for the parameter consumption (mirrors the 05-09 file-overlap convention).
   - tests/integration/catalog/get-plants-route.integration.test.ts
   - tests/integration/catalog/get-plant-detail-route.integration.test.ts
   - tests/integration/catalog/get-plant-photos-route.integration.test.ts
@@ -37,7 +38,7 @@ decisions:
 must_haves:
   truths:
     - "GET /api/v1/plants validates JWT → calls listPlants(userId, sortKey, cursor, limit) → returns { data: rows, next_cursor: string|null }"
-    - "GET /api/v1/plants/:plantId validates JWT → calls listPlants with id filter (or new findByIdAndUserWithCount helper) → 404 when not found → returns the Plant + identification_count"
+    - "GET /api/v1/plants/:plantId validates JWT → calls listPlants({ userId, plantIdFilter: plantId, includeIdentificationCount: true, sortKey: 'created_desc', cursor: null, limit: 1 }) — plantIdFilter param is shipped by Plan 05-07 — → 404 when not found → returns the Plant + identification_count"
     - "GET /api/v1/plants/:plantId/photos validates JWT → calls listPhotoEntries(plantId, userId, cursor, limit) → returns { data: rows, next_cursor: string|null } in reverse-chrono order"
     - "POST /api/v1/plants validates JWT + Idempotency-Key + zod (PlantCreateInputSchema) → calls createPlantManual → 201 + Plant"
     - "POST /api/v1/plants/from-identification validates JWT + Idempotency-Key + zod → calls createPlantFromIdentification → 201 + Plant"
@@ -210,7 +211,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plan
       cursor: null,
       limit: 1,
       includeIdentificationCount: true,
-      plantIdFilter: plantId, // either listPlants supports this filter OR a new helper findByIdAndUserWithIdentificationCount in plants.ts
+      plantIdFilter: plantId,  // CHOSEN PATH (resolves plan-checker BLOCKER 2): listPlants in Plan 05-07 ships `plantIdFilter?: string` as an optional parameter. When set, returns 0|1 row, ignores cursor + sortKey, still enforces userId.
     });
     if (result.rows.length === 0) return errorResponse(ErrorCode.NotFound, "plant_not_found");
     return NextResponse.json(result.rows[0]);
@@ -219,7 +220,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plan
   }
 }
 ```
-The `plantIdFilter` field requires a small extension to listPlants OR a sibling repo function `findByIdAndUserWithIdentificationCount`. Either is fine; pick the path that minimizes Plan 05-07 file churn — adding the helper to the repo (and a tiny use case wrapper) is cleaner than overloading listPlants.
+**Cross-plan contract (resolves plan-checker BLOCKER 2):** Plan 05-07 (Wave 2) ships `listPlants` with `plantIdFilter?: string` as an optional parameter (default undefined). This Plan 05-08 (Wave 3) consumes the parameter from `src/contexts/catalog/application/list-plants.ts` — that file is appended to this plan's `files_modified` as an "append-only optional parameter consumption" override note (mirroring the 05-09 wave-3-to-4 file-overlap convention). Sibling-helper alternative was rejected because it would have required two new files (use case + repo helper) for what is semantically a single-row variant of an existing query.
 
 NOTE: Next 16 App Router uses `params: Promise<{...}>` — verify with the Phase 1 diagnostics route examples.
 </interfaces>
@@ -286,7 +287,7 @@ NOTE: Next 16 App Router uses `params: Promise<{...}>` — verify with the Phase
   <action>
     1. Implement src/app/api/v1/plants/route.ts per the `<interfaces>` skeleton. GET handler reads sort/cursor/limit/include from URL searchParams; POST handler wraps in idempotent. Both call httpMapDomainError on caught errors. Use `requireUser(req)` from Phase 2 D-32; if Phase 2 hasn't shipped the helper, add a minimal stub at `src/shared/auth/require-user.ts` matching the contract: `(req: Request) => Promise<{ id: string }>` that throws `unauthenticated` when no JWT. Document the Phase 2 dependency in the file header.
 
-    2. Implement src/app/api/v1/plants/[plantId]/route.ts (GET only). Uses `listPlants` with `plantIdFilter` (extension to Plan 05-07's listPlants — add the optional parameter + WHERE clause) OR a sibling repository function `findByIdAndUserWithIdentificationCount`. Pick whichever is least invasive — extending listPlants is OK if the parameter defaults to undefined.
+    2. Implement src/app/api/v1/plants/[plantId]/route.ts (GET only). Calls `listPlants({ userId, sortKey: "created_desc", cursor: null, limit: 1, includeIdentificationCount: true, plantIdFilter: plantId })`. The `plantIdFilter` parameter is shipped by Plan 05-07 (Wave 2) as an optional `plantIdFilter?: string` on the `listPlants` use case signature — see the cross-plan contract note in `<interfaces>` above. This Plan 05-08 (Wave 3) appends `src/contexts/catalog/application/list-plants.ts` to its `files_modified` to consume the parameter; it does NOT modify the use case implementation (Plan 05-07 owns that). The verify gate checks both that the file exists (Plan 05-07 shipped it) AND that the parameter is consumed correctly here.
 
     3. Implement src/app/api/v1/plants/[plantId]/photos/route.ts (GET only). Calls `listPhotoEntries({ plantId, userId, cursor, limit })`.
 

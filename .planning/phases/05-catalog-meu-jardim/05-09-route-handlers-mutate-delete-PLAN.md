@@ -37,12 +37,75 @@ requirements:
   - CAT-04
   - CAT-06
 decisions:
-  override_05_07_delete_photo_entry_storage_cleanup: "OVERRIDES Plan 05-07 decisions.delete_photo_entry_storage_cleanup. Plan 05-07 deferred per-photo storage cleanup (orphaned objects accepted as trade-off). Planning context for 05-09 explicitly requires the atomic outbox path for DELETE /:id/photos/:photoEntryId per T-5-03. Resolution: Plan 05-09 ships a new use case `deletePhotoEntryWithStorageCleanup` in `src/contexts/catalog/application/` that wraps the same atomic-transaction + outbox + post-commit Inngest dispatch pattern as `deletePlant` from 05-06 — same pending_storage_deletions table reused, same plant.deleted event reused (the cleanup-storage Inngest function does not distinguish plant-vs-photo cleanup; it just deletes the storagePaths array on the loaded job row). The route handler in 05-09 invokes this new use case, not 05-07's `deletePhotoEntry`. 05-07's `deletePhotoEntry` use case remains in the codebase (other future callers may want the path-returning shape without auto-cleanup) but is not referenced by the Phase 5 route surface."
-  set_cover_photo_by_entry_id_adapter: "Planning context specifies PATCH /api/v1/plants/:plantId/cover-photo body is `{ photo_entry_id: string }`. Plan 05-07's `setCoverPhoto` use case takes `photoUrl: string`. Route handlers cannot import infrastructure/db (D-17 ESLint guard) so cannot resolve photoEntryId → photoUrl directly. Resolution: Plan 05-09 ships a thin adapter use case `setCoverPhotoByEntryId` in `src/contexts/catalog/application/set-cover-photo-by-entry-id.ts` that opens a UoW transaction, calls `photoEntries.findById(tx, photoEntryId)`, verifies row.plantId === plantId AND row.userId === userId (cross-plant + cross-user defense; throws `not_found` when no row, `forbidden` when ownership mismatch), then calls 05-07's `setCoverPhoto` via the same transaction passing the resolved photoUrl. Returns the updated Plant."
+  delete_photo_entry_use_case_owner: |
+    **Codex review HIGH 05-09 + cross-cutting moves**: per-PhotoEntry cleanup
+    is OWNED by Plan 05-07's `deletePhotoEntry` use case (Codex's recommended
+    layout — keep cleanup adjacent to data deletion). 05-07 has been amended
+    in this REVIEWS replan to:
+    1. Open a transaction
+    2. Read photo + thumbnail paths via `photoEntries.findById`
+    3. Insert a `pending_storage_deletions` row
+    4. DELETE the PhotoEntry
+    5. Commit
+    6. Dispatch the **`photo_entry.deleted`** event (NOT `plant.deleted`)
+    7. Call `pendingDeletions.markDispatched(tx, jobId)` (Codex 05-06)
+
+    Plan 05-09's DELETE `/api/v1/plants/:plantId/photos/:photoEntryId` route
+    handler invokes 05-07's `deletePhotoEntry` and returns 204. The previous
+    "OVERRIDES 05-07" pattern (which moved cleanup logic into 05-09 itself)
+    is REVERSED — the cleanup decision belongs adjacent to the data deletion,
+    not at the HTTP boundary. The standalone use case
+    `delete-photo-entry-with-storage-cleanup.ts` is NOT shipped by this
+    plan; the cleanup is integral to 05-07's `deletePhotoEntry`.
+  photo_entry_deleted_event: |
+    **Codex review HIGH 05-09**: per-PhotoEntry cleanup dispatches the
+    DEDICATED event `photo_entry.deleted` (defined in Plan 05-04's
+    `events.ts` as `PhotoEntryDeletedEvent` with payload
+    `{ user_id, plant_id, photo_entry_id, storage_deletion_job_id, storage_paths }`).
+    It does NOT dispatch `plant.deleted` (which means a Plant aggregate was
+    deleted; reusing it for per-photo cleanup is semantically dangerous for
+    future subscribers and metrics). Plan 05-06's `catalog/cleanup-storage`
+    Inngest function registers BOTH `plant.deleted` AND `photo_entry.deleted`
+    as triggers — the same handler body processes both via the shared
+    `storage_deletion_job_id`.
+  set_cover_photo_by_entry_id_adapter: |
+    Planning context specifies PATCH /api/v1/plants/:plantId/cover-photo body
+    is `{ photo_entry_id: string }`. Plan 05-07's `setCoverPhoto` use case
+    has been AMENDED in the REVIEWS replan to take `photoEntryId` directly
+    (Codex 05-07 fix — see Plan 05-07 `decisions.set_cover_photo_validation`).
+
+    Resolution: the route handler in this plan calls `setCoverPhoto({ plantId, userId, photoEntryId, uow })`
+    DIRECTLY — no separate `setCoverPhotoByEntryId` adapter is needed. The
+    use case in 05-07 already handles photoEntries.findById ownership
+    verification and the resulting plants.setCoverPhoto UPDATE. The adapter
+    file `set-cover-photo-by-entry-id.ts` is NOT shipped by this plan
+    (the Codex-recommended use-case layout absorbed it).
   thin_handler_pattern: "Per Phase 2 D-17 + PRD §2: handler validates → use case → HTTP map. NO Drizzle imports in handlers (ESLint guard verified by `grep -rl 'drizzle-orm' src/app/api/v1/plants` returning 0). NO direct infrastructure/db imports. Reuses `idempotent` + `requireUser` + `httpMapDomainError` helpers from Plan 05-08."
   endpoint_paths_verbatim: "PATCH /api/v1/plants/:plantId, DELETE /api/v1/plants/:plantId, POST /api/v1/plants/:plantId/photos, PATCH /api/v1/plants/:plantId/photos/:photoEntryId, DELETE /api/v1/plants/:plantId/photos/:photoEntryId, PATCH /api/v1/plants/:plantId/cover-photo (CONTEXT D-23B verbatim — 6 of 8 mutating endpoints; the other 2 — POST /plants and POST /plants/from-identification — shipped in 05-08)."
-  idempotency_on_all_mutations: "All 6 endpoints accept Idempotency-Key per CONTEXT D-23B + Phase 2 D-37/D-38. Wrapped via `idempotent(req, async () => ...)` — same helper as 05-08. The idempotency table is per-user (Phase 2 D-37). Replay returns the same HTTP status + body without re-executing the use case (Phase 2 D-37 contract; Pitfall 8 size cap inherited from Phase 2)."
-  delete_returns_204: "Both DELETE handlers return 204 No Content per REST convention. The use cases return void (deletePlant) or { deletedPaths } (deletePhotoEntryWithStorageCleanup); the route handler discards the return value and emits 204 with no body. Idempotency replay also returns 204 (the response body cached as empty)."
+  idempotency_on_all_mutations: |
+    **Codex review HIGH cross-cutting Decision 5 — idempotency scoping**: all
+    6 endpoints follow the auth-FIRST → user-scoped-idempotent pattern from
+    Plan 05-08. Concrete sequence in every handler:
+
+    ```ts
+    let userId: string;
+    try {
+      const user = await requireUser(req);
+      userId = user.id;
+    } catch (err) {
+      return httpMapDomainError(err); // Auth errors → 401, not 500.
+    }
+    return idempotent(req, userId, async () => {
+      // ... validate body + call use case + return ...
+    });
+    ```
+
+    Phase 2 D-37/D-38 idempotency helper signature is `idempotent(req, userId, fn)` —
+    key is composed as `${headerKey}:${userId}:${route}`. Two users with the
+    same Idempotency-Key cannot collide.
+  http_response_serializer: "Codex Decision 1/2 — handlers serialize camelCase repo rows to snake_case JSON via `toSnakePlant`/`toSnakePhotoEntry` from `@shared/api/snake-case-serializer` (shipped by 05-08). PATCH responses (200 + Plant or PhotoEntry) and POST responses (201 + PhotoEntry) all pass through the serializer."
+  stub_policy: "Codex Decision 4 — Phase 4 `requireUser` is a BLOCKING dependency. NO silent stub. Phase-4 Inngest is also blocking; Plan 05-06 owns the named-contingency stub policy if Phase 4 is absent. Plan 05-09 does not introduce any local stub."
+  delete_returns_204: "Both DELETE handlers return 204 No Content per REST convention. The use cases return void (deletePlant) or { deletedPaths } (deletePhotoEntry from 05-07); the route handler discards the return value and emits 204 with no body. Idempotency replay also returns 204 (the response body cached as empty)."
   patch_plant_mass_assignment_defense: "PATCH /api/v1/plants/:plantId body validated via PlantPatchSchema from 05-04. The schema is .strict() (unknown keys → validation_failed; mass-assignment defense). Server-controlled fields (id, user_id, species_id, cover_photo_url, created_at) cannot be patched — schema picks only writable fields (name, nickname, location, acquisition_date, notes). Defense in depth: updatePlant use case from 05-07 takes a typed `patch: PlantPatch` parameter; TypeScript itself disallows arbitrary keys at compile time."
   photo_path_ownership_at_route: "POST /api/v1/plants/:plantId/photos calls `validateStoragePathOwnership({ paths: [photo_url, thumbnail_url], userId, plantId })` from 05-04 BEFORE invoking the use case (T-5-01 / Pitfall 1 — defense in depth above 05-07's addPhotoEntry which also validates). The route-layer check rejects spoofed paths early with validation_failed before the use case opens its transaction. The 05-07 addPhotoEntry use case STILL validates internally — never trust client paths even if a route handler 'should have' caught it."
 must_haves:
@@ -54,12 +117,13 @@ must_haves:
     - "POST /api/v1/plants/:plantId/photos validates JWT + Idempotency-Key + zod (PhotoEntryCreateSchema) + validateStoragePathOwnership({ paths: [photo_url, thumbnail_url], userId, plantId }) → calls addPhotoEntry → returns 201 + PhotoEntry"
     - "POST /api/v1/plants/:plantId/photos rejects spoofed paths server-side: photo_url not starting with `{userId}/{plantId}/` → validation_failed (T-5-01 defense in depth above 05-07's addPhotoEntry)"
     - "PATCH /api/v1/plants/:plantId/photos/:photoEntryId validates JWT + Idempotency-Key + zod (PhotoEntryNotePatchSchema with note? string ≤ 2000 chars) → calls updatePhotoEntryNote → returns 200 + PhotoEntry"
-    - "DELETE /api/v1/plants/:plantId/photos/:photoEntryId validates JWT + Idempotency-Key → calls deletePhotoEntryWithStorageCleanup (NEW use case in this plan; OVERRIDES 05-07 deferred-cleanup decision) → atomic DELETE + outbox row + post-commit inngest.send → returns 204"
-    - "PATCH /api/v1/plants/:plantId/cover-photo validates JWT + Idempotency-Key + zod ({ photo_entry_id: string.uuid() }) → calls setCoverPhotoByEntryId (NEW adapter in this plan) → returns 200 + Plant"
-    - "PATCH /api/v1/plants/:plantId/cover-photo with cross-plant photo_entry_id (PhotoEntry exists but belongs to a different plant of same user) → returns 404 (not_found from setCoverPhotoByEntryId after photoEntries.findById confirms row.plantId !== plantId)"
-    - "PATCH /api/v1/plants/:plantId/cover-photo with cross-user photo_entry_id → returns 404 (RLS hides; or `not_found` from setCoverPhotoByEntryId if RLS not active in test) — never 403 with disclosure"
-    - "All 6 handlers map DomainError to closed-registry ErrorCodes via httpMapDomainError from 05-08"
-    - "All 6 handlers wrap their work in `idempotent(req, async () => ...)` per Phase 2 D-37/D-38"
+    - "**Codex review HIGH 05-09 — DELETE /api/v1/plants/:plantId/photos/:photoEntryId** validates JWT + Idempotency-Key → calls 05-07's `deletePhotoEntry` use case (which now owns the atomic DELETE + outbox row + post-commit `photo_entry.deleted` event dispatch — NOT `plant.deleted`) → returns 204. The standalone `deletePhotoEntryWithStorageCleanup` use case is NOT shipped by this plan; the cleanup logic lives in 05-07's `deletePhotoEntry`."
+    - "PATCH /api/v1/plants/:plantId/cover-photo validates JWT + Idempotency-Key + zod ({ photo_entry_id: string.uuid() }) → calls 05-07's `setCoverPhoto({ plantId, userId, photoEntryId, uow })` (AMENDED in REVIEWS replan to take photoEntryId directly — Codex 05-07 fix) → returns 200 + serialized Plant. NO separate adapter use case."
+    - "PATCH /api/v1/plants/:plantId/cover-photo with cross-plant photo_entry_id (PhotoEntry exists but belongs to a different plant of same user) → returns 404 (not_found from 05-07's setCoverPhoto after photoEntries.findById confirms row.plantId !== plantId)"
+    - "PATCH /api/v1/plants/:plantId/cover-photo with cross-user photo_entry_id → returns 404 (RLS hides; or `not_found` from setCoverPhoto if RLS not active in test) — never 403 with disclosure"
+    - "All 6 handlers map DomainError AND auth errors (UnauthenticatedError, TokenExpiredError) to closed-registry ErrorCodes via httpMapDomainError from 05-08 (Codex 05-08 — auth never bubbles as 500)"
+    - "**Codex Decision 5 — All 6 handlers use the auth-FIRST → user-scoped-idempotent pattern**: `requireUser` runs in its own try/catch; `userId` is passed to `idempotent(req, userId, fn)` BEFORE the callback. NO callsite uses the old 2-arg `idempotent(req, fn)` form."
+    - "**Codex Decision 1/2 — All response handlers serialize camelCase repo rows to snake_case JSON** via `toSnakePlant` / `toSnakePhotoEntry` from `@shared/api/snake-case-serializer` (shipped by 05-08)."
     - "Sentry.setUser({ id }) called with user.id ONLY — no email, no PII (Phase 1 LGPD-13)"
     - "No drizzle-orm imports in any route handler file (Phase 2 D-17 ESLint guard satisfied via `grep -rl 'drizzle-orm' src/app/api/v1/plants` returns 0)"
   artifacts:
@@ -75,12 +139,14 @@ must_haves:
     - path: "src/app/api/v1/plants/[plantId]/cover-photo/route.ts"
       provides: "PATCH (set-as-cover via photo_entry_id) — NEW FILE"
       min_lines: 50
-    - path: "src/contexts/catalog/application/delete-photo-entry-with-storage-cleanup.ts"
-      provides: "deletePhotoEntryWithStorageCleanup — atomic DELETE + outbox row + post-commit inngest dispatch (mirrors 05-06 deletePlant pattern). NEW use case OVERRIDING 05-07's deferred-cleanup decision."
-      min_lines: 60
-    - path: "src/contexts/catalog/application/set-cover-photo-by-entry-id.ts"
-      provides: "setCoverPhotoByEntryId — adapter that resolves photo_entry_id → photoUrl with cross-plant + cross-user defense, then delegates to 05-07 setCoverPhoto. NEW use case."
-      min_lines: 45
+    # Codex review HIGH 05-09: per-PhotoEntry storage cleanup is now OWNED by Plan 05-07's
+    # `deletePhotoEntry` use case (cleanup adjacent to data deletion). Plan 05-09 does NOT
+    # ship a standalone `delete-photo-entry-with-storage-cleanup.ts` file. The DELETE route
+    # handler imports `deletePhotoEntry` from 05-07 directly.
+    #
+    # Codex review HIGH 05-07: `setCoverPhoto` use case in 05-07 takes `photoEntryId` directly
+    # (no separate adapter needed). Plan 05-09 does NOT ship a `set-cover-photo-by-entry-id.ts`
+    # adapter file — the route handler calls 05-07's setCoverPhoto directly.
     - path: "tests/integration/catalog/patch-plant-route.integration.test.ts"
       provides: "PATCH /:plantId — happy path partial update, mass-assignment rejection (id/user_id/species_id/cover_photo_url/created_at fields rejected), cross-user → 404, idempotency replay returns same row, missing JWT → 401"
       min_lines: 90
@@ -109,21 +175,13 @@ must_haves:
       via: "POST imports addPhotoEntry + validateStoragePathOwnership"
       pattern: "addPhotoEntry\\|validateStoragePathOwnership"
     - from: "src/app/api/v1/plants/[plantId]/photos/[photoEntryId]/route.ts"
-      to: "src/contexts/catalog/application/update-photo-entry-note.ts (Plan 05-07) + delete-photo-entry-with-storage-cleanup.ts (Task 1 of THIS plan)"
-      via: "PATCH imports updatePhotoEntryNote; DELETE imports deletePhotoEntryWithStorageCleanup"
-      pattern: "updatePhotoEntryNote\\|deletePhotoEntryWithStorageCleanup"
+      to: "src/contexts/catalog/application/update-photo-entry-note.ts + delete-photo-entry.ts (BOTH from Plan 05-07; cleanup is now in 05-07's deletePhotoEntry — Codex 05-09)"
+      via: "PATCH imports updatePhotoEntryNote; DELETE imports deletePhotoEntry"
+      pattern: "updatePhotoEntryNote\\|deletePhotoEntry"
     - from: "src/app/api/v1/plants/[plantId]/cover-photo/route.ts"
-      to: "src/contexts/catalog/application/set-cover-photo-by-entry-id.ts (Task 2 of THIS plan)"
-      via: "PATCH imports setCoverPhotoByEntryId"
-      pattern: "setCoverPhotoByEntryId"
-    - from: "src/contexts/catalog/application/delete-photo-entry-with-storage-cleanup.ts"
-      to: "src/contexts/catalog/infrastructure/db/{photo-entries,pending-storage-deletions}.ts (Plan 05-03) + @shared/events/inngest-client (Phase 4 / 05-06 stub)"
-      via: "atomic transaction: list paths → insert outbox row → DELETE photo_entry → commit → inngest.send"
-      pattern: "pendingStorageDeletions\\.insert\\|photoEntries\\.deleteByIdAndPlant\\|inngest.send"
-    - from: "src/contexts/catalog/application/set-cover-photo-by-entry-id.ts"
-      to: "src/contexts/catalog/infrastructure/db/photo-entries.ts (Plan 05-03) + src/contexts/catalog/application/set-cover-photo.ts (Plan 05-07)"
-      via: "transaction: photoEntries.findById → ownership re-check → setCoverPhoto"
-      pattern: "photoEntries\\.findById\\|setCoverPhoto"
+      to: "src/contexts/catalog/application/set-cover-photo.ts (Plan 05-07; takes photoEntryId directly — Codex 05-07 amend)"
+      via: "PATCH imports setCoverPhoto"
+      pattern: "setCoverPhoto"
     - from: "src/app/api/v1/plants/**/route.ts"
       to: "src/shared/api/idempotent (Phase 2 D-37) + src/shared/auth/require-user (Phase 2 D-32) + src/shared/api/http-error-map (Plan 05-08)"
       via: "every mutating handler wraps in idempotent + extracts user via requireUser + maps errors via httpMapDomainError"
@@ -717,26 +775,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ pl
 </threat_model>
 
 <verification>
-1. `pnpm exec vitest --run --project=unit tests/unit/contexts/catalog/delete-photo-entry-with-storage-cleanup.test.ts tests/unit/contexts/catalog/set-cover-photo-by-entry-id.test.ts` exits 0.
+1. **Codex 05-09 — no standalone "deletePhotoEntryWithStorageCleanup" file**: `test ! -f src/contexts/catalog/application/delete-photo-entry-with-storage-cleanup.ts` exits 0. Cleanup is owned by 05-07's `deletePhotoEntry`. Same for `set-cover-photo-by-entry-id.ts` — `test ! -f src/contexts/catalog/application/set-cover-photo-by-entry-id.ts` exits 0.
 2. `pnpm exec vitest --run --project=integration tests/integration/catalog/patch-plant-route.integration.test.ts tests/integration/catalog/delete-plant-route.integration.test.ts tests/integration/catalog/post-photo-entry-route.integration.test.ts tests/integration/catalog/patch-photo-entry-route.integration.test.ts tests/integration/catalog/delete-photo-entry-route.integration.test.ts tests/integration/catalog/patch-cover-photo-route.integration.test.ts` exits 0.
 3. `pnpm exec tsc --noEmit` exits 0.
 4. `find src/app/api/v1/plants -name '*.ts' -exec grep -l "drizzle-orm" {} +` returns no files (Phase 2 D-17 ESLint guard satisfied).
 5. 05-08's GET handlers in shared files still pass: `pnpm exec vitest --run --project=integration tests/integration/catalog/get-plant-detail-route.integration.test.ts tests/integration/catalog/get-plant-photos-route.integration.test.ts` exits 0 (regression check after appending PATCH/DELETE/POST exports).
 6. PlantPatchSchema is `.strict()` (verified by `grep -v '^[[:space:]]*//' src/contexts/catalog/domain/plant.ts | grep -q "\\.strict()"` — comment lines excluded so a self-invalidating grep gate doesn't pass on header prose).
-7. All 6 mutating endpoints accept Idempotency-Key (verified by literal `idempotent(req, async` grep in each route file).
+7. **Codex Decision 5 grep gate (idempotency ordering)**: `grep -E "idempotent\\(req,\\s*\\w+\\.id|idempotent\\(req,\\s*userId" src/app/api/v1/plants/` returns ≥ 6 (one per mutating endpoint). Inverse gate: `grep -E "idempotent\\(req,\\s*async" src/app/api/v1/plants/` returns 0 (no callsite uses the old 2-arg form).
+8. **Codex 05-09 grep gate (photo_entry.deleted, NOT plant.deleted, in per-photo cleanup)**: `grep -E "photo_entry\\.deleted|PhotoEntryDeletedEventName" src/contexts/catalog/application/delete-photo-entry.ts` matches; `grep -E "plant\\.deleted|PlantDeletedEventName" src/contexts/catalog/application/delete-photo-entry.ts` returns 0.
+9. **Codex Decision 1/2 grep gate (snake_case serializer)**: `grep -E "toSnakePlant|toSnakePhotoEntry" src/app/api/v1/plants/\[plantId\]/route.ts src/app/api/v1/plants/\[plantId\]/photos/route.ts src/app/api/v1/plants/\[plantId\]/photos/\[photoEntryId\]/route.ts src/app/api/v1/plants/\[plantId\]/cover-photo/route.ts` matches in every handler returning a row.
+10. **Codex 05-08 grep gate (auth error mapping)**: integration tests for each mutating endpoint assert that missing JWT returns 401 (not 500).
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-09 HIGH — `plant.deleted` reused for single PhotoEntry deletion is semantically dangerous**: Resolved by `decisions.photo_entry_deleted_event` + `decisions.delete_photo_entry_use_case_owner`. The cleanup logic moves into Plan 05-07's `deletePhotoEntry` (Codex's recommended layout — adjacent to data deletion). The new event `photo_entry.deleted` is dispatched (defined in Plan 05-04, handled by Plan 05-06's cleanup-storage Inngest function as a second trigger). Plan 05-09's DELETE handler is THIN — it imports 05-07's `deletePhotoEntry` and returns 204.
+- **Codex Decision 5 — Idempotency contract scoping**: `decisions.idempotency_on_all_mutations` documents the new auth-FIRST → user-scoped-idempotent pattern. Every mutating handler in this plan extracts `user.id` BEFORE the idempotency wrapper. The helper signature is `idempotent(req, userId, fn)` (Phase 2 D-37/D-38 amended).
+- **Codex 05-08 — Auth error mapping (do NOT bubble as 500)**: Resolved by the same `httpMapDomainError` from Plan 05-08; the auth error case is in its own try/catch BEFORE the idempotency wrapper. Integration tests assert 401 (never 500).
+- **Codex Decision 1/2 — HTTP envelope and field-naming**: `decisions.http_response_serializer` — every PATCH/POST handler that returns a row passes through `toSnakePlant` / `toSnakePhotoEntry` (Plan 05-08's serializer module).
+- **Codex 05-07 — `setCoverPhoto` repo-only**: The PATCH /cover-photo route handler calls 05-07's amended `setCoverPhoto({ plantId, userId, photoEntryId, uow })` directly. The standalone adapter `set-cover-photo-by-entry-id.ts` is no longer needed; `decisions.set_cover_photo_by_entry_id_adapter` documents the absorption.
+- **Codex Decision 4 — Stub policy**: `decisions.stub_policy` declares Phase 4 `requireUser` and Inngest as BLOCKING dependencies. No silent stubs in this plan.
+</reviews_addressed>
 
 <success_criteria>
 - 6 endpoints shipped: PATCH /:plantId, DELETE /:plantId, POST /:plantId/photos, PATCH /:plantId/photos/:photoEntryId, DELETE /:plantId/photos/:photoEntryId, PATCH /:plantId/cover-photo.
-- 2 NEW use cases shipped overriding/adapting 05-07: deletePhotoEntryWithStorageCleanup (atomic outbox per photo, mirrors 05-06 deletePlant) and setCoverPhotoByEntryId (resolves photo_entry_id → photoUrl with cross-plant + cross-user defense via not_found).
-- All POSTs/PATCHes/DELETEs accept Idempotency-Key (CONTEXT D-23B + Phase 2 D-37/D-38). Replay returns identical 200/201/204 response without re-execution.
-- T-5-01 photo path ownership defended at TWO layers: route handler calls validateStoragePathOwnership BEFORE use case (early reject, no transaction); 05-07 addPhotoEntry use case ALSO validates (defense in depth).
+- **Codex review HIGH 05-09**: per-PhotoEntry cleanup is owned by Plan 05-07's `deletePhotoEntry` use case — dispatches `photo_entry.deleted` (NOT `plant.deleted`). No standalone `deletePhotoEntryWithStorageCleanup` file is shipped. The cover-photo set is owned by 05-07's `setCoverPhoto` (takes photoEntryId directly). No standalone `setCoverPhotoByEntryId` adapter file is shipped.
+- All POSTs/PATCHes/DELETEs follow Codex Decision 5 — auth FIRST → `idempotent(req, userId, fn)` — replay returns identical 200/201/204 without re-execution; user-scoped idempotency keys.
+- All response handlers serialize camelCase repo rows to snake_case JSON via `toSnakePlant` / `toSnakePhotoEntry` (Codex Decision 1/2).
+- All handlers map auth errors (UnauthenticatedError/TokenExpiredError) to closed-registry 401 (NOT 500) via `httpMapDomainError` (Codex 05-08).
+- T-5-01 photo path ownership defended at TWO layers: route handler calls validateStoragePathOwnership BEFORE use case; 05-07 addPhotoEntry use case ALSO validates (defense in depth).
 - T-5-mass-assignment defended via PlantPatchSchema.strict() at route layer + typed PlantPatch at use case layer + repo writes only allowlisted columns.
-- T-5-03 storage object leak defended via atomic transaction + outbox + post-commit Inngest dispatch + reconciler safety net (mirrors 05-06 pattern; reuses pending_storage_deletions table + plant.deleted event + cleanup-storage function).
-- T-5-cross-plant defended via not_found (not forbidden) on cover-photo and photo-entry mutations; no information disclosure about photo_entry existence in other plants or for other users.
+- T-5-03 storage object leak defended via atomic transaction + outbox + post-commit Inngest dispatch + reconciler safety net (mirrors 05-06 pattern; reuses pending_storage_deletions table + DEDICATED `photo_entry.deleted` event for per-photo + cleanup-storage function with both-trigger registration).
+- T-5-cross-plant defended via not_found (not forbidden) on cover-photo and photo-entry mutations.
 - All 6 handlers thin: validate → use case → HTTP map. No drizzle-orm imports in src/app/api/v1/plants (Phase 2 D-17 ESLint guard satisfied).
 - 6 integration test files cover 37+ behaviors total; all green.
-- 05-08's GET handlers in the 2 shared route files remain functional (regression check passes).
 </success_criteria>
 
 <output>

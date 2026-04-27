@@ -282,7 +282,7 @@ GET /api/v1/plants/locations (NEW IN THIS PLAN — see decisions.location_sugges
 From src/shared/ui primitives:
 - `InlineEditField({ label, value, onSave, validate?, multiline?, disabled? })` — Plan 05-14
 - `BottomSheet({ open, onOpenChange, title, children })` — Plan 05-13
-- `Combobox({ value, onChange, priorItems, defaultItems, placeholder, ariaLabel, sectionLabels })` — Plan 05-12
+- `Combobox({ inputValue, onInputValueChange, value, onCommit, priorItems, defaultItems, placeholder, ariaLabel, sectionLabels })` — Plan 05-12 (Codex review HIGH 05-12 two-callback API: typing fires onInputValueChange; commit fires onCommit on Enter / option click / blur with new free-text)
 
 From src/messages/pt-BR.json (Plan 05-10) — keys consumed:
 - `catalog.profile.sections.{about|careGuide|reminders|journal|idHistory}`
@@ -561,7 +561,7 @@ typo — replace with the correct relative path before committing.
     **Client island** — `src/app/catalog/[plantId]/plant-profile-client.tsx` (~220 lines):
     ```tsx
     "use client";
-    import { useState } from "react";
+    import { useState, useEffect } from "react";
     import { useRouter } from "next/navigation";
     import Link from "next/link";
     import Image from "next/image";
@@ -588,6 +588,13 @@ typo — replace with the correct relative path before committing.
 
       const [deleteOpen, setDeleteOpen] = useState(false);
       const [saveAnnouncement, setSaveAnnouncement] = useState("");
+      // Codex review HIGH 05-12: Combobox typing state (`inputValue`) is local;
+      // initialized from the cached plant location and re-synced when plant updates.
+      const [locationDraft, setLocationDraft] = useState(plant.location ?? "");
+      // Re-sync local draft when the cached plant.location changes (server save / external mutation).
+      useEffect(() => {
+        setLocationDraft(plant.location ?? "");
+      }, [plant.location]);
 
       if (isLoading || !plant) {
         return <main className="p-8">{t("loading.list")}</main>;
@@ -661,7 +668,7 @@ typo — replace with the correct relative path before committing.
                   onSave={(v) => saveField({ nickname: v || null })}
                   disabled={readOnly}
                 />
-                {/* Location uses Combobox primitive, not InlineEditField — distinct edit pattern */}
+                {/* Location uses Combobox primitive (Codex 05-12 two-callback API). */}
                 <div>
                   <label className="block text-sm text-[var(--calm-slate,#5A6358)]">
                     {t("profile.fieldLabels.location")}
@@ -670,8 +677,13 @@ typo — replace with the correct relative path before committing.
                     <p className="text-base">{plant.location || "—"}</p>
                   ) : (
                     <Combobox
-                      value={plant.location ?? ""}
-                      onChange={(v) => saveField({ location: v || null })}
+                      // Codex review HIGH 05-12: typing fires ONLY onInputValueChange
+                      // (updates local draft), commit fires onCommit (PATCH mutation).
+                      // The previous `onChange` on every keystroke caused PATCH-while-typing.
+                      inputValue={locationDraft}
+                      onInputValueChange={setLocationDraft}
+                      value={plant.location ?? null}
+                      onCommit={(v) => saveField({ location: v || null })}
                       priorItems={priorLocations}
                       defaultItems={defaultLocations}
                       placeholder={t("locationPicker.placeholder")}
@@ -876,8 +888,19 @@ typo — replace with the correct relative path before committing.
 - `grep -c "useSubscription" src/app/catalog/[plantId]/plant-profile-client.tsx` ≥ 1
 - `grep -c "identification_count" src/app/catalog/[plantId]/plant-profile-client.tsx` ≥ 1
 - `grep -c 'aria-live="polite"' src/app/catalog/[plantId]/plant-profile-client.tsx` ≥ 1
+- **Codex 05-12 grep gate (Combobox commit API)**: `grep -E "onCommit=" src/app/catalog/\[plantId\]/plant-profile-client.tsx` matches; `grep -E "onChange=" src/app/catalog/\[plantId\]/plant-profile-client.tsx | grep -i "combobox\\|location"` returns 0 (location is wired to onCommit, not onChange).
+- **Codex 05-16 grep gate (snake_case cache)**: `grep -E "plant\\.cover_photo_url|plant\\.acquisition_date|plant\\.identification_count" src/app/catalog/\[plantId\]/plant-profile-client.tsx` matches; `grep -E "plant\\.coverPhotoUrl|plant\\.acquisitionDate|plant\\.identificationCount" src/app/catalog/\[plantId\]/plant-profile-client.tsx src/contexts/catalog/api/use-plant.ts` returns 0 (cache is snake_case throughout per Codex Decision 1/2).
 - All 7 Playwright specs collect without syntax errors via `--list`
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-16 finding — Plant detail cache seeded from list data uses different field shapes**: Resolved by Plan 05-15's `decisions.cache_shape_snake_case` — the cache shape is snake_case throughout. Plan 05-16's `usePlant` hook reads from the same snake_case cache. The `PlantDetail` type extends the same snake_case shape as `PlantListItem` plus `identification_count: number`. No camelCase ↔ snake_case conversion at the seeding boundary; one shape across all consumers.
+- **05-16 finding — `identification_count` field name**: The hook + component read `plant.identification_count` (snake_case wire); verification grep gate enforces.
+- **Codex review HIGH 05-12 — Combobox commit API**: Location field uses the new two-callback API. `inputValue` + `onInputValueChange` track typing into a local `locationDraft` state; `onCommit` fires the PATCH mutation via `saveField`. Typing no longer triggers PATCH-while-typing.
+- **Codex Decision 1/2 — HTTP envelope and field-naming**: cache shape is snake_case throughout; component reads `plant.cover_photo_url`, `plant.acquisition_date`, `plant.identification_count`.
+</reviews_addressed>
 
 <success_criteria>
 - Plant Profile page renders single-scroll D-10 layout with care-card hidden + reminders stub + photo-journal preview link + conditional ID-history (D-26)

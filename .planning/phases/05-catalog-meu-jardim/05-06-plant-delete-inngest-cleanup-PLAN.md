@@ -25,20 +25,72 @@ requirements:
   - OFF-08
 decisions:
   resolves_open_question_q2: "Reconciler placement — Phase 5 owns `catalog/reconcile-deletions` LOCALLY as an Inngest cron (every 5 minutes), defensive default. CONTEXT D-04 fallback path: if Phase 4 ships a generic outbox dispatcher later, this reconciler can be retired in a follow-up. Until then, Phase 5 owns the cron. This plan ships it."
-  cron_schedule: "every 5 minutes — `inngest.createFunction({ id: 'catalog/reconcile-deletions', triggers: [{ cron: '*/5 * * * *' }] }, ...)`. Threshold for `findOlderThan` = 300 seconds (5 minutes); a row created in the last 5 min is presumed still in flight and skipped."
+  cron_schedule: "every 5 minutes — `inngest.createFunction({ id: 'catalog/reconcile-deletions', triggers: [{ cron: '*/5 * * * *' }] }, ...)`. Threshold for `findOlderThan` = 300 seconds (5 minutes); a row created in the last 5 min is presumed still in flight and skipped. **Codex review HIGH 05-06**: the threshold ALSO covers `dispatched_at` — rows where `dispatched_at` is within the last threshold seconds are treated as still-in-flight even if status='pending' (handles the case where the prior reconciler tick claimed the row and is still working)."
   cleanup_concurrency_and_retries: "Per CONTEXT § Claude's Discretion: concurrency: { limit: 5, key: 'event.data.user_id' }, retries: 5 (Inngest default exponential backoff)."
-  post_commit_dispatch_strategy: "Use case dispatches inngest.send AFTER transaction commits. On dispatch failure, the use case logs the error to Sentry but returns 204 successfully (the pending row is durable; reconciler will pick up). Pitfall 4 mitigation."
+  cleanup_storage_event_triggers: |
+    **Codex review HIGH 05-09**: the `catalog/cleanup-storage` Inngest function
+    registers TWO event triggers, not one:
+
+    ```ts
+    inngest.createFunction(
+      {
+        id: "catalog/cleanup-storage",
+        concurrency: { limit: 5, key: "event.data.user_id" },
+        retries: 5,
+      },
+      [
+        { event: "plant.deleted" },
+        { event: "photo_entry.deleted" },  // Codex 05-09 — separate event for per-PhotoEntry cleanup
+      ],
+      handler,
+    );
+    ```
+
+    Both event types carry `storage_deletion_job_id` (their payload shapes are
+    defined in Plan 05-04's `events.ts`). The handler body is identical for
+    both — load the pending_storage_deletions row by job id, deleteMany, mark
+    complete. The handler does NOT special-case the event name. Plan 05-09's
+    `deletePhotoEntryWithStorageCleanup` use case dispatches `photo_entry.deleted`;
+    this plan's `deletePlant` use case dispatches `plant.deleted`.
+  post_commit_dispatch_strategy: |
+    Use case dispatches inngest.send AFTER transaction commits. On dispatch
+    failure, the use case logs the error to Sentry but returns 204 successfully
+    (the pending row is durable; reconciler will pick up). Pitfall 4 mitigation.
+
+    **Codex review HIGH 05-06**: AFTER `inngest.send(...)` succeeds (or as part
+    of the reconciler claim), the use case (or reconciler) calls
+    `pendingDeletions.markDispatched(tx, jobId)` — sets `status='dispatching'`,
+    `dispatched_at=now()`. This prevents the next reconciler tick from
+    re-dispatching a row whose Inngest event is in flight. The cleanup-storage
+    function transitions the row to `status='complete'` after a successful
+    deleteMany. If the cleanup function fails, the row stays in `dispatching`
+    until `dispatched_at` is older than the reconciler threshold, at which
+    point the next tick re-dispatches.
   source_of_truth_for_paths: "Inngest cleanup function loads the pending_storage_deletions row by storage_deletion_job_id and uses ITS storagePaths field — NOT event.data.storage_paths — as the authoritative deletion list. Prevents path drift if the row is ever updated."
   identification_plant_id_set_null: "Plant cascade deletion via FK ON DELETE SET NULL on Identification.plant_id (Phase 2 D-07). The use case does NOT manually update Identification.plant_id — the FK action handles it. Integration test asserts identifications row is preserved with plant_id NULL after delete."
+  inngest_stub_named_contingency: |
+    **Codex Decision 4 — stub policy**: the Phase-4 Inngest dependency is
+    BLOCKING. The defensive stub at `@shared/events/inngest-client.ts` is a
+    NAMED CONTINGENCY documented in this plan and the SUMMARY artifact —
+    NOT a silent fallback. If Phase 4 has not landed at execution time, the
+    stub mirrors the EXACT API surface (`inngest.send`, `inngest.createFunction`)
+    and emits a Sentry breadcrumb on every call so the absence of real Inngest
+    is observable. The integration test for `deletePlant` includes a guard:
+    if the stub is in use, the test asserts that `inngest.send` was called
+    with the correct payload but does NOT assert the cleanup-storage function
+    fired (since it can't run without real Inngest). Plan 05-06 SUMMARY
+    records whether the stub or real Inngest was active at execution time.
 must_haves:
   truths:
-    - "deletePlant({ plantId, userId, uow, storageAdapter, inngest }) opens transaction → reads photo storage paths via photoEntries.listStoragePathsForPlant → inserts pending_storage_deletions row → DELETEs from plants → commits → dispatches plant.deleted event"
+    - "deletePlant({ plantId, userId, uow, storageAdapter, inngest }) opens transaction → reads photo storage paths via photoEntries.listStoragePathsForPlant → inserts pending_storage_deletions row → DELETEs from plants → commits → dispatches plant.deleted event → calls pendingDeletions.markDispatched(tx, jobId) (Codex 05-06)"
     - "All four DB writes (read paths, insert pending, DELETE plant, FK cascade) happen inside ONE transaction (Pitfall 4 mitigation)"
     - "Plant DELETE cascades photo_entries (Phase 2 D-07 CASCADE) and reminders (Phase 2 D-07 CASCADE; reminders table is Phase 2 deliverable) and SETs Identification.plant_id NULL (Phase 2 D-07 SET NULL)"
     - "Empty-photo case (plant with zero PhotoEntries) skips inserting pending row AND skips event dispatch (efficient no-op)"
+    - "**Codex review HIGH 05-09 — `catalog/cleanup-storage` Inngest function registers BOTH `plant.deleted` AND `photo_entry.deleted` triggers**. Same handler body processes both event types via the shared `storage_deletion_job_id`. The unit test covers both event-name paths."
     - "catalog/cleanup-storage Inngest function loads pending row by storage_deletion_job_id, calls storageAdapter.deleteMany(job.storagePaths), then markComplete"
     - "If event dispatch fails after commit, the pending row remains visible to the reconciler"
-    - "catalog/reconcile-deletions cron scans pending_storage_deletions WHERE status='pending' AND created_at < now() - 300s, re-emits plant.deleted for each (idempotent — the cleanup function checks status before deleting)"
+    - "**Codex review HIGH 05-06 — reconciler skips recently-dispatched rows**: catalog/reconcile-deletions cron scans pending_storage_deletions WHERE status='pending' AND (dispatched_at IS NULL OR dispatched_at < now() - 300s), claims rows via `markDispatched`, then re-emits plant.deleted (or photo_entry.deleted) for each. The dispatched_at column prevents repeated re-dispatch on every cron tick."
+    - "**Codex Decision 4 — Inngest stub is a NAMED CONTINGENCY** (`decisions.inngest_stub_named_contingency`), NOT a silent fallback. SUMMARY records which path (real Inngest vs stub) was active at execution time."
   artifacts:
     - path: "src/contexts/catalog/application/delete-plant.ts"
       provides: "deletePlant(args) — exported async use case"
@@ -400,15 +452,30 @@ export const reconcileDeletions = inngest.createFunction(
 2. `pnpm exec vitest --run --project=integration tests/integration/catalog/delete-plant-atomic.integration.test.ts tests/integration/catalog/reconcile-pending-deletions.integration.test.ts` exits 0.
 3. `pnpm exec tsc --noEmit` exits 0.
 4. Open Question Q2 resolved in this plan's `decisions.resolves_open_question_q2` block.
-5. `@shared/events/inngest-client` exists (real Phase 4 client OR Phase 5 stub).
+5. `@shared/events/inngest-client` exists (real Phase 4 client OR Phase 5 stub — captured in 05-06-SUMMARY.md).
+6. **Codex 05-06 grep gates**: `grep -E "markDispatched" src/contexts/catalog/application/delete-plant.ts` matches AND `grep -E "markDispatched" src/contexts/catalog/inngest/reconcile-deletions.ts` matches. `grep -E "dispatched_at" src/contexts/catalog/inngest/reconcile-deletions.ts` matches.
+7. **Codex 05-09 grep gate**: `grep -E "photo_entry\\.deleted" src/contexts/catalog/inngest/cleanup-storage.ts` matches; the Inngest function registration includes both `plant.deleted` and `photo_entry.deleted` triggers.
 </verification>
 
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-06 HIGH — reconciler references missing `dispatched_at` column / repeated re-dispatch on every cron tick**: Resolved by:
+  1. The `dispatched_at timestamptz NULL` column is added in Plan 05-02 + the `markDispatched(tx, id)` repo helper in Plan 05-03.
+  2. `deletePlant` calls `pendingDeletions.markDispatched(tx, jobId)` AFTER `inngest.send(...)` succeeds (post-commit, Codex 05-06).
+  3. The reconciler claims rows by calling `markDispatched` BEFORE re-emitting the event, and `findOlderThan` skips rows where `dispatched_at` is recent (`OR dispatched_at < now() - threshold`).
+  4. The `cleanup-storage` Inngest function transitions the row to `complete` after deleteMany; if it fails, the row stays in `dispatching` until `dispatched_at` is older than the threshold, at which point the next reconciler tick re-claims it.
+- **05-09 HIGH — `plant.deleted` reused for single PhotoEntry deletion**: Resolved by `decisions.cleanup_storage_event_triggers` — the `catalog/cleanup-storage` Inngest function registers BOTH `plant.deleted` AND `photo_entry.deleted` as triggers. Plan 05-09 dispatches the new event for per-PhotoEntry cleanup; this plan's `deletePlant` continues to dispatch `plant.deleted`. Same handler body for both event types via the shared `storage_deletion_job_id`.
+- **Codex Decision 4 — stub policy**: `decisions.inngest_stub_named_contingency` documents the Phase-4 Inngest dependency as BLOCKING with a NAMED CONTINGENCY stub (mirrors API surface, emits Sentry breadcrumb on every call). The integration test's behavior under-stub is documented; SUMMARY records which path was active.
+</reviews_addressed>
+
 <success_criteria>
-- deletePlant use case ships atomic transaction (read paths → insert outbox → DELETE → commit) per CAT-09 + CONTEXT D-04.
-- catalog/cleanup-storage Inngest function consumes plant.deleted events with concurrency=5 per user, retries=5.
-- catalog/reconcile-deletions cron ships at every-5-minute schedule with 300s threshold (Q2 resolution: Phase 5 owns it locally).
+- deletePlant use case ships atomic transaction (read paths → insert outbox → DELETE → commit → dispatch → markDispatched) per CAT-09 + CONTEXT D-04 + Codex 05-06.
+- catalog/cleanup-storage Inngest function consumes BOTH `plant.deleted` AND `photo_entry.deleted` events with concurrency=5 per user, retries=5 (Codex 05-09).
+- catalog/reconcile-deletions cron ships at every-5-minute schedule with 300s threshold AND `dispatched_at` skip-if-recent logic (Q2 resolution + Codex 05-06).
 - Identification.plant_id set NULL via Phase 2 D-07 FK action (no manual UPDATE in use case).
-- Pitfall 4 (post-commit dispatch failure) mitigated by try/catch + Sentry log + reconciler.
+- Pitfall 4 (post-commit dispatch failure) mitigated by try/catch + Sentry log + reconciler that respects dispatched_at.
+- Inngest stub is a NAMED CONTINGENCY documented in SUMMARY (Codex Decision 4).
 </success_criteria>
 
 <output>

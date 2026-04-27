@@ -139,7 +139,7 @@ export async function withIdempotency(
         .update(idempotencyKeys)
         .set({
           responseStatus: response.status,
-          responseBody: response.body as never,
+          responseBody: response.body as unknown,
           updatedAt: sql`now()`,
         })
         .where(and(eq(idempotencyKeys.userId, userId), eq(idempotencyKeys.key, key)));

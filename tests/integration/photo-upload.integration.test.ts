@@ -59,6 +59,15 @@ interface FakeAdapter {
   listBuckets: ReturnType<typeof vi.fn>;
   listObjectsUnderPrefix: ReturnType<typeof vi.fn>;
   asAdapter: StorageAdapterShape;
+  /**
+   * CR-01 test seam: exposes the internal "stored" set so tests that
+   * override `uploadObject` via `mockImplementation`/`mockImplementationOnce`
+   * can still seed the round-trip state. Underscore-prefix signals
+   * "test-internal, not part of any adapter contract."
+   */
+  _stored: Set<string>;
+  /** Build the canonical `{bucket}/{objectKey}` join key the fake uses internally. */
+  _storedKey: (bucket: string, objectKey: string) => string;
 }
 
 function makeFakeAdapter(): FakeAdapter {
@@ -82,8 +91,18 @@ function makeFakeAdapter(): FakeAdapter {
     signedUrl: "https://example.test/signed-url",
   }));
   const deletePrefix = vi.fn(async ({ bucket, prefix }: { bucket: string; prefix: string }) => {
-    // Mirror the real Supabase semantics: list-and-remove. For tests
-    // this means dropping every stored key under the prefix.
+    // Mirror real Supabase semantics: the SDK's `list(path)` interprets
+    // its argument as a folder. CR-01: passing a file path returns
+    // zero matches, so deletePrefix(file_path) silently no-ops in
+    // production. We replicate that here so a regression that routes
+    // single-file deletes through `deletePrefix` (the original CR-03
+    // fix's mistake) cannot pass this test.
+    //
+    // A "folder" prefix has either a trailing `/` or matches an entry
+    // that has at least one path-segment beyond the prefix. We only
+    // honour delete when prefix ends with `/` — the LGPD sweep usage
+    // (`${userId}/`) — and ALWAYS no-op on bare file-path prefixes.
+    if (!prefix.endsWith("/")) return;
     for (const key of [...stored]) {
       const expectedHead = `${bucket}/${prefix}`;
       if (key.startsWith(expectedHead)) stored.delete(key);
@@ -122,6 +141,8 @@ function makeFakeAdapter(): FakeAdapter {
     listBuckets,
     listObjectsUnderPrefix,
     asAdapter,
+    _stored: stored,
+    _storedKey: storedKey,
   };
 }
 
@@ -282,15 +303,19 @@ describe.skipIf(!dbUrl)("Phase-02-08 Task 3 photo upload use-case + route", () =
     const fake = makeFakeAdapter();
     let observedOriginalKey = "";
     let observedThumbnailKey = "";
+    // `mockImplementation` REPLACES the default behaviour entirely — so
+    // every override below MUST seed `fake._stored` itself, otherwise the
+    // round-trip assertion at the end is vacuously true (empty set →
+    // listObjectsUnderPrefix returns [] regardless of what the
+    // compensating delete did).
     fake.uploadObject.mockImplementation(async ({ bucket, objectKey }) => {
+      fake._stored.add(fake._storedKey(bucket, objectKey));
       if (bucket === "plant-photos") observedOriginalKey = objectKey;
       if (bucket === "plant-thumbnails") observedThumbnailKey = objectKey;
-      // Preserve the default fake behaviour: track the upload as stored
-      // so the listObjectsUnderPrefix assertion below can verify the
-      // round-trip.
       return { bucket, objectKey };
     });
     fake.uploadObject.mockImplementationOnce(async ({ bucket, objectKey }) => {
+      fake._stored.add(fake._storedKey(bucket, objectKey));
       observedOriginalKey = objectKey;
       // After the original upload completes, delete the plant so the
       // FK violates when uploadPhoto reaches step 7. The ownership

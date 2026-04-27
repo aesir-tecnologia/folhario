@@ -38,6 +38,17 @@ export default defineConfig({
     trace: "on-first-retry",
   },
 
+  // Phase 3 Plan 05 — visual-snapshot defaults per Open Risk #5.
+  // Local macOS Apple-system fonts render differently from CI Ubuntu DejaVu;
+  // baselines are generated via Docker (`pnpm visual:baseline:docker`) and
+  // committed once. `maxDiffPixels: 100` absorbs sub-pixel anti-aliasing drift.
+  expect: {
+    toHaveScreenshot: {
+      animations: "disabled",
+      maxDiffPixels: 100,
+    },
+  },
+
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 
   webServer: {
@@ -50,6 +61,10 @@ export default defineConfig({
       AUTH_JWKS_OVERRIDE_URL: TEST_JWKS_URL,
       AUTH_AUDIENCE_OVERRIDE: TEST_AUDIENCE,
       AUTH_ISSUER_OVERRIDE: TEST_ISSUER,
+      // HIGH 2 + Open Risk #8 (codex review) — opt the playwright job into the
+      // gated /modal-sheet test route. Production builds without this env var
+      // call notFound() on /modal-sheet (route group `(test)` does NOT hide URLs).
+      NEXT_PUBLIC_ENABLE_TEST_ROUTES: "1",
     },
   },
 });

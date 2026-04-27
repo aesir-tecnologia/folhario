@@ -27,6 +27,38 @@ requirements:
   - CAT-11
   - UI-07
 decisions:
+  cache_shape_snake_case: |
+    **Codex review HIGH Decision 1/2**: TanStack Query cache stores plant rows
+    in SNAKE_CASE shape (matching the HTTP wire format). The HTTP response from
+    GET /api/v1/plants returns `{ data: PlantWireRow[], next_cursor: string|null }`
+    where `PlantWireRow` is snake_case (`cover_photo_url`, `acquisition_date`,
+    `species_id`, `created_at`, `identification_count`).
+
+    The RSC prefetch (server-side) calls the use case `listPlants(...)` which
+    returns camelCase `PlantRow[]` (Plan 05-03). RSC MUST adapt to snake_case
+    BEFORE writing to the dehydrated cache so the prefetched data and the
+    client-side fetched pages have IDENTICAL shape:
+
+    ```ts
+    // RSC catalog page:
+    import { toSnakePlant } from "@shared/api/snake-case-serializer";
+    const result = await listPlants({ userId, sortKey, cursor: null, limit: 50 });
+    const wirePage = {
+      data: result.rows.map(toSnakePlant),
+      next_cursor: result.nextCursor,
+    };
+    await queryClient.prefetchInfiniteQuery({
+      queryKey: ["plants", { sort: sortKey }],
+      queryFn: () => wirePage, // returns the already-adapted wire shape
+      initialPageParam: null,
+    });
+    ```
+
+    The client hook (`usePlants`) reads the cached pages and component code
+    consumes snake_case fields directly — `plant.cover_photo_url`, NOT
+    `plant.coverPhotoUrl`. One single shape across RSC prefetch, HTTP fetches,
+    Plant Profile detail seeding (Plan 05-16), and Manual Add optimistic
+    updates (Plan 05-17). Eliminates the contract drift Codex flagged.
   rsc_prefetch_strategy: |
     Catalog page is RSC + HydrationBoundary per RESEARCH Pattern 1. RSC
     prefetches the FIRST PAGE by calling the use case `listPlants(...)` from
@@ -201,10 +233,12 @@ export type PlantListItem = {
   name: string;
   nickname: string | null;
   location: string | null;
-  acquisitionDate: string | null;
-  coverPhotoUrl: string | null;
-  speciesId: string | null;
-  createdAt: string;
+  // Codex Decision 1/2: cache + wire shape is snake_case. RSC prefetch maps
+  // camelCase repo rows to snake_case via toSnakePlant before dehydration.
+  acquisition_date: string | null;
+  cover_photo_url: string | null;
+  species_id: string | null;
+  created_at: string;
 };
 export type ListPlantsResult = { data: PlantListItem[]; next_cursor: Cursor };
 export function listPlants(args: ListPlantsArgs): Promise<ListPlantsResult>;
@@ -213,7 +247,7 @@ export function listPlants(args: ListPlantsArgs): Promise<ListPlantsResult>;
 From GET /api/v1/plants (5a Plan 05-08):
 - Query params: `?cursor=<base64>&limit=<int>&sort=<sortKey>`
 - Defaults: cursor=null, limit=50 (max 200), sort=acquired_desc
-- Response 200: `{ data: PlantListItem[], next_cursor: string | null }`
+- Response 200: `{ data: PlantListItem[], next_cursor: string | null }` (snake_case fields per Codex Decision 1/2)
 - Response on error: `{ error: { code, message, details? } }` per closed registry
 
 From src/contexts/billing/api/use-subscription.ts (Plan 05-11):
@@ -441,15 +475,17 @@ typo — replace with the correct relative path before committing.
     import { useInfiniteQuery } from "@tanstack/react-query";
     import type { SortKey } from "./use-sort-preference";
 
+    // Codex Decision 1/2: cache + wire shape is snake_case (matches HTTP wire format).
+    // RSC prefetch maps camelCase repo rows to snake_case via toSnakePlant (Plan 05-08).
     export type PlantListItem = {
       id: string;
       name: string;
       nickname: string | null;
       location: string | null;
-      acquisitionDate: string | null;
-      coverPhotoUrl: string | null;
-      speciesId: string | null;
-      createdAt: string;
+      acquisition_date: string | null;
+      cover_photo_url: string | null;
+      species_id: string | null;
+      created_at: string;
     };
 
     export type PlantsPage = { data: PlantListItem[]; next_cursor: string | null };
@@ -477,6 +513,7 @@ typo — replace with the correct relative path before committing.
     import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
     import { listPlants } from "@contexts/catalog/application/list-plants";
     import { requireUser } from "@shared/auth/require-user";
+    import { toSnakePlant } from "@shared/api/snake-case-serializer"; // Codex Decision 1/2
     import { CatalogGridClient } from "./catalog-grid-client";
 
     export default async function CatalogPage() {
@@ -487,15 +524,24 @@ typo — replace with the correct relative path before committing.
       // Since SSR cannot read sessionStorage, ALWAYS prefetch with default; client may
       // immediately refetch with stored sort key after hydration (acceptable tradeoff —
       // first paint shows default sort which matches CAT-07 anyway).
+      //
+      // Codex Decision 1/2 + 3: use case takes `sortKey` (object-form arg);
+      // RSC adapts the camelCase repo result to snake_case wire shape BEFORE
+      // dehydrating so the cache shape matches subsequent HTTP fetches.
       await queryClient.prefetchInfiniteQuery({
         queryKey: ["plants", { sort: "acquired_desc" }],
-        queryFn: async ({ pageParam }) =>
-          listPlants({
+        queryFn: async ({ pageParam }) => {
+          const result = await listPlants({
             userId: user.id,
-            sort: "acquired_desc",
+            sortKey: "acquired_desc",
             cursor: typeof pageParam === "string" ? pageParam : null,
             limit: 50,
-          }),
+          });
+          return {
+            data: result.rows.map(toSnakePlant),
+            next_cursor: result.nextCursor,
+          };
+        },
         initialPageParam: null,
       });
 
@@ -626,21 +672,24 @@ typo — replace with the correct relative path before committing.
             </section>
           )}
 
-          {/* Grid (CAT-04 + CAT-10 + UI-07) */}
+          {/* Codex review 05-15: <style> tags MUST be outside the <ul> list — placing
+              <style> as a child of <ul> creates an invalid <li role="presentation">
+              fallback in the a11y tree on some browsers and may be skipped during
+              hydration. Move the responsive-grid CSS BEFORE the <ul>. */}
           {!isEmpty && (
-            <ul
-              className="grid gap-4"
-              style={{
-                gridTemplateColumns:
-                  "repeat(2, minmax(0, 1fr))",
-              }}
-              data-testid="catalog-grid"
-            >
-              {/* Inline media query via CSS variable approach: simpler is to use a small <style> below or rely on a useMediaQuery hook. For now, compose Tailwind responsive prefixes which require the breakpoints to be configured (see decisions.responsive_grid_breakpoints). */}
+            <>
               <style>{`
                 @media (min-width: 600px) { [data-testid="catalog-grid"] { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
                 @media (min-width: 900px) { [data-testid="catalog-grid"] { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
               `}</style>
+              <ul
+                className="grid gap-4"
+                style={{
+                  gridTemplateColumns:
+                    "repeat(2, minmax(0, 1fr))",
+                }}
+                data-testid="catalog-grid"
+              >
               {allPlants.map((plant, i) => {
                 const isLast = i === allPlants.length - 1;
                 const altText = plant.nickname
@@ -655,9 +704,10 @@ typo — replace with the correct relative path before committing.
                   >
                     <Link href={`/catalog/${plant.id}`} className="block">
                       <div className="relative mb-3 aspect-[4/5] overflow-hidden rounded-xl bg-[var(--hairline,#D8D2C7)]">
-                        {plant.coverPhotoUrl && (
+                        {/* Codex Decision 1/2: cache + wire shape is snake_case. Field is `cover_photo_url`. */}
+                        {plant.cover_photo_url && (
                           <Image
-                            src={plant.coverPhotoUrl}
+                            src={plant.cover_photo_url}
                             alt={altText}
                             fill
                             sizes="(max-width: 600px) 50vw, (max-width: 900px) 33vw, 25vw"
@@ -680,7 +730,8 @@ typo — replace with the correct relative path before committing.
                   </li>
                 );
               })}
-            </ul>
+              </ul>
+            </>
           )}
 
           {/* Loading-more hint */}
@@ -932,9 +983,22 @@ typo — replace with the correct relative path before committing.
 - `grep -c useSubscription src/app/catalog/catalog-grid-client.tsx` ≥ 1
 - `grep -c "data-testid=\"catalog-grid\"" src/app/catalog/catalog-grid-client.tsx` ≥ 1
 - `grep -c 'aria-live="polite"' src/app/catalog/catalog-grid-client.tsx` ≥ 1
+- **Codex 05-15 grep gate (`<style>` outside `<ul>`)**: `grep -E "<ul[^>]*>\\s*<style|<ul[^>]*>\\s*\\{/\\* .*\\*/\\}\\s*<style" src/app/catalog/catalog-grid-client.tsx` returns 0 — no `<style>` element appears as a direct child of `<ul>`. The reverse-grep should show the responsive `<style>` BEFORE the `<ul>` element.
+- **Codex Decision 1/2 grep gate (snake_case fields)**: `grep -E "plant\\.coverPhotoUrl|plant\\.acquisitionDate|plant\\.identificationCount" src/app/catalog/catalog-grid-client.tsx` returns 0 (no camelCase field reads on cached plant rows). `grep -E "plant\\.cover_photo_url" src/app/catalog/catalog-grid-client.tsx` matches.
+- **Codex Decision 1/2 grep gate (RSC adapter)**: `grep -E "toSnakePlant" src/app/catalog/page.tsx` matches at least once (RSC prefetch maps camelCase → snake_case before dehydration).
+- **Codex Decision 3 grep gate (sortKey)**: `grep -E "sortKey:" src/app/catalog/page.tsx src/contexts/catalog/api/use-plants.ts` matches; `grep -nE "(?<!sortKey:)\\bsort:" src/app/catalog/page.tsx` (Perl-style negative lookbehind) returns 0 — the use-case argument is `sortKey`, not `sort`.
 - Playwright suites collect without syntax errors via `--list`
 - pt-BR.json keys grep-verify each i18n key consumed: `node -e "const m=require('./src/messages/pt-BR.json').catalog; for (const k of ['page.title','header.addPlantCta','empty.headline','empty.cta','sort.label','sort.options.name_asc','sort.announcement','card.metadata.noLocation','card.alt.withNickname','card.alt.nameOnly','loading.list']) { const v = k.split('.').reduce((o,p)=>o&amp;&amp;o[p],m); if (!v) { console.error('MISSING catalog.'+k); process.exit(1); } }"`
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-15 finding — `<style>` inside `<ul>`**: Resolved by hoisting the responsive grid `<style>` block BEFORE the `<ul>` element, wrapped together in a fragment `<>...</>`. Verification grep gate enforces.
+- **05-15 finding — RSC prefetch result shape mismatch with `usePlants`**: Resolved by `decisions.cache_shape_snake_case`. The cache shape is snake_case throughout — RSC prefetch adapts the camelCase repo result to snake_case via `toSnakePlant` (Plan 05-08's serializer module) BEFORE writing to the dehydrated cache. The HTTP fetch path also returns snake_case directly. Components read snake_case fields (`plant.cover_photo_url`).
+- **Codex Decision 1/2 — Field-naming/HTTP envelope drift**: PlantListItem type is now snake_case (`acquisition_date`, `cover_photo_url`, `species_id`, `created_at`); usePlants reads `data` and `next_cursor` from HTTP responses; cache + components consume snake_case throughout.
+- **Codex Decision 3 — `listPlants` argument signature**: RSC prefetch passes `sortKey: "acquired_desc"` (object-form, canonical name).
+</reviews_addressed>
 
 <success_criteria>
 - `useSortPreference` hook ships with TDD coverage (D-08 verified)

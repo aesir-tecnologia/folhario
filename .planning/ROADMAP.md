@@ -111,7 +111,32 @@ Cross-cutting constraints:
   3. Loading states render as skeletal shimmers (never circular spinners) with a 300ms threshold and 120ms fade-in, reducing to static blocks + 80ms fade under `prefers-reduced-motion`; the capture-button 1.00→1.03 bounce, 3.2s breathing loop on empty CTA, and 60ms cascade on list reveal all honor reduced motion.
   4. Placeholder screens demonstrate every composed primitive: empty state (Sage line-art + Source Serif headline + Calm Slate hint + single Canopy CTA), inline calm error (never full-screen red wall, cause + recovery copy, retry path exposed), persistent offline banner, safe-area-respecting `min-h-[100dvh]` layout with no horizontal scroll, and strings piped through the i18n layer with `dd/MM/yyyy` dates, 24h times, and `R$ 29,90` currency.
   5. When a new service worker version is detected, a non-blocking bottom toast "Nova versão disponível" + "Atualizar" appears, tapping triggers `skipWaiting` + reload, and the app never auto-reloads mid-session; a design-system lint confirms absence of emoji, pure black/white, gradient text, glassmorphism, neumorphism, Inter, and generic serifs.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+- [ ] 03-01-PLAN.md -- Tooling foundation: Tailwind v4 + tokens + Stylelint + ESLint better-tailwindcss + Vitest jsdom + matchMedia mock + banned-patterns snapshot
+
+**Wave 2 _(blocked on Wave 1 completion)_**
+- [ ] 03-02-PLAN.md -- Theme cookie Server Action (TDD), root layout extension (cookie + fonts + dual theme-color), pt-BR.json populate (~34 keys), format.ts Intl helpers (TDD), /api/v1/health/connectivity heartbeat (TDD), ScientificName
+
+**Wave 3 _(blocked on Wave 2 completion)_**
+- [ ] 03-03-PLAN.md -- Motion springs + 11 UI primitives: Button (4 variants), TextInput, Select, Toggle, ModalSheet, Skeleton (TDD 300ms gate), EmptyState (TDD single-CTA), InlineError (TDD slots+Rust), CaptureButton (TDD breathing-loop reduced-motion)
+
+**Wave 4 _(blocked on Wave 3 completion)_**
+- [ ] 03-04-PLAN.md -- App shell: useOnlineStatus (TDD backoff), 4 banners/toasts, BottomNav + scroll-restore (TDD), SW rewrite skipWaiting:false + SKIP_WAITING handler (TDD), AppUpdateToast, (app) layout group + 4 placeholder pages + /offline, manifest rewrite (TDD shape), pwa-asset-generator install
+
+**Wave 5 _(blocked on Wave 4 completion; checkpoint:human-action for visual baselines)_**
+- [ ] 03-05-PLAN.md -- E2E lockdown: 20 visual snapshots * 4 theme/motion combos (Docker baseline gen), horizontal-scroll guard, sw-update-toast smoke, offline-fallback, bottom-nav scroll-restore, 4 axe specs (placeholder/modal/route-focus/skip-link)
+
+Cross-cutting constraints:
+- D-32 substitution (Open Risk #1): `eslint-plugin-better-tailwindcss@4.4.1` replaces `eslint-plugin-tailwindcss` (no Tailwind v4 stable). Plan 01 summary updates CONTEXT.md retroactively.
+- Open Risk #2: manifest drops monochrome icon (pwa-asset-generator can't produce). manifest-shape.test.ts asserts NO monochrome required.
+- Open Risk #3: EmptyState ships inline-coded leaf SVG fallback when public/illustrations/* missing.
+- Open Risk #4: cookie read MUST be in src/app/layout.tsx (root). (app)/layout.tsx MUST NOT call getTheme().
+- Open Risk #5: visual baselines via Docker (`pnpm visual:baseline:docker` -- Plan 04 adds script; Plan 05 Task 2 is human-supervised).
+- Open Risk #7: globals.css MUST exist with @import "tailwindcss" BEFORE eslint-plugin-better-tailwindcss is wired (Task 1 -> Task 3 ordering in Plan 01).
+- Threat models: T-03-02-01 cookie injection (allowlist guard), T-03-02-02 heartbeat info disclosure (no env field, no IPs), T-03-04-01 SW SKIP_WAITING type guard, T-03-04-02 heartbeat backoff DoS mitigation.
 **UI hint**: yes
 
 ### Phase 4: IAM — Auth, Verification, Consent
@@ -124,7 +149,21 @@ Cross-cutting constraints:
   3. Returning users log in with email+password via per-device JWT (no server sessions), log out of the current device (revoking that JWT and its push subscription only), request a password reset from a public endpoint that always returns 200 (no enumeration) and — when the email exists — receive a Resend email with a single-use hashed token expiring in 1h that lets them set a new password while existing JWTs remain valid.
   4. From `Settings → Account`, an email+password user changes their password with current + new (wrong current → `invalid_credentials` 401); OAuth-only accounts see the change-password UI hidden and the endpoint rejects with `forbidden`; the Settings shell renders with placeholder sections for Notifications, Subscription & billing, Privacy & LGPD, Needs attention, and App info that later phases will fill.
   5. The signup, login, and OAuth callback endpoints enforce a narrow per-IP attempt throttle returning `rate_limited` 429 when tripped, independent of the target account and without consuming the failure budget on successful logins, and `notifications/send-email` Inngest function is wired to Resend with pt-BR React Email templates for verification + password-reset as the first consumers (later phases add templates).
-**Plans**: TBD
+**Plans**: 11 plans
+
+Plans:
+- [ ] 04-01-PLAN.md -- Phase 2/3 prerequisite gate
+- [ ] 04-02-PLAN.md -- Schema additions (email_verified_at + 3 tables) + drizzle-kit push
+- [ ] 04-03-PLAN.md -- Shared foundation (env vars, helpers, Zod, fixtures, locale)
+- [ ] 04-04-PLAN.md -- Inngest serve handler + 8 functions registered (1 real cron + 7 stubs)
+- [ ] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function
+- [ ] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
+- [ ] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)
+- [ ] 04-08-PLAN.md -- Password reset (always-200 + Inngest async lookup + consume)
+- [ ] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete
+- [ ] 04-10-PLAN.md -- UI surfaces (auth pages + Settings shell + UnverifiedBlocker + root layout gate)
+- [ ] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
+
 **UI hint**: yes
 
 ### Phase 5: Catalog — Meu Jardim
@@ -137,7 +176,25 @@ Cross-cutting constraints:
   3. A plant profile opens with cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link placeholder, and a delete overflow; the location picker shows the user's prior locations as quick-select plus defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` plus free text that becomes reusable next time.
   4. A user adds a new photo-journal entry with an optional note (creating a `PhotoEntry` linked to the plant), and the photo journal screen lists entries reverse-chronologically; a sort control offers name A-Z, name Z-A, date newest, date oldest, location, and the selection persists for the session.
   5. Deleting a plant cascades its PhotoEntry + Reminder rows, schedules its storage objects for deletion, sets `Identification.plant_id` NULL while preserving the history row, and a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.
-**Plans**: TBD
+**Plans**: 18 plans (5a + 5b)
+- [ ] 05-01-wave0-test-infra-PLAN.md - Wave 0 test infra (axe-core + fake-indexeddb + transaction-rollback fixture + test directories + Playwright auth-bypass fixture)
+- [ ] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
+- [ ] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
+- [ ] 05-04-domain-zod-schemas-PLAN.md - Domain Zod schemas + validateStoragePathOwnership helper
+- [ ] 05-05-plant-create-use-cases-PLAN.md - Plant create use cases (manual + from-identification) + PostHog plant_added (Open Q6)
+- [ ] 05-06-plant-delete-inngest-cleanup-PLAN.md - Plant delete + Inngest catalog/cleanup-storage + reconciler cron (Open Q2)
+- [ ] 05-07-patch-photo-entry-cover-use-cases-PLAN.md - PATCH/PhotoEntry/cover use cases + listPlants/listPhotoEntries
+- [ ] 05-08-route-handlers-read-create-PLAN.md - Route handlers (5 read + create endpoints)
+- [ ] 05-09-route-handlers-mutate-delete-PLAN.md - Route handlers (6 mutate + delete endpoints)
+- [ ] 05-10-tq-provider-idb-persister-i18n-PLAN.md - TanStack Query provider + IDB persister + i18n catalog namespace (Open Q3 resolution)
+- [ ] 05-11-use-subscription-stub-PLAN.md - useSubscription() stub + read-only mode test harness
+- [ ] 05-12-combobox-primitive-PLAN.md - Combobox primitive per WAI-ARIA APG 1.2 (Open Q4 resolution)
+- [ ] 05-13-bottom-sheet-primitive-PLAN.md - BottomSheet primitive [BLOCKING axe + VoiceOver/TalkBack gate] (Open Q5 resolution)
+- [ ] 05-14-lightbox-inline-edit-primitives-PLAN.md - Lightbox + InlineEditField primitives (Pitfall 6 a11y guard)
+- [ ] 05-15-catalog-page-grid-sort-PLAN.md - Catalog page + responsive grid + sort + sessionStorage hook
+- [ ] 05-16-plant-profile-page-PLAN.md - Plant Profile page (single-scroll + inline edits + delete confirm + ID-history conditional)
+- [ ] 05-17-manual-add-photo-journal-pages-PLAN.md - Manual Add page + Photo Journal page (2-step upload + bottom-sheet + lightbox)
+- [ ] 05-18-home-identify-serwist-offline-banners-PLAN.md - Home empty + /identify placeholder + Serwist runtime cache + offline + read-only banners
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls
@@ -252,8 +309,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Foundation | 8/9 | In progress | - |
 | 2. Data Layer & Bounded Contexts | 11/11 | Complete | 2026-04-26 |
-| 3. Design System & App Shell | 0/TBD | Not started | - |
-| 4. IAM — Auth, Verification, Consent | 0/TBD | Not started | - |
+| 3. Design System & App Shell | 0/5 | Ready to execute | - |
+| 4. IAM — Auth, Verification, Consent | 0/11 | Ready to execute | - |
 | 5. Catalog — Meu Jardim | 0/TBD | Not started | - |
 | 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |
 | 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |

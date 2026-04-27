@@ -1,0 +1,1139 @@
+{
+  "phase": "03-design-system-app-shell",
+  "phase_name": "Design System & App Shell",
+  "generated_at": "2026-04-26T16:32:01Z",
+  "stats": {
+    "total": 35,
+    "answered": 35,
+    "chat_more": 0,
+    "remaining": 0
+  },
+  "canonical_refs": [
+    {
+      "path": "docs/CAVE-PRD.md",
+      "topic": "Design System / Screens / Accessibility",
+      "section": "§16, §17, §18",
+      "note": "Locks visual tokens, motion params, banned patterns, a11y rules. Section 17 defines hex palette, typography, spring physics, skeleton timing, banned patterns. Section 18 defines redundant-cue rules."
+    },
+    {
+      "path": ".planning/PROJECT.md",
+      "topic": "Vision + Constraints",
+      "note": "Mobile-first PWA, tablet-width centered on desktop, pt-BR only, WCAG AA = ship blocker, adapter boundaries."
+    },
+    {
+      "path": ".planning/ROADMAP.md",
+      "topic": "Phase 3 Goal + Success Criteria",
+      "section": "Phase 3 entry",
+      "note": "5 success criteria define ship contract — installable PWA, theme switch, skeletons, placeholder primitives, app-update toast + design-system lint."
+    },
+    {
+      "path": ".planning/REQUIREMENTS.md",
+      "topic": "Phase 3 Requirements",
+      "note": "UI-01, UI-02, UI-03, UI-14, UI-17, UI-18, UI-19, UI-20, UI-21, UI-22, UI-23, UI-24, UI-25, OFF-09, OFF-10."
+    },
+    {
+      "path": ".planning/phases/01-foundation/01-CONTEXT.md",
+      "topic": "Foundation Decisions Carried Forward",
+      "note": "D-13 Serwist skeleton-only (Phase 3 must finish offline strategy); D-14 manifest placeholder (Phase 3 rewrites with brand assets); D-15 next-intl as-needed prefix; D-22 Sentry scrub posture."
+    },
+    {
+      "path": ".planning/phases/02-data-layer/02-CONTEXT.md",
+      "topic": "Data Layer Conventions",
+      "note": "Phase 3 placeholder pages do not yet exercise repositories or routes — but API conventions inform the diagnostics ping used by offline-banner heartbeat."
+    },
+    {
+      "path": "CLAUDE.md",
+      "topic": "Stack Lock-in",
+      "note": "next-intl 4.9.1, Next 16.2.3, React 19.2.5, Serwist 9.5.7. Bottom-nav only, max 5 tabs (MVP uses 4). pt-BR only at launch. <html lang='pt-BR'>. date-fns-tz for server-rendered user-local times."
+    }
+  ],
+  "claude_discretion": [
+    {
+      "item": "ScientificName component shape",
+      "rationale": "PRD §17 locks the markup (<i lang='la'>) and styling (italic Plus Jakarta Sans 14 Calm/Lantern Slate). Component lives at src/shared/typography/scientific-name.tsx; first consumed by Phase 5/6."
+    },
+    {
+      "item": "Locale formatter module location + shape",
+      "rationale": "src/shared/i18n/format.ts exporting formatCurrencyBRL, formatDate, formatTime, formatDateTime via Intl.* with pt-BR locale + User.timezone injection point. date-fns-tz used per CLAUDE.md for server-rendered user-local times only."
+    },
+    {
+      "item": "Sage line-art SVG implementation approach",
+      "rationale": "Inline SVG components with currentColor + stroke-width: 1.5px. Theme-aware via CSS color variable. Only theme-aware route."
+    },
+    {
+      "item": "Desktop side-fill background",
+      "rationale": "Same Paper Cream / Night Cream as container — invisible boundary. Locked by 'Folhário is ONE shape across devices' from PRD §17."
+    }
+  ],
+  "sections": [
+    {
+      "id": "styling-architecture",
+      "title": "1. Styling Architecture",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "CSS framework choice",
+          "context": "Phase 1 didn't pick a CSS solution — src/app/globals.css is empty. Next 16 supports Tailwind v4 first-class via @tailwindcss/postcss. Choose once for the whole app — Phase 5+ feature phases all depend on this. PRD §17's token-heavy spec pairs naturally with Tailwind v4's @theme directive.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Tailwind CSS v4",
+              "description": "Recommended. Utility classes + @theme for tokens. Mature ecosystem; fastest route from PRD spec to working UI. PRD banned-patterns map to eslint-plugin-tailwindcss + stylelint rules. CSS-first config keeps tokens single-source."
+            },
+            {
+              "id": "b",
+              "label": "CSS Modules + CSS variables",
+              "description": "Vanilla. Tokens in globals.css :root + [data-theme=dark]. Per-component .module.css. More verbose but zero runtime, full control, no framework lock-in."
+            },
+            {
+              "id": "c",
+              "label": "Panda CSS / Vanilla Extract",
+              "description": "Type-safe build-time CSS-in-JS. Token-aware. More setup; smaller community than Tailwind; more rigorous type contracts."
+            },
+            {
+              "id": "d",
+              "label": "Hybrid: Tailwind v4 utility + CSS Modules for complex pieces",
+              "description": "Pragmatic middle ground. Tailwind for 90% utility, modules for skeleton shimmer / motion primitives that need named keyframes."
+            },
+            {
+              "id": "e",
+              "label": "Custom (specify in chat-more)",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Token storage approach",
+          "context": "PRD §17 has 11 light + 11 dark color tokens, type scale, spring params, 8pt grid. Tokens must be readable from CSS (component styles) AND from JS (motion library reads spring config). Phase 1 set no token convention.",
+          "options": [
+            {
+              "id": "a",
+              "label": "CSS custom properties in globals.css + JS mirror in src/shared/theme/tokens.ts",
+              "description": "Recommended. :root + [data-theme=dark] for runtime; tokens.ts re-exports the same values for motion lib + JS consumers. Single source of truth via shared constants. Works regardless of CSS framework choice."
+            },
+            {
+              "id": "b",
+              "label": "Tailwind v4 @theme directive only (CSS-first config) + theme() in JS",
+              "description": "Minimal duplication; depends on Tailwind v4. Loses dark mode dynamics if Tailwind needs static values for some utilities."
+            },
+            {
+              "id": "c",
+              "label": "Style Dictionary multi-output build",
+              "description": "Multi-output (CSS + JS + JSON). Useful if native app comes later. Adds a build step + extra dependency."
+            },
+            {
+              "id": "d",
+              "label": "Hybrid: CSS vars for runtime + JS constants only for motion params",
+              "description": "Pragmatic. Motion params don't change at runtime so they don't need CSS-var indirection."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Theme attribute placement on <html>",
+          "context": "Where the dark-mode switch lives in the DOM. Affects every CSS rule's variant syntax. Tailwind v4 supports both class and attribute via @variant dark { … }. data-attribute is CSS-native and framework-agnostic.",
+          "options": [
+            {
+              "id": "a",
+              "label": "<html data-theme='light|dark|auto'>",
+              "description": "Recommended. Semantic, matches [data-theme=dark] selector pattern; works with any CSS framework; survives framework swaps. For auto, SSR must not guess prefers-color-scheme; CSS media queries resolve the effective light/dark tokens."
+            },
+            {
+              "id": "b",
+              "label": "<html class='dark'>",
+              "description": "Tailwind's classic convention. Couples to Tailwind syntax."
+            },
+            {
+              "id": "c",
+              "label": "Browser-managed only via prefers-color-scheme",
+              "description": "No manual override path. Conflicts with PRD §17 'Manual override in Settings'."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "typography-iconography",
+      "title": "2. Typography & Iconography",
+      "questions": [
+        {
+          "id": "Q-04",
+          "title": "Font loading strategy",
+          "context": "Source Serif 4 + Plus Jakarta Sans both Google Fonts. PWA must work offline → fonts must self-host + cache. PRD demands variable fonts, +2% tracking on buttons, latin-ext subset for pt-BR diacritics (ã, ç, é).",
+          "options": [
+            {
+              "id": "a",
+              "label": "next/font/google with subsetting (['latin', 'latin-ext'])",
+              "description": "Recommended. Auto self-hosting, font-display swap baked in. Built into Next 16. Service worker caches statically. Variable axis exposed via weight ranges."
+            },
+            {
+              "id": "b",
+              "label": "Self-host downloaded woff2 + next/font/local",
+              "description": "Full control over file paths, version pinning, no Google CDN call. Requires manual variable-font subsetting (glyphhanger or similar)."
+            },
+            {
+              "id": "c",
+              "label": "Google Fonts CSS link tag",
+              "description": "Simplest. External request — breaks offline-first. Not viable for a PWA."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Lucide icon package",
+          "context": "PRD §17: 'Lucide ONLY'. Need stroke-width 1.5px, sizes 18/20/24/28px. Bundle size matters for PWA cold start.",
+          "options": [
+            {
+              "id": "a",
+              "label": "lucide-react",
+              "description": "Recommended. Official React package; per-icon imports tree-shake; supports strokeWidth={1.5} per spec. Industry standard."
+            },
+            {
+              "id": "b",
+              "label": "Inline SVG sprites generated from lucide-static",
+              "description": "Zero JS for icons; one HTTP request. Build step needed to extract used icons. More setup."
+            },
+            {
+              "id": "c",
+              "label": "@iconify/react with Lucide collection",
+              "description": "Generic icon framework. Over-engineered for 'Lucide only'; larger runtime."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "motion-system",
+      "title": "3. Motion System",
+      "questions": [
+        {
+          "id": "Q-06",
+          "title": "Motion library",
+          "context": "PRD §17 motion: spring physics 120/18/1 (stiffness/damping/mass), capture-button 1.00→1.03→1.00 bounce, 3.2s breathing loop, 60ms cascade on lists, prefers-reduced-motion fallbacks. Animate via transform + opacity only.",
+          "options": [
+            {
+              "id": "a",
+              "label": "motion (Framer Motion v12+, rebranded 2025)",
+              "description": "Recommended. First-class spring physics matching PRD params; useReducedMotion hook; LayoutGroup for shared layout transitions; ~60kB gzipped. Largest community + most examples."
+            },
+            {
+              "id": "b",
+              "label": "motion/react (subpath import)",
+              "description": "Recommended. Same package (`motion`), but React consumers import from `motion/react` (or `motion/react-client` where required by RSC boundaries), never an ambiguous root import."
+            },
+            {
+              "id": "c",
+              "label": "@motionone/react",
+              "description": "Smaller bundle (~3kB), simpler spring API. Less spring-config flexibility for complex orchestration like 60ms cascade with shared dampers."
+            },
+            {
+              "id": "d",
+              "label": "CSS @keyframes + custom JS spring helper",
+              "description": "Minimal deps. Spring math by hand (or copy from react-spring source). Most control, most code, fewest deps."
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Spring physics constants location",
+          "context": "PRD locks: stiffness 120, damping 18, mass 1 across button press, sheet reveal, tab switch. Capture-button bounce 1.00→1.03→1.00. Breathing loop 1.00→1.02 over 3.2s ease-in-out. All consumers must read the same values.",
+          "options": [
+            {
+              "id": "a",
+              "label": "src/shared/motion/springs.ts named exports",
+              "description": "Recommended. Exports springs.primary, springs.captureBounce, springs.breathing consumed by transition={springs.primary}. Single source; covers extension for variants if added later."
+            },
+            {
+              "id": "b",
+              "label": "Inline transition props in each consumer",
+              "description": "Duplication; drift risk. Easy to read locally, hard to keep in sync."
+            },
+            {
+              "id": "c",
+              "label": "Custom hook useSpringTransition(name)",
+              "description": "Indirection without value. Same as (a) plus an unnecessary hook layer."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-08",
+          "title": "Reduced-motion enforcement",
+          "context": "PRD §17: every animation has a reduced-motion fallback (shimmer → static, breathing → stop, cascade → 120ms fade, spring → 120ms linear, celebration → 200ms color tint). 'Motion is NEVER sole indicator of state change.' This must be enforceable so a future feature phase can't accidentally regress.",
+          "options": [
+            {
+              "id": "a",
+              "label": "useReducedMotion() hook + Tailwind motion-reduce: variant + Stylelint CSS rule + ESLint TSX rule",
+              "description": "Recommended. Distributed enforcement; catches runtime motion usage in React and CSS keyframes in stylesheets. CSS @keyframes enforcement belongs in Stylelint; ESLint covers TSX motion usage, emoji, and banned imports."
+            },
+            {
+              "id": "b",
+              "label": "useReducedMotion() hook only — no CSS-level enforcement",
+              "description": "Simpler. Misses CSS @keyframes which framer-motion's hook can't see."
+            },
+            {
+              "id": "c",
+              "label": "Manual review only (no automated rule)",
+              "description": "Risks regression in feature phases. PRs forget."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-09",
+          "title": "Route transition strategy",
+          "context": "PRD §17: 'After route change, focus moves programmatically to main content region.' Tab switches preserve scroll per tab (UI-14). Next 16 ships experimental View Transitions API (unstable_ViewTransition) — opt-in fade between routes. This is orthogonal to button-press / sheet-reveal motion (Q-06) but governs the chrome of bottom-nav tab switches.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Static — no route transition animation; instant content swap + focus move",
+              "description": "Recommended for MVP. Predictable, accessible, no spec-creep risk. Bottom-nav active indicator slides via CSS only (transform + opacity); content area swaps instantly."
+            },
+            {
+              "id": "b",
+              "label": "Next 16 View Transitions API (unstable_ViewTransition)",
+              "description": "Opt-in fade between routes; experimental API; reduced-motion via media query. Risks API churn. Can be retrofitted later if MVP feels too jumpy."
+            },
+            {
+              "id": "c",
+              "label": "framer-motion LayoutGroup + AnimatePresence",
+              "description": "Fade/slide via motion library; consistent with rest of motion system; more code; risk of layout-shift regressions on mobile."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "component-primitives",
+      "title": "4. Component Primitives Library",
+      "questions": [
+        {
+          "id": "Q-10",
+          "title": "Headless component primitives library",
+          "context": "Need: dialog/modal sheet (focus trap, scrim, drag handle), toast region, dropdown, tabs (bottom-nav semantics). Must be a11y compliant from day 1. Affects every modal/menu in MVP. Phase 4 needs Modal sheet for T&C; Phase 6 for LGPD consent; Phase 7 for toxicity disclaimer.",
+          "options": [
+            {
+              "id": "a",
+              "label": "@radix-ui/react-* primitives, excluding toast",
+              "description": "Recommended. @radix-ui/react-dialog (modal sheet), @radix-ui/react-dropdown-menu, @radix-ui/react-tabs. Toast ownership stays with Q-11 Sonner to avoid duplicate toast systems. Headless, fully a11y. Industry standard. Tree-shakes per primitive."
+            },
+            {
+              "id": "b",
+              "label": "shadcn/ui (Radix + Tailwind preset components)",
+              "description": "Generates code into your repo; tweakable. Pairs naturally if Tailwind chosen. More opinionated styling defaults to override."
+            },
+            {
+              "id": "c",
+              "label": "Headless UI (@headlessui/react)",
+              "description": "Tailwind Labs alt; smaller surface. No drag-handle bottom-sheet primitive — would need to build that piece manually."
+            },
+            {
+              "id": "d",
+              "label": "Build all primitives from scratch",
+              "description": "Full control, full a11y burden. High risk for an MVP under WCAG-AA-ship-blocker constraint."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-11",
+          "title": "Toast / banner system",
+          "context": "Need: app-update toast (bottom, non-blocking, OFF-10), persistent offline banner (top, UI-24), discard summary toast (Phase 9), read-only banner (Phase 10), error toasts. Reduced-motion: instant fade. Per-message dismiss.",
+          "options": [
+            {
+              "id": "a",
+              "label": "sonner",
+              "description": "Recommended. Modern toast library, motion-friendly, ~3kB. Supports persistent + dismissible, Promise toasts, headless customization. Matches design discipline."
+            },
+            {
+              "id": "b",
+              "label": "Radix UI Toast primitive + bespoke styling",
+              "description": "Pairs naturally if Radix chosen for Q-10. Build the styled wrapper yourself; full design control."
+            },
+            {
+              "id": "c",
+              "label": "react-hot-toast",
+              "description": "Simpler API; less flexible for persistent banners; default styling needs heavy override."
+            },
+            {
+              "id": "d",
+              "label": "Build from scratch on Radix Toast Region",
+              "description": "More code; full design control; covers app-update + offline banner + ad-hoc toasts under one mental model."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "theme-dark-mode",
+      "title": "5. Theme & Dark Mode",
+      "questions": [
+        {
+          "id": "Q-12",
+          "title": "Dark mode toggle + flash prevention",
+          "context": "PRD §17: 'color-scheme: light dark', follow system, manual override in Settings. SSR-rendered Next 16 → if theme stored in localStorage, page paints with system pref then swaps to user choice = visible flash. Cookie read server-side avoids flash.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Cookie 'theme=auto|light|dark' read in root layout, sets <html data-theme='...'> SSR-side; Settings writes cookie via Server Action",
+              "description": "Recommended. Zero flash for explicit light/dark override; works with edge runtime. For auto, render data-theme='auto' and let CSS media queries resolve system preference instead of SSR-guessing. Settings page (Phase 4) writes cookie; Phase 3 just reads. Server Action keeps Settings declarative."
+            },
+            {
+              "id": "b",
+              "label": "localStorage + inline <script> in <head> reading before paint",
+              "description": "Blocking script; classic anti-FOUC pattern. Works but smell. CSP-unfriendly (inline script needs nonce when CSP lands)."
+            },
+            {
+              "id": "c",
+              "label": "System pref only in Phase 3; manual override deferred to Phase 4",
+              "description": "Simpler now. SC-1 implies dark mode is fully working in Phase 3 (cookie path proven end-to-end), so this risks back-pedaling."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Settings → Theme override surface in Phase 3",
+          "context": "PRD §17 demands manual override 'in Settings'. Settings shell ships in Phase 4 (Account section). Phase 3 needs to prove the cookie+dark-mode contract works end-to-end. SC-1 implies the user-facing manual override exists.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Temporary toggle on Profile placeholder tab (Phase 3); Phase 4 moves into proper Settings → Account",
+              "description": "Recommended. Proves the cookie+dark-mode contract; uses the design-system Toggle primitive. Phase 4 owns relocation."
+            },
+            {
+              "id": "b",
+              "label": "Only system-pref dark mode in Phase 3; manual override deferred to Phase 4",
+              "description": "Simpler. SC-1 'manual override' is met by the contract being live; surface deferred."
+            },
+            {
+              "id": "c",
+              "label": "?theme=dark URL param toggle in Phase 3 for testing; UI ships Phase 4",
+              "description": "Debug-only path; ugly but unblocks Playwright snapshot tests of dark mode."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "pwa-service-worker",
+      "title": "6. PWA & Service Worker",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Service worker offline strategy",
+          "context": "Phase 1 SW (src/app/sw.ts) is precache-only skeleton: precacheEntries: self.__SW_MANIFEST. PRD §10: 'Previously loaded catalog browsable offline; new identifications blocked.' Phase 9 owns offline queue. Phase 3's job: app-shell offline + static caching + API passthrough.",
+          "options": [
+            {
+              "id": "a",
+              "label": "App-shell offline-first (HTML+JS+CSS precached) + StaleWhileRevalidate static + NetworkOnly /api/*",
+              "description": "Recommended. Fast launch, predictable. Catalog data caching is Phase 5+ scope. Lets SW navigation handler serve the offline fallback when uncached."
+            },
+            {
+              "id": "b",
+              "label": "Network-first navigation, fall back to /offline page on failure",
+              "description": "Simpler but slower launch. Doesn't match PRD's 'previously loaded catalog browsable' promise."
+            },
+            {
+              "id": "c",
+              "label": "Defer SW caching strategy entirely to Phase 9 (offline queue)",
+              "description": "Phase 3 ships only manifest + register. OFF-09 / OFF-10 SC fail."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Offline fallback page",
+          "context": "When user offline AND requests an uncached route. SC-4 mentions 'persistent offline banner' but doesn't define the offline fallback URL. The fallback IS one of the placeholder demo pages — exercises the empty-state primitive.",
+          "options": [
+            {
+              "id": "a",
+              "label": "/offline static page composed of empty-state primitive (Sage line-art + Source Serif headline + Calm Slate hint + Canopy 'Tentar novamente' CTA)",
+              "description": "Recommended. Proves empty-state primitive end-to-end, gives offline experience a brand-coherent surface. SW navigation handler serves it on uncached navigation when offline."
+            },
+            {
+              "id": "b",
+              "label": "No dedicated offline page; rely only on persistent offline banner + browser default",
+              "description": "Browser default 'You are offline' is ugly and English. Persistent banner appears on cached pages; uncached navigation still falls to browser."
+            },
+            {
+              "id": "c",
+              "label": "Hard 'no offline mode in Phase 3' — disable SW navigation handler, defer to Phase 9",
+              "description": "OFF-09 SC fails. Phase 5+ depends on this."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-16",
+          "title": "App-update toast trigger mechanism",
+          "context": "OFF-10: detect new SW version waiting → bottom toast 'Nova versão disponível' + 'Atualizar' → tap fires skipWaiting + reload. Reduced-motion: instant fade. Never auto-reload mid-session. The mechanism connects SW lifecycle to the React toast system (Q-11).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Listen to Serwist registration events (onWaiting / onUpdated) → emit custom DOM event → toast component subscribes",
+              "description": "Recommended. Serwist exposes hooks for this. Decoupled. Toast lives in app-group layout; SW lifecycle stays at registration site. Requires the service worker to stop using automatic skipWaiting/clientsClaim; the 'Atualizar' button sends the explicit skip-waiting message and then reloads."
+            },
+            {
+              "id": "b",
+              "label": "Poll navigator.serviceWorker.controller + waiting registration manually",
+              "description": "Verbose; no library hook needed. Robust against Serwist API changes."
+            },
+            {
+              "id": "c",
+              "label": "@serwist/window register helper",
+              "description": "Serwist's bundled client. Clean API; adds ~5kB. Worth it if it covers update-check + skipWaiting + claim cleanly."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "PWA icon set generation",
+          "context": "Manifest currently has zero icons. Phase 3 needs full set: 192/512 (Android), 180 (Apple touch), maskable variants, monochrome (Android adaptive), favicon. PRD demands brand-aligned theme color. Source SVG must come from founder or be a clear placeholder.",
+          "options": [
+            {
+              "id": "a",
+              "label": "pwa-asset-generator from a single SVG source",
+              "description": "Recommended. Automated, reproducible. Run as `pnpm icons:generate` script. CI never re-runs; outputs committed. Founder updates SVG → regenerate set."
+            },
+            {
+              "id": "b",
+              "label": "Real Favicon Generator (online tool)",
+              "description": "Manual one-time export. No CI reproducibility. OK if founder commits to one-and-done."
+            },
+            {
+              "id": "c",
+              "label": "Hand-crafted in Figma / Sketch",
+              "description": "Full control; founder-sourced. Time cost; no automation. Only works if founder owns design tooling."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-18",
+          "title": "Manifest theme color value",
+          "context": "Current manifest sets theme_color: #FFFFFF — VIOLATES PRD §17 (no pure white). Theme color tints the browser chrome above the page (Android Chrome address bar, iOS PWA splash).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Paper Cream #FBF7EF (light) + Night Cream #1A1613 (dark) via two <meta name='theme-color' media='(prefers-color-scheme: …)'>",
+              "description": "Recommended. Matches brand. iOS supports the media-query split since iOS 15; Android Chrome since 2022. Manifest theme_color = light value as fallback, and manifest background_color must also use Paper Cream instead of pure white."
+            },
+            {
+              "id": "b",
+              "label": "Canopy Green #1F4D35 (single value)",
+              "description": "Bolder; tints chrome the brand color. Some apps prefer this for brand recall."
+            },
+            {
+              "id": "c",
+              "label": "Paper Cream only (no dark variant)",
+              "description": "Simpler; iOS doesn't respect dark variants reliably anyway."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-19",
+          "title": "PWA install prompt UX",
+          "context": "Phase 3 makes app installable. Choice: rely on browser default vs custom button. Custom prompts typically live in onboarding (Phase 4) or Settings. Phase 3's SC-1 is met by a visitor installing the PWA — doesn't require a custom button.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Browser default only — no custom prompt in Phase 3",
+              "description": "Recommended. Simplest; meets SC-1 'a visitor installs the PWA'. Custom prompt revisited in Phase 4 onboarding if conversion data warrants."
+            },
+            {
+              "id": "b",
+              "label": "Custom 'Instalar' button on Home empty state for unauthenticated visitors",
+              "description": "More engagement; Home empty state is owned by Phase 5 — risk of bleed."
+            },
+            {
+              "id": "c",
+              "label": "Capture beforeinstallprompt and surface a banner after first interaction",
+              "description": "Most aggressive; risk of nag and brand-tone violation."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "layout-navigation",
+      "title": "7. Layout & Navigation",
+      "questions": [
+        {
+          "id": "Q-20",
+          "title": "Tablet-width centered container approach",
+          "context": "PROJECT.md: 'Mobile-first PWA, tablet-width centered on desktop (bg fills sides). No wide-screen design.' Need a max-width for the app shell. PRD §17 catalog grid breaks at 375 / 600 / 900 — implies tablet-class is in the design space.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single root <div> with max-width: 480px centered, min-h-[100dvh]",
+              "description": "Recommended. Phone-style centered; matches mobile-first ethos. Catalog 4-col layout still hits ≥900px viewports because grid is inside the container — but the container caps. Cleanest."
+            },
+            {
+              "id": "b",
+              "label": "max-width: 600px container — gives tablet breathing room",
+              "description": "More natural feel on iPad / desktop preview. Catalog 3-col fits cleanly (PRD breakpoint 600–899 = 3 cols). Slightly wider feel, still 'mobile shape'."
+            },
+            {
+              "id": "c",
+              "label": "Per-route <Container> component with breakpoint-aware max-widths",
+              "description": "Recommended. Keeps the default app shell phone-shaped while allowing routes with explicit PRD layout contracts, especially Catalog's 375/600/900 grid ladder, to opt into wider tablet-class content. Desktop side-fill remains Paper Cream / Night Cream."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-21",
+          "title": "Bottom-nav routing structure",
+          "context": "UI-14: 4 tabs Home / Catálogo / Identificar / Perfil. PRD §17: 'Switching tabs preserves scroll + filter per tab. Never silently jumps to Home or resets.' Per-tab scroll preservation requires either parallel routes or manual save/restore.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single layout + manual scrollY save/restore via sessionStorage in useLayoutEffect",
+              "description": "Recommended for MVP. Simplest; works with App Router defaults; preserve via debounced scroll handler keyed by pathname. Low coupling."
+            },
+            {
+              "id": "b",
+              "label": "Next 16 parallel routes (@home, @catalog, @identify, @profile) with persistent layout",
+              "description": "Preserves DOM + scroll natively. Per Next 16 conventions; non-trivial setup; better UX for back/forward navigation. Refactor risk."
+            },
+            {
+              "id": "c",
+              "label": "experimental.scrollRestoration + browser history API",
+              "description": "Simplest; relies on browser history. Behavior less predictable for tab switches that aren't back/forward navigation."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-22",
+          "title": "App shell layout group structure",
+          "context": "Bottom-nav lives only on app routes. Auth screens (Phase 4) and unverified-email blocker shouldn't show bottom-nav. Decision sets the route-group convention for the whole app.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Root layout has <html> + providers; route group (app) has bottom-nav layout; (auth) group has bare shell",
+              "description": "Recommended. Phase 4 owns (auth); Phase 3 sets up (app) with bottom-nav. Clean separation; each group has its own layout boundary."
+            },
+            {
+              "id": "b",
+              "label": "Single root layout with conditional bottom-nav based on route",
+              "description": "Simpler now; harder to maintain as auth + admin + onboarding routes accumulate."
+            },
+            {
+              "id": "c",
+              "label": "Defer route-group decision to Phase 4",
+              "description": "Risks Phase 3 design contract breakage (unverified-email blocker test won't be possible)."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-23",
+          "title": "Per-tab scroll preservation pattern",
+          "context": "PRD §17 bottom-nav: 'Switching tabs preserves scroll + filter per tab. Never silently jumps to Home or resets.' Q-21 chose the routing structure; this is the explicit scroll-position policy.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Save scrollY to sessionStorage keyed by pathname on every scroll (debounced); restore on tab change in useLayoutEffect",
+              "description": "Recommended. Survives navigation; resets on session. Works with any routing; ~30 LOC."
+            },
+            {
+              "id": "b",
+              "label": "In-memory Map keyed by pathname (lost on reload)",
+              "description": "Cheapest. Lost on tab close. Adequate for MVP if reload-resume isn't a goal."
+            },
+            {
+              "id": "c",
+              "label": "Next 16 experimental.scrollRestoration",
+              "description": "Browser-native; behavior less predictable for tab switches that aren't back/forward navigation. Pairs poorly with parallel routes if Q-21 chose them."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-24",
+          "title": "Focus management on route change",
+          "context": "PRD §17: 'After route change, focus moves programmatically to main content region.' Tab order = visual reading order. SC-2 explicitly demands this for keyboard users.",
+          "options": [
+            {
+              "id": "a",
+              "label": "usePathname listener in app-group layout calls mainRef.current?.focus(); main wrapper has tabIndex={-1} + aria-label",
+              "description": "Recommended. Standard a11y pattern. Negative tabIndex makes <main> focusable without entering tab order. ARIA label says 'Conteúdo principal'."
+            },
+            {
+              "id": "b",
+              "label": "Custom React Router-style focus library",
+              "description": "Overkill for App Router; (a) is ~10 LOC."
+            },
+            {
+              "id": "c",
+              "label": "Manual focus() calls per page",
+              "description": "Drift; pages forget; SC-2 regression risk."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "phase-3-scope",
+      "title": "8. Phase 3 Scope",
+      "questions": [
+        {
+          "id": "Q-25",
+          "title": "Phase 3 composed primitives — multiSelect",
+          "context": "SC-4: 'Placeholder screens demonstrate every composed primitive.' Some primitives are general (button, empty state, error) — Phase 3 owns them. Others are feature-specific (toxicity badge, confidence ladder) — owning phase will build them. Pick all that ship in Phase 3.",
+          "multi_select": true,
+          "options": [
+            {
+              "id": "buttons",
+              "label": "Buttons (Primary / Secondary / Tertiary / Destructive)",
+              "description": "Recommended. PRD §17 specs all 4 variants; foundational; Phase 4+ all consume."
+            },
+            {
+              "id": "inputs",
+              "label": "Inputs (TextInput / Select / Toggle) with §17 validate-on-blur + autocomplete contract",
+              "description": "Recommended. Phase 4 signup is first consumer; Phase 3 ships pattern + behavior."
+            },
+            {
+              "id": "modal-sheet",
+              "label": "Modal sheet primitive (focus trap, scrim, drag handle, return focus)",
+              "description": "Recommended. Phase 4 T&C reading + Phase 6 LGPD consent + Phase 7 toxicity disclaimer all need it."
+            },
+            {
+              "id": "toast-system",
+              "label": "Toast / banner system (app-update + persistent + inline error)",
+              "description": "Recommended. OFF-10 + UI-19 + UI-24 all depend."
+            },
+            {
+              "id": "skeleton",
+              "label": "Skeleton / shimmer with 300ms delay + 120ms fade-in + reduced-motion fallback",
+              "description": "Recommended. UI-17 mandatory in Phase 3."
+            },
+            {
+              "id": "empty-state",
+              "label": "Empty state composer (line-art + serif headline + slate hint + Canopy CTA)",
+              "description": "Recommended. UI-18 mandatory in Phase 3. Used by /offline page + Phase 5 empty Catalog."
+            },
+            {
+              "id": "inline-error",
+              "label": "Inline calm error (UI-19 — never red wall, cause + recovery, retry path)",
+              "description": "Recommended. UI-19 mandatory in Phase 3."
+            },
+            {
+              "id": "app-update-toast",
+              "label": "App-update toast (OFF-10)",
+              "description": "Recommended. Specialization of toast-system. SC-5 mandatory."
+            },
+            {
+              "id": "offline-banner",
+              "label": "Persistent offline banner",
+              "description": "Recommended. UI-24 mandatory in Phase 3."
+            },
+            {
+              "id": "capture-button",
+              "label": "Capture button + breathing loop (PRD §17 circular 72px primitive + 3.2s 1.00→1.02 loop)",
+              "description": "Recommended. SC-3 explicitly demands the breathing loop in Phase 3 even though Phase 6 is first to wire camera capture."
+            },
+            {
+              "id": "cards",
+              "label": "Generic card primitive (Warm Ivory base, 16px radius, L1 elevation)",
+              "description": "Optional. Phase 5 plant card + Phase 7 care card extend; can ship the base now."
+            },
+            {
+              "id": "confidence-ladder",
+              "label": "Confidence ladder (high/medium/low + redundant signals)",
+              "description": "Skip. Phase 6 first uses; build then."
+            },
+            {
+              "id": "toxicity-badge",
+              "label": "Toxicity badge (7-part composition)",
+              "description": "Skip. Phase 7 first uses; build then."
+            },
+            {
+              "id": "plant-card",
+              "label": "Plant card (catalog 4:5 photo)",
+              "description": "Skip. Phase 5 first uses."
+            },
+            {
+              "id": "care-card",
+              "label": "Care card section (full-width with Hairline dividers)",
+              "description": "Skip. Phase 7 first uses."
+            },
+            {
+              "id": "ai-chip",
+              "label": "'Gerado por IA' chip (Trust Teal pill)",
+              "description": "Skip. Phase 7 first uses."
+            },
+            {
+              "id": "cap-chip",
+              "label": "'Cap atingido' chip (Overdue Rust pill)",
+              "description": "Skip. Phase 6 first uses."
+            }
+          ],
+          "answer": [
+            "buttons",
+            "inputs",
+            "modal-sheet",
+            "toast-system",
+            "skeleton",
+            "empty-state",
+            "inline-error",
+            "app-update-toast",
+            "offline-banner",
+            "capture-button"
+          ],
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-26",
+          "title": "Phase 3 placeholder pages",
+          "context": "SC-4: 'Placeholder screens demonstrate every composed primitive.' How much page structure ships in Phase 3?",
+          "options": [
+            {
+              "id": "a",
+              "label": "4 nav tabs as routes (/, /catalog, /identify, /profile) all showing thin placeholder empty states + bottom-nav routes between them + /offline page",
+              "description": "Recommended. Exercises bottom-nav, empty state primitive, route-change focus, persistent offline banner. Each tab a thin placeholder. Phase 5+ replaces tab content."
+            },
+            {
+              "id": "b",
+              "label": "Only Home (/) + a /playground route demoing every primitive",
+              "description": "Less prod-shaped; primitives in one isolated place. Easier visual review."
+            },
+            {
+              "id": "c",
+              "label": "Home + /offline only — bare minimum",
+              "description": "Skips bottom-nav exercise. SC-2 hard to demonstrate."
+            },
+            {
+              "id": "d",
+              "label": "Full Home empty state from §16 (capture button + 'Adicionar manualmente' link) + 3 stub tabs + /offline",
+              "description": "Phase 3 ships UI-04 surface from §16, but UI-04 is mapped to Phase 5 in REQUIREMENTS. Bleeds into Phase 5 scope; risk."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-27",
+          "title": "Skeleton primitive — bespoke or library",
+          "context": "PRD §17 skeleton: matches final geometry, 1.4s shimmer left-to-right, 300ms threshold (faster ops skip shimmer + fade content 120ms), reduced-motion → static block + 80ms fade. Cached responses skip shimmer entirely.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Bespoke <Skeleton> + <SkeletonGroup delay={300}> with CSS keyframes + motion-reduce: variant",
+              "description": "Recommended. Full design control; 300ms gating via JS; ~80 LOC. Matches PRD spec exactly."
+            },
+            {
+              "id": "b",
+              "label": "react-loading-skeleton library",
+              "description": "Mature; styling override needed for design tokens; default shimmer is pulse — needs custom CSS to match PRD's left-to-right shimmer."
+            },
+            {
+              "id": "c",
+              "label": "Tailwind animate-pulse only",
+              "description": "Wrong motion (pulse, not shimmer). Violates PRD spec."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "i18n-locale",
+      "title": "9. i18n & Locale",
+      "questions": [
+        {
+          "id": "Q-28",
+          "title": "i18n message file structure",
+          "context": "src/messages/pt-BR.json is currently empty ({}). Message keys grow rapidly. Two main structures: flat vs nested objects. next-intl supports both.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Nested by screen + component (home.empty.title, nav.tabs.catalog)",
+              "description": "Recommended. next-intl useTranslations('home.empty') namespacing works naturally. Easier mental model as keys multiply."
+            },
+            {
+              "id": "b",
+              "label": "Flat with kebab-case keys (home-empty-title)",
+              "description": "Simpler tooling; no namespacing. Better for translation tools that expect flat keys."
+            },
+            {
+              "id": "c",
+              "label": "Per-screen JSON files split (messages/home.json, messages/nav.json)",
+              "description": "Premature for MVP scale. next-intl supports it via custom loader; maintenance overhead."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-29",
+          "title": "Phase 3 translation depth",
+          "context": "Phase 3 only renders placeholder pages. How much pt-BR copy do we author? Established pattern carries forward. Translation tooling (e.g. machine pre-translation) is irrelevant — pt-BR-only at launch.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Full pt-BR strings for Phase 3 placeholders + design-system labels (~30-50 keys)",
+              "description": "Recommended. Establishes the pattern; future phases extend. Includes nav labels, empty-state copy, app-update toast, offline banner, default error messages, focus-visible labels."
+            },
+            {
+              "id": "b",
+              "label": "Minimal: just the strings rendered in Phase 3 placeholder screens (~10 keys)",
+              "description": "Risks rework when Phase 4 lands more text. Pattern not fully exercised."
+            },
+            {
+              "id": "c",
+              "label": "Stub keys with English fallback messages",
+              "description": "Irrelevant — pt-BR-only at launch. Confuses the message contract."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "banners-state",
+      "title": "10. Banners & State",
+      "questions": [
+        {
+          "id": "Q-30",
+          "title": "Offline banner detection mechanism",
+          "context": "UI-24 persistent offline banner. navigator.onLine is unreliable for captive portals (says online but no internet). Phase 1 ships a diagnostics endpoint at /api/v1/diagnostics/ping that returns 200.",
+          "options": [
+            {
+              "id": "a",
+              "label": "useOnlineStatus hook combining navigator.onLine + window online/offline events + periodic /api/v1/diagnostics/ping heartbeat (e.g. 30s)",
+              "description": "Recommended. Reliable across browsers and PWA edge cases (captive portal, intermittent). Heartbeat is cheap; backs off when offline. The GET ping endpoint must be production-safe and always return a cheap 200 response; it cannot remain gated to IDENTIFICATION_PROVIDER_MODE=stub."
+            },
+            {
+              "id": "b",
+              "label": "navigator.onLine + window online/offline events only",
+              "description": "Simpler; misses captive-portal case. Acceptable for MVP if heartbeat feels overengineered."
+            },
+            {
+              "id": "c",
+              "label": "Service worker → page postMessage on fetch failures",
+              "description": "Most accurate; complex coordination between SW and page. Reactive instead of proactive — banner appears only after a failed request."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-31",
+          "title": "Read-only banner stub in Phase 3",
+          "context": "UI-24 mentions read-only banner. Subscription state machine ships Phase 10. Phase 3 just needs the banner component to RENDER when given a flag — Phase 10 wires the source.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Phase 3 builds banner component with prop-driven state; passes false everywhere; Phase 10 wires real subscription state",
+              "description": "Recommended. Clean separation; primitive shipped; Phase 10 just provides the data."
+            },
+            {
+              "id": "b",
+              "label": "Phase 3 renders the banner dev-only behind a query param for visual review",
+              "description": "Useful for design QA; lives behind ?readonly=1. Easy to forget to remove."
+            },
+            {
+              "id": "c",
+              "label": "Defer entirely to Phase 10",
+              "description": "Phase 10 owns both component + wiring. Simpler scope for Phase 3 but requires Phase 10 to also do design work."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "quality-enforcement",
+      "title": "11. Quality & Enforcement",
+      "questions": [
+        {
+          "id": "Q-32",
+          "title": "Banned-pattern lint enforcement",
+          "context": "PRD §17 has dozens of 'banned' rules: no emoji, no pure black/white, no Inter, no glassmorphism, no gradient text, no 'Saiba mais' secondary CTAs in heroes. Manual review forgets. Lint-staged runs on every commit. SC-5 explicitly demands a 'design-system lint'.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Stylelint with custom rules + ESLint custom rule for emoji + Vitest snapshot rule for fonts",
+              "description": "Recommended. Distributed enforcement — Stylelint catches color/typography/animation patterns; ESLint catches emoji + banned import patterns; Vitest snapshot covers cross-cutting checks."
+            },
+            {
+              "id": "b",
+              "label": "Single Vitest rule scanning files for banned patterns",
+              "description": "Central; can fail loudly in CI. Less granular feedback."
+            },
+            {
+              "id": "c",
+              "label": "Manual review only via PRs",
+              "description": "Fastest now, costliest at scale. SC-5 fails."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-33",
+          "title": "Color contrast verification",
+          "context": "WCAG AA = ship blocker. PRD §17 lists hex contrast ratios per token (Canopy 9.1:1, Forest Ink 12.9:1, etc.). Phase 3 ships tokens — this is when to wire the gate.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Playwright + @axe-core/playwright on placeholder pages, both themes, both motion preferences, gating CI on violations",
+              "description": "Recommended. Catches actual rendered contrast in real browser. Phase 1 already runs Playwright in CI. Snapshot the axe report for review."
+            },
+            {
+              "id": "b",
+              "label": "axe-core unit tests against rendered components in JSDOM",
+              "description": "Fast feedback loop; misses real CSS (pseudo-elements, custom properties via getComputedStyle inconsistencies)."
+            },
+            {
+              "id": "c",
+              "label": "One-time manual contrast-ledger test in Vitest",
+              "description": "Checks tokens against expected ratios; catches hex-typo only. Skips real-page rendering."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-34",
+          "title": "Visual regression testing",
+          "context": "Composed primitives + design system are visual contracts. Changes need review. Phase 3 establishes the regression baseline that all future phases extend.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Playwright snapshot tests for placeholder pages, both themes, both motion preferences",
+              "description": "Recommended. Local screenshots committed; CI compares. Free; integrates with existing Playwright setup. Mask the date/time portions of formatted strings."
+            },
+            {
+              "id": "b",
+              "label": "Chromatic / Percy via Storybook",
+              "description": "Best UX for design QA; paid SaaS; setup heavy; needs Storybook (not in MVP)."
+            },
+            {
+              "id": "c",
+              "label": "No visual regression in Phase 3; rely on lint + axe + manual review",
+              "description": "Risks brand drift over time; SC-5 'design-system lint' partially covers but not visual."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "brand-assets",
+      "title": "12. Brand Assets",
+      "questions": [
+        {
+          "id": "Q-35",
+          "title": "Brand assets source",
+          "context": "Founder logo, Sage line-art illustrations for empty states, PWA icon source. PRD §17 demands custom illustrations 'NEVER stock photos, NEVER veranda scenes.' Source assets must exist before Phase 3 final review.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Founder provides SVG logo + 4–6 line-art illustrations before Phase 3 starts; placeholder SVGs ship if not",
+              "description": "Recommended. Most realistic for greenfield. Phase 3 builds primitives; illustrations swap in trivially because Q-claude-discretion #3 (inline SVG with currentColor) keeps theme-aware."
+            },
+            {
+              "id": "b",
+              "label": "Use Lucide outline icons only as illustration placeholders (no custom illustrations) until set is delivered",
+              "description": "Empty-state primitive structure ships; illustration swap is trivial. Phase 3 success criteria don't gate on custom illustrations."
+            },
+            {
+              "id": "c",
+              "label": "AI-generated line art (Midjourney / Recraft / etc.) — manual cleanup required",
+              "description": "Risky brand voice; founder-sourced is principled. PRD bans AI clichés but illustrations themselves aren't banned per se."
+            },
+            {
+              "id": "d",
+              "label": "Hand-coded SVG illustrations (founder or designer-authored)",
+              "description": "Full control, full ownership; time cost."
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}

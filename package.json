@@ -27,7 +27,8 @@
     "db:setup": "pnpm db:migrate && pnpm db:seed && pnpm db:check-rls && pnpm db:check-seeds",
     "db:check-rls": "tsx --env-file-if-exists=.env.local scripts/check-rls.ts",
     "db:check-seeds": "tsx --env-file-if-exists=.env.local scripts/check-seeds.ts",
-    "supabase": "supabase"
+    "supabase": "supabase",
+    "lint:styles": "stylelint 'src/**/*.css'"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,mjs}": [
@@ -35,6 +36,10 @@
       "eslint --fix"
     ],
     "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.css": [
+      "stylelint --fix",
       "prettier --write"
     ]
   },
@@ -75,6 +80,8 @@
     "lint-staged": "16.4.0",
     "postcss": "8.5.12",
     "prettier": "3.8.3",
+    "stylelint": "17.9.0",
+    "stylelint-config-standard": "40.0.0",
     "supabase": "2.95.0",
     "tailwindcss": "4.2.4",
     "tsx": "4.21.0",

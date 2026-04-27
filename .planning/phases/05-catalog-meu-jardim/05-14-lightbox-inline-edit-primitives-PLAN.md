@@ -62,6 +62,7 @@ must_haves:
     - "InlineEditField Escape key reverts draft to value, exits edit mode, no onSave call"
     - "InlineEditField validation alert region is aria-live='polite' WITHOUT tabindex AND WITHOUT role='alert' (Pitfall 6 mitigation — load-bearing UX regression guard)"
     - "On validation failure, InlineEditField STAYS in edit mode and does NOT call onSave; input re-focuses on next render"
+    - "InlineEditField with `disabled=true` HIDES the pencil affordance entirely (the read-mode button + pencil icon are not rendered; only the static value text appears) — NOT merely disables the button (Codex review 05-14)"
     - "Both primitives use CSS custom properties (var(--canopy), var(--calm-slate), var(--scrim), var(--surface), var(--overdue), var(--hairline)) with hex fallbacks"
   artifacts:
     - path: "src/shared/ui/lightbox.tsx"
@@ -204,9 +205,10 @@ export function InlineEditField(props: InlineEditFieldProps): JSX.Element;
     - I9 Enter triggers blur path which fires onSave
     - I10 disabled mode does not enter edit mode on click
     - I11 multiline=true renders textarea instead of input
+    - **I12 LOAD-BEARING (Codex 05-14)**: when `disabled=true`, the pencil-icon button is NOT in the DOM (`screen.queryByRole("button", { name: /editar/i })` returns null). Only the static value text renders. This is stricter than I10 — the affordance must be HIDDEN, not merely disabled.
   </behavior>
   <action>
-    Create `tests/unit/shared/ui/inline-edit-field.test.ts` with 11 tests per the behavior list. Use `@testing-library/react` (`render`, `screen`, `fireEvent`, `waitFor`). Test I8 explicitly asserts `expect(alertRegion).not.toHaveAttribute("tabindex")` AND `expect(alertRegion).not.toHaveAttribute("role", "alert")` — these are the Pitfall 6 regression guards.
+    Create `tests/unit/shared/ui/inline-edit-field.test.ts` with 12 tests per the behavior list. Use `@testing-library/react` (`render`, `screen`, `fireEvent`, `waitFor`). Test I8 explicitly asserts `expect(alertRegion).not.toHaveAttribute("tabindex")` AND `expect(alertRegion).not.toHaveAttribute("role", "alert")` — these are the Pitfall 6 regression guards. Test I12 explicitly asserts `expect(screen.queryByRole("button", { name: /editar/i })).toBeNull()` when `disabled=true` — Codex 05-14 finding (hidden affordance, not merely disabled).
 
     Run: `pnpm exec vitest --run --project=unit tests/unit/shared/ui/inline-edit-field.test.ts` — MUST FAIL with module-not-found.
 
@@ -216,8 +218,9 @@ export function InlineEditField(props: InlineEditFieldProps): JSX.Element;
     <automated>pnpm exec vitest --run --project=unit tests/unit/shared/ui/inline-edit-field.test.ts 2>&amp;1 | grep -qE "(Cannot find module|Failed to resolve)"</automated>
   </verify>
   <done>
-    - 11 tests authored
+    - 12 tests authored
     - I8 explicitly asserts NO tabindex AND NO role="alert" on alert region
+    - I12 explicitly asserts pencil button is NOT in DOM when disabled (Codex 05-14)
     - Vitest fails on module-not-found
     - Commit prefix `test(05-14):`
   </done>
@@ -244,10 +247,16 @@ export function InlineEditField(props: InlineEditFieldProps): JSX.Element;
        - Escape: `setDraft(value); setError(null); setEditing(false)`
        - Enter (non-multiline): `(e.currentTarget).blur()` — triggers commitOrFail via onBlur
        - onBlur logic: `commitOrFail` — runs validate; if error, set state and return (stay in edit mode); else if `draft !== value`, await onSave; clear error; exit edit mode
-       - Disabled: read-mode button has `disabled` attribute; `enterEdit` early-returns if `disabled`
+       - Disabled (Codex 05-14 finding): when `disabled` prop is true, the read-mode JSX MUST conditionally render JUST a `<span>{value || em-dash}</span>` — NOT the `<button>` + Pencil icon. Use a top-of-render guard:
+         ```tsx
+         if (disabled) {
+           return <span className="...">{value || "—"}</span>;
+         }
+         ```
+         The pencil button + edit-mode logic only render when `disabled` is false. Test I12 grep-asserts `queryByRole("button", { name: /editar/i })` is null when disabled.
        - Tailwind: focus-visible:border uses `var(--canopy,#1F4D35)`; error uses `var(--overdue,#A14A2C)`; pencil uses `var(--calm-slate,#5A6358)`
 
-    3. Run tests: `pnpm exec vitest --run --project=unit tests/unit/shared/ui/inline-edit-field.test.ts` — MUST PASS (11 tests).
+    3. Run tests: `pnpm exec vitest --run --project=unit tests/unit/shared/ui/inline-edit-field.test.ts` — MUST PASS (12 tests).
     4. Run typecheck: `pnpm exec tsc --noEmit` exits 0.
     5. Commit: `git add src/shared/ui/inline-edit-field.tsx && git commit -m "feat(05-14): implement InlineEditField (Pattern 9 + Pitfall 6 a11y guard)"`
   </action>
@@ -256,9 +265,10 @@ export function InlineEditField(props: InlineEditFieldProps): JSX.Element;
   </verify>
   <done>
     - Component file ~110 lines
-    - 11 tests pass (especially I8 — Pitfall 6 a11y guard)
+    - 12 tests pass (especially I8 — Pitfall 6 a11y guard; and I12 — disabled hides pencil)
     - tsc --noEmit exits 0
     - `grep -c 'role="alert"' src/shared/ui/inline-edit-field.tsx | grep -v '^#' | grep -c '' == 0` (NO role=alert in code)
+    - When `disabled` prop is true, no `<button>` is rendered (Codex 05-14 — verified by I12 + grep on the conditional render guard)
     - lucide-react verified present (installed by Plan 05-13 Task 1)
     - Commit prefix `feat(05-14):`
   </done>
@@ -658,21 +668,28 @@ export function InlineEditField(props: InlineEditFieldProps): JSX.Element;
 </threat_model>
 
 <verification>
-- `pnpm exec vitest --run --project=unit tests/unit/shared/ui/inline-edit-field.test.ts` exits 0 (11 tests)
+- `pnpm exec vitest --run --project=unit tests/unit/shared/ui/inline-edit-field.test.ts` exits 0 (12 tests)
 - `pnpm exec vitest --run --project=unit tests/unit/shared/ui/lightbox.test.ts` exits 0 (14 tests)
 - `pnpm exec tsc --noEmit` exits 0
 - `grep -c 'aria-live="polite"' src/shared/ui/inline-edit-field.tsx` returns ≥ 1
 - Pitfall 6 regression guard: `grep -E 'role="alert"' src/shared/ui/inline-edit-field.tsx | grep -v '^//' | grep -v '^\s*\*' | grep -c ''` returns 0 (no role=alert in code)
 - Pitfall 6 regression guard: `grep -E 'tabIndex' src/shared/ui/inline-edit-field.tsx | grep -v '^//' | grep -c ''` returns 0
+- **Codex 05-14 hidden-pencil guard**: `grep -E "if \(disabled\)" src/shared/ui/inline-edit-field.tsx` returns ≥ 1 (early-return guard for the disabled branch); test I12 passes
 - `grep -c "createFocusTrap" src/shared/ui/lightbox.tsx` returns ≥ 1
 - `grep -c 'aria-modal="true"' src/shared/ui/lightbox.tsx` returns ≥ 1
 - `grep -c 'lucide-react' package.json` returns ≥ 1
 </verification>
 
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-14 finding — InlineEditField pencil affordance must be hidden (not just disabled) when `disabled`**: Resolved by adding behavior I12 + must_haves truth + GREEN implementation guard. When `disabled=true`, the read-mode JSX returns ONLY a `<span>` containing the value (no button, no Pencil icon in the DOM). Test I12 grep-asserts `screen.queryByRole("button", { name: /editar/i })` returns null. Verification adds a grep gate on the early-return guard.
+</reviews_addressed>
+
 <success_criteria>
-- InlineEditField implements Pattern 9 with Pitfall 6 mitigation (NO role=alert, NO tabindex on alert region)
+- InlineEditField implements Pattern 9 with Pitfall 6 mitigation (NO role=alert, NO tabindex on alert region) AND hidden-pencil guard for `disabled` (Codex 05-14)
 - Lightbox implements Pattern 8 with keyboard cycle + Escape + 3 action callbacks + read-only-mode hide-actions branch
-- 25 unit tests green (11 inline-edit + 14 lightbox)
+- 26 unit tests green (12 inline-edit + 14 lightbox)
 - Lucide-react installed at exact pin
 - Both primitives use CSS custom properties so Phase 3 design tokens drop in
 - Commits prefixed `test(05-14):` (RED), `feat(05-14):` (GREEN)

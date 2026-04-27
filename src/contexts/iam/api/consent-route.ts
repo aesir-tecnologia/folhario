@@ -40,8 +40,9 @@ const consentRoutePostBodySchema = consentLogInsertSchema.pick({
  *
  * Composition:
  *   - `requireApiUser` (Plan 02-07) is the authoritative auth gate.
- *   - `parseJsonBody(...)` + `consentLogCreateInputSchema` validate the
- *     POST body, mapping non-ok to errorResponse(ValidationFailed, ...).
+ *   - `parseJsonBody(...)` + `consentRoutePostBodySchema` (a `.pick()` of
+ *     the drizzle-zod-rooted `consentLogInsertSchema`) validate the POST
+ *     body, mapping non-ok to errorResponse(ValidationFailed, ...).
  *   - `withIdempotency` (Plan 02-06) wraps the POST handler with replay-
  *     safe semantics keyed by `(userId, idempotency-key, request-hash)`.
  *   - `recordConsent` (Plan 02-09 Task 1) does the actual write inside a

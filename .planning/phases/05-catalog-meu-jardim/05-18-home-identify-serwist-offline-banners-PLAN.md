@@ -10,6 +10,7 @@ depends_on:
   # different sw.ts touch). Both can run in parallel.
 files_modified:
   - src/app/(home)/page.tsx
+  - src/app/page.tsx              # DELETED — Phase 1 placeholder removed; single `/` route now lives in (home)/page.tsx (Codex review HIGH 05-18)
   - src/app/identify/page.tsx
   - src/app/sw.ts
   - src/app/banners/offline-banner.tsx
@@ -60,10 +61,16 @@ decisions:
     Per 05-RESEARCH § Recommended Project Structure line 371: Home page
     lives at `src/app/(home)/page.tsx` using a Next.js route group `(home)`
     so it can have its own layout segment without changing the URL. The
-    route is `/` (default). If Phase 3 has already shipped `src/app/page.tsx`
-    as the home route (Phase 1 currently has a placeholder there), this plan
-    REPLACES it OR creates the (home) group and deletes src/app/page.tsx.
-    Document chosen path in 05-18-SUMMARY.md based on what's on disk.
+    route is `/` (default).
+
+    **LOCKED via Codex review (HIGH 05-18 — load-bearing collision):** This
+    plan UNCONDITIONALLY deletes `src/app/page.tsx` (Phase 1 placeholder)
+    and creates `src/app/(home)/page.tsx`. There is exactly one `/` route
+    after execution. Both files cannot coexist (Next.js will error). The
+    deletion + creation happen in the same commit. If Phase 3 has shipped
+    real Home chrome at `src/app/page.tsx`, that chrome moves to a
+    layout segment of the (home) route group; the page itself is replaced
+    by this plan's empty-state Home content.
   identify_placeholder_per_d_25: |
     Per CONTEXT D-25: route at /identify with §17 empty-state composition.
     Sage line-art illustration (aria-hidden) + Source Serif 4 headline
@@ -80,7 +87,8 @@ must_haves:
   truths:
     - "src/app/sw.ts extends Phase 1's Serwist setup with runtimeCaching for image-only requests on *.supabase.co (StaleWhileRevalidate, 200 entries, 30 days)"
     - "src/app/sw.ts contains ZERO /api matchers (grep-verified in acceptance criteria — Pitfall 3 mitigation)"
-    - "src/app/(home)/page.tsx (or src/app/page.tsx) renders Home empty per UI-04 — asymmetric layout (NOT centered hero), Source Serif 4 headline 'Identifique sua primeira planta', circular 72px Canopy capture button wired to /identify, 'Adicionar manualmente' tertiary text-link to /catalog/new"
+    - "src/app/(home)/page.tsx renders Home empty per UI-04 — asymmetric layout (NOT centered hero), Source Serif 4 headline 'Identifique sua primeira planta', circular 72px Canopy capture button wired to /identify, 'Adicionar manualmente' tertiary text-link to /catalog/new"
+    - "src/app/page.tsx does NOT exist after this plan runs — Phase 1 placeholder is deleted in the same commit that creates src/app/(home)/page.tsx (Codex review HIGH 05-18 — load-bearing route collision)"
     - "src/app/identify/page.tsx renders D-25 placeholder: Sage SVG (aria-hidden) + headline 'Identificação em breve' + hint + Canopy CTA 'Voltar ao catálogo' linking to /catalog"
     - "OfflineBanner subscribes to navigator.onLine via useEffect + listeners; renders sticky banner with offline copy when offline; absent when online"
     - "ReadOnlyBanner reads useSubscription().status; renders sticky banner with read-only copy when status is 'expired' or 'grace'; absent when 'trialing' or 'active'"
@@ -508,19 +516,20 @@ typo — replace with the correct relative path before committing.
     - src/messages/pt-BR.json (Plan 05-10) — catalog.home.empty.* + catalog.identify.placeholder.*
   </read_first>
   <action>
-    **Step A: Decide on home route placement**
+    **Step A: Delete `src/app/page.tsx` and create the (home) route group**
 
-    Run `cat src/app/page.tsx` to see Phase 1's current placeholder. If it's a 7-line skeleton, replace it. If Phase 3 has shipped a real Home, this plan only adds the EMPTY-state branch (Phase 5 ROADMAP scope is empty Home only — UI-05 default Home is Phase 8).
+    Per Codex review HIGH 05-18 (load-bearing route collision), this plan UNCONDITIONALLY deletes `src/app/page.tsx` and creates `src/app/(home)/page.tsx`. Both files cannot define the `/` route — Next.js will throw a routing error if both exist.
 
-    Recommended approach: **REPLACE `src/app/page.tsx` with the empty-state Home content directly** (skip the route-group `(home)` wrapper for now to minimize file churn). Document this choice in 05-18-SUMMARY.md.
+    Execute, in this exact order, in the SAME commit:
 
-    But the planning context names `src/app/(home)/page.tsx` — go with that path to match the planning context AND avoid mutating the existing src/app/page.tsx which Phase 1 owns. Create the route group: `src/app/(home)/page.tsx` with the new Home empty content. Both `/` (from src/app/page.tsx) and `/` (from src/app/(home)/page.tsx) cannot coexist — Next.js will error.
+    1. `git rm src/app/page.tsx` — removes Phase 1's placeholder from filesystem AND git index.
+    2. Create `src/app/(home)/page.tsx` with the Home empty content from Step B below.
+    3. Verify: `test ! -f src/app/page.tsx && test -f "src/app/(home)/page.tsx"` exits 0.
+    4. Verify: `pnpm exec next build --debug 2>&1 | grep -iE "duplicate|conflict|two parallel" || echo "no route conflict"` (build must NOT report a duplicate `/` route).
 
-    **Resolution at execution time:**
-    - If `src/app/page.tsx` exists with Phase 1 placeholder content (~7 lines), DELETE it (`git rm src/app/page.tsx`) and create `src/app/(home)/page.tsx`.
-    - If `src/app/page.tsx` has been replaced by Phase 3 with real chrome, this plan's Home empty content goes INSIDE `src/app/(home)/page.tsx` and Phase 3's chrome wraps it via the route group's layout segment.
+    If Phase 3 had previously shipped real Home chrome at `src/app/page.tsx`, that chrome MUST be relocated to a layout segment of the (home) route group (e.g., `src/app/(home)/layout.tsx`) BEFORE running this plan. This plan's scope is the empty-state Home page itself, not the chrome.
 
-    Document the chosen path in 05-18-SUMMARY.md.
+    Document the deletion and the post-execution route layout in 05-18-SUMMARY.md.
 
     **Step B: Home empty page** — `src/app/(home)/page.tsx`:
     ```tsx
@@ -632,9 +641,17 @@ typo — replace with the correct relative path before committing.
 
     Run typecheck: `pnpm exec tsc --noEmit` exits 0.
 
-    Commit: `git add "src/app/(home)/page.tsx" src/app/identify/page.tsx && git commit -m "feat(05-18): Home empty (UI-04 asymmetric) + /identify placeholder (D-25)"`
+    Commit (single commit, includes the deletion):
+    ```bash
+    git rm src/app/page.tsx
+    git add "src/app/(home)/page.tsx" src/app/identify/page.tsx
+    git commit -m "feat(05-18): Home empty at (home)/page.tsx + delete src/app/page.tsx + /identify placeholder (D-25)"
+    ```
 
-    If `src/app/page.tsx` was deleted: include in same commit: `git rm src/app/page.tsx`.
+    Post-commit verify:
+    - `test ! -f src/app/page.tsx` exits 0
+    - `test -f "src/app/(home)/page.tsx"` exits 0
+    - `git log -1 --name-status | grep -E "^D\s+src/app/page.tsx"` matches
   </action>
   <verify>
     <automated>pnpm exec tsc --noEmit &amp;&amp; grep -c "Identifique sua primeira planta" src/messages/pt-BR.json | grep -qE "^[1-9]" &amp;&amp; grep -c "Camera" "src/app/(home)/page.tsx" | grep -qE "^[1-9]" &amp;&amp; grep -c "Identificação em breve" src/messages/pt-BR.json | grep -qE "^[1-9]"</automated>
@@ -715,6 +732,7 @@ typo — replace with the correct relative path before committing.
 - `pnpm exec tsc --noEmit` exits 0
 - `pnpm exec vitest --run --project=unit tests/unit/app/banners/offline-banner.test.tsx` exits 0 (4 tests pass)
 - **Pitfall 3 grep gate**: `grep -E "['\"]\\/api" src/app/sw.ts | grep -v '^[[:space:]]*//' | grep -v '^[[:space:]]*\*' | wc -l` returns 0
+- **Home route collision gate (Codex HIGH 05-18)**: `test ! -f src/app/page.tsx` exits 0 AND `test -f "src/app/(home)/page.tsx"` exits 0
 - `grep -c "supabase.co" src/app/sw.ts` returns ≥ 1
 - `grep -c "OfflineBanner" src/app/layout.tsx` returns ≥ 2 (import + JSX)
 - `grep -c "ReadOnlyBanner" src/app/layout.tsx` returns ≥ 2
@@ -723,6 +741,12 @@ typo — replace with the correct relative path before committing.
 - `grep -c "prefers-reduced-motion" "src/app/(home)/page.tsx"` returns ≥ 1
 - All 5 Playwright specs collect via `--list`
 </verification>
+
+<reviews_addressed>
+**Codex review findings resolved by this plan (per `.planning/phases/05-catalog-meu-jardim/05-REVIEWS.md`):**
+
+- **05-18 HIGH — Home route placement collision** (Codex Plan-Specific table): `src/app/page.tsx` and `src/app/(home)/page.tsx` cannot both define `/`. Resolved by unconditionally deleting `src/app/page.tsx` and creating `src/app/(home)/page.tsx` in the same commit. `files_modified` lists `src/app/page.tsx` as deleted; `must_haves.truths` asserts post-execution non-existence; Step A makes the deletion explicit and unconditional; verification block adds the route-collision grep gate.
+</reviews_addressed>
 
 <success_criteria>
 - Serwist runtimeCaching for image-only on *.supabase.co with NO /api/* rule (Pitfall 3 mitigation grep-verified)

@@ -124,7 +124,7 @@ Plans:
 - [x] 03-03-PLAN.md -- Motion springs + 11 UI primitives: Button (4 variants), TextInput, Select, Toggle, ModalSheet, Skeleton (TDD 300ms gate), EmptyState (TDD single-CTA), InlineError (TDD slots+Rust), CaptureButton (TDD breathing-loop reduced-motion)
 
 **Wave 4 _(blocked on Wave 3 completion)_**
-- [ ] 03-04-PLAN.md -- App shell: useOnlineStatus (TDD backoff), 4 banners/toasts, BottomNav + scroll-restore (TDD), SW rewrite skipWaiting:false + SKIP_WAITING handler (TDD), AppUpdateToast, (app) layout group + 4 placeholder pages + /offline, manifest rewrite (TDD shape), pwa-asset-generator install
+- [x] 03-04-PLAN.md -- App shell: useOnlineStatus (TDD backoff), 4 banners/toasts, BottomNav + scroll-restore (TDD), SW rewrite skipWaiting:false + SKIP_WAITING handler (TDD), AppUpdateToast, (app) layout group + 4 placeholder pages + /offline, manifest rewrite (TDD shape), pwa-asset-generator install
 
 **Wave 5 _(blocked on Wave 4 completion; checkpoint:human-action for visual baselines)_**
 - [ ] 03-05-PLAN.md -- E2E lockdown: 20 visual snapshots * 4 theme/motion combos (Docker baseline gen), horizontal-scroll guard, sw-update-toast smoke, offline-fallback, bottom-nav scroll-restore, 4 axe specs (placeholder/modal/route-focus/skip-link)

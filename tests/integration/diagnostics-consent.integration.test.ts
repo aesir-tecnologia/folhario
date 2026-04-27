@@ -450,9 +450,12 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     // so anything else is bogus.
     expect(body.error.code).toBe(ErrorCode.ValidationFailed);
     expect(body.error.message).toContain("invalid consent body");
-    // Final proof that request.json() was actually called and consumed the
-    // body inside the route — if the proxy had eaten the body, json()
-    // would have thrown before completing and bodyUsed would still be false.
+    // Final proof that request.json() ran inside the route. The earlier
+    // assertion at line 439 (`bodyUsed === false` after proxy) is the
+    // proxy-doesn't-consume gate; THIS assertion is the
+    // route-DID-consume gate. Together they distinguish:
+    //   - regression where proxy consumes → bodyUsed === true at line 439 (test fails there)
+    //   - regression where route doesn't reach parseJsonBody → bodyUsed === false here (test fails)
     expect(request.bodyUsed).toBe(true);
   });
 });

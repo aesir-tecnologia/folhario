@@ -10,10 +10,7 @@ import { ErrorCode } from "@shared/config/errors";
 import * as schema from "@shared/db/schema-registry";
 import { consentLogs } from "@contexts/iam/infrastructure/db/schema";
 import { __setCurrentUserAdapterForTests } from "@contexts/iam/application/current-user";
-import type {
-  AuthAdapter,
-  VerifyResult,
-} from "@contexts/iam/infrastructure/auth/auth-adapter";
+import type { AuthAdapter, VerifyResult } from "@contexts/iam/infrastructure/auth/auth-adapter";
 import type { UserRow } from "@contexts/iam/infrastructure/db/users";
 
 /**
@@ -95,10 +92,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 recordConsent use-case", () => {
     expect(result.row.source).toBe("first_use_prompt");
 
     // Repository row is written to DB.
-    const rows = await db
-      .select()
-      .from(consentLogs)
-      .where(eq(consentLogs.userId, userId));
+    const rows = await db.select().from(consentLogs).where(eq(consentLogs.userId, userId));
     expect(rows).toHaveLength(1);
     expect(rows[0]!.id).toBe(result.row.id);
 
@@ -193,8 +187,9 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
       trialSource: inserted[0]!.trial_source as "organic" | "partner",
       partnerCode: inserted[0]!.partner_code as string | null,
       ageConfirmedAt: inserted[0]!.age_confirmed_at as string | null,
-      toxicityDisclaimerAcknowledgedAt: inserted[0]!
-        .toxicity_disclaimer_acknowledged_at as string | null,
+      toxicityDisclaimerAcknowledgedAt: inserted[0]!.toxicity_disclaimer_acknowledged_at as
+        | string
+        | null,
       deletionRequestedAt: inserted[0]!.deletion_requested_at as string | null,
       createdAt: inserted[0]!.created_at as string,
       updatedAt: inserted[0]!.updated_at as string,
@@ -235,18 +230,15 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
 
   it("POST without bearer returns 401 unauthenticated", async () => {
     __setCurrentUserAdapterForTests(adapterForUser(userId));
-    const request = new NextRequest(
-      reqUrl("/api/v1/diagnostics/consent"),
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          purpose: "identification_third_party",
-          legalBasis: "consent",
-          source: "first_use_prompt",
-        }),
-      },
-    );
+    const request = new NextRequest(reqUrl("/api/v1/diagnostics/consent"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        purpose: "identification_third_party",
+        legalBasis: "consent",
+        source: "first_use_prompt",
+      }),
+    });
     const response = await routeMod.POST(request);
     expect(response.status).toBe(401);
     const body = await response.json();
@@ -296,10 +288,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     expect(typeof body.id).toBe("string");
     expect(body.user_id).toBe(userId);
 
-    const rows = await db
-      .select()
-      .from(consentLogs)
-      .where(eq(consentLogs.userId, userId));
+    const rows = await db.select().from(consentLogs).where(eq(consentLogs.userId, userId));
     expect(rows).toHaveLength(1);
     expect(rows[0]!.id).toBe(body.id);
   });
@@ -390,10 +379,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     __setCurrentUserAdapterForTests(adapterForUser(userId));
     const response = await routeMod.GET(
       new NextRequest(
-        reqUrl(
-          "/api/v1/diagnostics/consent?cursor=" +
-            encodeURIComponent("not-base64-or-valid"),
-        ),
+        reqUrl("/api/v1/diagnostics/consent?cursor=" + encodeURIComponent("not-base64-or-valid")),
         {
           method: "GET",
           headers: { authorization: "Bearer fake-test-token" },
@@ -405,28 +391,43 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     expect(body.error.code).toBe(ErrorCode.ValidationFailed);
   });
 
-  it("end-to-end proxy body-passthrough — proxy does NOT consume the body, route parses it", async () => {
-    // Strategy (a) from the plan: drive a NextRequest through src/proxy.ts
-    // and into the route module. After the proxy returns, the body MUST
-    // still be parseable by the route's request.json() call.
+  it("end-to-end proxy body-passthrough — route's parseJsonBody runs after proxy", async () => {
+    // Strategy (a) from the plan (02-09-PLAN.md:124-125, :138): drive a
+    // NextRequest through src/proxy.ts and then into the route module, and
+    // assert the route's request.json() successfully parses the body after
+    // the proxy returns.
     //
-    // The route's body parsing is what surfaces "missing Idempotency-Key" =
-    // validation_failed; if the proxy consumed the body, the route would
-    // 500 on "body already used" instead of returning 400 validation_failed.
+    // Construction of the load-bearing assertion:
+    //  - We INCLUDE an Idempotency-Key so the route does NOT short-circuit
+    //    at the missing-key check (consent-route.ts:64-67) and instead
+    //    proceeds to `parseJsonBody` (consent-route.ts:69).
+    //  - We send a body with an INVALID `purpose` enum value so that
+    //    `parseJsonBody`'s `safeParse` fails, the route hits the
+    //    "invalid consent body" error path at consent-route.ts:71, and the
+    //    400 we observe is provably caused by `request.json()` having been
+    //    successfully invoked. If the proxy had eaten the body,
+    //    `request.json()` would throw, parseJsonBody would still 400 with
+    //    ValidationFailed (request.ts:42-44), but `request.bodyUsed` AFTER
+    //    the route call would be FALSE (no successful read happened) and
+    //    the message-contains check below would fail.
+    //  - We assert `request.bodyUsed === false` immediately after the proxy
+    //    (proves the proxy did not consume) AND `request.bodyUsed === true`
+    //    after the route call (proves request.json() was actually invoked
+    //    and finished, not that it threw before consuming).
     __setCurrentUserAdapterForTests(adapterForUser(userId));
     const request = new NextRequest(reqUrl("/api/v1/diagnostics/consent"), {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: "Bearer fake-test-token",
-        // Intentionally omit Idempotency-Key so the route returns 400
-        // validation_failed AFTER successfully parsing the body. This is
-        // the load-bearing assertion for body passthrough: status === 400
-        // proves the route DID parse JSON; status === 500 with "body
-        // already used" would indicate proxy consumption.
+        "idempotency-key": `task2-passthrough-${randomUUID()}`,
       },
+      // Malformed purpose so parseJsonBody (NOT the missing-Idempotency-Key
+      // check) produces the 400. The body is otherwise structurally valid
+      // JSON so request.json() succeeds; only the schema-level enum check
+      // fails.
       body: JSON.stringify({
-        purpose: "analytics",
+        purpose: "not_a_real_purpose",
         legalBasis: "consent",
         source: "settings",
       }),
@@ -439,10 +440,19 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     // Proxy lets a Bearer-bearing request through (no 401 from the proxy).
     expect(proxyResp?.status).not.toBe(401);
 
-    // 2. Route handler can still read the body via request.json().
+    // 2. Route handler successfully reads + Zod-validates the body.
     const routeResp = await routeMod.POST(request);
     expect(routeResp.status).toBe(400);
     const body = await routeResp.json();
+    // ValidationFailed message MUST come from parseJsonBody's "invalid
+    // consent body" path (consent-route.ts:71), NOT from the missing-
+    // Idempotency-Key path (consent-route.ts:66). The header was supplied,
+    // so anything else is bogus.
     expect(body.error.code).toBe(ErrorCode.ValidationFailed);
+    expect(body.error.message).toContain("invalid consent body");
+    // Final proof that request.json() was actually called and consumed the
+    // body inside the route — if the proxy had eaten the body, json()
+    // would have thrown before completing and bodyUsed would still be false.
+    expect(request.bodyUsed).toBe(true);
   });
 });

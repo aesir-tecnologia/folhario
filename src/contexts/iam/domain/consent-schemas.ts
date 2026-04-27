@@ -1,5 +1,4 @@
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 import { consentLogs } from "@contexts/iam/infrastructure/db/schema";
 
@@ -7,34 +6,24 @@ import { consentLogs } from "@contexts/iam/infrastructure/db/schema";
  * Phase-2 D-19 / D-40 — ConsentLog domain schemas.
  *
  * `consentLogInsertSchema` is the column-faithful shape generated from the
- * Drizzle table by drizzle-zod. It is wider than the route's input contract:
- * it allows `userId`, `grantedAt`, `revokedAt`, `id`, `createdAt`, etc. The
- * diagnostics route (Plan 02-09) accepts only the four user-supplied fields
- * — the rest come from the JWT, the request timestamp, or DB defaults.
+ * Drizzle table by drizzle-zod. It is the SOURCE OF TRUTH for any route or
+ * use-case schema operating on consent_logs: drizzle-zod 0.8.x emits
+ * `z.enum(column.enumValues)` for `varchar({ enum: [...] as const })`
+ * columns, so picking from this insert schema preserves the column-level
+ * enum constraints on `purpose` and `source`, and the pgEnum on
+ * `legal_basis`. Extending an enum at the table level flows here without
+ * any code change at the consumers.
  *
- * `consentLogCreateInputSchema` is the refined boundary shape for that
- * route's POST body: `purpose`, `legalBasis`, `policyVersionId`, `source`.
- * `policyVersionId` is narrowed to a UUID (the column-level type is just
- * `uuid`, but at the route boundary we want the strong validation message
- * for anything malformed).
+ * The diagnostics route (Plan 02-09) accepts only the four user-supplied
+ * fields — `userId` comes from the JWT, `policyVersionId` is resolved
+ * server-side from the seeded current privacy_policy row, and
+ * `createdAt`/`grantedAt` default at the DB layer. The route therefore
+ * narrows this insert schema with `.pick({ purpose, legalBasis, source })`
+ * locally — see `src/contexts/iam/api/consent-route.ts` for the picked
+ * boundary schema.
  *
- * Routes import the refined schema from this module — never the raw
- * `consentLogs` table — per D-19. Use-cases that need the full insert shape
- * keep importing from `iam/domain/schemas.ts`.
+ * Routes and use-cases import this drizzle-zod root from this module —
+ * never the raw `consentLogs` table — per D-19.
  */
 
 export const consentLogInsertSchema = createInsertSchema(consentLogs);
-
-export const consentLogCreateInputSchema = z.object({
-  purpose: z.enum([
-    "identification_third_party",
-    "push_notifications",
-    "marketing",
-    "analytics",
-  ] as const),
-  legalBasis: z.enum(["consent", "contract", "legitimate_interest"] as const),
-  policyVersionId: z.string().uuid(),
-  source: z.enum(["signup", "settings", "first_use_prompt"] as const),
-});
-
-export type ConsentLogCreateInput = z.infer<typeof consentLogCreateInputSchema>;

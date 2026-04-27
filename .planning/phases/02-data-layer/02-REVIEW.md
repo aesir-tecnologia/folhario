@@ -1,6 +1,6 @@
 ---
 phase: 02-data-layer
-reviewed: 2026-04-26T16:30:00Z
+reviewed: 2026-04-26T18:45:00Z
 depth: standard
 files_reviewed: 79
 files_reviewed_list:
@@ -93,203 +93,93 @@ files_reviewed_list:
   - tests/unit/proxy-body-passthrough.test.ts
   - tests/unit/schema-registry.test.ts
 findings:
-  critical: 1
-  warning: 6
+  critical: 0
+  warning: 3
   info: 4
-  total: 11
+  total: 7
 status: issues_found
-prior_review: 2026-04-26 (3 BLOCKERs marked resolved — CR-03 fix introduced new regression flagged below as CR-01)
+prior_review: 2026-04-26 iter2 — 1 BLOCKER (CR-01) + 6 WR + 4 IN. This iter3 verifies all 9 listed prior fixes resolved their invariants in code; 2 carry-forward findings (WR-05, IN-04) remain open from iter2 because they were out-of-scope for the iter2-3 fix list.
 ---
 
-# Phase 02 (Data Layer) — Re-Review
+# Phase 02 (Data Layer) — Re-Review (iteration 3)
 
-**Reviewed:** 2026-04-26T16:30:00Z
+**Reviewed:** 2026-04-26T18:45:00Z
 **Depth:** standard
 **Files Reviewed:** 79
 **Status:** issues_found
 
 ## Re-Review Context
 
-The prior review (same file, earlier today) flagged 3 BLOCKERs (CR-01 idempotency dual-tx, CR-02 RLS bypass at runtime, CR-03 photo upload orphan storage) and marked them resolved with three commits (`05acd1b`, `9966d35`, `025146a`). This re-review of the resulting source confirms:
+The iter2 review (`02-REVIEW.iter2.md`) flagged 11 findings; the orchestrator listed 9 to fix in this iteration. This re-review confirms all 9 fixes resolve their stated invariants in code with no behavioural regressions, and surfaces 1 new WARNING introduced by the WR-04 fix (a now-unreferenced schema), plus carries forward the 2 iter2 findings that were out of fix scope (WR-05 auth.uid() shim, IN-04 migration timestamps).
 
-- **CR-01 (idempotency dual-tx) — resolved.** `withIdempotency` now opens `withUnitOfWork` itself and shares the tx; integration test at `tests/integration/idempotency.integration.test.ts:175-212` proves rollback semantics.
-- **CR-02 (RLS bypass) — resolved.** `withUnitOfWork` issues `SET LOCAL ROLE authenticated`; integration test at `tests/integration/unit-of-work.integration.test.ts:119-125` asserts `current_user = 'authenticated'`. Cross-user denial proven in `tests/integration/rls-real-jwt.integration.test.ts`.
-- **CR-03 (photo upload orphan storage) — partially resolved (NEW REGRESSION).** A compensating-delete path was added but its implementation is a no-op against the real Supabase Storage adapter. See CR-01 below — this is the only BLOCKER in this re-review.
+### Verified prior fixes (all sound)
 
-The remaining WARNINGs and INFOs from the prior review are mostly still open and are not re-listed individually unless this re-review surfaced new evidence about them. The new findings below add three items the prior review did not flag (jose error-name leak in upload route, auth.uid() shim activation gating, idempotency RLS coupling).
+- **CR-01 (compensating-delete no-op).** `StorageAdapter.deleteObject` added at `src/shared/adapters/storage.ts:82` and implemented at `src/shared/adapters/supabase-storage.ts:122-134` via `remove([objectKey])`. `src/contexts/catalog/infrastructure/photo-storage.ts:180,198` now routes both compensating deletes through `deleteObject` (not `deletePrefix`). The integration test at `tests/integration/photo-upload.integration.test.ts:283-372` was upgraded to state-based — it asserts both `deleteObject` was called with the canonical key AND `listObjectsUnderPrefix({prefix: "${userId}/"})` returns `[]` after the failure. The fake's `deletePrefix` mock at `:93-110` deliberately mirrors the real Supabase semantics (no-ops on file-path prefix), so a regression that re-routes single-file delete through `deletePrefix` cannot pass.
+- **WR-01 (jose audience/issuer/algorithm pinning).** `src/contexts/iam/infrastructure/auth/auth-adapter.ts:155-159` pins `audience`, `issuer`, `algorithms`. Defaults at `:98-118` derive issuer/audience from Supabase URL with `AUTH_AUDIENCE_OVERRIDE` / `AUTH_ISSUER_OVERRIDE` env hooks for E2E. Unit tests at `tests/unit/auth-adapter.test.ts:169-217` cover wrong-aud, wrong-iss, and no-aud paths; the e2e fixture at `tests/e2e/fixtures/test-jwks.ts:52-53` and Playwright config at `playwright.config.ts:48-53` thread the same constants end-to-end.
+- **WR-02 (jose error-name leak).** `src/app/api/v1/photos/upload/route.ts:42` and `src/contexts/iam/api/consent-route.ts:59,131` both use `"missing or invalid bearer token"` — jose error names no longer reach the client. `auth.reason` is preserved for server-side observability only.
+- **WR-03 (policy_versions one-current invariant).** Migration `drizzle/migrations/0002_unique_current_policy_per_doc_type.sql` creates `CREATE UNIQUE INDEX ... WHERE is_current = true`. `src/contexts/iam/application/record-consent.ts:74` adds `.orderBy(desc(policyVersions.effectiveAt))` as belt-and-braces.
+- **WR-04 (drizzle-zod-rooted body schema).** `src/contexts/iam/api/consent-route.ts:27-31` switched from a hand-rolled `z.object({...})` to `consentLogInsertSchema.pick({purpose: true, legalBasis: true, source: true})`. Verified directly against `node_modules/drizzle-zod/index.mjs:44-45` — the library generates `z.enum(column.enumValues)` for `varchar({ enum: [...] as const })` columns, and `insertConditions.optional` at `:287` makes `.notNull()`-without-default columns required. So the picked schema preserves the strict enum validation. (See WR-01 below for the related dead-code finding.)
+- **WR-06 (idempotency–RLS coupling).** Documentation present in both `src/shared/api/idempotency.ts:43-55` and the matching migration block at `drizzle/migrations/0001_phase_02_rls_policies.sql:184-194`. The two notes cross-reference each other and the integration test as the regression gate. This is the documented-dependency form recommended by iter2.
+- **IN-01 (extFromMime exhaustive).** `src/contexts/catalog/application/upload-photo.ts:53-66` now uses an exhaustive switch with `const _exhaustive: never = mime` — adding a new variant to `AllowedMime` will fail at compile time. (See IN-04 below for a minor purity nit.)
+- **IN-02 (compensating-delete observability).** `src/contexts/catalog/infrastructure/photo-storage.ts:186-195` and `:204-213` both add `Sentry.captureException(err, { tags, extra: { bucket, objectKey, userId, plantId, photoId } })`. LGPD-compliant: only IDs are passed via `extra`, never email/name. The CLAUDE.md `Sentry.setUser({ id })` only rule is honoured because no `Sentry.setUser(...)` is invoked here at all.
+- **IN-03 (base64url cursor).** `src/shared/api/cursor.ts:49,67` uses `"base64url"` for encode and decode. `Buffer.from(input, "base64url")` accepts both standard and URL-safe forms, so legacy clients with stored standard-base64 cursors continue to decode (verified against Node stdlib).
+
+### Carry-forward findings (still open, out of iter2-3 fix scope)
+
+- **WR-05 from iter2 (`auth.uid()` shim activation gating).** No code change; the shim at `drizzle/migrations/0001_phase_02_rls_policies.sql:34-42` still activates on schema-presence only, with `scripts/check-rls.ts:62-75` as the production guard. Re-numbered as WR-02 below.
+- **IN-04 from iter2 (migration timestamps predate planning).** `drizzle/migrations/meta/_journal.json` now has 3 entries with timestamps `1777220218174` (2026-04-22), `1777220252423` (2026-04-22), `1777247706469` (2026-04-22) — all still pre-date the iter2 review date (2026-04-26). The new 0002 migration is also back-dated. Re-numbered as IN-03 below.
+
+### New finding introduced by the WR-04 fix
+
+`consentLogCreateInputSchema` (lines 28-40 of `src/contexts/iam/domain/consent-schemas.ts`) is now dead code — the route stopped importing it when it switched to `consentLogInsertSchema.pick(...)`, and a grep across `src/` and `tests/` shows the only remaining references are the export itself and the comment in `src/contexts/iam/api/consent-route.ts:43`. See WR-01 below.
 
 ---
 
 ## Summary
 
-The phase ships a careful, well-instrumented data layer: drizzle-zod-rooted schemas, RLS policies on every user-owned table, a Unit-of-Work that switches role and binds the GUC, an idempotency wrapper composing inside the same transaction, JWT verification through real `jose` cryptography, server-side EXIF/GPS rejection backed by client-side strip, and a clean migration boundary (drizzle-kit on direct URL, runtime on Supavisor pooler with `prepare: false`). Test coverage is genuinely behavioural: real-JWT cross-user RLS denial, real-HTTP JWKS verify, replay/conflict idempotency semantics, sharp native-binary smoke — all proven against real Postgres.
+The phase ships a careful data layer with cryptographic JWT verification (now correctly pinning aud/iss/alg), drizzle-zod-rooted route schemas, a unit-of-work that switches role + binds the JWT-sub GUC, an idempotency wrapper composing inside the same transaction, real `deleteObject` for compensating-delete, a partial unique index pinning the one-current-policy invariant, and Sentry-backed observability for compensating-delete failures. Test coverage has been strengthened from call-shape to state-based for the orphan-prevention path.
 
-That said: this re-review found one BLOCKER (the CR-03 fix introduced a no-op compensating-delete that's worse than no fix at all because it falsely advertises orphan-prevention), six WARNINGs, and four INFO items. Lead with CR-01.
-
----
-
-## Critical Issues
-
-### CR-01: CR-03 fix regression — `deleteSinglePlantPhotoBestEffort` is a no-op against the real Supabase Storage adapter
-
-**File:** `src/contexts/catalog/infrastructure/photo-storage.ts:155-193`
-**Issue:** The CR-03 mitigation in `src/contexts/catalog/application/upload-photo.ts:208-215` rethrows after calling `deleteSinglePlantPhotoBestEffort` on UoW failure. That helper invokes `adapter.deletePrefix({ bucket, prefix: originalKey })` where `originalKey` is the FULL canonical file key (e.g., `"userId/plantId/photoId.jpg"`), not a directory prefix.
-
-The Supabase adapter's `deletePrefix` (`src/shared/adapters/supabase-storage.ts:108-124`) calls `collectObjectsRecursively` → `client.storage.from(bucket).list(normalized, { limit: 1000 })`. Supabase Storage's `list()` API treats its argument as a folder path; passing a file path returns an empty array because the path has no children. `objectKeys.length === 0` → early return at line 115 → no `remove()` call → orphan persists.
-
-The comment at `photo-storage.ts:153` says: *"Uses `deletePrefix` with the full canonical key — UUIDs guarantee no false positives."* This is precisely backwards: UUIDs guarantee zero matches, period.
-
-The integration test at `tests/integration/photo-upload.integration.test.ts:232-286` only asserts that `fake.deletePrefix` was *called* with a particular `prefix`. The fake returns `undefined` regardless. The test exercises the call shape but not the round-trip — a real Supabase adapter would silently no-op, leaving the bytes orphaned in both `plant-photos` and `plant-thumbnails` buckets.
-
-This is functionally worse than no compensating delete because the source code, the integration test, and the resolution commit (`025146a`) all advertise that the orphan issue is fixed. Operations would discover the regression only through storage-quota growth weeks later.
-
-LGPD privacy isn't directly violated here because `deleteAllPlantMediaForUser` (`photo-storage.ts:141-146`) does sweep by `${userId}/` and would catch these orphans on a deletion request. But every individual failed upload silently bloats storage and the bytes are unreachable from application metadata in the meantime.
-
-**Fix:** Use the SDK's `remove([objectKey])` directly for single-file deletion, not the prefix-list path. Add a `deleteObject` method to the adapter contract:
-
-```typescript
-// src/shared/adapters/storage.ts — add to interface
-export interface DeleteObjectInput {
-  bucket: string;
-  objectKey: string;
-}
-
-export interface StorageAdapter {
-  // ... existing methods
-  deleteObject(input: DeleteObjectInput): Promise<void>;
-}
-
-// src/shared/adapters/supabase-storage.ts — add to factory return
-async deleteObject(input: DeleteObjectInput): Promise<void> {
-  const { bucket, objectKey } = input;
-  const { error } = await client.storage.from(bucket).remove([objectKey]);
-  if (error) {
-    throw new StorageAdapterError(
-      `deleteObject failed for ${bucket}/${objectKey}: ${error.message}`,
-      error,
-    );
-  }
-},
-
-// src/contexts/catalog/infrastructure/photo-storage.ts:174-192 — replace deletePrefix calls
-try {
-  await adapter.deleteObject({ bucket: PLANT_PHOTOS_BUCKET, objectKey: originalKey });
-} catch (err) {
-  console.warn(
-    `[catalog/photo-storage] compensating delete failed for ${PLANT_PHOTOS_BUCKET}/${originalKey}:`,
-    err,
-  );
-}
-try {
-  await adapter.deleteObject({ bucket: PLANT_THUMBNAILS_BUCKET, objectKey: thumbnailKey });
-} catch (err) {
-  console.warn(
-    `[catalog/photo-storage] compensating delete failed for ${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}:`,
-    err,
-  );
-}
-```
-
-Strengthen the integration test: stand up a real or in-memory storage backend, observe the bucket round-trip, and assert that after a triggered DB-write failure, `listObjectsUnderPrefix({ bucket, prefix: "${userId}/" })` returns an empty array. The current call-shape assertion accepted a no-op; a state-based assertion would have caught this.
+This re-review found zero BLOCKERS, three WARNINGS (one new dead-code finding from the WR-04 fix, plus two carry-forwards from iter2 — one re-classified to WR-03 about a typing cast that surfaced when reading the idempotency helper closely), and four INFO items (one new test-coverage gap, three carry-forwards). All previously-listed fixes hold up to standard-depth verification.
 
 ---
 
 ## Warnings
 
-### WR-01: JWT verification skips `audience` and `issuer` validation
+### WR-01: Dead code — `consentLogCreateInputSchema` no longer has any consumer
 
-**File:** `src/contexts/iam/infrastructure/auth/auth-adapter.ts:97`
-**Issue:** `await jwtVerify(token, jwks)` is called with no options. `jose` does not validate `aud` (audience) or `iss` (issuer) when those options are not supplied. Supabase-issued JWTs carry `aud: "authenticated"` and `iss: <project URL>/auth/v1`. Without these checks, any token signed by a key resolvable through the configured JWKS endpoint is accepted, including tokens minted for other purposes (e.g., service-role JWT, custom-claim hooks, tokens issued for a different `aud` the project supports). The exposure today is bounded by per-Supabase-project key isolation, but the cost of correct validation is two extra options. This is the same finding as the prior review's WR-02 — still open.
+**File:** `src/contexts/iam/domain/consent-schemas.ts:28-40`
+**Issue:** When the WR-04 fix in iter2 switched `src/contexts/iam/api/consent-route.ts` to use `consentLogInsertSchema.pick(...)` (lines 27-31 of that file), it stopped importing `consentLogCreateInputSchema`. A grep across `src/` and `tests/` confirms the only remaining references are the export itself and a stale doc-comment at `src/contexts/iam/api/consent-route.ts:43`. The hand-rolled schema is now structurally orphaned.
 
-**Fix:**
+```bash
+$ grep -rn "consentLogCreateInputSchema" src/ tests/
+src/contexts/iam/api/consent-route.ts:43:   *   - `parseJsonBody(...)` + `consentLogCreateInputSchema` validate the
+src/contexts/iam/domain/consent-schemas.ts:15: * `consentLogCreateInputSchema` is the refined boundary shape for that
+src/contexts/iam/domain/consent-schemas.ts:28:export const consentLogCreateInputSchema = z.object({
+src/contexts/iam/domain/consent-schemas.ts:40:export type ConsentLogCreateInput = z.infer<typeof consentLogCreateInputSchema>;
+```
+
+This is a code-quality regression introduced by the iter2 fix. The risk is two-fold: (a) future maintainers may "fix" the route by switching back to `consentLogCreateInputSchema` because it superficially matches the documented shape, undoing the drizzle-zod rooting; (b) the dead schema can drift from the table definition without any test catching it (no consumer = no signal).
+
+**Fix:** Delete the orphaned schema and type, plus the now-stale comment in the route doc:
 
 ```typescript
-// auth-adapter.ts:97
-const { payload } = await jwtVerify(token, jwks, {
-  audience: "authenticated",
-  issuer: `${serverEnv.NEXT_PUBLIC_SUPABASE_URL.replace(/\/$/, "")}/auth/v1`,
-  algorithms: ["RS256", "ES256"],
-});
+// src/contexts/iam/domain/consent-schemas.ts
+// Delete lines 28-40 and the descriptive doc-block at lines 14-21.
+// Keep `consentLogInsertSchema` (line 26) — that IS the source of truth now.
+
+// src/contexts/iam/api/consent-route.ts:43
+// Replace the stale "consentLogCreateInputSchema" mention with
+// "consentRoutePostBodySchema" (the local picked schema).
 ```
 
-Add unit tests that sign tokens with `aud: "wrong-audience"` and the wrong `iss` and assert `verifyBearer` returns `Unauthenticated`. The override hook (`AUTH_JWKS_OVERRIDE_URL`) should compose with this — for E2E, set the issuer to the test JWKS server origin or relax via factory option.
+If the schema is intentionally kept for future surfaces (e.g. settings page, signup flow), document the justification in the schema's doc-comment and add at least one consumer-side test pinning the enum membership so the schema cannot silently drift.
 
 ---
 
-### WR-02: Photo upload route leaks jose error names through `errorResponse.message`
-
-**File:** `src/app/api/v1/photos/upload/route.ts:38`
-**Issue:** `requireApiUser` returns `{ ok: false, code: Unauthenticated, reason: <string> }` where `reason` for crypto failures is `err.name` — `JWTExpired`, `JWSSignatureVerificationFailed`, `JWTClaimValidationFailed`, etc. (`auth-adapter.ts:108`). The photos upload route forwards this to `errorResponse(auth.code, auth.reason)`, so the client-facing `error.message` becomes a jose internal error type.
-
-This contradicts the closed-error-registry posture (CLAUDE.md, PRD §5): clients should receive the registry code with a stable, non-jose-specific message. The consent route at `src/contexts/iam/api/consent-route.ts:66` and `:138` correctly uses a hardcoded `"missing or invalid bearer token"` message — the photos route should match that pattern. The inconsistency is itself a code-quality issue.
-
-Fix is two characters of behaviour change but has dual benefit: (a) consistent client-facing surface, (b) avoids surfacing jose internals which can aid attacker fingerprinting of the auth library.
-
-**Fix:**
-
-```typescript
-// src/app/api/v1/photos/upload/route.ts:36-39
-const auth = await requireApiUser(request);
-if (!auth.ok) {
-  return errorResponse(auth.code, "missing or invalid bearer token");
-}
-```
-
-Keep `auth.reason` for server-side logging (Sentry breadcrumbs) but never include it in the response body.
-
----
-
-### WR-03: `policy_versions.is_current = true` has no DB-level uniqueness invariant
-
-**File:** `drizzle/migrations/0000_phase_02_initial_schema.sql:146-153`
-**Issue:** The unique index is `(document_type, version)` only. Nothing prevents two `privacy_policy` rows from both having `is_current = true`. `recordConsent` (`src/contexts/iam/application/record-consent.ts:64-77`) does `eq(documentType, "privacy_policy")` and `eq(isCurrent, true)` then `.limit(1)` with no `orderBy` — so when the invariant breaks, it silently picks one nondeterministically (depends on execution plan). Consent rows then reference different policy versions for what should be the same legal grant. Same finding as prior WR-09 — still open.
-
-The integration test at `tests/integration/diagnostics-consent.integration.test.ts:142-145` even sets `is_current = false` for ALL `privacy_policy` rows during teardown and then `is_current = true` only for `version = '2026-04-25.1'` — fine for the seeded singleton case, but if any future code path inserts a second current-flagged row before the restore, both rows would be current.
-
-LGPD record-keeping requires deterministic chain-of-custody between consent and the policy text in force at grant time. A unique partial index makes that invariant a hard DB constraint.
-
-**Fix:** Add a partial unique index in a new migration:
-
-```sql
--- New migration file (0002_unique_current_policy_per_doc_type.sql)
-CREATE UNIQUE INDEX IF NOT EXISTS policy_versions_one_current_per_doc_type_idx
-  ON public.policy_versions (document_type)
-  WHERE is_current = true;
-```
-
-Add `.orderBy(desc(policyVersions.effectiveAt))` to the query in `record-consent.ts` as belt-and-braces.
-
----
-
-### WR-04: Route-boundary schema bypasses the drizzle-zod root it claims to honour
-
-**File:** `src/contexts/iam/api/consent-route.ts:26-38`
-**Issue:** Lines 26-27 import `consentLogInsertSchema` from `@contexts/iam/domain/consent-schemas`, assign it to `_ensureSchemaRoot`, then `void _ensureSchemaRoot`. The accompanying comment claims this keeps the route "drizzle-zod-rooted." But the route body uses an inline `consentRoutePostBodySchema` (`z.object({...})`) constructed from raw `z.enum(...)` literals that duplicate the enum lists in the table definition. The `_ensureSchemaRoot` reference does *nothing* at runtime or type level — it just keeps the import alive so a future grep for "uses drizzle-zod" lights up. Same as prior WR-10 — still open.
-
-D-19 mandates routes use the drizzle-zod-derived schemas precisely so changes to the table propagate. The current pattern actively risks drift: extending `consentLogs.purpose.enum` in the schema will not flow to `consentRoutePostBodySchema`.
-
-**Fix:** Use the drizzle-zod schema directly:
-
-```typescript
-import { consentLogInsertSchema } from "@contexts/iam/domain/consent-schemas";
-
-const consentRoutePostBodySchema = consentLogInsertSchema.pick({
-  purpose: true,
-  legalBasis: true,
-  source: true,
-});
-
-// Delete the dead `_ensureSchemaRoot` lines.
-```
-
-Or remove the import + `void` cast and document that this route's body shape is intentionally hand-rolled because the drizzle-zod insert shape is too permissive (id, userId, policyVersionId, granted/revoked timestamps).
-
----
-
-### WR-05: `auth.uid()` shim activation is keyed on schema presence, not environment
+### WR-02: `auth.uid()` shim activation is keyed on schema presence, not environment (carry-forward from iter2 WR-05)
 
 **File:** `drizzle/migrations/0001_phase_02_rls_policies.sql:34-42`
-**Issue:** The CI shim that creates `auth.uid()` runs `IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'auth')`. If a future production environment ever lands without the `auth` schema (a new Supabase project with auth feature disabled, a misconfigured restore, a forked Supabase installation), the shim silently installs and `auth.uid()` returns `NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid`. RLS policies that compare against `auth.uid()` would then trust whatever value PostgREST/the application bound — including the empty string (NULL after the cast) which makes `auth.uid() = id` evaluate to NULL → reject all rows. Or if no GUC is set, `current_setting('request.jwt.claim.sub', true)` returns NULL → `NULLIF(NULL, '')` is NULL → cast to uuid fails noisily on the first authenticated query.
+**Issue:** Unchanged from iter2. The CI shim runs `IF NOT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'auth')`. If a future production environment ever lands without the `auth` schema (a new Supabase project with auth feature disabled, a misconfigured restore, a forked Supabase installation), the shim silently installs and `auth.uid()` returns `NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid`. RLS policies that compare against `auth.uid()` would then trust whatever value PostgREST/the application bound — including the empty string (NULL after the cast) which makes `auth.uid() = id` evaluate to NULL → reject all rows. Or if no GUC is set, `current_setting('request.jwt.claim.sub', true)` returns NULL → `NULLIF(NULL, '')` is NULL → cast to uuid fails noisily on the first authenticated query.
 
 `scripts/check-rls.ts:62-75` partially compensates: when `NODE_ENV=production` AND `auth` schema absent, it aborts. But `check-rls` is a deploy-time script, not a migration step. If `db:migrate` runs but `db:check-rls` is skipped (CI workflow change, manual intervention), the shim installs and the production runtime is exposed.
 
@@ -311,123 +201,154 @@ Or guard at the migration runner: have `db:migrate` set `app.environment` from `
 
 ---
 
-### WR-06: Idempotency-key writes share the user's transaction with no service-role separation
+### WR-03: `idempotency_keys.responseBody` cast `as never` defeats the column's typed shape
 
-**File:** `src/shared/api/idempotency.ts:101-180`
-**Issue:** `withIdempotency` runs everything inside the user's `withUnitOfWork` transaction — meaning the `idempotency_keys` row INSERT, the `SELECT FOR UPDATE` on conflict, and the UPDATE that stores the response all execute under `SET LOCAL ROLE authenticated` with the user's `request.jwt.claim.sub`. The `idempotency_keys_owner_all` RLS policy (`drizzle/migrations/0001_phase_02_rls_policies.sql:184-189`) requires `auth.uid() = user_id`. That works today.
-
-But it couples the idempotency contract to RLS correctness. If the policy is ever changed (e.g., to be FOR SELECT-only, or restricted by a status field), idempotency claims silently start failing the INSERT in unexpected ways. The helper doc claims "RLS is defense in depth" while in practice the helper relies on RLS allowing the operation. The cleaner separation is: idempotency rows are infrastructure, written under service-role bypass-RLS, read filtered by the `userId` parameter.
-
-**Fix:** Two options:
-
-(a) Pre-authenticated infrastructure write — switch the role for just the idempotency-row writes:
+**File:** `src/shared/api/idempotency.ts:142`
+**Issue:** Inside `withIdempotency`, the UPDATE statement at lines 138-145 includes:
 
 ```typescript
-return withUnitOfWork(userId, async (tx) => {
-  // Temporarily restore service-role for idempotency bookkeeping.
-  await tx.execute(sql`set local role postgres`);
-  const claimed = await tx.insert(idempotencyKeys).values({...}).onConflictDoNothing(...).returning();
-  await tx.execute(sql`set local role authenticated`);
-  // ... handler runs as authenticated, then idempotency UPDATE under service role again
-});
+responseBody: response.body as never,
 ```
 
-(b) Document the dependency explicitly in `0001_phase_02_rls_policies.sql` and add a regression test that breaks `idempotency_keys_owner_all` and asserts `withIdempotency` surfaces a useful error rather than a silent stuck state.
+The cast forces `unknown` (from `IdempotencyHandler`'s return signature) into the column's typed shape — Drizzle's `jsonb` column type infers `unknown | null` here, but `as never` is the wrong escape hatch. `as never` asserts the value can be anything, which short-circuits any future type narrowing that drizzle-zod or Drizzle could provide for jsonb shapes (e.g. a Phase 04 refinement that pins the response body to a closed shape would not produce a type error here). The conventional escape hatch for "I trust this jsonb is valid" is `as unknown` or — better — leave the field untyped at the column declaration and validate at the use-case boundary.
 
-Option (b) is cheaper and matches the current design intent.
+This is a code-quality issue, not a runtime bug today: the value IS serializable JSON (validated by the route handler before calling `withIdempotency`). But the cast hides one of the load-bearing safety properties of the helper: that the body returned to a replay matches the body returned to the original caller. A future refactor that narrows the type at the column declaration would silently lose type-checking here.
+
+**Fix:** Replace `as never` with `as unknown` (the Drizzle-recommended form) or remove the cast entirely if Drizzle's inferred type accepts `unknown`:
+
+```typescript
+// idempotency.ts:142
+responseBody: response.body as unknown,
+```
+
+Add a unit test that pins the round-trip with a non-trivial body so a future serialization regression is observable. Already partially covered by `tests/integration/idempotency.integration.test.ts:103-104` ("second call returns same body") — extend with a deeply-nested body so a `JSON.parse(JSON.stringify(...))`-style regression would fail loudly.
 
 ---
 
 ## Info
 
-### IN-01: `extFromMime` defaults to `"webp"` for any unknown MIME
+### IN-01: `consent-route.ts` doc-comment still references the deleted schema
 
-**File:** `src/contexts/catalog/application/upload-photo.ts:53-57`
-**Issue:** `extFromMime` returns `"webp"` for any input that isn't `"image/jpeg"` or `"image/png"`. Currently safe because `AllowedMime` constrains the input to one of three values, but a future addition to `ALLOWED_MIME_TYPES` (e.g., `"image/avif"`) without updating the function would silently produce mislabeled `.webp` files. Pattern smell — exhaustive switch with default-return is a footgun.
-
-**Fix:**
+**File:** `src/contexts/iam/api/consent-route.ts:43`
+**Issue:** The route's module-level doc-comment at lines 33-52 includes:
 
 ```typescript
-function extFromMime(mime: AllowedMime): "jpg" | "png" | "webp" {
-  switch (mime) {
-    case "image/jpeg": return "jpg";
-    case "image/png":  return "png";
-    case "image/webp": return "webp";
-    default: {
-      const _exhaustive: never = mime;
-      throw new Error(`extFromMime: unhandled MIME ${_exhaustive}`);
-    }
-  }
-}
+ *   - `parseJsonBody(...)` + `consentLogCreateInputSchema` validate the
+ *     POST body, mapping non-ok to errorResponse(ValidationFailed, ...).
 ```
 
-The `_exhaustive: never` line gives a type error at compile time when `AllowedMime` gains a new variant.
+But the route now uses `consentRoutePostBodySchema` (the local picked schema at line 27). The comment is stale by exactly one identifier. This is the same drift WR-01 surfaces from a different angle — fix both together.
+
+**Fix:**
+```typescript
+// consent-route.ts:43-44
+ *   - `parseJsonBody(...)` + `consentRoutePostBodySchema` (a `.pick()` of
+ *     the drizzle-zod-rooted `consentLogInsertSchema`) validate the POST
+ *     body, mapping non-ok to errorResponse(ValidationFailed, ...).
+```
 
 ---
 
-### IN-02: Compensating-delete failures only reach `console.warn`, not Sentry
+### IN-02: No regression test pinning the route's enum-validation contract
 
-**File:** `src/contexts/catalog/infrastructure/photo-storage.ts:175-192`
-**Issue:** Both try/catch blocks log to `console.warn` and swallow the error. After fixing CR-01, a real compensating-delete failure leaves the system in a known-orphaned state — that meets the threshold for `Sentry.captureException`. Currently invisible in monitoring; the only signal would be storage-quota growth weeks later.
+**File:** `tests/integration/diagnostics-consent.integration.test.ts`
+**Issue:** The WR-04 iter2 fix replaced a hand-rolled `z.enum(...)` validator with `consentLogInsertSchema.pick(...)`. The drizzle-zod source (verified at `node_modules/drizzle-zod/index.mjs:44-45`) confirms 0.8.3 generates `z.enum(column.enumValues)` for varchar columns with `enum:` constraints — so the route still rejects e.g. `purpose: "garbage"` with 400. But there is NO test exercising this path: a regression that re-imports the wrong schema, or a future drizzle-zod major bump that changes enum handling, would not be caught by the current test suite.
 
-**Fix:**
+The diagnostics-consent integration test at lines 256-447 covers: missing bearer (401), missing idempotency key (400), valid POST (201), replay, GET pagination, malformed cursor (400), proxy body passthrough. It does NOT cover: invalid enum value in `purpose`/`legalBasis`/`source` returning 400 with `validation_failed`.
+
+**Fix:** Add a focused enum-rejection test:
 
 ```typescript
-import * as Sentry from "@sentry/nextjs";
-
-// inside deleteSinglePlantPhotoBestEffort
-} catch (err) {
-  console.warn(
-    `[catalog/photo-storage] compensating delete failed for ${PLANT_PHOTOS_BUCKET}/${originalKey}:`,
-    err,
-  );
-  Sentry.captureException(err, {
-    tags: { area: "photo-storage", operation: "compensating-delete" },
-    extra: { bucket: PLANT_PHOTOS_BUCKET, objectKey: originalKey, userId: input.userId },
+it("POST with invalid purpose returns 400 validation_failed", async () => {
+  __setCurrentUserAdapterForTests(adapterForUser(userId));
+  const request = new NextRequest(reqUrl("/api/v1/diagnostics/consent"), {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: "Bearer fake-test-token",
+      "idempotency-key": `task2-bad-${randomUUID()}`,
+    },
+    body: JSON.stringify({
+      purpose: "not_a_real_purpose",
+      legalBasis: "consent",
+      source: "first_use_prompt",
+    }),
   });
-}
+  const response = await routeMod.POST(request);
+  expect(response.status).toBe(400);
+  const body = await response.json();
+  expect(body.error.code).toBe(ErrorCode.ValidationFailed);
+});
 ```
 
-CLAUDE.md says `Sentry.setUser({ id })` only — this captureException uses `extra.userId`, not `setUser`, so it complies with the no-PII rule.
+This pins the drizzle-zod rooting empirically — if a refactor weakens the enum to `z.string()` (intentionally or by library regression), this test fails loudly.
 
 ---
 
-### IN-03: Cursor encoding uses standard base64 (not URL-safe)
+### IN-03: Migration timestamps in `_journal.json` predate the planning artifact dates (carry-forward from iter2 IN-04)
 
-**File:** `src/shared/api/cursor.ts:43-45`
-**Issue:** Standard base64 includes `+` and `/`, which are not URL-safe. Callers must URL-encode the cursor before placing it in `?cursor=...`. The Playwright test in `tests/e2e/diagnostics-consent.spec.ts:147` doesn't pass it back through a URL boundary so the issue isn't exercised, but a real client would need to URL-encode/decode. `decodeCursor` is lenient on accept (`Buffer.from(encoded, "base64")` handles both forms), but emitting `+` in a query string is brittle when manual URL building isn't routed through `URLSearchParams.set`.
+**File:** `drizzle/migrations/meta/_journal.json:8,14,22`
+**Issue:** Unchanged from iter2 — the new 0002 migration was added but its `when` value is also back-dated. All three timestamps decode to 2026-04-22 (computed from the millisecond values 1777220218174, 1777220252423, 1777247706469), several days before the iter2 review date (2026-04-26) and before the iter3 fix-application date implied by today (2026-04-26). Drizzle uses these timestamps to order migrations; a future phase-3 migration that's accidentally back-dated could silently flip the ordering.
 
-**Fix:** Use `base64url` which is URL-safe by definition and supported natively:
+**Fix:** Add a CI assertion that `meta/_journal.json` `when` values are monotonically increasing per `idx`. Alternatively, document under CLAUDE.md `Conventions` that drizzle migrations must use the timestamp at the moment of generation and never be hand-edited. A small Vitest check is cheap:
 
 ```typescript
-export function encodeCursor(payload: CursorPayload): string {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-}
+// tests/unit/journal-monotonic.test.ts
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 
-export function decodeCursor(encoded: string): DecodeResult {
-  let json: string;
-  try {
-    json = Buffer.from(encoded, "base64url").toString("utf8");
-  } catch {
-    return { ok: false, error: ErrorCode.ValidationFailed };
-  }
-  // ... rest unchanged
+describe("drizzle migrations journal monotonicity", () => {
+  it("entry `when` values are strictly increasing per `idx`", () => {
+    const journal = JSON.parse(
+      readFileSync(join(__dirname, "..", "..", "drizzle/migrations/meta/_journal.json"), "utf8"),
+    ) as { entries: { idx: number; when: number }[] };
+    const sorted = [...journal.entries].sort((a, b) => a.idx - b.idx);
+    for (let i = 1; i < sorted.length; i++) {
+      expect(sorted[i]!.when).toBeGreaterThan(sorted[i - 1]!.when);
+    }
+  });
+});
+```
+
+---
+
+### IN-04: `_exhaustive as string` cast in `extFromMime` defeats the `never` purity
+
+**File:** `src/contexts/catalog/application/upload-photo.ts:63`
+**Issue:** The IN-01 iter2 fix added an exhaustive switch:
+
+```typescript
+default: {
+  const _exhaustive: never = mime;
+  throw new Error(`extFromMime: unhandled MIME ${_exhaustive as string}`);
 }
 ```
 
-`base64url` decode accepts both standard and URL-safe forms.
+The `as string` cast bypasses the `never` type just to interpolate the value in a template string. Not a runtime bug — the default branch is unreachable when `AllowedMime` is correctly narrowed. But the cast slightly defeats the exhaustiveness check: a future refactor that loosens `AllowedMime` (e.g. to `string` for any reason) would not trigger a type error here because the cast accepts anything.
+
+**Fix:** Drop the cast — `String(_exhaustive)` is a runtime-safe way to coerce that doesn't suppress type checking:
+
+```typescript
+default: {
+  const _exhaustive: never = mime;
+  throw new Error(`extFromMime: unhandled MIME ${String(_exhaustive)}`);
+}
+```
+
+Or accept that the value is unreachable and emit a static string:
+
+```typescript
+default: {
+  const _exhaustive: never = mime;
+  throw new Error("extFromMime: exhaustive switch hit a never value");
+}
+```
+
+Either form preserves the compile-time exhaustiveness guarantee that motivated the iter2 IN-01 fix.
 
 ---
 
-### IN-04: Migration timestamps in `_journal.json` predate the planning artifact dates
-
-**File:** `drizzle/migrations/meta/_journal.json:8,14`
-**Issue:** Both migration `when` timestamps (`1777220218174`, `1777220252423`) decode to 2026-04-22 — a few days before today (CLAUDE.md `currentDate: 2026-04-26`). Drizzle uses these timestamps to order migrations; manual edits or replays may produce values that don't match phase chronology. Not a runtime bug, but a hygiene issue: if a future phase-3 migration is generated and accidentally back-dated, drizzle-kit's ordering could silently flip migration order.
-
-**Fix:** Add a CI assertion that `meta/_journal.json` `when` values are monotonically increasing per `idx`. Alternatively, document under CLAUDE.md `Conventions` that drizzle migrations must use the timestamp at the moment of generation and never be hand-edited.
-
----
-
-_Reviewed: 2026-04-26T16:30:00Z_
+_Reviewed: 2026-04-26T18:45:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_

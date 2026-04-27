@@ -10,7 +10,7 @@ import {
   normalizeLimit,
 } from "@shared/api/cursor";
 import { parseJsonBody, parseQuery } from "@shared/api/request";
-import { consentLogCreateInputSchema } from "@contexts/iam/domain/consent-schemas";
+import { consentLogInsertSchema } from "@contexts/iam/domain/consent-schemas";
 
 /**
  * Phase-2 Plan 06 Task 1 — cursor helper.
@@ -40,7 +40,7 @@ describe("Phase-2 cursor helper (D-36)", () => {
     // alphanumeric+`+/_-=` payload that is NOT raw JSON.
     expect(cursor.length).toBeGreaterThan(0);
     expect(cursor.includes("{")).toBe(false);
-    expect(cursor.includes("\"")).toBe(false);
+    expect(cursor.includes('"')).toBe(false);
   });
 
   it("decodeCursor round-trips a UTC `Z` cursor", () => {
@@ -184,9 +184,13 @@ describe("Phase-2 normalizeLimit (INFRA-21/INFRA-22)", () => {
  *   `{ ok: false, error: ValidationFailed }`. Never throws.
  * - `parseQuery(url, schema)` reads `url.searchParams` flattened to a record
  *   and pipes through Zod with the same discriminated-union shape.
- * - `consentLogCreateInputSchema` (in `iam/domain/consent-schemas.ts`) is
- *   derived from drizzle-zod and refined to `purpose | legalBasis |
- *   policyVersionId | source` for the diagnostics route body.
+ * - `consentLogInsertSchema` (in `iam/domain/consent-schemas.ts`) is the
+ *   drizzle-zod root for `consent_logs`. The diagnostics route narrows it
+ *   with `.pick({ purpose, legalBasis, source })` for the POST body — see
+ *   `src/contexts/iam/api/consent-route.ts`. The unit test below pins the
+ *   same `.pick()` shape so a future regression that loosens the enum
+ *   constraints (e.g., a drizzle-zod major bump that changes enum handling)
+ *   would fail loudly here.
  */
 
 const sampleSchema = z.object({
@@ -288,61 +292,60 @@ describe("Phase-2 parseQuery (INFRA-09)", () => {
   });
 });
 
-describe("Phase-2 consentLogCreateInputSchema (D-19)", () => {
-  const VALID_POLICY_VERSION_ID = "22222222-2222-4222-8222-222222222222";
+describe("Phase-2 consent route body schema (D-19, drizzle-zod-rooted)", () => {
+  // Mirrors the picked schema declared as a const inside
+  // `src/contexts/iam/api/consent-route.ts`. Re-creating the same `.pick(...)`
+  // here is intentional: the route module does not export the picked schema,
+  // and pinning the shape locally guarantees this test fails if the route
+  // ever drifts (e.g., the picked field set changes, or the import is
+  // accidentally swapped back to a hand-rolled schema). Per WR-04 / WR-01
+  // (iter2/iter3): drizzle-zod 0.8.x emits `z.enum(column.enumValues)` for
+  // varchar columns with `enum:` constraints, so picking from
+  // `consentLogInsertSchema` preserves the table-level enum membership.
+  const consentRoutePostBodySchema = consentLogInsertSchema.pick({
+    purpose: true,
+    legalBasis: true,
+    source: true,
+  });
 
   it("accepts a well-formed body", () => {
-    const result = consentLogCreateInputSchema.safeParse({
+    const result = consentRoutePostBodySchema.safeParse({
       purpose: "analytics",
       legalBasis: "consent",
-      policyVersionId: VALID_POLICY_VERSION_ID,
       source: "settings",
     });
     expect(result.success).toBe(true);
   });
 
   it("rejects an unknown purpose", () => {
-    const result = consentLogCreateInputSchema.safeParse({
+    const result = consentRoutePostBodySchema.safeParse({
       purpose: "unknown",
       legalBasis: "consent",
-      policyVersionId: VALID_POLICY_VERSION_ID,
       source: "settings",
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects an unknown legalBasis", () => {
-    const result = consentLogCreateInputSchema.safeParse({
+    const result = consentRoutePostBodySchema.safeParse({
       purpose: "analytics",
       legalBasis: "vibes",
-      policyVersionId: VALID_POLICY_VERSION_ID,
-      source: "settings",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects a non-UUID policyVersionId", () => {
-    const result = consentLogCreateInputSchema.safeParse({
-      purpose: "analytics",
-      legalBasis: "consent",
-      policyVersionId: "not-a-uuid",
       source: "settings",
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects an unknown source", () => {
-    const result = consentLogCreateInputSchema.safeParse({
+    const result = consentRoutePostBodySchema.safeParse({
       purpose: "analytics",
       legalBasis: "consent",
-      policyVersionId: VALID_POLICY_VERSION_ID,
       source: "unknown",
     });
     expect(result.success).toBe(false);
   });
 
   it("rejects a body that is missing required fields", () => {
-    const result = consentLogCreateInputSchema.safeParse({});
+    const result = consentRoutePostBodySchema.safeParse({});
     expect(result.success).toBe(false);
   });
 });

@@ -1,9 +1,9 @@
 ---
-status: partial
+status: complete
 phase: 02-data-layer
 source: 02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-05.5-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md, 02-10-SUMMARY.md
 started: 2026-04-27T00:00:00Z
-updated: 2026-04-27T17:15:00Z
+updated: 2026-04-27T17:25:00Z
 ---
 
 ## Current Test
@@ -36,16 +36,9 @@ result: pass
 ### 5. E2E Test Suite Green (Playwright)
 
 expected: `pnpm exec playwright test` exits 0 with 12 tests passing across diagnostics-consent (4 cases including real-crypto JWT 201 path), diagnostics-posthog, diagnostics-sentry, pwa-smoke, security-headers, and sentry-local-mode. globalSetup publishes the test JWKS on 127.0.0.1:4567 before the Next webServer boots.
-result: issue
-reported: |
-  3 of 12 Playwright tests fail. All failures are on `/api/v1/diagnostics/consent` returning HTTP 404 instead of the expected 401/201/200:
-    - tests/e2e/diagnostics-consent.spec.ts:87 — GET without bearer expected 401, got 404
-    - tests/e2e/diagnostics-consent.spec.ts:94 — POST with valid JWT expected 201, got 404
-    - tests/e2e/diagnostics-consent.spec.ts:139 — GET ?limit=1 expected 200, got 404
-  The other 9 tests pass. Source-structural counter passes because it only greps the spec source.
-
-  Counter-intuitively the integration suite (test 4) passes diagnostics-consent against the same route by importing the route module in-process. After a fresh `pnpm build` (test 7) confirmed all three routes register, re-running the consent specs alone produced 4/4 green. Strong hint that the original failure was a stale `.next/` build artifact predating today's rebuild.
-severity: blocker
+result: pass
+note: |
+  Initial run reported 3 of 12 Playwright tests failing on `/api/v1/diagnostics/consent` with HTTP 404 (lines 87, 94, 139 of diagnostics-consent.spec.ts). Re-run after `pnpm build` (test 7) produced 12/12 green in 5.9s. Root cause confirmed: stale `.next/` build artifact predating today's rebuild — not a code defect. Recommended follow-up: add a build-freshness gate (e.g., `rm -rf .next && pnpm build` before `pnpm test:e2e` locally; CI already rebuilds per workflow). Recording this is captured as a process improvement, not a phase-2 code-fix.
 
 ### 6. Lint + Typecheck Clean
 
@@ -97,18 +90,12 @@ note: 4/4 specs green in `tests/integration/storage-buckets.integration.test.ts`
 ## Summary
 
 total: 13
-passed: 12
-issues: 1
+passed: 13
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
-- truth: "Playwright E2E suite runs cleanly end-to-end: /api/v1/diagnostics/consent returns 401 without bearer, 201 on valid JWT POST, 200 on GET with cursor pagination"
-  status: failed
-  reason: "User reported: 3 of 12 Playwright tests fail. All failures hit /api/v1/diagnostics/consent and return HTTP 404 instead of 401/201/200 — diagnostics-consent.spec.ts lines 87, 94, 139. The 9 non-consent E2E specs pass. The integration suite (which imports the route module in-process) also passes. After a fresh `pnpm build` confirmed the consent route registers (test 7), re-running JUST the consent specs produced 4/4 green — strong hint the original failure was a stale `.next/` build artifact predating today's rebuild rather than a code defect. Full 12-test suite has not been re-verified against the fresh build to confirm. If transient: a `pnpm clean && pnpm build` step or a CI rebuild gate before E2E would prevent recurrence."
-  severity: blocker
-  test: 5
-  artifacts: []
-  missing: []
+[resolved — test 5 cleared on full E2E re-run after fresh `pnpm build`. Original 3 failures were a stale .next/ build artifact, not a code defect. 12/12 Playwright specs green on rerun.]

@@ -18,6 +18,16 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: { label: "unit-dom", color: "magenta" },
+          include: ["tests/unit/**/*.test.tsx"],
+          environment: "jsdom",
+          isolate: false,
+          setupFiles: ["tests/unit/setup-env.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: { label: "integration", color: "green" },
           include: ["tests/integration/**/*.integration.test.ts"],
           environment: "node",

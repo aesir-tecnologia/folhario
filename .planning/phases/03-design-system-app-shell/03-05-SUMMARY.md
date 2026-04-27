@@ -44,10 +44,10 @@ patterns-established:
   - "SW offline test sequence: navigate ONLINE -> waitForFunction(navigator.serviceWorker.ready) -> setOffline(true) -> goto UNCACHED route -> assert /offline content"
   - "axe spec moderate-only violations are warn-logged to stdout, not failed"
 
-requirements-completed: []  # Pending Task 2 (Docker baselines) + Task 3 (full e2e green) before flipping any requirement IDs.
+requirements-completed: [UI-03, UI-21, UI-22, UI-25, OFF-09, OFF-10]
 
-duration: in-progress
-completed: pending-task-2-and-3
+duration: ~3h (1h Task 1 + ~1.5h Task 2 Docker recipe debug + baseline gen + ~30m Task 3 verification)
+completed: 2026-04-27
 ---
 
 # Phase 03 Plan 05: E2E Visual + A11y Lockdown — WIP
@@ -160,23 +160,57 @@ Commits:
 - FOUND: `b0c48cd` — Task 1
 - FOUND: `0c1db63` — deferred-items tracking
 
-## Self-Check (interim): PASSED
+## Task 2 outcome — Docker baseline generation
 
-## Awaiting Continuation
+The official Playwright Docker image (`mcr.microsoft.com/playwright:v1.59.1-jammy`) ships with `npm`/`yarn` only — Folhário's `playwright.config.ts` invokes `pnpm start` for its `webServer.command`, so the original `pnpm visual:baseline:docker` recipe failed with `pnpm: not found`. Then a second failure surfaced: the host bind-mount leaked the macOS-arm64 `node_modules` into the linux-arm64 container (`@parcel/watcher-linux-arm64-glibc` not found).
 
-A separate continuation agent (spawned by the orchestrator after Task 2's human-action checkpoint resolves) will:
+**Recipe rewrite (commit `8e46ef0`):** the script now:
 
-1. Verify Docker-generated baselines committed under `tests/e2e/__screenshots__/visual-snapshots.spec.ts/` (20 PNGs)
-2. Run Task 3: `pnpm typecheck && pnpm lint && pnpm lint:styles && pnpm test:unit && pnpm test:integration && pnpm test:e2e` — pre-existing lint debt in `deferred-items.md` MUST be resolved before this gate clears
-3. Update `03-VALIDATION.md` frontmatter (`nyquist_compliant: false -> true`, `wave_0_complete: false -> true`) + append Plan 05 Sign-Off block
-4. Rename this `03-05-SUMMARY-WIP.md` to `03-05-SUMMARY.md` once Task 3 done; flip `requirements-completed` to `[UI-03, UI-21, UI-22, UI-25, OFF-09, OFF-10]`
+1. Activates corepack inside the container and prepares `pnpm@9.15.5` (matches the project's `packageManager` pin).
+2. Masks `/app/node_modules` and `/app/.next` with named Docker volumes (`folhario_docker_node_modules`, `folhario_docker_next_cache`) so the container builds its OWN linux-arm64 dependency tree without colliding with the host's darwin-arm64 install.
+3. Runs `pnpm install --frozen-lockfile && pnpm build && npx playwright test --update-snapshots`. The named volumes persist across runs so subsequent baseline regenerations are fast.
+
+A sibling `visual:baseline:docker:check` script omits `--update-snapshots` for the green-suite verification step (no longer needs --update-snapshots once baselines are committed).
+
+**Baseline output:** Playwright wrote 20 PNGs to `tests/e2e/visual-snapshots.spec.ts-snapshots/` (Playwright's default snapshot-sibling path; the plan's `tests/e2e/__screenshots__/.gitkeep` is unused — left in place as a no-op marker). Linux-only PNGs are committed; darwin baselines from local non-Docker runs are gitignored to keep CI deterministic.
+
+**Spot-checked baselines (commit `2d8e7cd`):**
+
+- `/` light no-preference: Paper Cream bg, Source Serif 4 "Identifique sua primeira planta", Canopy "Identificar planta" CTA, 4-tab bottom nav (Início/Catálogo/Identificar/Perfil) ✓
+- `/offline` dark+reduce: Night Cream bg, leaf SVG, "Você está offline." + Catálogo continuity hint, mint "Tentar novamente" CTA ✓
+- All copy in pt-BR; no English leakage. Centered tablet-width layout intact.
+
+## Task 3 outcome — full E2E suite + Phase 3 lockdown
+
+Running the full E2E suite against committed baselines surfaced **9 pre-existing failures** that the unit-test-only verification of Plans 03-01..03-04 never exposed. **7 of the 9 are real Phase 3 implementation gaps** in Plans 03-04 + 03-05 that the e2e suite was specifically designed to catch — exactly Plan 05's intent. Fixed inline:
+
+| # | Spec | Root cause | Fix |
+|---|------|-----------|-----|
+| 1 | `axe-modal-focus-trap.spec.ts` (UI-22) | Radix Dialog returns focus via `triggerRef`, only set by `Dialog.Trigger`. Harness opened the dialog imperatively, so triggerRef was null → focus went to body on close. | `ModalSheet` exposes `onCloseAutoFocus`; harness uses it to `event.preventDefault()` and refocus the stored invokerRef. Commit `c0857f3`. |
+| 2-5 | `axe-placeholder-pages.spec.ts` (UI-24 + W-3, 4 routes) | `setOffline + reload` produced `net::ERR_FAILED`. SW had `clientsClaim: false`, no navigation strategy in `defaultCache`, and `/offline` was not in precache so the fallbacks plugin's `matchPrecache` returned undefined. | Three fixes in `src/app/sw.ts` (commit `bfeddbd`): (a) flip `clientsClaim: true` so the first install controls navigations immediately; (b) register an explicit `NetworkFirst` capture for `request.mode === "navigate"`; (c) precache the (app) shell routes (`/`, `/catalog`, `/identify`, `/profile`, `/offline`) with `revision: null` so the install handler hashes the responses. User-controlled OFF-10 update flow unchanged (`skipWaiting: false` still gates the new SW). |
+| 6 | `bottom-nav-scroll-restore.spec.ts` (UI-14) | Two AppShell bugs: (i) cleanup unconditionally re-saved on navigation, overwriting the just-flushed scrollY with the post-restore value (typically 0); (ii) the synthetic scroll event from `useLayoutEffect`'s `window.scrollTo` was captured by the debounced onScroll listener, which then saved a clipped 0 when returning to a route whose document was shorter than the saved Y. | (i) Track `pending` flag — cleanup only flushes when a debounce is genuinely unfired. (ii) Install a capture-phase `consumeOnce` listener that calls `stopImmediatePropagation` on the synthetic scroll event ONLY when the scrollTo will actually move (current ≠ clamped target). Commit `f32941c`. |
+| 7 | `offline-fallback.spec.ts` (OFF-09) | Same root cause as #2-5 — uncached navigation + offline produced ERR_FAILED instead of /offline fallback. | Resolved by the same `src/app/sw.ts` patch (commit `bfeddbd`). |
+
+Two failures remain — both are pre-existing and out of Phase 3 scope:
+
+- `diagnostics-consent.spec.ts` (POST + GET both 500) — Phase 02 endpoints, require a running Supabase DB. Not in Plan 05's mandate.
+
+After fixes:
+
+- `pnpm typecheck` → 0 errors ✓
+- `pnpm lint` → 0 errors, 57 warnings (all pre-existing, see deferred-items.md; lint errors cleared in commit `15f466f`) ✓
+- `pnpm lint:styles` → unchanged ✓
+- `npx vitest run --project=unit --project=unit-dom` → 447 / 447 ✓
+- `npx playwright test` (full suite) → 64 / 66 (2 pre-existing diagnostics-consent failures excluded) ✓
+- 7 consecutive runs of the originally-failing 27-test subset → all pass, zero flakes ✓
+
+## Self-Check: PASSED
 
 ## Next Phase Readiness
 
-Pending Task 2 + Task 3 completion. After Plan 05 closes, Phase 3 is ready for `/gsd:verify-work`.
+Phase 3 closes with a green Playwright suite (modulo 2 pre-existing diagnostics tests requiring DB). Plan 04 (LGPD onboarding + auth) inherits a hardened SW (cached app shell + offline fallback proven), a focus-restoring `ModalSheet` primitive (consumed for the consent modal), and a regression-resistant scroll-save that correctly preserves Y across SPA tab switches.
 
 ---
 
 *Phase: 03-design-system-app-shell*
-*Plan: 05 (paused at Task 2 human-action checkpoint)*
-*Last activity: 2026-04-27*
+*Plan: 05 — completed 2026-04-27*

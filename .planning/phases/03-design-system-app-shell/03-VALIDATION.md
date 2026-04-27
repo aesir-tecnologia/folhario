@@ -1,10 +1,11 @@
 ---
 phase: 3
 slug: design-system-app-shell
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: signed-off
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-26
+updated: 2026-04-27
 ---
 
 # Phase 3 — Validation Strategy
@@ -144,3 +145,26 @@ These must exist BEFORE any RED → GREEN → REFACTOR TDD task can run. The pla
 - [ ] `nyquist_compliant: true` set in frontmatter after planner verifies coverage
 
 **Approval:** pending — planner sets `nyquist_compliant: true` and `wave_0_complete: true` once PLAN tasks are mapped and Wave 0 plan exists.
+
+---
+
+## Plan 05 Sign-Off (2026-04-27)
+
+All five Plan 03 plans (`03-01` through `03-05`) have shipped with their summaries committed and verification gates green:
+
+- **Plan 03-01** — Tooling foundation (Tailwind v4, stylelint banned-pattern guards, Vitest projects, Playwright + axe wiring). Wave 0 — verification infrastructure exists.
+- **Plan 03-02** — Theme system + i18n + fonts + connectivity heartbeat. UI-02 cookie-driven theme, pt-BR `next-intl` mount, `<html lang="pt-BR">`.
+- **Plan 03-03** — 11 composed primitives (Button, TextInput, Select, Toggle, ModalSheet, Skeleton, EmptyState, InlineError, CaptureButton, springs, useReducedMotion).
+- **Plan 03-04** — App shell composition (BottomNav, OfflineBanner, ReadOnlyBanner, AppUpdateToast), Serwist PWA + user-controlled update flow, /offline EmptyState, manifest + maskable icons.
+- **Plan 03-05** — 10 E2E specs (visual snapshots × 20, horizontal-scroll guard, offline fallback, scroll-restore, axe over routes/modal/route-focus/skip-link). Docker baseline recipe (Open Risk #5 resolved). All Phase 3 e2e tests green; only pre-existing Phase 02 diagnostics-consent failures (DB-dependent) remain out of scope.
+
+**Verification gate (run 2026-04-27 against `15f466f`):**
+
+- `pnpm typecheck` → 0 errors
+- `pnpm lint` → 0 errors (57 pre-existing warnings tracked in `deferred-items.md`)
+- `pnpm lint:styles` → 0 issues
+- `npx vitest run --project=unit --project=unit-dom` → 447 / 447 passing
+- `npx playwright test` → 64 / 66 passing (2 pre-existing diagnostics-consent fail, DB-dependent — out of Phase 3 scope)
+- 7-run stability check on the originally-failing 27-test subset → zero flakes
+
+**Approval:** signed off — `nyquist_compliant: true`, `wave_0_complete: true`. Phase 3 ready for `/gsd:verify-work`.

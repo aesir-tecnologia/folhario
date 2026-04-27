@@ -5,7 +5,7 @@ out-of-scope per the SCOPE BOUNDARY rule (Plan 05 only ships E2E test specs +
 visual baselines; pre-existing failures in Plan 02/03/04 files are NOT auto-fixed
 by Plan 05).
 
-## Pre-existing lint errors (4) — discovered Plan 03-05 Task 1
+## Pre-existing lint errors (4) — RESOLVED during Plan 03-05 Task 2/3 cleanup
 
 Source: `pnpm lint` against base commit `bbd0335` (Plan 03-04 merge).
 
@@ -13,8 +13,8 @@ Source: `pnpm lint` against base commit `bbd0335` (Plan 03-04 merge).
 
 - **Lines 38–41:** `@typescript-eslint/no-explicit-any — Unexpected any. Specify a different type` (4 errors)
 - **Origin:** Plan 02-02 commit `79bd4a3 test(03-02): add failing contract test for /api/v1/health/connectivity heartbeat`
-- **Owner:** Plan 02 (heartbeat unit-DOM contract test)
-- **Plan 03-05 impact:** Task 3's plan-prescribed `pnpm lint` verification gate will fail until these are addressed in a follow-up.
+- **Resolution:** Replaced `(mod as any).X` with `mod: Record<string, unknown>` cast — same coverage, no `any`. Commit `15f466f`.
+- **Status:** Cleared. Verification gate now passes.
 
 ## Pre-existing lint warnings (57) — discovered Plan 03-05 Task 1
 

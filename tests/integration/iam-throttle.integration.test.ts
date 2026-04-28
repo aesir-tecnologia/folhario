@@ -26,9 +26,33 @@ const cleanupSql = dbUrl
   ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 })
   : null;
 
+// Each test in this suite owns its own IP. Cleanup is scoped to (ip, endpoint)
+// for those IPs so this suite cohabits safely with parallel-running tests
+// that exercise other IPs on the same shared `public.auth_throttle` table
+// (e.g. iam-login.integration.test.ts which exercises 2.2.2.2..9.9.9.9).
+// A blanket TRUNCATE here would race-wipe the other suite's accumulated
+// counts mid-loop and cause spurious 401s where 429s were expected.
+const TEST_IPS = [
+  "1.2.3.4",
+  "1.2.3.5",
+  "1.2.3.6",
+  "1.2.3.7",
+  "1.2.3.8",
+  "1.2.3.9",
+  "1.2.3.10",
+  "1.2.3.11",
+  "1.2.3.12",
+  "1.2.3.13",
+  "1.2.3.14",
+  "1.2.3.15",
+] as const;
+
 async function clearAuthThrottle(): Promise<void> {
   if (!cleanupSql) return;
-  await cleanupSql`TRUNCATE TABLE public.auth_throttle`;
+  await cleanupSql`
+    DELETE FROM public.auth_throttle
+    WHERE ip IN ${cleanupSql(TEST_IPS as readonly string[])}
+  `;
 }
 
 describe.skipIf(!dbUrl)("Phase 4 throttle (D-12..D-15 + Codex HIGH #5)", () => {

@@ -77,17 +77,19 @@ describe.skipIf(!dbUrl)(
 
       const spread = Math.max(...times) - Math.min(...times);
 
-      // The 5ms target is brittle under parallel-suite load — DB roundtrip
-      // variance for the throttle UPSERT and Postgres connection-pool
-      // contention can exceed it. Per the plan's documented fallback, the
-      // DURABLE D-11 invariant lives in the static-inspection test below
-      // (route module never imports lookup/mint symbols). Here we assert a
-      // generous-but-meaningful bound so a regression that adds an
-      // accidental DB call into the route handler still spikes the spread
-      // far above what a thin inngest.send wrapper can produce.
+      // Plan target was `toBeLessThan(5)`; relaxed to 50 because parallel-
+      // suite contention on the local Postgres connection pool makes 5ms
+      // brittle. DB roundtrip variance for the throttle UPSERT can spike
+      // well beyond 5ms when 60+ test files contend simultaneously.
+      // Per the plan's documented fallback, the DURABLE D-11 invariant
+      // lives in the static-inspection test below (route module never
+      // imports lookup/mint symbols). Here we still assert a meaningful
+      // bound so a regression that adds an accidental DB call into the
+      // route handler spikes the spread far above what a thin
+      // inngest.send wrapper can produce.
       // Local single-suite run sees ~1ms spread; full-parallel-suite run
       // sees ~10–15ms; an inadvertent getUserByEmail call would push it
-      // well past 50ms (real Supabase JOIN with 5+ conn pool).
+      // well past 50ms (real Supabase JOIN with 5+ conn pool ≈ 50–200ms).
       expect(spread).toBeLessThan(50);
     });
 

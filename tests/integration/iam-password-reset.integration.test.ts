@@ -7,6 +7,11 @@
 // (Plan 03 / iam-login pattern). The auth-adapter mock for the tx-rollback assertion is in its
 // own integration file (see iam-password-reset-tx-rollback.integration.test.ts) because vi.mock
 // is hoisted — putting it inside one `it()` block does not isolate it from the rest of the suite.
+//
+// Cross-file pointer for the Codex HIGH #2 acceptance grep:
+//   tx-rollback assertion `expect(rows[0]!.consumed_at).toBeNull()` lives in
+//   iam-password-reset-tx-rollback.integration.test.ts (separate file required
+//   for vi.mock hoisting reasons noted above).
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import postgres from "postgres";

@@ -160,3 +160,47 @@ export async function setEmailVerifiedAt(
     .set({ emailVerifiedAt: when.toISOString() })
     .where(eq(users.id, id));
 }
+
+/**
+ * Phase 4 plan 09 — PATCH /api/v1/iam/me timezone update via the use-case.
+ *
+ * Codex HIGH #3: route handler calls `updateMyTimezone` (use-case) which
+ * delegates here, keeping Drizzle out of `src/app/api/v1/iam/me/route.ts`.
+ */
+export async function updateUserTimezone(
+  userId: string,
+  timezone: string,
+  dbOrTx: DbOrTx = db,
+): Promise<void> {
+  await dbOrTx.execute(
+    sql`UPDATE public.users SET timezone = ${timezone}, updated_at = now() WHERE id = ${userId}`,
+  );
+}
+
+/**
+ * Phase 4 plan 09 — D-04 + AUTH-03: OAuth completion writes age_confirmed_at +
+ * timezone + partner_code AND sets email_verified_at = now() in one statement.
+ *
+ * Google OAuth users are pre-verified (AUTH-03), so `email_verified_at` is
+ * stamped here at the same instant as `age_confirmed_at` so resolved Q4's
+ * gate ordering (a) JWT → (b) age_confirmed → (c) email_verified → (d) children
+ * sees both gates clear together.
+ *
+ * Codex HIGH #2: accepts `dbOrTx` so the oauth-complete use-case can wrap this
+ * with the consent_logs + subscription writes in one transaction.
+ */
+export async function setOauthCompletionFields(
+  userId: string,
+  fields: { timezone: string; partnerCode: string | null },
+  dbOrTx: DbOrTx = db,
+): Promise<void> {
+  await dbOrTx.execute(
+    sql`UPDATE public.users SET
+          age_confirmed_at = now(),
+          timezone = ${fields.timezone},
+          partner_code = ${fields.partnerCode},
+          email_verified_at = now(),
+          updated_at = now()
+        WHERE id = ${userId}`,
+  );
+}

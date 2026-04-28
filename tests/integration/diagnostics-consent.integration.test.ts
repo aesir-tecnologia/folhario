@@ -172,7 +172,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     const inserted = await driver`
       INSERT INTO users (email, name, timezone, trial_source)
       VALUES (${"route-" + randomUUID() + "@test.local"}, 'Route Test User', 'America/Sao_Paulo', 'organic')
-      RETURNING id, email, name, locale, timezone, notification_time_local, trial_source,
+      RETURNING id, email, email_verified_at, name, locale, timezone, notification_time_local, trial_source,
                 partner_code, age_confirmed_at, toxicity_disclaimer_acknowledged_at,
                 deletion_requested_at, created_at, updated_at
     `;
@@ -180,6 +180,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     userRow = {
       id: userId,
       email: inserted[0]!.email as string,
+      emailVerifiedAt: inserted[0]!.email_verified_at as string | null,
       name: inserted[0]!.name as string,
       locale: inserted[0]!.locale as string,
       timezone: inserted[0]!.timezone as string,
@@ -205,7 +206,10 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
   });
 
   // Helper: build a fake adapter that resolves to this user. Mirrors the
-  // auth-adapter Task 1 unit-test seam pattern.
+  // auth-adapter Task 1 unit-test seam pattern. Phase 4 added 8 supabase.auth.*
+  // methods to AuthAdapter (Codex HIGH #3); this fixture stubs them with
+  // default implementations because Plan 02 routes only exercise verifyBearer
+  // + getUserById.
   function adapterForUser(uid: string): AuthAdapter {
     return {
       async verifyBearer(authorizationHeader): Promise<VerifyResult> {
@@ -220,6 +224,31 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
       },
       async getUserById(id) {
         return id === userRow.id ? userRow : null;
+      },
+      // Phase 4 stubs — never invoked by Plan 02 consent route.
+      async getUserBySession() {
+        return null;
+      },
+      async createUser() {
+        throw new Error("createUser not used in this fixture");
+      },
+      async signInWithPassword() {
+        return { ok: false, reason: "invalid_credentials" };
+      },
+      async signOutLocal() {
+        /* no-op */
+      },
+      async adminUpdatePassword() {
+        return { ok: true };
+      },
+      async adminDeleteUser() {
+        /* no-op */
+      },
+      async signInWithOAuth() {
+        return { url: "" };
+      },
+      async exchangeCodeForSession() {
+        return { ok: false, reason: "stub" };
       },
     };
   }

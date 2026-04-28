@@ -14,6 +14,15 @@ export const serverSchema = z.object({
   SENTRY_ORG: optional(z.string().min(1)),
   SENTRY_PROJECT: optional(z.string().min(1)),
   IDENTIFICATION_PROVIDER_MODE: z.enum(["stub", "real"]).default("stub"),
+  // Phase 4 — Inngest (D-16: notifications/send-email is the first async consumer)
+  INNGEST_EVENT_KEY: optional(z.string().min(1)),
+  INNGEST_SIGNING_KEY: optional(z.string().min(1)),
+  // Phase 4 — Resend transactional email (D-19/D-20)
+  RESEND_API_KEY: optional(z.string().min(1)),
+  RESEND_FROM_ADDRESS: z.string().email().default("onboarding@resend.dev"),
+  // Phase 4 — Supabase Google OAuth (D-04)
+  SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: optional(z.string().min(1)),
+  SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET: optional(z.string().min(1)),
 });
 
 export const serverEnv = serverSchema.parse(process.env);

@@ -4,6 +4,11 @@ import { ErrorCode } from "@shared/config/errors";
 import { serverEnv } from "@shared/config/server-env";
 import { db, type DbClient } from "@shared/db/client";
 import { findById, type UserRow } from "@contexts/iam/infrastructure/db/users";
+import {
+  getReadOnlySupabaseServerClient,
+  getSupabaseServerClient,
+} from "@contexts/iam/infrastructure/supabase-server";
+import { supabaseAdmin } from "@contexts/iam/infrastructure/supabase-admin";
 
 /**
  * IAM AuthAdapter — Plan 02-07 D-32/D-33.
@@ -36,6 +41,33 @@ export type VerifyResult =
 export interface AuthAdapter {
   verifyBearer: (authorizationHeader: string | null | undefined) => Promise<VerifyResult>;
   getUserById: (id: string) => Promise<UserRow | null>;
+  // ──── Phase 4 additions (Codex HIGH #3 — sole module touching supabase.auth.*) ────
+  /** Returns the Supabase user id for the current request session, or null if unauthenticated. */
+  getUserBySession: (
+    opts?: { readOnly?: boolean },
+  ) => Promise<{ id: string; email: string } | null>;
+  /** D-03: admin.createUser({email_confirm: true}) — Folhário sends its own verification email. */
+  createUser: (opts: { email: string; password: string }) => Promise<{ id: string }>;
+  /** D-05: per-device JWT cookie via signInWithPassword. T-04-07-02: never distinguish reasons. */
+  signInWithPassword: (
+    opts: { email: string; password: string },
+  ) => Promise<{ ok: true } | { ok: false; reason: "invalid_credentials" }>;
+  /** D-05 + AUTH-14: signOut({scope: 'local'}). Idempotent. */
+  signOutLocal: () => Promise<void>;
+  /** D-10 + AUTH-12: admin.updateUserById({password}) WITHOUT invalidating existing JWTs. */
+  adminUpdatePassword: (
+    opts: { userId: string; newPassword: string },
+  ) => Promise<{ ok: true } | { ok: false; reason: string }>;
+  /** D-25 compensating delete on signup tx failure. Best-effort. */
+  adminDeleteUser: (userId: string) => Promise<void>;
+  /** D-04: returns the OAuth provider sign-in URL. */
+  signInWithOAuth: (
+    opts: { provider: "google"; redirectTo: string },
+  ) => Promise<{ url: string }>;
+  /** D-04: code-for-session exchange in /auth/callback. Sets the cookie via @supabase/ssr setAll. */
+  exchangeCodeForSession: (
+    code: string,
+  ) => Promise<{ ok: true; userId: string; email: string } | { ok: false; reason: string }>;
 }
 
 export interface AuthAdapterFactoryOptions {
@@ -178,5 +210,108 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
     async getUserById(id) {
       return findById(dbClient, id);
     },
+
+    // ──── Phase 4 additions ────
+    async getUserBySession({ readOnly = false } = {}) {
+      const supabase = readOnly
+        ? await getReadOnlySupabaseServerClient()
+        : await getSupabaseServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || !user.email) return null;
+      return { id: user.id, email: user.email };
+    },
+
+    async createUser({ email, password }) {
+      // D-03: email_confirm: true so Supabase doesn't send its own email; Folhário ships verification.
+      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      });
+      if (error || !data.user) {
+        throw new Error(
+          `authAdapter.createUser failed: ${error?.message ?? "no user returned"}`,
+        );
+      }
+      return { id: data.user.id };
+    },
+
+    async signInWithPassword({ email, password }) {
+      const supabase = await getSupabaseServerClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      // T-04-07-02: never distinguish "user not found" vs "wrong password".
+      if (error) return { ok: false, reason: "invalid_credentials" };
+      return { ok: true };
+    },
+
+    async signOutLocal() {
+      const supabase = await getSupabaseServerClient();
+      // Idempotent — already-logged-out user is a no-op. Never throws.
+      await supabase.auth.signOut({ scope: "local" }).catch(() => {
+        /* swallow per AUTH-14 idempotence */
+      });
+    },
+
+    async adminUpdatePassword({ userId, newPassword }) {
+      // D-10 + AUTH-12: does NOT call signOut. Existing JWTs remain valid.
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: newPassword,
+      });
+      if (error) return { ok: false, reason: error.message };
+      return { ok: true };
+    },
+
+    async adminDeleteUser(userId) {
+      // D-25 compensating delete on signup tx failure. Best-effort.
+      await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {
+        /* Sentry critical handled globally */
+      });
+    },
+
+    async signInWithOAuth({ provider, redirectTo }) {
+      const supabase = await getSupabaseServerClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo },
+      });
+      if (error || !data.url) {
+        throw new Error(
+          `authAdapter.signInWithOAuth failed: ${error?.message ?? "no url"}`,
+        );
+      }
+      return { url: data.url };
+    },
+
+    async exchangeCodeForSession(code) {
+      const supabase = await getSupabaseServerClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) return { ok: false, reason: error.message };
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || !user.email) {
+        return { ok: false, reason: "no_user_after_exchange" };
+      }
+      return { ok: true, userId: user.id, email: user.email };
+    },
   };
 }
+
+/**
+ * Phase 4 Codex HIGH #3 fix — process-wide AuthAdapter singleton wired to the
+ * default Supabase JWKS + service-role admin client. The SOLE module that
+ * calls `supabase.auth.*`. Application use-cases call `authAdapter.X()`.
+ *
+ * Lazy initialization: factory is invoked on first access so unit tests can
+ * still swap the implementation via `__setCurrentUserAdapterForTests` without
+ * touching the live Supabase clients.
+ */
+let _singleton: AuthAdapter | null = null;
+export const authAdapter: AuthAdapter = new Proxy({} as AuthAdapter, {
+  get(_target, prop, receiver) {
+    if (!_singleton) _singleton = createAuthAdapter();
+    return Reflect.get(_singleton as object, prop, receiver);
+  },
+});

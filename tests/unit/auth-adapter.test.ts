@@ -280,20 +280,57 @@ function buildFakeUserRow(id: string): UserRow {
   };
 }
 
+// Phase 4 Codex HIGH #3: AuthAdapter gained 8 supabase.auth.* methods.
+// Plan 02 unit tests only exercise verifyBearer + getUserById; this helper
+// stubs the rest with throwing/no-op defaults so Plan 02 tests stay focused.
+function buildPlan02FakeAdapter(
+  partial: Pick<AuthAdapter, "verifyBearer" | "getUserById">,
+): AuthAdapter {
+  return {
+    ...partial,
+    async getUserBySession() {
+      return null;
+    },
+    async createUser() {
+      throw new Error("createUser not used in this fixture");
+    },
+    async signInWithPassword() {
+      return { ok: false, reason: "invalid_credentials" };
+    },
+    async signOutLocal() {
+      /* no-op */
+    },
+    async adminUpdatePassword() {
+      return { ok: true };
+    },
+    async adminDeleteUser() {
+      /* no-op */
+    },
+    async signInWithOAuth() {
+      return { url: "" };
+    },
+    async exchangeCodeForSession() {
+      return { ok: false, reason: "stub" };
+    },
+  };
+}
+
 describe("requireApiUser — protected API helper", () => {
   afterAll(() => {
     __setCurrentUserAdapterForTests(null);
   });
 
   it("returns ErrorCode.Unauthenticated when no Authorization header is present", async () => {
-    __setCurrentUserAdapterForTests({
-      verifyBearer: async () => ({
-        ok: false,
-        code: ErrorCode.Unauthenticated,
-        reason: "missing_bearer",
+    __setCurrentUserAdapterForTests(
+      buildPlan02FakeAdapter({
+        verifyBearer: async () => ({
+          ok: false,
+          code: ErrorCode.Unauthenticated,
+          reason: "missing_bearer",
+        }),
+        getUserById: async () => null,
       }),
-      getUserById: async () => null,
-    });
+    );
     const request = new Request("http://localhost/api/v1/foo");
     const result = await requireApiUser(request);
     expect(result.ok).toBe(false);
@@ -303,14 +340,16 @@ describe("requireApiUser — protected API helper", () => {
   });
 
   it("returns ErrorCode.Unauthenticated when the JWT is invalid", async () => {
-    __setCurrentUserAdapterForTests({
-      verifyBearer: async () => ({
-        ok: false,
-        code: ErrorCode.Unauthenticated,
-        reason: "verify_failed",
+    __setCurrentUserAdapterForTests(
+      buildPlan02FakeAdapter({
+        verifyBearer: async () => ({
+          ok: false,
+          code: ErrorCode.Unauthenticated,
+          reason: "verify_failed",
+        }),
+        getUserById: async () => null,
       }),
-      getUserById: async () => null,
-    });
+    );
     const request = new Request("http://localhost/api/v1/foo", {
       headers: { authorization: "Bearer not-a-real-jwt" },
     });
@@ -322,10 +361,12 @@ describe("requireApiUser — protected API helper", () => {
   });
 
   it("returns ErrorCode.Unauthenticated when JWT is valid but no users row exists", async () => {
-    __setCurrentUserAdapterForTests({
-      verifyBearer: async () => ({ ok: true, userId: "ghost-user-id" }),
-      getUserById: async () => null,
-    });
+    __setCurrentUserAdapterForTests(
+      buildPlan02FakeAdapter({
+        verifyBearer: async () => ({ ok: true, userId: "ghost-user-id" }),
+        getUserById: async () => null,
+      }),
+    );
     const request = new Request("http://localhost/api/v1/foo", {
       headers: { authorization: "Bearer ok-but-deleted" },
     });
@@ -338,10 +379,12 @@ describe("requireApiUser — protected API helper", () => {
 
   it("returns { id } when the JWT is valid AND the users row exists", async () => {
     const userId = "00000000-0000-4000-8000-000000000010";
-    __setCurrentUserAdapterForTests({
-      verifyBearer: async () => ({ ok: true, userId }),
-      getUserById: async (id) => (id === userId ? buildFakeUserRow(id) : null),
-    });
+    __setCurrentUserAdapterForTests(
+      buildPlan02FakeAdapter({
+        verifyBearer: async () => ({ ok: true, userId }),
+        getUserById: async (id) => (id === userId ? buildFakeUserRow(id) : null),
+      }),
+    );
     const request = new Request("http://localhost/api/v1/foo", {
       headers: { authorization: "Bearer good-token" },
     });

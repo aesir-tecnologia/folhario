@@ -21,15 +21,25 @@ export async function truncateAuthAndIamTables(): Promise<void> {
   if (!dbUrl) return;
   const sql = postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 });
   try {
+    // Plan 06 deviation (Rule 3): TRUNCATE ... CASCADE on auth.users fails as
+    // role 'postgres' because the cascade tries to RESTART IDENTITY on the
+    // auth-schema-owned `refresh_tokens_id_seq`. Use TRUNCATE only for the
+    // public-owned children, then DELETE FROM auth.users (no IDENTITY restart
+    // needed; CASCADE FKs do their job).
     await sql`TRUNCATE TABLE
       public.email_verification_tokens,
       public.password_reset_tokens,
-      public.auth_throttle,
-      public.consent_logs,
-      public.subscriptions,
-      public.users,
-      auth.users
-      RESTART IDENTITY CASCADE`;
+      public.auth_throttle
+      RESTART IDENTITY`;
+    await sql`DELETE FROM public.consent_logs`;
+    await sql`DELETE FROM public.subscriptions`;
+    await sql`DELETE FROM public.users`;
+    await sql`DELETE FROM auth.users`;
+    // policy_versions is NOT wiped here — concurrent test files would race
+    // on the seed. The seedCurrentPolicyVersions fixture uses upsert semantics
+    // so re-seeding the same '1.0' row is idempotent. Other tests that need a
+    // truly empty policy_versions (e.g. the atomic-tx test) set
+    // is_current = false explicitly inside the test body.
   } finally {
     await sql.end({ timeout: 5 });
   }

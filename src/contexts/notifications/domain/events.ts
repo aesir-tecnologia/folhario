@@ -33,3 +33,31 @@ export interface NotificationFailedPayload {
   attempt: number;
   failedAt: string;
 }
+
+// Phase 4 NOTIF-01/02: notifications/email.requested event payload contracts.
+// D-02: Folhário-owned auth email pipeline (Resend transport; Supabase email
+// hooks/SMTP/templates NOT used). Producers in Plan 06 (signup), Plan 08
+// (password-reset), and the welcome-back path (resolved Q1) emit this event.
+
+export type TemplateName = "verification" | "password-reset" | "welcome-back";
+
+export type VerificationProps = {
+  url: string;
+  userEmail: string;
+};
+
+export type PasswordResetProps = {
+  url: string;
+  userEmail: string;
+};
+
+/** Resolved Q1: signup with already-registered email → 200 + this template. */
+export type WelcomeBackProps = {
+  resetUrl: string;
+  userEmail: string;
+};
+
+export type NotificationsEmailRequestedPayload =
+  | { template: "verification"; to: string; subject: string; props: VerificationProps }
+  | { template: "password-reset"; to: string; subject: string; props: PasswordResetProps }
+  | { template: "welcome-back"; to: string; subject: string; props: WelcomeBackProps };

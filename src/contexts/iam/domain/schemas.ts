@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createSelectSchema, createInsertSchema } from "drizzle-zod";
 
 import {
@@ -60,3 +61,81 @@ export const idempotencyKeySelectSchema = createSelectSchema(idempotencyKeys);
 export const idempotencyKeyInsertSchema = createInsertSchema(idempotencyKeys);
 export type IdempotencyKey = ReturnType<typeof idempotencyKeySelectSchema.parse>;
 export type IdempotencyKeyInsert = ReturnType<typeof idempotencyKeyInsertSchema.parse>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 4 IAM request-body schemas (D-30: Claude proposes initial drafts;
+// founder reviews during plan execution).
+//
+// Every Phase 4 IAM endpoint validates its untrusted body against one of these
+// schemas at the API boundary (T-04-03-07: prototype-pollution guard via
+// `.strict()` rejecting unknown keys). Closed error registry (Phase 1 D-10):
+// failures map to ErrorCode.ValidationFailed at the route layer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// AUTH-08: validate against IANA timezone list. Brazilian zones surface first
+// in the UI per UI-SPEC; the schema is locale-agnostic.
+const ianaTimezone = z.string().refine(
+  (v) => Intl.supportedValuesOf("timeZone").includes(v),
+  { message: "invalid_timezone" },
+);
+
+const partnerCodeSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9-]*$/)
+  .optional()
+  .or(z.literal(""));
+
+export const signupRequestSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8).max(72),
+    age_confirmed: z.literal(true), // AUTH-06
+    terms_accepted: z.literal(true), // AUTH-09
+    privacy_accepted: z.literal(true), // AUTH-09
+    timezone: ianaTimezone, // AUTH-08
+    partner_code: partnerCodeSchema,
+  })
+  .strict();
+export type SignupRequest = z.infer<typeof signupRequestSchema>;
+
+export const loginRequestSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(1),
+  })
+  .strict();
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
+
+export const passwordResetRequestSchema = z
+  .object({
+    email: z.string().email(),
+  })
+  .strict();
+export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
+
+export const passwordResetConsumeSchema = z
+  .object({
+    token: z.string().length(64),
+    password: z.string().min(8).max(72),
+  })
+  .strict();
+export type PasswordResetConsume = z.infer<typeof passwordResetConsumeSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    current_password: z.string().min(1),
+    new_password: z.string().min(8).max(72),
+  })
+  .strict();
+export type ChangePassword = z.infer<typeof changePasswordSchema>;
+
+export const oauthCompleteSchema = z
+  .object({
+    age_confirmed: z.literal(true),
+    terms_accepted: z.literal(true),
+    privacy_accepted: z.literal(true),
+    timezone: ianaTimezone,
+    partner_code: partnerCodeSchema,
+  })
+  .strict();
+export type OAuthComplete = z.infer<typeof oauthCompleteSchema>;

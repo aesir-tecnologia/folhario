@@ -159,8 +159,8 @@ Plans:
 - [x] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function
 - [x] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
 - [x] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)
-- [ ] 04-08-PLAN.md -- Password reset (always-200 + Inngest async lookup + consume)
-- [ ] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete
+- [x] 04-08-PLAN.md -- Password reset (always-200 + Inngest async lookup + consume)
+- [x] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete
 - [ ] 04-10-PLAN.md -- UI surfaces (auth pages + Settings shell + UnverifiedBlocker + root layout gate)
 - [ ] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
 

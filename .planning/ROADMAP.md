@@ -157,8 +157,8 @@ Plans:
 - [x] 04-03-PLAN.md -- Shared foundation (env vars, helpers, Zod, fixtures, locale)
 - [x] 04-04-PLAN.md -- Inngest serve handler + 8 functions registered (1 real cron + 7 stubs)
 - [x] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function
-- [ ] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
-- [ ] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)
+- [x] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
+- [x] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)
 - [ ] 04-08-PLAN.md -- Password reset (always-200 + Inngest async lookup + consume)
 - [ ] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete
 - [ ] 04-10-PLAN.md -- UI surfaces (auth pages + Settings shell + UnverifiedBlocker + root layout gate)

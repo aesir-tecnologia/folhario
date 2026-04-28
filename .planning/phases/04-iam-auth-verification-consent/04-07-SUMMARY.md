@@ -45,7 +45,8 @@ key-files:
     - "tests/unit/iam-login-logout.test.ts (92 lines, 5 tests)"
     - "tests/integration/iam-login.integration.test.ts (~180 lines, 5 tests)"
     - "tests/e2e/auth-login-logout.spec.ts (119 lines, 2 tests; structural artifact)"
-  modified: []
+  modified:
+    - "tests/integration/iam-throttle.integration.test.ts (Plan 03 file; Rule 3 fix — TRUNCATE → per-IP DELETE for parallel-suite cohabitation)"
 decisions:
   - "Use the existing Plan 03 AuthAdapter at src/contexts/iam/infrastructure/auth/auth-adapter.ts (Plan 03 SUMMARY deviation #2 — the canonical path) — never the Plan 07 template's @contexts/iam/infrastructure/auth-adapter (no auth/) which would not resolve"
   - "Test mock pattern: top-level vi.hoisted + single top-level vi.mock factory (not the inline-vi.mock-per-it pattern in the plan template, which Vitest hoisting collapses to one shared mock — would cross-contaminate the 5 cases)"
@@ -53,11 +54,11 @@ decisions:
   - "Test cleanup uses narrow per-IP DELETE on public.auth_throttle (not the full truncateAuthAndIamTables helper) because (1) auth.users CASCADE requires supabase_auth_admin privileges this connection lacks, and (2) the AuthAdapter is mocked so no real auth.users state is touched"
   - "Playwright spec ships as a structural artifact (file + grep-acceptance pass) because /api/v1/iam/me (Plan 09) and the seed fixture endpoint (no current owner) are out of this plan's files_modified scope and outside its parallel-wave files boundary"
 metrics:
-  duration_minutes: 18
-  completed: 2026-04-27T02:03:00Z
+  duration_minutes: 22
+  completed: 2026-04-27T02:11:00Z
   tasks_completed: 3
-  files_changed: 7
-  commits: 6
+  files_changed: 8
+  commits: 7
 ---
 
 # Phase 4 Plan 07: Email/Password Login + Per-Device Logout Summary
@@ -103,13 +104,13 @@ The spec is a **structural artifact** at this point: `pnpm typecheck` passes, al
 
 | Suite              | Tests | Status |
 | ------------------ | ----- | ------ |
-| unit + unit-dom    | 525   | PASS  (498 pre-existing + 5 new login/logout + 22 net from other waves' contributions captured in baseline) |
-| integration        | 101   | PASS  (96 pre-existing + 5 new iam-login)                                                                  |
-| **vitest total**   | **626** | **PASS** |
+| unit + unit-dom    | 525   | PASS  |
+| integration        | 101   | PASS  |
+| **vitest total**   | **626** | **PASS — 3 consecutive runs of `pnpm exec vitest run` returned 626/626** |
 | typecheck          | n/a   | PASS  |
-| lint               | n/a   | PASS (0 errors; 58 pre-existing warnings unchanged) |
+| lint               | n/a   | 0 errors (58 warnings; no baseline diff captured) |
 
-Note: the unit count includes the new 5 `iam-login-logout.test.ts` cases. The integration delta is +5 from Plan 03's 85 (Plan 04 wave 5 added intermediate suites; the relevant fact is that no test regressed).
+Stability validation: ran `pnpm exec vitest run` 3 times consecutively after the iam-throttle Rule 3 fix; each run returned 626/626 with 54/54 files green. Without the fix, the "6 consecutive failures trip rate_limited" iam-login test was racy under parallel execution. See Deviations Rule 3 entry below.
 
 The Playwright spec is not yet runnable; vitest covers throttle + invalid_credentials end-to-end against live local Postgres.
 
@@ -125,7 +126,13 @@ The Playwright spec is not yet runnable; vitest covers throttle + invalid_creden
 ### Rule 3 (blocking issues)
 
 5. **Test cleanup helper choice** — plan calls for `truncateAuthAndIamTables()` in `beforeEach`. Running it failed with `must be owner of sequence refresh_tokens_id_seq` because the helper TRUNCATEs `auth.users` which CASCADEs to `auth.refresh_tokens` whose sequence is owned by `supabase_auth_admin`, not the application postgres role. The route logic mocks the AuthAdapter so no real `auth.users` state is touched; replaced with a narrow `DELETE FROM public.auth_throttle WHERE ip IN (...) AND endpoint = 'login'` scoped to this test's own IPs.
-6. **Parallel test isolation** — first cleanup variant did `TRUNCATE TABLE public.auth_throttle`. Vitest runs integration files in parallel by default; the unrelated `iam-throttle.integration.test.ts` (Plan 03) writes throttle rows for IPs `1.2.3.4`–`1.2.3.15`. A blanket TRUNCATE in my `beforeEach` raced with that suite's writes and caused 3 failures in 9 seconds of overlap. Switched to per-IP DELETE bounded to my own 5 test IPs. After the fix: 626/626 tests pass under default parallel file execution.
+6. **Parallel test isolation, iam-login side** — first cleanup variant in iam-login.integration.test did `TRUNCATE TABLE public.auth_throttle`. Vitest runs integration files in parallel by default; the unrelated `iam-throttle.integration.test.ts` (Plan 03) writes throttle rows for IPs `1.2.3.4`–`1.2.3.15`. A blanket TRUNCATE in my `beforeEach` raced with that suite's writes and caused 3 failures. Switched to per-IP DELETE bounded to my own 5 test IPs.
+7. **Parallel test isolation, iam-throttle side** — even after #6, the **opposite** race remained: `iam-throttle.integration.test.ts:31` (Plan 03) did `TRUNCATE TABLE public.auth_throttle` in its own `beforeEach`. When that TRUNCATE fired mid-loop in iam-login's "6 consecutive failures" test, it wiped IP 5.5.5.5's accumulated count and the 6th call returned 401 instead of 429. Plan 04-07 is the first plan to introduce a second writer to `auth_throttle`, so the latent racy cleanup pattern only surfaced now. Fixed by scoping iam-throttle's cleanup to per-IP DELETE bounded to its own IPs (`1.2.3.4`–`1.2.3.15`), mirroring the pattern shipped in iam-login. The file `tests/integration/iam-throttle.integration.test.ts` is owned by Plan 03 but is NOT in 04-06's parallel-wave files boundary, so the edit is safe to land here. Stability validated: 3 consecutive `pnpm exec vitest run` invocations returned 626/626.
+
+### Out-of-files_modified touches
+
+8. **`tests/unit/iam-login-logout.test.ts`** — not listed in plan frontmatter `files_modified` (which lists only the integration + e2e specs). Added because the plan's `<task>` tags carry `tdd="true"` and Task 1 covers application use-cases; a unit-test layer for the use-cases is the natural RED step. No conflict with parallel-wave 04-06's files. Documented per parallel_execution rule.
+9. **`tests/integration/iam-throttle.integration.test.ts`** — not in 04-07's `files_modified` (it's a Plan 03 file). Edited under Rule 3 above. No conflict with parallel-wave 04-06's files (not listed in their boundary).
 
 ### Architectural decisions (Rule 4) raised
 
@@ -191,7 +198,7 @@ This was flagged in the plan's NOTE on line 523 ("Plan 06's executor (or this pl
 | No `expect(true).toBe(true)` in spec                                                       | PASS                                                                                 |
 | No "JWT rejected" assertion in spec                                                        | PASS                                                                                 |
 | `pnpm typecheck` exits 0                                                                   | PASS                                                                                 |
-| `pnpm lint` exits 0 errors                                                                 | PASS (58 pre-existing warnings unchanged)                                            |
+| `pnpm lint` exits 0 errors                                                                 | PASS (0 errors; 58 warnings; no baseline diff captured)                              |
 | `pnpm exec vitest run` exits 0                                                             | PASS — 626/626                                                                       |
 | `npx playwright test tests/e2e/auth-login-logout.spec.ts` exits 0                          | DEFERRED — see Deferred items above                                                  |
 
@@ -221,10 +228,12 @@ Verified commits exist (git log):
 - 0b9e52b feat(04-07): implement /api/v1/iam/login + /api/v1/iam/logout routes (GREEN)
 - e4d01c1 test(04-07): add Playwright E2E spec for cookie + refresh-token flow
 - 7516b72 fix(04-07): scope iam-login throttle cleanup to per-IP DELETE (Rule 3)
+- 57e07b6 fix(04-07): scope iam-throttle test cleanup to per-IP DELETE (Rule 3)
 
-Verified test counts (`pnpm exec vitest run`):
-- unit + unit-dom: 525/525 passing
-- integration: 101/101 passing
+Verified test counts (3 consecutive `pnpm exec vitest run` invocations):
+- unit + unit-dom: 525/525 passing each run
+- integration: 101/101 passing each run
+- vitest total: 626/626 passing each run (54/54 files green)
 - typecheck: clean
 - lint: 0 errors
 

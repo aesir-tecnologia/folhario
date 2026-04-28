@@ -57,3 +57,38 @@ The Phase 2 verdict is `BLOCKED`, but the gap is **not** "Phase 2 didn't ship" �
 5. **Check 18 (Phase 3) — false negative on grep.** Bottom-nav IS wired via `src/app/(app)/layout.tsx` → `AppShell` → `BottomNav`. The plan's literal grep on `layout.tsx` files for "BottomNav" doesn't catch the indirection through AppShell.
 
 **Recommended next step (the orchestrator should decide):** Do NOT re-run `/gsd-execute-phase 2` or `/gsd-execute-phase 3` blindly — both phases are complete. Instead, treat this BLOCKED verdict as a **planning-doc reconciliation gate**: the Phase 4 PLAN files (02-11) need to be reviewed against what Phase 2/3 actually shipped before execution proceeds. The audit makes those gaps falsifiable; user decides whether to (a) update Phase 4 plans, (b) run a small Phase 3 follow-up plan to add `Card` + token re-export shim, or (c) re-run audit with `GSD_ALLOW_MISSING_PHASE_3=true` AND a manual planning-doc reconciliation pass for check 3.
+
+---
+
+## Wave-1 Reconciliation Amendment (2026-04-28)
+
+**User decision:** path (a) — reconcile Phase 4 plans against what Phase 2/3 actually shipped.
+**Sub-decision for check 3:** option (i) — extend `consent_logs.purpose` TS enum with `signup_acceptance`; signup writes 2 rows differentiated via `policy_version_id` → `policy_versions.documentType`.
+
+### Edits committed (`8790b4e`)
+
+| Plan | Change |
+|------|--------|
+| 04-02 | Task 1 sub-step (6) extends `consent_logs.purpose` TS enum array to add `signup_acceptance`. New `truths` bullet + acceptance criterion. |
+| 04-06 | `consent-logs.ts` writes 2 rows with `purpose='signup_acceptance'`, accepts `tosPolicyVersionId` + `privacyPolicyVersionId` separately. `policy-versions.ts` `getCurrentPolicyVersion` (singular) replaced by `getCurrentPolicyVersions` (plural) returning `{tos, privacy}`. `signup.ts` tx flow updated. PostHog `captureConsentGranted` param renamed `purpose` → `documentType`. AUTH-09 test description rewritten to assert via JOIN on `policy_version_id`. Threat model T-04-06-06 documents the new pattern. |
+
+### Updated check status
+
+| # | Original verdict | Reconciled status | Resolution |
+|---|---|---|---|
+| 3 | FAIL (literal `terms_of_service`/`privacy_policy` not in `purpose` enum) | **OBSOLETE** | Plan-level assumption was wrong, not a Phase 2 gap. Plans 02+06 now reflect the shipped two-table design. |
+| 12 | NOT-VERIFIED→FAIL (live psql probe blocked by env) | **DEFERRED to plan 04-02 execution** | Static migration evidence at `drizzle/migrations/0001_phase_02_rls_policies.sql:48-67` confirms RLS enabled on all 4 named tables. Plan 04-02 Task 3 runs `drizzle-kit migrate` against live local Postgres and Task 4 has a live `relrowsecurity = true` integration test (the Codex HIGH #1 smoking-gun assertion) — the live RLS verification is the natural next opportunity, no pre-Wave-2 probe needed. |
+| 14 | FAIL (tokens at `src/app/globals.css` not `src/shared/ui/tokens/*`) | **NON-ISSUE** | Zero plan-level references to `src/shared/ui/tokens/`. Tokens shipped at the canonical Tailwind v4 `@theme` location (`src/app/globals.css:13-49`); plans consume them implicitly via Tailwind utilities. Audit check 14 is path-literalism only. |
+| 16 | FAIL (no `Card` primitive under `src/`) | **HANDLED by plan 04-10 fallback** | Plan 04-10 line 45 documents the `--allow-missing-phase-3` path: "If Phase 3 is missing AND --allow-missing-phase-3 was passed in Plan 01, this plan reads the debt entry from PREREQ-AUDIT.md and hand-rolls minimal stubs within UI-SPEC §17 brand tokens." Plan 04-10 builds its own feature-specific cards (`em-breve-card.tsx`, `account-section.tsx`); no shared `Card` primitive is imported. The `Input` rename to `text-input.tsx` likewise has zero plan-level references to the old name. |
+| 18 | PASS-with-caveat (grep false-negative) | **NON-ISSUE** | Bottom-nav wired via `AppShell`. |
+
+### Updated Verdict
+
+`Status: GO-after-reconciliation — Wave 2+ may execute`
+
+The original BLOCKED verdict was correct under the literal rules of plan 04-01, but the underlying gaps were a mix of (a) plan-level assumption errors that have now been fixed via plan edits, (b) one environment-blocked live probe deferred to where it has to run anyway (plan 04-02 Task 3), (c) path-literalism with no real impact, and (d) one real Phase 3 gap (`Card`) already handled by plan 04-10's documented fallback.
+
+### Open follow-ups
+
+- None blocking. The `--allow-missing-phase-3` flag will be passed implicitly when plan 04-10 dispatches; plan 04-10 reads this amendment via `04-PREREQ-AUDIT.md` as its source of truth for the missing primitives list.
+- Live RLS probe runs as part of plan 04-02 Task 3+4. If `pnpm db:start` is not running when Wave 2 dispatches, plan 04-02 will surface the failure cleanly (it cannot apply the migration without it).

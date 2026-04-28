@@ -58,3 +58,61 @@ export async function getCurrentUser(
   }
   return { ok: true, user };
 }
+
+/**
+ * Phase 4 D-21 — cookie-session lookup for Route Handlers / Server Actions.
+ *
+ * Used by request-pipelines that authenticate via Supabase SSR cookies (the
+ * Phase 4 web/PWA flow) rather than an `Authorization: Bearer` header. Goes
+ * through the AuthAdapter singleton so Codex HIGH #3 stays enforced.
+ *
+ * Pitfall 6 safety: `readOnly: false` is the default — call this from Route
+ * Handlers and Server Actions only. Server Components must use
+ * {@link getCurrentUserFromSessionReadOnly}.
+ */
+export async function getCurrentUserFromSession(): Promise<CurrentUserResult> {
+  const adapterInstance = adapter();
+  const session = await adapterInstance.getUserBySession({ readOnly: false });
+  if (!session) {
+    return {
+      ok: false,
+      code: ErrorCode.Unauthenticated,
+      reason: "no_session",
+    };
+  }
+  const user = await adapterInstance.getUserById(session.id);
+  if (!user) {
+    return {
+      ok: false,
+      code: ErrorCode.Unauthenticated,
+      reason: "user_not_found",
+    };
+  }
+  return { ok: true, user };
+}
+
+/**
+ * Phase 4 D-21 + Pitfall 6 — read-only cookie-session lookup for Server
+ * Components. The read-only Supabase client cannot mutate cookies, so any
+ * refresh attempts become no-ops (Next 16 throws otherwise).
+ */
+export async function getCurrentUserFromSessionReadOnly(): Promise<CurrentUserResult> {
+  const adapterInstance = adapter();
+  const session = await adapterInstance.getUserBySession({ readOnly: true });
+  if (!session) {
+    return {
+      ok: false,
+      code: ErrorCode.Unauthenticated,
+      reason: "no_session",
+    };
+  }
+  const user = await adapterInstance.getUserById(session.id);
+  if (!user) {
+    return {
+      ok: false,
+      code: ErrorCode.Unauthenticated,
+      reason: "user_not_found",
+    };
+  }
+  return { ok: true, user };
+}

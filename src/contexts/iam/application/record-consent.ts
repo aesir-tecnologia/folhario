@@ -34,7 +34,12 @@ import {
  */
 
 export type RecordConsentInput = {
-  purpose: "identification_third_party" | "push_notifications" | "marketing" | "analytics";
+  purpose:
+    | "identification_third_party"
+    | "push_notifications"
+    | "marketing"
+    | "analytics"
+    | "signup_acceptance";
   legalBasis: "consent" | "contract" | "legitimate_interest";
   source: "signup" | "settings" | "first_use_prompt";
 };

@@ -155,7 +155,7 @@ Plans:
 - [x] 04-01-PLAN.md -- Phase 2/3 prerequisite gate
 - [x] 04-02-PLAN.md -- Schema additions (email_verified_at + 3 tables) + drizzle-kit push
 - [x] 04-03-PLAN.md -- Shared foundation (env vars, helpers, Zod, fixtures, locale)
-- [ ] 04-04-PLAN.md -- Inngest serve handler + 8 functions registered (1 real cron + 7 stubs)
+- [x] 04-04-PLAN.md -- Inngest serve handler + 8 functions registered (1 real cron + 7 stubs)
 - [ ] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function
 - [ ] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
 - [ ] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)

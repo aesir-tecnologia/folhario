@@ -12,3 +12,4 @@ Pre-flight:
 | Wave | Plan(s) | Started | Finished | Deviations | Notes |
 |------|---------|---------|----------|------------|-------|
 | 1 | 04-01 | — | b4cdfc2 | Wave-1 reconciliation: extended `consent_logs.purpose` enum with `signup_acceptance` (path i); audit verdict updated BLOCKED → GO. | Plans 04-02 + 04-06 reconciled in 8790b4e. |
+| 2 | 04-02 | 20a902c | a1d1340 | Executor extended schema-registry + record-consent + diagnostics-consent test for the new `email_verified_at` column on `users` (planned in plan 04-02 Task 1; not in declared `files_modified`, but consistent with the planned ALTER and required for typecheck). | Migration `0003_phase04_iam_extensions.sql` applied via `drizzle-kit migrate` (NOT push, Codex HIGH #1); 7/7 schema integration tests pass with `relrowsecurity = true`; full regression: 74 integration + 447 unit = 521 PASS. |

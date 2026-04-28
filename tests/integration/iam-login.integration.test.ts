@@ -41,14 +41,22 @@ const cleanupSql = dbUrl
   ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 })
   : null;
 
+// Each test owns a unique IP so cleanup is scoped to (ip, endpoint) and
+// does not race with parallel-running suites that exercise other IPs on
+// the same shared `public.auth_throttle` table (e.g. iam-throttle.integration).
+const TEST_IPS = ["2.2.2.2", "4.4.4.4", "5.5.5.5", "6.6.6.6", "9.9.9.9"] as const;
+
 async function clearLoginThrottle(): Promise<void> {
   if (!cleanupSql) return;
-  // Narrow truncation: only the throttle table. The full
-  // truncateAuthAndIamTables helper cascades to auth.users which requires
-  // privileges this test connection doesn't carry (refresh_tokens_id_seq is
-  // owned by supabase_auth_admin). The route logic under test mocks the
-  // AuthAdapter so no real auth.users state is touched.
-  await cleanupSql`TRUNCATE TABLE public.auth_throttle`;
+  // Narrow cleanup: only this test's own IPs and endpoints. Full
+  // truncateAuthAndIamTables cascades to auth.users which requires
+  // privileges this connection doesn't carry; a blanket TRUNCATE on
+  // public.auth_throttle would race with parallel test files.
+  await cleanupSql`
+    DELETE FROM public.auth_throttle
+    WHERE ip IN ${cleanupSql(TEST_IPS as readonly string[])}
+      AND endpoint = 'login'
+  `;
 }
 
 describe.skipIf(!dbUrl)("Phase 4 AUTH-05 — login route (throttle + invalid_credentials)", () => {

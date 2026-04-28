@@ -86,5 +86,185 @@
       "cancel": "Cancelar",
       "confirm": "Confirmar"
     }
+  },
+  "auth": {
+    "signup": {
+      "title": "Criar conta",
+      "submit": "Criar conta",
+      "fields": {
+        "email": "E-mail",
+        "password": "Senha",
+        "confirmPassword": "Confirme a senha",
+        "ageCheckbox": "Tenho 13 anos ou mais",
+        "termsCheckbox": "Aceito os {termsLink}",
+        "privacyCheckbox": "Aceito a {privacyLink}",
+        "partnerCode": "Código de parceiro (opcional)"
+      },
+      "legalLinks": {
+        "termsLabel": "Termos de uso (v{version})",
+        "privacyLabel": "Política de Privacidade (v{version})",
+        "termsHref": "/legal/terms",
+        "privacyHref": "/legal/privacy"
+      },
+      "errors": {
+        "emailInvalid": "E-mail inválido — use o formato você@exemplo.com",
+        "passwordTooShort": "Senha precisa ter pelo menos 8 caracteres",
+        "passwordsDontMatch": "As senhas não coincidem.",
+        "ageRequired": "É necessário ter 13 anos ou mais para criar uma conta.",
+        "termsRequired": "É necessário aceitar os termos e a política de privacidade.",
+        "partnerCodeInvalid": "Código de parceiro inválido. Você pode prosseguir com o teste padrão de 14 dias."
+      },
+      "alternative": "Continuar com Google",
+      "haveAccount": "Já tem conta? Entrar"
+    },
+    "login": {
+      "title": "Entrar",
+      "submit": "Entrar",
+      "fields": {
+        "email": "E-mail",
+        "password": "Senha"
+      },
+      "errors": {
+        "invalidCredentials": "E-mail ou senha incorretos."
+      },
+      "forgotPassword": "Esqueci minha senha",
+      "noAccount": "Ainda não tem conta? Criar conta",
+      "alternative": "Continuar com Google"
+    },
+    "verify": {
+      "tokenExpiredTitle": "Link expirado.",
+      "tokenExpiredBody": "Solicite um novo link e tente novamente.",
+      "tokenExpiredCta": "Solicitar novo link"
+    },
+    "reset": {
+      "title": "Definir nova senha",
+      "submit": "Definir nova senha",
+      "fields": {
+        "password": "Nova senha",
+        "confirmPassword": "Confirme a nova senha"
+      },
+      "errors": {
+        "passwordTooShort": "Senha precisa ter pelo menos 8 caracteres",
+        "passwordsDontMatch": "As senhas não coincidem."
+      }
+    },
+    "forgotPassword": {
+      "title": "Recuperar senha",
+      "submit": "Enviar link de redefinição",
+      "fields": {
+        "email": "E-mail"
+      },
+      "successTitle": "Verifique seu e-mail.",
+      "successBody": "Se essa conta existir, você receberá um link para redefinir sua senha em alguns instantes."
+    },
+    "oauthComplete": {
+      "title": "Falta pouco",
+      "greeting": "Bem-vindo! Para concluir, confirme algumas informações.",
+      "submit": "Confirmar e continuar",
+      "loading": "Finalizando seu cadastro…",
+      "legalLinks": {
+        "termsLabel": "Termos de uso (v{version})",
+        "privacyLabel": "Política de Privacidade (v{version})",
+        "termsHref": "/legal/terms",
+        "privacyHref": "/legal/privacy"
+      }
+    },
+    "unverifiedBlocker": {
+      "headline": "Verifique seu e-mail para começar.",
+      "body": "Enviamos um link de confirmação para {email}. Clique nele para liberar o app.",
+      "resend": "Reenviar e-mail",
+      "resending": "Enviando…",
+      "cooldown": "Aguarde {seconds}s",
+      "logout": "Sair",
+      "cooldownDoneAnnouncement": "Você pode reenviar novamente."
+    },
+    "errors": {
+      "rateLimited": "Muitas tentativas. Tente novamente em alguns minutos.",
+      "genericNetwork": "Não foi possível concluir agora. Tente novamente em alguns segundos.",
+      "tryAgain": "Tentar de novo"
+    }
+  },
+  "settings": {
+    "pageTitle": "Configurações",
+    "groupLabel": "PREFERÊNCIAS DA CONTA",
+    "back": "← Voltar para configurações",
+    "account": {
+      "cardTitle": "Conta",
+      "emailLabel": "E-mail",
+      "passwordRowTitle": "Senha",
+      "changePasswordCta": "Alterar senha",
+      "changePassword": {
+        "currentLabel": "Senha atual",
+        "newLabel": "Nova senha",
+        "confirmLabel": "Confirme a nova senha",
+        "submit": "Salvar nova senha",
+        "errors": {
+          "currentIncorrect": "Senha atual incorreta."
+        }
+      },
+      "oauthOnlyNotice": "Sua conta usa login com Google. Para alterar a senha, gerencie em sua conta Google.",
+      "timezoneRowLabel": "Fuso horário",
+      "timezoneRowHint": "Usado para enviar lembretes no horário certo.",
+      "timezoneEditCta": "Alterar fuso",
+      "timezoneSaveCta": "Salvar alterações",
+      "timezoneInvalid": "Fuso horário inválido. Tente algo como 'America/Sao_Paulo'.",
+      "logoutRow": "Sair deste aparelho"
+    },
+    "placeholder": {
+      "notifications": {
+        "title": "Notificações",
+        "body": "Em breve. Configurações de lembretes e silenciamento estarão disponíveis quando os lembretes chegarem."
+      },
+      "subscription": {
+        "title": "Assinatura e cobrança",
+        "body": "Em breve. Gerenciamento da sua assinatura, faturas e código de parceiro estarão aqui em breve."
+      },
+      "privacyLgpd": {
+        "title": "Privacidade e LGPD",
+        "body": "Em breve. Exportação, exclusão e gerenciamento de consentimentos estarão disponíveis em breve."
+      },
+      "needsAttention": {
+        "title": "Precisa de atenção",
+        "body": "Em breve. Falhas de sincronização aparecerão aqui quando o app estiver offline."
+      },
+      "appInfo": {
+        "title": "Sobre o app",
+        "body": "Em breve. Versão, licenças e suporte aparecerão aqui."
+      }
+    }
+  },
+  "legal": {
+    "termsPageTitle": "Termos de uso",
+    "privacyPageTitle": "Política de Privacidade",
+    "underConstruction": "Em construção. Versão atual: v{version}"
+  },
+  "email": {
+    "verification": {
+      "subject": "Confirme seu e-mail para começar — Folhário",
+      "preheader": "Falta apenas um passo para identificar sua primeira planta.",
+      "headline": "Confirme seu e-mail para começar",
+      "bodyAbove": "Olá! Você está a um clique de identificar e cuidar das suas plantas no Folhário. Confirme seu e-mail para liberar o app.",
+      "cta": "Confirmar e-mail",
+      "bodyBelow": "O link expira em 24 horas. Se não foi você, ignore este e-mail.",
+      "footerStrip": "Você está recebendo este e-mail porque criou uma conta no Folhário."
+    },
+    "passwordReset": {
+      "subject": "Redefinir sua senha — Folhário",
+      "preheader": "Você (ou alguém) pediu para redefinir a senha do Folhário.",
+      "headline": "Redefinir sua senha",
+      "bodyAbove": "Recebemos um pedido para redefinir a senha da sua conta. Se foi você, clique no botão abaixo. O link expira em 1 hora.",
+      "cta": "Redefinir senha",
+      "bodyBelow": "Se não foi você, ignore este e-mail — sua senha continua a mesma.",
+      "footerStrip": "Você está recebendo este e-mail porque sua conta no Folhário pediu redefinição de senha."
+    },
+    "welcomeBack": {
+      "subject": "Bem-vindo de volta ao Folhário",
+      "preheader": "Parece que você já tem uma conta conosco.",
+      "headline": "Você já tem uma conta no Folhário",
+      "bodyAbove": "Recebemos uma nova solicitação de cadastro com este e-mail. Mas você já tem uma conta. Para entrar, redefina sua senha pelo link abaixo.",
+      "cta": "Redefinir senha",
+      "bodyBelow": "Se não foi você quem tentou criar uma conta, pode ignorar este e-mail — a sua conta segue intacta.",
+      "footerStrip": "Você está recebendo este e-mail porque alguém tentou criar uma conta no Folhário com este e-mail."
+    }
   }
 }

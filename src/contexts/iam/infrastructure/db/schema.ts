@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -6,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -41,6 +43,8 @@ export const users = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     email: varchar("email", { length: 320 }).notNull(),
+    // Phase 4 D-22: product source of truth for email verification (NOT auth.users.email_confirmed_at, which D-22 explicitly forbids using for product gating)
+    emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true, mode: "string" }),
     name: varchar("name", { length: 200 }).notNull(),
     locale: varchar("locale", { length: 10 }).notNull().default("pt-BR"),
     timezone: varchar("timezone", { length: 64 }).notNull(),
@@ -103,6 +107,8 @@ export const consentLogs = pgTable(
         "push_notifications",
         "marketing",
         "analytics",
+        // Phase 4 AUTH-09: signup-time T&C + Privacy acceptance row marker; the doc identity (T&C vs Privacy) is recorded via policy_version_id → policy_versions.documentType
+        "signup_acceptance",
       ] as const,
     }).notNull(),
     legalBasis: legalBasisEnum("legal_basis").notNull(),
@@ -241,5 +247,67 @@ export const idempotencyKeys = pgTable(
   (table) => [
     uniqueIndex("idempotency_keys_user_key_idx").on(table.userId, table.key),
     index("idempotency_keys_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
+// Phase 4 D-06: custom email-verification token table; raw tokens exist only in URLs, sha256 hashes only in DB
+export const emailVerificationTokens = pgTable(
+  "email_verification_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+    sentToEmail: varchar("sent_to_email", { length: 320 }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("email_verification_tokens_token_hash_idx").on(table.tokenHash),
+    index("email_verification_tokens_user_id_idx").on(table.userId),
+  ],
+);
+
+// Phase 4 D-09: same shape as verification tokens; expires_at default 1h per AUTH-11
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: varchar("token_hash", { length: 64 }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "string" }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true, mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+    sentToEmail: varchar("sent_to_email", { length: 320 }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("password_reset_tokens_token_hash_idx").on(table.tokenHash),
+    index("password_reset_tokens_user_id_idx").on(table.userId),
+  ],
+);
+
+// Phase 4 D-12 + D-14 (Codex HIGH #5): per-IP atomic counter with locked_until column for 5-minute lockout; minute-bucket PK enables UPSERT-RETURNING without races (Pattern 8)
+export const authThrottle = pgTable(
+  "auth_throttle",
+  {
+    ip: varchar("ip", { length: 45 }).notNull(),
+    endpoint: varchar("endpoint", { length: 64 }).notNull(),
+    windowStart: bigint("window_start", { mode: "number" }).notNull(),
+    count: integer("count").notNull().default(1),
+    lockedUntil: timestamp("locked_until", { withTimezone: true, mode: "string" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.ip, table.endpoint, table.windowStart] }),
   ],
 );

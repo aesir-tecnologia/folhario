@@ -13,13 +13,16 @@
 //   `src/contexts/*/application` imports this file.
 
 export {
+  authThrottle,
   consentLogs,
   dataDeletionRequests,
   dataExportRequests,
+  emailVerificationTokens,
   idempotencyKeys,
   legalBasisEnum,
   offlineSyncFailures,
   partnerStores,
+  passwordResetTokens,
   policyVersions,
   users,
 } from "@contexts/iam/infrastructure/db/schema";

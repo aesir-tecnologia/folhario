@@ -265,6 +265,7 @@ function buildFakeUserRow(id: string): UserRow {
   return {
     id,
     email: `user+${id}@example.test`,
+    emailVerifiedAt: null,
     name: "Test User",
     locale: "pt-BR",
     timezone: "America/Sao_Paulo",

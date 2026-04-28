@@ -172,7 +172,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     const inserted = await driver`
       INSERT INTO users (email, name, timezone, trial_source)
       VALUES (${"route-" + randomUUID() + "@test.local"}, 'Route Test User', 'America/Sao_Paulo', 'organic')
-      RETURNING id, email, name, locale, timezone, notification_time_local, trial_source,
+      RETURNING id, email, email_verified_at, name, locale, timezone, notification_time_local, trial_source,
                 partner_code, age_confirmed_at, toxicity_disclaimer_acknowledged_at,
                 deletion_requested_at, created_at, updated_at
     `;
@@ -180,6 +180,7 @@ describe.skipIf(!dbUrl)("Phase-02-09 diagnostics consent route", () => {
     userRow = {
       id: userId,
       email: inserted[0]!.email as string,
+      emailVerifiedAt: inserted[0]!.email_verified_at as string | null,
       name: inserted[0]!.name as string,
       locale: inserted[0]!.locale as string,
       timezone: inserted[0]!.timezone as string,

@@ -17,28 +17,56 @@ export type SeededPolicyVersions = {
   privacyPolicy: { id: string; version: string };
 };
 
-export async function seedCurrentPolicyVersions(
-  version: string = "1.0",
-): Promise<SeededPolicyVersions> {
+/**
+ * Re-uses the SEEDED policy_versions rows from drizzle/seeds/phase-02.sql
+ * (version `2026-04-25.1`, both `terms_of_service` and `privacy_policy`,
+ * is_current=true). The partial unique index `policy_versions_one_current_per_doc_type_idx`
+ * makes adding a NEW is_current=true row impossible without first
+ * unsetting the seeded one — which would in turn break the seed-data
+ * integration test. Concurrent test files calling this helper resolve
+ * to the same two rows, so isolation comes from per-test unique uuid emails
+ * (rows in users/consent_logs/etc), not from policy_versions wipe-and-reinsert.
+ *
+ * If a row is missing (e.g. `pnpm db:seed` not yet run), this helper
+ * inserts `version='1.0'` as a fallback so the test suite still works on
+ * a freshly-migrated database without seed.
+ */
+export async function seedCurrentPolicyVersions(): Promise<SeededPolicyVersions> {
   const sql = postgres(process.env.DATABASE_POOL_URL!, {
     prepare: false,
     max: 1,
     idle_timeout: 5,
   });
   try {
-    // Stamp prior current versions as superseded.
-    await sql`UPDATE policy_versions SET is_current = false WHERE is_current = true`;
+    let tos = await sql<{ id: string; version: string }[]>`
+      SELECT id, version FROM policy_versions
+       WHERE document_type = 'terms_of_service' AND is_current = true
+       LIMIT 1
+    `;
+    let privacy = await sql<{ id: string; version: string }[]>`
+      SELECT id, version FROM policy_versions
+       WHERE document_type = 'privacy_policy' AND is_current = true
+       LIMIT 1
+    `;
 
-    const tos = await sql<{ id: string; version: string }[]>`
-      INSERT INTO policy_versions (version, document_type, effective_at, is_current)
-      VALUES (${version}, 'terms_of_service', now(), true)
-      RETURNING id, version
-    `;
-    const privacy = await sql<{ id: string; version: string }[]>`
-      INSERT INTO policy_versions (version, document_type, effective_at, is_current)
-      VALUES (${version}, 'privacy_policy', now(), true)
-      RETURNING id, version
-    `;
+    // Fallback: no seeded current row → insert version 1.0 (only when the
+    // partial unique index has no conflicting row).
+    if (tos.length === 0) {
+      tos = await sql<{ id: string; version: string }[]>`
+        INSERT INTO policy_versions (version, document_type, effective_at, is_current)
+        VALUES ('1.0', 'terms_of_service', now(), true)
+        ON CONFLICT (document_type, version) DO UPDATE SET is_current = true
+        RETURNING id, version
+      `;
+    }
+    if (privacy.length === 0) {
+      privacy = await sql<{ id: string; version: string }[]>`
+        INSERT INTO policy_versions (version, document_type, effective_at, is_current)
+        VALUES ('1.0', 'privacy_policy', now(), true)
+        ON CONFLICT (document_type, version) DO UPDATE SET is_current = true
+        RETURNING id, version
+      `;
+    }
 
     return {
       termsOfService: tos[0]!,

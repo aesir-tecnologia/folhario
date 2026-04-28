@@ -62,11 +62,11 @@ decisions:
   - "Skeleton template files (returning <Html lang=\"pt-BR\" />) shipped as part of Task 1's commit so renderEmail typechecks before Task 2's TDD RED writes failing assertions. Alternative was forward-declaring stubs only in the test file, but that would leave the registry uncompilable mid-task — non-atomic commits violate the per-task atomicity rule."
   - "Test render() imported from @react-email/components (which re-exports * from @react-email/render). The plan's code sample imports from @react-email/render directly, but that package isn't a direct dependency — only a transitive dep of @react-email/components. Importing from the components package keeps the dep tree honest."
 metrics:
-  duration_minutes: 8
-  completed: 2026-04-28T04:43:28Z
+  duration_minutes: 14
+  completed: 2026-04-28T04:48:30Z
   tasks_completed: 3
   files_changed: 9
-  commits: 5
+  commits: 6
 ---
 
 # Phase 4 Plan 05: Resend Onboarding (D-02) Summary
@@ -217,9 +217,17 @@ Inngest's TS types model `step.run` output as JSON-serialized (because step memo
 
 **Files affected:** `tests/unit/email-templates.test.ts`. Bundled into Task 2 RED commit `3b045a8`.
 
+### Rule 2 — Dev-fallback log missing the rendered HTML preview required by D-20
+
+**Found:** Post-completion advisor review noted CONTEXT D-20 (line 68) explicitly mandates the dev console-log fallback log "full payload (template name, props, to/from/subject, rendered HTML preview) to stdout. Devs verify content visually." The plan's action block stripped the HTML field, so the founder-stated value of D-20 ("Devs verify content visually") wasn't met.
+
+**Fix:** Added `render(params.react)` call inside the dev-fallback branch (imported from `@react-email/components`) and appended the resulting HTML string to the logged payload. The integration test uses `expect.objectContaining({to, subject})` so the additional field doesn't affect assertions; 5/5 still pass.
+
+**Files affected:** `src/contexts/notifications/infrastructure/resend-adapter.ts`. Commit `6b6edc0`.
+
 ### No Rule 4 (architectural) decisions raised
 
-The Inngest 4.x signature ambiguity, the JsonifyObject typing, and the @react-email/render import were all mechanical fixes — no architecture decision required.
+The Inngest 4.x signature ambiguity, the JsonifyObject typing, the @react-email/render import, and the D-20 HTML-preview gap were all mechanical fixes — no architecture decision required.
 
 ## Plan acceptance criteria — diff
 
@@ -323,6 +331,7 @@ Verified commits exist (`git log --oneline`):
 - `979bea0` feat(04-05): implement 3 React Email templates with Paper Cream brand (GREEN gate)
 - `c29dcb9` test(04-05): add failing integration test for notifications-send-email (RED gate)
 - `8595d64` feat(04-05): Resend adapter + notifications-send-email Inngest function (GREEN gate + Rule 3 deviation)
+- `6b6edc0` fix(04-05): include rendered HTML in dev-fallback log per D-20 (Rule 2 deviation)
 
 Verified test counts:
 - unit + unit-dom: 520/520 passing (was 498)

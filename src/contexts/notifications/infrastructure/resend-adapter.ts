@@ -8,6 +8,7 @@
 // {data, error}. Do NOT wrap .emails.send() in try/catch — read .error and
 // throw directly so Inngest retries see a real error.
 import type { ReactElement } from "react";
+import { render } from "@react-email/components";
 import { Resend } from "resend";
 
 import { serverEnv } from "@shared/config/server-env";
@@ -24,12 +25,17 @@ export const resendAdapter = {
     react: ReactElement;
   }): Promise<{ id: string }> {
     if (!resend) {
-      // D-20 dev fallback — log payload, never network.
+      // D-20 dev fallback — log full payload (template name surfaces via
+      // subject + rendered HTML preview) so devs verify content visually
+      // without ever hitting the network. CI sets RESEND_API_KEY so this
+      // branch is bypassed there.
+      const html = await render(params.react);
       // eslint-disable-next-line no-console
       console.log("[resend-dev] would send", {
         from: params.from,
         to: params.to,
         subject: params.subject,
+        html,
       });
       return { id: "dev-mode" };
     }

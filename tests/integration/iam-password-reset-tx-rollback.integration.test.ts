@@ -3,11 +3,10 @@
 // integration suite (iam-password-reset.integration.test.ts) does NOT mock
 // the adapter; mixing them would cross-contaminate via vi.mock hoisting.
 
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import postgres from "postgres";
 import { randomUUID } from "node:crypto";
 
-import { truncateAuthAndIamTables } from "./setup-supabase-truncate";
 import { seedUser } from "./fixtures/seed-user";
 import { seedCurrentPolicyVersions } from "./fixtures/seed-policy-version";
 
@@ -37,10 +36,15 @@ vi.mock("@contexts/iam/infrastructure/auth/auth-adapter", () => ({
 describe.skipIf(!dbUrl)(
   "Phase 4 Codex HIGH #2 — consumePasswordReset tx rolls back when adminUpdatePassword fails",
   () => {
-    beforeEach(async () => {
-      adapterMocks.adminUpdatePassword.mockReset();
-      await truncateAuthAndIamTables();
+    // beforeAll seed (NOT beforeEach) so concurrent suites don't race-wipe
+    // each other's auth.users / public.users data. Per-test isolation comes
+    // from random uuid emails.
+    beforeAll(async () => {
       await seedCurrentPolicyVersions();
+    });
+
+    beforeEach(() => {
+      adapterMocks.adminUpdatePassword.mockReset();
     });
 
     afterAll(async () => {

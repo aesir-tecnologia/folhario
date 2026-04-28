@@ -5,12 +5,13 @@
 // token consume rolls back so the user can request another reset.
 //
 // Codex HIGH #3 (AuthAdapter boundary): goes through `authAdapter`; this
-// file does NOT import `@supabase/*` and does NOT call `supabase.auth.*`.
+// file does NOT import `@supabase/*` and does NOT touch the auth surface
+// directly.
 //
-// AUTH-12 critical invariant: this use-case does NOT call signOut or
-// revokeRefreshToken. Existing access tokens (JWTs) issued before the reset
-// MUST remain valid. The adapter's adminUpdatePassword does not call
-// signOut either (verified by the unit test on auth-adapter and the
+// AUTH-12 critical invariant: this use-case does NOT invalidate existing
+// sessions or revoke refresh tokens. Existing access tokens (JWTs) issued
+// before the reset MUST remain valid. The adapter's adminUpdatePassword
+// preserves them too (verified by the unit test on auth-adapter and the
 // Playwright E2E in Task 3 — login with NEW password works post-reset
 // while the OLD password is rejected).
 
@@ -33,7 +34,8 @@ export async function consumePasswordReset(opts: {
     const consumed = await consumeResetToken(opts.token, tx);
     if (!consumed) return null;
 
-    // Codex HIGH #3: authAdapter (NOT supabase.auth.admin.updateUserById directly).
+    // Codex HIGH #3: route through authAdapter (the sole module touching
+    // the Supabase auth admin surface).
     const updateResult = await authAdapter.adminUpdatePassword({
       userId: consumed.userId,
       newPassword: opts.password,

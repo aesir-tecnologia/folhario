@@ -8,9 +8,9 @@
 //
 // D-25 atomicity: revoke prior + mint fresh wrapped in db.transaction so a
 // partial failure can't leave orphaned revoked tokens with no replacement.
-// Codex HIGH #3: emits via inngest.send → notifications/send-email function
-// (the route layer's only Supabase call goes through authAdapter elsewhere;
-// this file does not call supabase.auth.* directly).
+// Codex HIGH #3: emits via inngest.send → notifications/send-email function.
+// Supabase auth calls go through `authAdapter` elsewhere; this file does
+// not import `@supabase/*` and does not touch the auth surface directly.
 //
 // pt-BR-only at launch + integration tests run outside the Next request
 // context that next-intl/server.getTranslations() requires, so we import

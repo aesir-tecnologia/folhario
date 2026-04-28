@@ -9,10 +9,9 @@
 // Mock inngest.send to a no-op so we measure only the route handler itself
 // (throttle bump + JSON parse + zod parse + send).
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 
-import { truncateAuthAndIamTables } from "./setup-supabase-truncate";
 import { seedUser } from "./fixtures/seed-user";
 
 const dbUrl = process.env.DATABASE_POOL_URL;
@@ -26,10 +25,10 @@ vi.mock("@shared/inngest/client", () => ({
 describe.skipIf(!dbUrl)(
   "Phase 4 D-11 + AUTH-11 — POST /api/v1/iam/password/reset-request is constant-time (anti-enumeration)",
   () => {
-    beforeEach(async () => {
-      await truncateAuthAndIamTables();
-    });
-
+    // No beforeEach truncate — concurrent integration suites share the same
+    // auth.users + public.users tables; truncating would race-wipe their
+    // seeded users. Per-test isolation: unique IPs (so the throttle bucket
+    // is fresh) + unique random uuid emails.
     it("response time spread across 10 invocations (5 existing email, 5 non-existing) is bounded — and route NEVER imports getUserByEmail/mintResetToken", async () => {
       // Seed one verified user — its email is the "existing" probe.
       const existingEmail = `pr-timing-existing-${randomUUID()}@test.local`;

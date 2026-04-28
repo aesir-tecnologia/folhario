@@ -8,11 +8,10 @@
 // own integration file (see iam-password-reset-tx-rollback.integration.test.ts) because vi.mock
 // is hoisted — putting it inside one `it()` block does not isolate it from the rest of the suite.
 
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import postgres from "postgres";
 import { randomUUID } from "node:crypto";
 
-import { truncateAuthAndIamTables } from "./setup-supabase-truncate";
 import { seedUser } from "./fixtures/seed-user";
 import { seedCurrentPolicyVersions } from "./fixtures/seed-policy-version";
 
@@ -45,10 +44,17 @@ vi.mock("@shared/inngest/client", () => ({
 describe.skipIf(!dbUrl)(
   "Phase 4 AUTH-11 + AUTH-12 — password reset flow (route → iam/password-reset-requested Inngest function → notifications/email.requested)",
   () => {
-    beforeEach(async () => {
-      mocks.sentEvents.length = 0;
-      await truncateAuthAndIamTables();
+    // Idempotent seed in beforeAll (NOT beforeEach) — concurrent test files
+    // share the same auth.users / public.users / policy_versions tables, so a
+    // beforeEach-scoped truncate would race-wipe other suites' data mid-run.
+    // Per-test isolation comes from unique random uuid emails (rows in
+    // users/password_reset_tokens/etc), not from wipe-and-reinsert.
+    beforeAll(async () => {
       await seedCurrentPolicyVersions();
+    });
+
+    beforeEach(() => {
+      mocks.sentEvents.length = 0;
     });
 
     afterAll(async () => {

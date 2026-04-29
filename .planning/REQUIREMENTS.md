@@ -23,7 +23,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **AUTH-11**: User can request a password reset; endpoint always returns 200 (no enumeration); valid email receives a Resend email with single-use token, 1h expiry, hashed storage (AC-AUTH-006)
 - [ ] **AUTH-12**: Valid reset token within window lets user set a new password; reused token returns `validation_failed`; existing JWTs remain valid (AC-AUTH-006)
 - [ ] **AUTH-13**: Authed user can change password from Settings with current + new; wrong current → `invalid_credentials` 401; OAuth-only accounts have the UI hidden and the endpoint rejects with `forbidden` (AC-AUTH-007)
-- [ ] **AUTH-14**: User can log out of the current device (revokes that JWT and its push subscription only) (§14)
+- [x] **AUTH-14**: User can log out of the current device — clears the device's cookie and revokes its refresh token; the existing JWT continues to be valid until its `exp` (≤1h on Supabase default). See AUTH-v2-02 for post-MVP logout-all-devices (global JWT revocation). (§14, resolved Phase 4 Q-AUTH-14 on 2026-04-26)
 - [ ] **AUTH-15**: Unverified-email full-screen blocker shown in place of app shell: "Verifique seu e-mail para começar." + resend-verification + logout link; cleared on verification (§16)
 
 ### IDENT — Identification flow, providers, caps, failure modes
@@ -250,7 +250,7 @@ Deferred to post-MVP. Tracked but not in current roadmap.
 
 ### AUTH-v2
 - **AUTH-v2-01**: Change-email flow
-- **AUTH-v2-02**: Logout-all-devices (global JWT revocation)
+- **AUTH-v2-02**: Logout-all-devices (global JWT revocation). Cross-referenced from AUTH-14 — Phase 4 ships single-device logout (cookie + refresh-token); MVP accepts the JWT exp window as the effective per-device logout latency. Post-MVP requires either a JWT denylist table or Supabase Auth Hooks integration.
 
 ### BILL-v2
 - **BILL-v2-01**: NFS-e emission integration (NFE.io, eNotas, Omie, or manual municipal portal)
@@ -324,21 +324,21 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 4 | Pending |
-| AUTH-02 | Phase 4 | Pending |
-| AUTH-03 | Phase 4 | Pending |
-| AUTH-04 | Phase 4 | Pending |
-| AUTH-05 | Phase 4 | Pending |
-| AUTH-06 | Phase 4 | Pending |
-| AUTH-07 | Phase 4 | Pending |
-| AUTH-08 | Phase 4 | Pending |
-| AUTH-09 | Phase 4 | Pending |
-| AUTH-10 | Phase 4 | Pending |
-| AUTH-11 | Phase 4 | Pending |
-| AUTH-12 | Phase 4 | Pending |
-| AUTH-13 | Phase 4 | Pending |
-| AUTH-14 | Phase 4 | Pending |
-| AUTH-15 | Phase 4 | Pending |
+| AUTH-01 | Phase 4 | Complete (Plan 06) |
+| AUTH-02 | Phase 4 | Complete (Plan 06) (verification gate is implemented in shared/api/auth.ts and Plan 06 wires the gate at /me + /resend-verification + /verify route handlers; Plan 10 enforces UI-side via (authed)/layout.tsx route group per Codex HIGH #7) |
+| AUTH-03 | Phase 4 | Complete (Plan 09) |
+| AUTH-04 | Phase 4 | Complete (Plan 06) |
+| AUTH-05 | Phase 4 | Complete (Plan 07) |
+| AUTH-06 | Phase 4 | Complete (Plan 03 schema + Plan 06 enforcement) |
+| AUTH-07 | Phase 4 | Complete (Plan 06 — D-32 PartnerStore validation) |
+| AUTH-08 | Phase 4 | Complete (Plan 03 schema + Plan 06 enforcement) |
+| AUTH-09 | Phase 4 | Complete (Plan 06 + Plan 10 T&C/Privacy hyperlinks per Codex MEDIUM) |
+| AUTH-10 | Phase 4 | Complete (Plan 03) (per-IP throttle middleware ships Plan 03; route handlers Plans 06-09 wrap; Codex HIGH #5 5-min lockout via locked_until column) |
+| AUTH-11 | Phase 4 | Complete (Plan 08) |
+| AUTH-12 | Phase 4 | Complete (Plan 08) |
+| AUTH-13 | Phase 4 | Complete (Plan 09) |
+| AUTH-14 | Phase 4 | Complete (Plan 07) |
+| AUTH-15 | Phase 4 | Complete (Plan 10) |
 | IDENT-01 | Phase 6 | Pending |
 | IDENT-02 | Phase 6 | Pending |
 | IDENT-03 | Phase 6 | Pending |
@@ -459,8 +459,8 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | LGPD-12 | Phase 11 | Pending |
 | LGPD-13 | Phase 1 | Complete (Plans 01-05a + 01-05b) |
 | LGPD-14 | Phase 11 | Pending |
-| NOTIF-01 | Phase 4 | Pending |
-| NOTIF-02 | Phase 4 | Pending |
+| NOTIF-01 | Phase 4 | Complete (Plan 05) |
+| NOTIF-02 | Phase 4 | Complete (Plan 05) |
 | NOTIF-03 | Phase 8 | Pending |
 | NOTIF-04 | Phase 8 | Pending |
 | NOTIF-05 | Phase 8 | Pending |
@@ -482,7 +482,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | UI-10 | Phase 8 | Pending |
 | UI-11 | Phase 5 | Pending |
 | UI-12 | Phase 6 | Pending |
-| UI-13 | Phase 4 | Pending |
+| UI-13 | Phase 4 | Complete (Plan 10) |
 | UI-14 | Phase 3 | Pending |
 | UI-15 | Phase 6 | Pending |
 | UI-16 | Phase 7 | Pending |
@@ -504,7 +504,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-07 | Phase 2 | Complete (02-07) |
 | INFRA-08 | Phase 2 | Complete (02-03 + 02-05.5) |
 | INFRA-09 | Phase 2 | Complete (02-06) |
-| INFRA-10 | Phase 4 | Pending |
+| INFRA-10 | Phase 4 | Complete (Plan 04 + Plan 05 + Plan 08 — total 9 at end of phase = 8 PRD §3 MVP per D-16 + 1 Phase-4 anti-enumeration add per D-11) |
 | INFRA-11 | Phase 12 | Pending |
 | INFRA-12 | Phase 1 | Complete (01-08) |
 | INFRA-13 | Phase 12 | Pending |

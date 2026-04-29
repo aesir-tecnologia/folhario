@@ -162,7 +162,7 @@ Plans:
 - [x] 04-08-PLAN.md -- Password reset (always-200 + inline lookup + consume in db.transaction; Codex HIGH #2 + #3 + #6 + #8)
 - [x] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete (NO Drizzle in /api/v1/iam/me per Codex HIGH #3; D-32)
 - [x] 04-10-PLAN.md -- UI surfaces under route groups (public)/(authed) per Codex HIGH #7 (replaces x-pathname); CLIENT components + JSON fetch per D-31; T&C/Privacy hyperlinks per Codex MEDIUM
-- [ ] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
+- [x] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
 
 **UI hint**: yes
 

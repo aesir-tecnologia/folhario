@@ -40,10 +40,7 @@ export function extractClientIp(request: Request): string {
  * the future, or null when not currently locked. Scans across all
  * window_start buckets (Codex HIGH #5: lockout survives bucket boundaries).
  */
-export async function getCurrentLockoutEnd(
-  ip: string,
-  endpoint: string,
-): Promise<Date | null> {
+export async function getCurrentLockoutEnd(ip: string, endpoint: string): Promise<Date | null> {
   const rows = await db
     .select({ lockedUntil: authThrottle.lockedUntil })
     .from(authThrottle)
@@ -84,8 +81,14 @@ export async function bumpThrottleRow(
   }
 
   const existingLockout = row.lockedUntil ? new Date(row.lockedUntil) : null;
+  // Phase 04 review WR-09: an existing-but-already-EXPIRED lockout on the
+  // same (ip, endpoint, window_start) row would previously short-circuit
+  // the re-arm because `!existingLockout` treated any non-null timestamp
+  // as "still locked". Check against now() so a count crossing the
+  // threshold inside the same minute bucket re-arms the lockout.
+  const lockoutInFuture = existingLockout !== null && existingLockout.getTime() > Date.now();
 
-  if (isLocked(row.count) && !existingLockout) {
+  if (isLocked(row.count) && !lockoutInFuture) {
     const lockoutEnd = new Date(Date.now() + LOCKOUT_DURATION_MS);
     await db
       .update(authThrottle)
@@ -100,5 +103,5 @@ export async function bumpThrottleRow(
     return { count: row.count, lockedUntil: lockoutEnd };
   }
 
-  return { count: row.count, lockedUntil: existingLockout };
+  return { count: row.count, lockedUntil: lockoutInFuture ? existingLockout : null };
 }

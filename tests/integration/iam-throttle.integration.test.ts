@@ -9,10 +9,7 @@ import {
   bumpThrottleRow,
   getCurrentLockoutEnd,
 } from "@contexts/iam/infrastructure/db/auth-throttle";
-import {
-  isCurrentlyLocked,
-  withThrottle,
-} from "@shared/api/throttle";
+import { isCurrentlyLocked, withThrottle } from "@shared/api/throttle";
 
 const dbUrl = process.env.DATABASE_POOL_URL;
 
@@ -22,9 +19,7 @@ if (dbUrl && /supabase\.co/.test(dbUrl)) {
   );
 }
 
-const cleanupSql = dbUrl
-  ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 })
-  : null;
+const cleanupSql = dbUrl ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 }) : null;
 
 // Each test in this suite owns its own IP. Cleanup is scoped to (ip, endpoint)
 // for those IPs so this suite cohabits safely with parallel-running tests
@@ -110,6 +105,29 @@ describe.skipIf(!dbUrl)("Phase 4 throttle (D-12..D-15 + Codex HIGH #5)", () => {
     expect(await isCurrentlyLocked("1.2.3.8", "signup")).toBe(false);
   });
 
+  it("Phase 04 review WR-09 — fresh trip past 5 in same minute bucket with EXPIRED lockout re-arms locked_until", async () => {
+    if (!cleanupSql) return;
+    const ip = "1.2.3.8"; // re-uses 1.2.3.8 which beforeEach cleared anew
+    // Trip the lockout: 6 bumps push count to 6 and set locked_until.
+    for (let i = 0; i < 6; i++) await bumpThrottleRow(ip, "signup");
+
+    // Force the row's locked_until into the PAST while staying inside the
+    // same window_start bucket (count remains 6).
+    await cleanupSql`UPDATE public.auth_throttle SET locked_until = now() - interval '1 minute' WHERE ip = ${ip}`;
+
+    // Sanity: getCurrentLockoutEnd correctly excludes the past timestamp.
+    expect(await isCurrentlyLocked(ip, "signup")).toBe(false);
+
+    // One more bump while count > 5 must RE-ARM the lockout (the prior
+    // condition `!existingLockout` would have skipped this re-arm because
+    // locked_until was non-null even though it was in the past).
+    const next = await bumpThrottleRow(ip, "signup");
+    expect(next.count).toBeGreaterThan(5);
+    expect(next.lockedUntil).toBeInstanceOf(Date);
+    expect(next.lockedUntil!.getTime()).toBeGreaterThan(Date.now());
+    expect(await isCurrentlyLocked(ip, "signup")).toBe(true);
+  });
+
   it("two concurrent bumps both increment (UPSERT-RETURNING atomicity)", async () => {
     const [a, b] = await Promise.all([
       bumpThrottleRow("1.2.3.9", "signup"),
@@ -158,7 +176,9 @@ describe.skipIf(!dbUrl)("Phase 4 throttle (D-12..D-15 + Codex HIGH #5)", () => {
     expect(res.status).toBe(200);
     expect(invocations).toBe(1);
     if (cleanupSql) {
-      const rows = await cleanupSql<{ count: number }[]>`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.13'`;
+      const rows = await cleanupSql<
+        { count: number }[]
+      >`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.13'`;
       expect(rows[0]?.count).toBe(1);
     }
   });
@@ -167,18 +187,32 @@ describe.skipIf(!dbUrl)("Phase 4 throttle (D-12..D-15 + Codex HIGH #5)", () => {
     const req200 = new Request("http://test.local/api/v1/iam/login", {
       headers: { "x-forwarded-for": "1.2.3.14" },
     });
-    await withThrottle(req200, "login", "on-failure", async () => new Response("ok", { status: 200 }));
+    await withThrottle(
+      req200,
+      "login",
+      "on-failure",
+      async () => new Response("ok", { status: 200 }),
+    );
     if (cleanupSql) {
-      const rows1 = await cleanupSql<{ count: number }[]>`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.14'`;
+      const rows1 = await cleanupSql<
+        { count: number }[]
+      >`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.14'`;
       expect(rows1.length).toBe(0);
     }
 
     const req401 = new Request("http://test.local/api/v1/iam/login", {
       headers: { "x-forwarded-for": "1.2.3.14" },
     });
-    await withThrottle(req401, "login", "on-failure", async () => new Response("nope", { status: 401 }));
+    await withThrottle(
+      req401,
+      "login",
+      "on-failure",
+      async () => new Response("nope", { status: 401 }),
+    );
     if (cleanupSql) {
-      const rows2 = await cleanupSql<{ count: number }[]>`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.14'`;
+      const rows2 = await cleanupSql<
+        { count: number }[]
+      >`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.14'`;
       expect(rows2[0]?.count).toBe(1);
     }
   });
@@ -194,7 +228,9 @@ describe.skipIf(!dbUrl)("Phase 4 throttle (D-12..D-15 + Codex HIGH #5)", () => {
       });
     await withThrottle(req, "oauth-callback", "on-failure", failingRedirect);
     if (cleanupSql) {
-      const rows = await cleanupSql<{ count: number }[]>`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.15'`;
+      const rows = await cleanupSql<
+        { count: number }[]
+      >`SELECT count FROM public.auth_throttle WHERE ip = '1.2.3.15'`;
       expect(rows[0]?.count).toBe(1);
     }
   });

@@ -144,4 +144,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-26 after Phase 02 (data-layer) completion — 11 plans, 21 tables with RLS, Drizzle + postgres-js + UoW + AuthAdapter + idempotency + image pipeline + diagnostics consent route shipped.*
+*Last updated: 2026-04-29 after Phase 04 (IAM — Auth, Verification, Consent) completion — 11 plans, 19 requirement IDs delivered (AUTH-01..15, INFRA-10, NOTIF-01/02, UI-13). Schema additions: `email_verified_at` + `email_verification_tokens` + `password_reset_tokens` + `auth_throttle.locked_until`. Onboarded Inngest (9 functions: 8 PRD §3 MVP + 1 Phase-4 anti-enumeration password-reset job per D-11) and Resend (3 React Email templates + dev fallback). AuthAdapter is the sole `supabase.auth.*` boundary (Codex HIGH #3). Route-group gate at `(app)/layout.tsx` (Codex HIGH #7 replacing x-pathname). Six client auth pages via shared `useAuthForm` (D-31), Settings shell + Em breve placeholders, T&C/Privacy hyperlinks bound to active policy_version (Codex MEDIUM consent UX). Phase 02 (data-layer) and Phase 03 (design-system-app-shell) shipped earlier.*

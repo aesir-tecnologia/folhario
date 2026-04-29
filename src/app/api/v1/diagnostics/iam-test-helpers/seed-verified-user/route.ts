@@ -25,12 +25,13 @@ import { authAdapter } from "@contexts/iam/infrastructure/auth/auth-adapter";
 import { upsertVerifiedTestUser } from "@contexts/iam/infrastructure/db/test-helpers";
 
 function isEnabled(): boolean {
-  // Plan 04-10 Rule 3 amendment: production builds opt in via the same
-  // NEXT_PUBLIC_ENABLE_TEST_ROUTES flag the (test)/modal-sheet route uses
-  // (Phase 3 plan 05 codex review HIGH 2). The IDENTIFICATION_PROVIDER_MODE
+  // Plan 04-10 Rule 3 amendment: production builds opt in via the
+  // ENABLE_TEST_ROUTES flag the (test)/modal-sheet route uses
+  // (Phase 3 plan 05 codex review HIGH 2). Phase 04 review WR-08:
+  // the flag is server-only (no NEXT_PUBLIC_ prefix) so its value
+  // never enters the client bundle. The IDENTIFICATION_PROVIDER_MODE
   // gate plus the explicit opt-in keep production exposure narrow.
-  const productionAllowed =
-    process.env.NEXT_PUBLIC_ENABLE_TEST_ROUTES === "1";
+  const productionAllowed = process.env.ENABLE_TEST_ROUTES === "1";
   if (process.env.NODE_ENV === "production" && !productionAllowed) return false;
   if (serverEnv.IDENTIFICATION_PROVIDER_MODE !== "stub") return false;
   return true;

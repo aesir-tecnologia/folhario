@@ -61,10 +61,13 @@ export default defineConfig({
       AUTH_JWKS_OVERRIDE_URL: TEST_JWKS_URL,
       AUTH_AUDIENCE_OVERRIDE: TEST_AUDIENCE,
       AUTH_ISSUER_OVERRIDE: TEST_ISSUER,
-      // HIGH 2 + Open Risk #8 (codex review) — opt the playwright job into the
-      // gated /modal-sheet test route. Production builds without this env var
-      // call notFound() on /modal-sheet (route group `(test)` does NOT hide URLs).
-      NEXT_PUBLIC_ENABLE_TEST_ROUTES: "1",
+      // HIGH 2 + Open Risk #8 (codex review) — opt the playwright job into
+      // the gated /modal-sheet test route + the iam-test-helpers diagnostics
+      // routes. Production builds without this env var call notFound()
+      // on /modal-sheet (route group `(test)` does NOT hide URLs).
+      // Phase 04 review WR-08: var is server-only (no NEXT_PUBLIC_ prefix)
+      // so its value never enters the client bundle.
+      ENABLE_TEST_ROUTES: "1",
       // Phase 4 plan 04-10 — Rule 3 fix: with no INNGEST_EVENT_KEY set, the
       // Inngest SDK under NODE_ENV=production tries to deliver to the Inngest
       // cloud and any route that calls `inngest.send` (signup, forgot-password,

@@ -29,6 +29,14 @@ export const serverSchema = z.object({
   // Phase 4 — Supabase Google OAuth (D-04)
   SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID: optional(z.string().min(1)),
   SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET: optional(z.string().min(1)),
+  // Phase 04 review WR-08 — server-only flag (no NEXT_PUBLIC_ prefix so
+  // Next.js does NOT inline it into the client bundle). Gates the
+  // /api/v1/diagnostics/iam-test-helpers/* routes and the (test)/modal-sheet
+  // page. Replaces the prior NEXT_PUBLIC_ENABLE_TEST_ROUTES which leaked
+  // its value into every client JS bundle. Read directly via
+  // process.env.ENABLE_TEST_ROUTES at the gate sites; we only declare it
+  // here so the env-example coverage test sees the expected key.
+  ENABLE_TEST_ROUTES: optional(z.string().min(1)),
 });
 
 export const serverEnv = serverSchema.parse(process.env);

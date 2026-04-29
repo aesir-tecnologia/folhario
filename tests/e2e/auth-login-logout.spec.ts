@@ -1,6 +1,35 @@
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
+// @supabase/ssr@0.10+ stores the full session blob (access_token,
+// refresh_token, user, expires_at, ...) inside one or more `sb-{ref}-auth-
+// token` cookies. Small sessions fit in one cookie; larger sessions chunk
+// into `sb-{ref}-auth-token.0`, `.1`, etc. The chunked values, in order,
+// concatenate to a single string optionally prefixed with `base64-`; that
+// payload is base64url-encoded JSON. There is NO separately-named cookie
+// containing the word "refresh" — Q-AUTH-14's refresh-token-revoked
+// assertion has to extract `refresh_token` from this blob.
+function extractRefreshToken(cookies: { name: string; value: string }[]): string | null {
+  const chunks = cookies
+    .filter((c) => /^sb-[^.]+-auth-token(?:\.\d+)?$/.test(c.name))
+    .sort((a, b) => {
+      const aIdx = Number(a.name.match(/\.(\d+)$/)?.[1] ?? 0);
+      const bIdx = Number(b.name.match(/\.(\d+)$/)?.[1] ?? 0);
+      return aIdx - bIdx;
+    });
+  if (chunks.length === 0) return null;
+  let combined = chunks.map((c) => c.value).join("");
+  if (combined.startsWith("base64-")) {
+    combined = Buffer.from(combined.slice("base64-".length), "base64url").toString("utf-8");
+  }
+  try {
+    const parsed = JSON.parse(combined) as { refresh_token?: string };
+    return parsed.refresh_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Phase 4 AUTH-05 + AUTH-14 + Codex HIGH #6 — cookie-bearing login → logout
  * → refresh-token-revoked end-to-end.
@@ -41,13 +70,10 @@ test("login mints session cookie + access gated endpoint + logout clears cookie 
   // Pre-seed a verified user via a test-only diagnostics endpoint. The
   // endpoint is gated to non-production environments and rejects unknown
   // callers via an env-controlled token header.
-  const seedResp = await request.post(
-    "/api/v1/diagnostics/iam-test-helpers/seed-verified-user",
-    {
-      data: { email, password },
-      headers: { "content-type": "application/json" },
-    },
-  );
+  const seedResp = await request.post("/api/v1/diagnostics/iam-test-helpers/seed-verified-user", {
+    data: { email, password },
+    headers: { "content-type": "application/json" },
+  });
   expect(seedResp.status()).toBe(200);
 
   // 1. Log in.
@@ -70,8 +96,9 @@ test("login mints session cookie + access gated endpoint + logout clears cookie 
   expect(meBody.user.email).toBe(email);
 
   // Capture the refresh token for the post-logout assertion (resolved Q-AUTH-14).
-  const refreshCookie = supabaseCookies.find((c) => c.name.includes("refresh"));
-  const refreshTokenValue = refreshCookie?.value;
+  // @supabase/ssr@0.10+ embeds refresh_token inside the chunked auth-token
+  // cookie blob; see extractRefreshToken at top of file.
+  const refreshTokenValue = extractRefreshToken(supabaseCookies);
   expect(refreshTokenValue).toBeTruthy();
 
   // 4. Log out.

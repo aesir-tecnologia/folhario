@@ -26,6 +26,7 @@ import {
 export type ThrottleEndpoint =
   | "signup"
   | "login"
+  | "logout"
   | "oauth-callback"
   | "password-reset-request"
   | "resend-verification";
@@ -38,13 +39,9 @@ export type ThrottleResult = {
   lockedUntil: Date | null;
 };
 
-const RATE_LIMITED_MESSAGE =
-  "Muitas tentativas. Tente novamente em alguns minutos.";
+const RATE_LIMITED_MESSAGE = "Muitas tentativas. Tente novamente em alguns minutos.";
 
-export async function isCurrentlyLocked(
-  ip: string,
-  endpoint: string,
-): Promise<boolean> {
+export async function isCurrentlyLocked(ip: string, endpoint: string): Promise<boolean> {
   return (await getCurrentLockoutEnd(ip, endpoint)) !== null;
 }
 
@@ -53,10 +50,7 @@ export async function isCurrentlyLocked(
  * than the HTTP-shaped `withThrottle` wrapper. Returns `{count, locked,
  * lockedUntil}` so callers can decide their own response shape.
  */
-export async function bumpThrottle(
-  ip: string,
-  endpoint: string,
-): Promise<ThrottleResult> {
+export async function bumpThrottle(ip: string, endpoint: string): Promise<ThrottleResult> {
   const { count, lockedUntil } = await bumpThrottleRow(ip, endpoint);
   return { count, locked: isLocked(count) || lockedUntil !== null, lockedUntil };
 }

@@ -37,7 +37,10 @@ export function ChangePasswordForm() {
       setClientError(t("errors.passwordsDontMatch"));
       return;
     }
-    const result = await submit({
+    // Phase 04 review IN-01: useAuthForm's onSuccess only fires on a 2xx
+    // response, so success-side effects (setSuccess + form reset) are
+    // already gated correctly. No trailing post-submit branch is needed.
+    await submit({
       endpoint: "/api/v1/iam/me/password",
       method: "PATCH",
       body: { current_password: form.current, new_password: form.next },
@@ -46,7 +49,6 @@ export function ChangePasswordForm() {
         setForm({ current: "", next: "", confirm: "" });
       },
     });
-    if (!result.ok) return;
   }
 
   return (

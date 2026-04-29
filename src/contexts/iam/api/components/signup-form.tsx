@@ -63,12 +63,16 @@ export function SignupForm({ policyVersion, defaultTimezone }: SignupFormProps) 
     // /auth/login with no acknowledgement. Route both branches to
     // /auth/forgot-password — the destination matches "check your email"
     // which is what the server response message instructs.
-    const result = await submit({
+    // Phase 04 review IN-01: no post-submit side-effect needed beyond
+    // useAuthForm's setError/onSuccess hooks; the handler returns
+    // implicitly when await resolves. The previous trailing
+    // `if (!result.ok) return;` was a no-op copy-paste from
+    // change-password-form.tsx where the guard fences a setSuccess block.
+    await submit({
       endpoint: "/api/v1/iam/signup",
       body,
       onSuccess: () => router.push("/auth/forgot-password?from=signup"),
     });
-    if (!result.ok) return;
   }
 
   return (

@@ -159,10 +159,17 @@ describe("authAdapter.getUserBySession", () => {
     const errArg = firstCall[0];
     const ctxArg = firstCall[1];
     expect(errArg).toBe(refreshError);
+    // Plan 04-12: tag uses `context: iam.getUserBySession` to match the
+    // in-file precedent at line ~296 (adminDeleteUser uses
+    // tags.context = "iam.compensating_delete"). Earlier shipped code
+    // used `surface:` — aligned to the shared key in this plan.
     expect(ctxArg).toMatchObject({
-      tags: { surface: "iam.getUserBySession" },
+      tags: { context: "iam.getUserBySession" },
     });
     // CLAUDE.md hard rule: never include email in Sentry payloads.
+    // The `extra` field carries only `errorName` (auth-js error class
+    // name like "AuthApiError") and `readOnly` (boolean), neither of
+    // which contains user email.
     expect(JSON.stringify(ctxArg ?? {})).not.toContain("email");
   });
 });

@@ -235,7 +235,8 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
       if (error) {
         if (!isAuthSessionMissingError(error)) {
           Sentry.captureException(error, {
-            tags: { surface: "iam.getUserBySession" },
+            tags: { context: "iam.getUserBySession" },
+            extra: { errorName: error.name, readOnly },
           });
         }
         return null;

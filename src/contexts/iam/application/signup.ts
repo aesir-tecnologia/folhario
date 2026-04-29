@@ -15,6 +15,8 @@
 //  - Resolved Q1: already-registered email returns 200 + welcome-back; the
 //    route handler dispatches the welcome-back email event.
 
+import * as Sentry from "@sentry/nextjs";
+
 import { db } from "@shared/db/client";
 import { authAdapter } from "@contexts/iam/infrastructure/auth/auth-adapter";
 import { inngest } from "@shared/inngest/client";
@@ -150,13 +152,26 @@ export async function signupUser(input: SignupRequest, requestUrl: URL): Promise
   // request. Catch any error (including the "cookies() called outside request
   // scope" thrown when running outside a Next request, e.g. integration tests)
   // so signup itself stays atomic with the DB tx.
+  //
+  // Phase 04 review IN-03: narrow the swallow. The expected case is the
+  // cookies()-outside-request error from Next when invoked outside a
+  // request scope (integration tests). Anything else (Supabase admin
+  // misconfig, network failure, JOSE timeouts) is operationally
+  // interesting and goes to Sentry.
   try {
     await authAdapter.signInWithPassword({
       email: input.email,
       password: input.password,
     });
-  } catch {
-    /* swallow: best-effort session mint */
+  } catch (err) {
+    const message = err instanceof Error ? err.message : typeof err === "string" ? err : "";
+    if (message.includes("cookies")) {
+      // Expected outside request scope (integration tests) — swallow.
+    } else {
+      Sentry.captureException(err, {
+        tags: { surface: "signup.sessionMint" },
+      });
+    }
   }
 
   return { kind: "created", userId, verificationUrl };

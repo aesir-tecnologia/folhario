@@ -17,11 +17,8 @@
 // Idempotent: if the user's age_confirmed_at is already set, return
 // `already_completed` (T-04-09-06 mitigation).
 
-import { db } from "@shared/db/client";
-import {
-  getUserById,
-  setOauthCompletionFields,
-} from "@contexts/iam/infrastructure/db/users";
+import { withUnitOfWork } from "@shared/db/unit-of-work";
+import { getUserById, setOauthCompletionFields } from "@contexts/iam/infrastructure/db/users";
 import { isPartnerCodeActive } from "@contexts/iam/infrastructure/db/partner-store";
 import { getCurrentPolicyVersions } from "@contexts/iam/infrastructure/db/policy-versions";
 import { insertSignupConsents } from "@contexts/iam/infrastructure/db/consent-logs";
@@ -59,10 +56,15 @@ export async function completeOauthSignup(
   }
   const partnerCode = partnerCodeRaw.length > 0 ? partnerCodeRaw : null;
 
-  // Codex HIGH #2: ALL DB writes inside ONE db.transaction(...). If any step
-  // throws, the tx rolls back; age_confirmed_at + email_verified_at remain
-  // unset so the user can retry.
-  await db.transaction(async (tx) => {
+  // Codex HIGH #2 + Phase 04 review WR-05: ALL DB writes inside ONE
+  // withUnitOfWork(input.userId, ...) — sets `request.jwt.claim.sub` GUC
+  // so RLS policies can scope correctly (D-20). Unlike signup (which has
+  // no JWT yet — see signup.ts comment near its db.transaction), the
+  // OAuth user IS authenticated by this point, so binding the subject is
+  // both safe and required for defense-in-depth RLS to engage.
+  // If any step throws, the tx rolls back; age_confirmed_at +
+  // email_verified_at remain unset so the user can retry.
+  await withUnitOfWork(input.userId, async (tx) => {
     // Wave-1 reconciliation: BOTH active policy_versions rows so each
     // consent_logs row points to the correct documentType-bound version.
     const policies = await getCurrentPolicyVersions(tx);
@@ -73,11 +75,7 @@ export async function completeOauthSignup(
       );
     }
 
-    await setOauthCompletionFields(
-      input.userId,
-      { timezone: input.timezone, partnerCode },
-      tx,
-    );
+    await setOauthCompletionFields(input.userId, { timezone: input.timezone, partnerCode }, tx);
 
     await insertSignupConsents(
       {

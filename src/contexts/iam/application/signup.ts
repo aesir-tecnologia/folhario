@@ -30,18 +30,15 @@ import ptBR from "../../../messages/pt-BR.json";
 // pt-BR is the only locale at launch (PROJECT.md). Importing the JSON directly
 // keeps this use-case decoupled from `next-intl/server`'s request-context
 // requirement (which integration tests cannot satisfy without spinning up Next).
-const verificationSubject =
-  (ptBR as { email: { verification: { subject: string } } }).email.verification.subject;
+const verificationSubject = (ptBR as { email: { verification: { subject: string } } }).email
+  .verification.subject;
 
 export type SignupResult =
   | { kind: "created"; userId: string; verificationUrl: string }
   | { kind: "already_registered"; resetUrl: string }
   | { kind: "invalid_partner_code" };
 
-export async function signupUser(
-  input: SignupRequest,
-  requestUrl: URL,
-): Promise<SignupResult> {
+export async function signupUser(input: SignupRequest, requestUrl: URL): Promise<SignupResult> {
   // Resolved Q1: already-registered → 200 + welcome-back at the route layer.
   // No "email already in use" enumeration leak.
   const existing = await getUserByEmail(input.email);
@@ -71,6 +68,15 @@ export async function signupUser(
   // D-25 + Codex HIGH #2: ALL DB writes inside ONE db.transaction(...).
   // If anything throws, the tx rolls back; the catch then compensates the
   // auth.users insert via authAdapter.adminDeleteUser.
+  //
+  // Phase 04 review WR-05: this path INTENTIONALLY does NOT wrap in
+  // withUnitOfWork(userId, ...). The user has just been minted in
+  // auth.users above; no JWT exists yet on the caller, and the public.users
+  // INSERT must run under the service-role connection rather than as
+  // `authenticated` (which is what withUnitOfWork's `set local role` would
+  // switch to). `oauth-complete.ts` IS wrapped in withUnitOfWork because
+  // there a Supabase JWT exists. Defense-in-depth here lives in the
+  // explicit `userId` filters the repositories apply.
   let tokenId: string;
   let rawToken: string;
   try {
@@ -115,10 +121,7 @@ export async function signupUser(
         tx,
       );
 
-      const minted = await mintVerificationToken(
-        { userId, sentToEmail: input.email },
-        tx,
-      );
+      const minted = await mintVerificationToken({ userId, sentToEmail: input.email }, tx);
       return minted;
     });
     tokenId = txResult.tokenId;
@@ -130,10 +133,7 @@ export async function signupUser(
   }
 
   // D-25 step 3 (after commit): emit verification email + mint browser session.
-  const verificationUrl = new URL(
-    `/auth/verify?token=${rawToken}`,
-    requestUrl,
-  ).toString();
+  const verificationUrl = new URL(`/auth/verify?token=${rawToken}`, requestUrl).toString();
   await inngest.send({
     id: `email-verification/${tokenId}`,
     name: "notifications/email.requested",

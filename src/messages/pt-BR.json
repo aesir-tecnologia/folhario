@@ -178,6 +178,11 @@
       "logout": "Sair",
       "cooldownDoneAnnouncement": "Você pode reenviar novamente."
     },
+    "checkEmail": {
+      "headline": "Verifique seu e-mail.",
+      "body": "Enviamos uma mensagem para o endereço informado. Toque no link recebido para continuar.",
+      "loginCta": "Já confirmou? Entrar"
+    },
     "errors": {
       "rateLimited": "Muitas tentativas. Tente novamente em alguns minutos.",
       "genericNetwork": "Não foi possível concluir agora. Tente novamente em alguns segundos.",

@@ -56,22 +56,23 @@ export function SignupForm({ policyVersion, defaultTimezone }: SignupFormProps) 
     if (form.partner_code.trim().length > 0) {
       body.partner_code = form.partner_code.trim();
     }
-    // Phase 04 review WR-06: the server returns the same generic 200 for
-    // both "created" and "already_registered" (anti-enumeration). The
-    // browser is not authenticated in the already_registered branch, so
-    // pushing to "/" would bounce through the (authed) layout back to
-    // /auth/login with no acknowledgement. Route both branches to
-    // /auth/forgot-password — the destination matches "check your email"
-    // which is what the server response message instructs.
-    // Phase 04 review IN-01: no post-submit side-effect needed beyond
-    // useAuthForm's setError/onSuccess hooks; the handler returns
-    // implicitly when await resolves. The previous trailing
-    // `if (!result.ok) return;` was a no-op copy-paste from
-    // change-password-form.tsx where the guard fences a setSuccess block.
+    // Phase 04 review WR-06 (post-fix 2026-04-29): the server returns the
+    // same generic 200 for both "created" and "already_registered"
+    // (anti-enumeration). The previous convergence destination was
+    // /auth/forgot-password, which rendered "Recuperar senha" — a
+    // password reset screen — to a brand-new user who had just
+    // successfully created an account. They saw "recover password"
+    // instead of "check your email" and reasonably read it as "signup
+    // failed." Route both branches to /auth/check-email instead, a
+    // dedicated public page whose copy matches the server response
+    // message ("Conta criada — verifique seu email."). Anti-enumeration
+    // is preserved because the route is identical for both branches and
+    // takes no parameters — the page renders the same DOM regardless of
+    // which path the server took.
     await submit({
       endpoint: "/api/v1/iam/signup",
       body,
-      onSuccess: () => router.push("/auth/forgot-password?from=signup"),
+      onSuccess: () => router.push("/auth/check-email"),
     });
   }
 

@@ -62,8 +62,7 @@ test("signup → email arrival → verify link → /api/v1/iam/me returns 200 wi
     // already proved the verify flow works.
     test.info().annotations.push({
       type: "deferred",
-      description:
-        "GET /api/v1/iam/me lands in plan 04-09; this spec re-runs there.",
+      description: "GET /api/v1/iam/me lands in plan 04-09; this spec re-runs there.",
     });
     return;
   }
@@ -71,6 +70,37 @@ test("signup → email arrival → verify link → /api/v1/iam/me returns 200 wi
   const body = await meResp.json();
   expect(body.user.email).toBe(email);
   expect(body.user.emailVerifiedAt).toBeTruthy();
+});
+
+// Phase 4 plan 04-13 (UAT gap 3) regression guard: the signup FORM (not
+// just the JSON API) must converge to /auth/check-email after a successful
+// submit. Previously the form pushed to /auth/forgot-password?from=signup,
+// which rendered "Recuperar senha" to a brand-new user and was reasonably
+// read as "signup failed". The convergence destination is identical for
+// both `created` and `already_registered` branches (anti-enumeration).
+test("signup form: successful submit converges to /auth/check-email with calm verify-email page", async ({
+  page,
+}) => {
+  const email = `playwright-form-${Date.now()}@example.com`;
+
+  await page.goto("/auth/signup");
+
+  await page.getByRole("textbox", { name: "E-mail" }).fill(email);
+  await page.getByRole("textbox", { name: "Senha" }).fill("TestPassword123!");
+  await page.getByRole("checkbox", { name: "Tenho 13 anos ou mais" }).check();
+  await page.getByRole("checkbox", { name: /Aceito os Termos de uso/ }).check();
+  await page.getByRole("checkbox", { name: /Aceito a Política de Privacidade/ }).check();
+
+  await page.getByRole("button", { name: "Criar conta" }).click();
+
+  await page.waitForURL(/\/auth\/check-email$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Verifique seu e-mail.");
+  // Login CTA is the only navigation affordance — anti-enumeration: no
+  // password-reset form, no resend button (auth state is ambiguous here).
+  await expect(page.getByRole("link", { name: "Já confirmou? Entrar" })).toHaveAttribute(
+    "href",
+    "/auth/login",
+  );
 });
 
 test("unverified user (no verify click) sees emailVerifiedAt=null on /api/v1/iam/me", async ({

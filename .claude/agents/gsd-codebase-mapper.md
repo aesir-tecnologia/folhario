@@ -375,10 +375,44 @@ _Integration audit: [date]_
 
 ## ARCHITECTURE.md Template (arch focus)
 
-```markdown
+````markdown
+<!-- refreshed: [YYYY-MM-DD] -->
+
 # Architecture
 
 **Analysis Date:** [YYYY-MM-DD]
+
+## System Overview
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                      [Top Layer Name]                        │
+├──────────────────┬──────────────────┬───────────────────────┤
+│   [Component A]  │   [Component B]  │    [Component C]      │
+│  `[path/to/a]`   │  `[path/to/b]`   │   `[path/to/c]`       │
+└────────┬─────────┴────────┬─────────┴──────────┬────────────┘
+         │                  │                     │
+         ▼                  ▼                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    [Middle Layer Name]                       │
+│         `[path/to/layer]`                                    │
+└─────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────┐
+│  [Store / Output / External]                                 │
+│  `[path/to/store]`                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+````
+
+## Component Responsibilities
+
+| Component | Responsibility | File     |
+| --------- | -------------- | -------- |
+| [Name]    | [What it owns] | `[path]` |
+| [Name]    | [What it owns] | `[path]` |
+| [Name]    | [What it owns] | `[path]` |
 
 ## Pattern Overview
 
@@ -402,7 +436,13 @@ _Integration audit: [date]_
 
 ## Data Flow
 
-**[Flow Name]:**
+### Primary Request Path
+
+1. [Step 1 — entry point] (`[file:line]`)
+2. [Step 2 — processing] (`[file:line]`)
+3. [Step 3 — output/response] (`[file:line]`)
+
+### [Secondary Flow Name]
 
 1. [Step 1]
 2. [Step 2]
@@ -428,6 +468,27 @@ _Integration audit: [date]_
 - Triggers: [What invokes it]
 - Responsibilities: [What it does]
 
+## Architectural Constraints
+
+- **Threading:** [Threading model — e.g., single-threaded event loop, worker threads used for X]
+- **Global state:** [Any module-level singletons or shared mutable state — list files]
+- **Circular imports:** [Known circular dependency chains, if any]
+- **[Other constraint]:** [Description]
+
+## Anti-Patterns
+
+### [Anti-Pattern Name]
+
+**What happens:** [The incorrect pattern observed in this codebase]
+**Why it's wrong:** [The problem it causes here]
+**Do this instead:** [The correct pattern with file reference]
+
+### [Anti-Pattern Name]
+
+**What happens:** [The incorrect pattern observed in this codebase]
+**Why it's wrong:** [The problem it causes here]
+**Do this instead:** [The correct pattern with file reference]
+
 ## Error Handling
 
 **Strategy:** [Approach]
@@ -446,7 +507,8 @@ _Integration audit: [date]_
 ---
 
 _Architecture analysis: [date]_
-```
+
+````
 
 ## STRUCTURE.md Template (arch focus)
 
@@ -456,7 +518,8 @@ _Architecture analysis: [date]_
 **Analysis Date:** [YYYY-MM-DD]
 
 ## Directory Layout
-```
+
+````
 
 [project-root]/
 ├── [dir]/ # [Purpose]

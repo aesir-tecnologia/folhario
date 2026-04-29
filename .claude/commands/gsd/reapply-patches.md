@@ -116,7 +116,7 @@ Read `backup-meta.json` from the patches directory.
 ```
 No local patches found. Nothing to reapply.
 
-Local patches are automatically saved when you run /gsd:update
+Local patches are automatically saved when you run /gsd-update
 after modifying any GSD workflow, command, or agent files.
 ```
 
@@ -296,7 +296,7 @@ Before proceeding to cleanup, evaluate the Hunk Verification Table produced in S
 
 ```
 ERROR: Hunk Verification Table is missing. Post-merge verification was not completed.
-Rerun /gsd:reapply-patches to retry with full verification.
+Rerun /gsd-reapply-patches to retry with full verification.
 ```
 
 **If any row in the Hunk Verification Table shows `verified: no`**, STOP and report to the user:

@@ -2,7 +2,7 @@
 Curate sketch design findings and package them into a persistent project skill for future
 UI implementation. Reads from `.planning/sketches/`, writes skill to `./.claude/skills/sketch-findings-[project]/`
 (project-local) and summary to `.planning/sketches/WRAP-UP-SUMMARY.md`.
-Companion to `/gsd:sketch`.
+Companion to `/gsd-sketch`.
 </purpose>
 
 <required_reading>
@@ -32,7 +32,7 @@ If no unprocessed sketches exist:
 
 ```
 No unprocessed sketches found in `.planning/sketches/`.
-Run `/gsd:sketch` first to create design explorations.
+Run `/gsd-sketch` first to create design explorations.
 ```
 
 Exit.
@@ -278,15 +278,15 @@ The sketch-findings skill will auto-load when building the UI.
 
 **Explore frontier sketches** — see what else is worth sketching based on what we've explored
 
-`/gsd:sketch` (run with no argument — its frontier mode analyzes the sketch landscape and proposes consistency and frontier sketches)
+`/gsd-sketch` (run with no argument — its frontier mode analyzes the sketch landscape and proposes consistency and frontier sketches)
 
 ───────────────────────────────────────────────────────────────
 
 **Also available:**
-- `/gsd:plan-phase` — start building the real UI
-- `/gsd:ui-phase` — generate a UI design contract for a frontend phase
-- `/gsd:sketch [idea]` — sketch a specific new design area
-- `/gsd:explore` — continue exploring
+- `/gsd-plan-phase` — start building the real UI
+- `/gsd-ui-phase` — generate a UI design contract for a frontend phase
+- `/gsd-sketch [idea]` — sketch a specific new design area
+- `/gsd-explore` — continue exploring
 
 ───────────────────────────────────────────────────────────────
 </step>
@@ -302,6 +302,6 @@ The sketch-findings skill will auto-load when building the UI.
 - [ ] `.planning/sketches/WRAP-UP-SUMMARY.md` written for project history
 - [ ] Project CLAUDE.md has auto-load routing line
 - [ ] Summary presented
-- [ ] Next-step options presented (including frontier sketch exploration via `/gsd:sketch`)
+- [ ] Next-step options presented (including frontier sketch exploration via `/gsd-sketch`)
 </success_criteria>
 ```

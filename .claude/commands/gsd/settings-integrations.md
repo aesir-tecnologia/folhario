@@ -19,8 +19,8 @@ API keys are stored plaintext in `.planning/config.json` but are masked
 (`****<last-4>`) in every piece of interactive output. The workflow never
 echoes plaintext to stdout, stderr, or any log.
 
-This command is deliberately distinct from `/gsd:settings` (workflow toggles)
-and any `/gsd:settings-advanced` tuning surface. It handles _connectivity_,
+This command is deliberately distinct from `/gsd-settings` (workflow toggles)
+and any `/gsd-settings-advanced` tuning surface. It handles _connectivity_,
 not pipeline shape.
 </objective>
 

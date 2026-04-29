@@ -16,7 +16,7 @@ If `$ARGUMENTS` is empty:
 1. Check `.planning/STATE.md` for current milestone version
 2. Check `.planning/milestones/` for the latest archived version
 3. If neither found, check if `.planning/ROADMAP.md` exists (project may be mid-milestone)
-4. If nothing found: error "No milestone found. Run /gsd:new-project or /gsd:new-milestone first."
+4. If nothing found: error "No milestone found. Run /gsd-new-project or /gsd-new-milestone first."
 
 Set `VERSION` to the resolved version (e.g., "1.0").
 
@@ -232,7 +232,7 @@ If the user asks questions:
 
 If the user is done:
 
-- Suggest next steps: `/gsd:new-milestone`, `/gsd:progress`, or sharing the summary with the team
+- Suggest next steps: `/gsd-new-milestone`, `/gsd-progress`, or sharing the summary with the team
 
 ## Step 9: Update STATE.md
 

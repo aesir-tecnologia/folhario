@@ -1,11 +1,11 @@
 {
-  "model_profile": "inherit",
+  "model_profile": "quality",
   "commit_docs": true,
   "parallelization": true,
   "search_gitignored": false,
-  "brave_search": false,
+  "brave_search": "BSAWRld9te3n4WEbm48mR1gA8peyvc4",
   "firecrawl": false,
-  "exa_search": true,
+  "exa_search": "f0260dbf-2275-422b-b64a-d39a2047fce2",
   "git": {
     "branching_strategy": "none",
     "phase_branch_template": "gsd/phase-{phase}-{slug}",
@@ -40,13 +40,13 @@
     "_auto_chain_active": false
   },
   "hooks": {
-    "context_warnings": true
+    "context_warnings": false
   },
   "project_code": null,
   "phase_naming": "sequential",
   "agent_skills": {},
   "claude_md_path": "./CLAUDE.md",
   "resolve_model_ids": "omit",
-  "mode": "yolo",
+  "mode": "interactive",
   "granularity": "fine"
 }

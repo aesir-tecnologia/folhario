@@ -8,6 +8,7 @@
 //   4. resendVerification (mintVerificationToken + Inngest event) runs.
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 
 import { errorResponse, ErrorCode } from "@shared/config/errors";
 import { requireApiUser } from "@shared/api/auth";
@@ -44,7 +45,12 @@ export async function POST(request: Request): Promise<Response> {
       requestUrl: new URL(request.url),
     });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    // Phase 4 plan 04-13 (UAT gap 2 observability mirror): bare catch
+    // would have hidden the same inngest.send cloud-delivery failure
+    // shape that affected signup. Sentry capture preserves the
+    // operator signal; closed-registry error shape preserved per D-31.
+    Sentry.captureException(err, { tags: { surface: "iam.resendVerification.route" } });
     return errorResponse(
       ErrorCode.InternalError,
       "Não foi possível reenviar agora.",

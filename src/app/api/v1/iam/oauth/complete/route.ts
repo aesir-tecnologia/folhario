@@ -10,6 +10,7 @@
 // it through the unverified blocker.
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 
 import { errorResponse, ErrorCode } from "@shared/config/errors";
 import { requireApiUser } from "@shared/api/auth";
@@ -50,7 +51,15 @@ export async function POST(request: Request) {
 
     // success or already_completed → 200 (idempotent per T-04-09-06).
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (err) {
+    // Phase 4 plan 04-13 (UAT gap 2 observability parity fix): the
+    // oauth-complete write-path does NOT call inngest.send (verified
+    // 2026-04-29) so the gap-2 root cause does not apply here, but
+    // the bare catch shape would silently swallow any genuine
+    // db.transaction failure (e.g., partner_stores lookup error,
+    // policy_versions row missing). Sentry capture surfaces the
+    // operator signal. Closed-registry error shape preserved per D-31.
+    Sentry.captureException(err, { tags: { surface: "iam.oauthComplete.route" } });
     return errorResponse(
       ErrorCode.InternalError,
       "Não foi possível concluir agora.",

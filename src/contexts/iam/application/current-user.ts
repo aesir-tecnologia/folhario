@@ -1,8 +1,5 @@
 import { ErrorCode } from "@shared/config/errors";
-import {
-  createAuthAdapter,
-  type AuthAdapter,
-} from "@contexts/iam/infrastructure/auth/auth-adapter";
+import { authAdapter, type AuthAdapter } from "@contexts/iam/infrastructure/auth/auth-adapter";
 import type { UserRow } from "@contexts/iam/infrastructure/db/users";
 
 /**
@@ -27,8 +24,15 @@ export type CurrentUserResult =
 
 let testAdapter: AuthAdapter | null = null;
 
+/**
+ * Phase 04 review WR-01: route through the process-wide AuthAdapter Proxy
+ * singleton (`authAdapter`) instead of constructing a fresh adapter per
+ * request. Constructing a new adapter per call defeats the JWKS cache
+ * inside `createRemoteJWKSet` and bypasses the singleton boundary every
+ * other use-case (signup/login/etc.) honors. The test seam is preserved.
+ */
 function adapter(): AuthAdapter {
-  return testAdapter ?? createAuthAdapter();
+  return testAdapter ?? authAdapter;
 }
 
 /**

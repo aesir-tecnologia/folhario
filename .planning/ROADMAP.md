@@ -146,22 +146,22 @@ Cross-cutting constraints:
 **Success Criteria** (what must be TRUE):
   1. A new user submits the signup form with email+password, confirms age ≥13, accepts T&C + privacy policy (ConsentLog row recorded against the active `policy_version`), optionally enters a partner code, and their browser's `Intl.DateTimeFormat().resolvedOptions().timeZone` is captured into `User.timezone`; a `Subscription` row is created `status=trialing`; a verification email arrives in pt-BR via Resend (rendered from a React Email template); until they click the link, any gated endpoint returns `email_unverified` 403 and the app shell is replaced by a full-screen blocker "Verifique seu e-mail para começar." with resend-verification + logout links.
   2. A Google-OAuth signup treats the user as pre-verified — no verification email sent, gated endpoints reachable immediately — while the email+password user who clicks the verification link has `User.email_verified_at` set, the blocker cleared, and the "value <2 min" clock started.
-  3. Returning users log in with email+password via per-device JWT (no server sessions), log out of the current device (revoking that JWT and its push subscription only), request a password reset from a public endpoint that always returns 200 (no enumeration) and — when the email exists — receive a Resend email with a single-use hashed token expiring in 1h that lets them set a new password while existing JWTs remain valid.
+  3. Returning users log in with email+password via per-device JWT (no server sessions), log out of the current device (clears the device cookie and revokes its refresh token; the existing JWT remains valid until its `exp` ≤1h — see AUTH-v2-02 for post-MVP logout-all-devices), request a password reset from a public endpoint that always returns 200 (no enumeration) and — when the email exists — receive a Resend email with a single-use hashed token expiring in 1h that lets them set a new password while existing JWTs remain valid.
   4. From `Settings → Account`, an email+password user changes their password with current + new (wrong current → `invalid_credentials` 401); OAuth-only accounts see the change-password UI hidden and the endpoint rejects with `forbidden`; the Settings shell renders with placeholder sections for Notifications, Subscription & billing, Privacy & LGPD, Needs attention, and App info that later phases will fill.
   5. The signup, login, and OAuth callback endpoints enforce a narrow per-IP attempt throttle returning `rate_limited` 429 when tripped, independent of the target account and without consuming the failure budget on successful logins, and `notifications/send-email` Inngest function is wired to Resend with pt-BR React Email templates for verification + password-reset as the first consumers (later phases add templates).
 **Plans**: 11 plans
 
 Plans:
-- [x] 04-01-PLAN.md -- Phase 2/3 prerequisite gate
-- [x] 04-02-PLAN.md -- Schema additions (email_verified_at + 3 tables) + drizzle-kit push
-- [x] 04-03-PLAN.md -- Shared foundation (env vars, helpers, Zod, fixtures, locale)
-- [x] 04-04-PLAN.md -- Inngest serve handler + 8 functions registered (1 real cron + 7 stubs)
-- [x] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function
-- [x] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back
-- [x] 04-07-PLAN.md -- Login + logout (single-device per resolved Q-AUTH-14)
-- [x] 04-08-PLAN.md -- Password reset (always-200 + Inngest async lookup + consume)
-- [x] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete
-- [ ] 04-10-PLAN.md -- UI surfaces (auth pages + Settings shell + UnverifiedBlocker + root layout gate)
+- [x] 04-01-PLAN.md -- Phase 2/3 prerequisite gate (D-33 hard execute-time block with --allow-missing-phase-3 override)
+- [x] 04-02-PLAN.md -- Schema additions (email_verified_at + 3 tables incl. auth_throttle.locked_until per Codex HIGH #5) + drizzle-kit migrate (NOT push, per Codex HIGH #1)
+- [x] 04-03-PLAN.md -- Shared foundation (env vars, helpers, Zod, fixtures, locale, AuthAdapter per Codex HIGH #3)
+- [x] 04-04-PLAN.md -- Inngest serve handler + total 9 functions registered = 8 PRD §3 MVP per D-16 + 1 Phase-4 anti-enumeration add per D-11 (registry total = 9 at end of phase); Codex MEDIUM topology fix moves notifications/send-push to notifications context
+- [x] 04-05-PLAN.md -- Resend onboarding + 3 React Email templates + send-email function (registry total = 9 = 8 PRD §3 MVP per D-16 + 1 Phase-4 anti-enumeration add per D-11)
+- [x] 04-06-PLAN.md -- Signup orchestration + verify route + resend-verification + welcome-back (db.transaction per Codex HIGH #2; AuthAdapter per Codex HIGH #3; PartnerStore validation per D-32)
+- [x] 04-07-PLAN.md -- Login + logout via AuthAdapter (single-device per resolved Q-AUTH-14; Codex HIGH #6 Playwright E2E)
+- [x] 04-08-PLAN.md -- Password reset (always-200 + inline lookup + consume in db.transaction; Codex HIGH #2 + #3 + #6 + #8)
+- [x] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete (NO Drizzle in /api/v1/iam/me per Codex HIGH #3; D-32)
+- [x] 04-10-PLAN.md -- UI surfaces under route groups (public)/(authed) per Codex HIGH #7 (replaces x-pathname); CLIENT components + JSON fetch per D-31; T&C/Privacy hyperlinks per Codex MEDIUM
 - [ ] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
 
 **UI hint**: yes

@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 import * as Sentry from "@sentry/nextjs";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
 
 import { ErrorCode } from "@shared/config/errors";
 import { serverEnv } from "@shared/config/server-env";
@@ -217,9 +218,29 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
       const supabase = readOnly
         ? await getReadOnlySupabaseServerClient()
         : await getSupabaseServerClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Debug session publiclayout-auth-refresh-token-throw belt-and-
+      // braces: the Supabase auth client returns `{ data, error }` on
+      // failed refreshes (e.g. AuthApiError "Invalid Refresh Token"),
+      // not a thrown error.
+      //
+      // Predicate is NARROW: tag operationally interesting errors only.
+      // `AuthSessionMissingError` is the normal "no cookie / not signed
+      // in" return shape — every anonymous page render produces it, so
+      // tagging it would burn Sentry quota on routine traffic. Filter
+      // it out via the library's `isAuthSessionMissingError` type guard.
+      //
+      // CLAUDE.md hard rule: never include email in Sentry payloads —
+      // tags-only, no `extra.email`, no `setUser({ email })`.
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        if (!isAuthSessionMissingError(error)) {
+          Sentry.captureException(error, {
+            tags: { surface: "iam.getUserBySession" },
+          });
+        }
+        return null;
+      }
+      const user = data?.user;
       if (!user || !user.email) return null;
       return { id: user.id, email: user.email };
     },
@@ -275,7 +296,7 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
           tags: { context: "iam.compensating_delete" },
           extra: { userId },
         });
-         
+
         console.error("[iam] adminDeleteUser compensating failed", {
           userId,
           err,

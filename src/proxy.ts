@@ -1,21 +1,55 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
+import { createServerClient } from "@supabase/ssr";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
+
+import { clientEnv } from "@shared/config/client-env";
+
+const SUPABASE_AUTH_TOKEN_COOKIE = /^sb-[^.]+-auth-token(?:\.\d+)?$/;
 
 /**
- * Folhário Next 16 proxy — Plan 02-07 Task 3.
+ * Folhário Next 16 proxy — Plan 02-07 Task 3 + debug session
+ * `publiclayout-auth-refresh-token-throw` (cold-start refresh fix).
  *
- * Composes a fast missing-bearer rejection over `/api/v1/*` with a typed,
- * anchored-regex public allowlist. Cryptographic JWT verification is NOT
- * done here — that is the route helper's job (`requireApiUser` in
- * `src/shared/api/auth.ts`). Routes are authoritative; the proxy is fast
- * fail only (D-34/D-47, T-02-18 mitigation).
+ * Two responsibilities:
  *
- * Body discipline (T-02-37): this function reads ONLY the URL pathname
- * and the Authorization header. It MUST NOT consume the request body
- * stream (no body reads, no JSON parsing, no form parsing) — doing so
- * would render the downstream route handler unable to parse the body
- * because the underlying stream can only be consumed once. A unit test
- * in tests/unit/proxy-body-passthrough.test.ts proves this directly.
+ * 1. **`/api/v1/*` fast-fail bearer gate** (Plan 02-07). Composes a fast
+ *    missing-bearer rejection over `/api/v1/*` with a typed, anchored-regex
+ *    public allowlist. Cryptographic JWT verification is NOT done here —
+ *    that is the route helper's job (`requireApiUser` in
+ *    `src/shared/api/auth.ts`). Routes are authoritative; the proxy is
+ *    fast fail only (D-34/D-47, T-02-18 mitigation).
+ *
+ * 2. **`@supabase/ssr` cookie refresh** for non-API page routes (debug
+ *    session publiclayout-auth-refresh-token-throw). Server Components
+ *    use `getReadOnlySupabaseServerClient` whose no-op `setAll` (Pitfall
+ *    6) cannot clear stale cookies — so without a middleware step that
+ *    does have cookie-write capability, every Server Component render
+ *    on a cold start with a leftover `sb-*` cookie triggers a failed
+ *    refresh inside auth-js, which `console.error`s the AuthApiError
+ *    and surfaces as "Console AuthApiError" in the Next 16 dev overlay
+ *    (attributed to the awaiting React owner — PublicLayout / AppLayout).
+ *    Running `createServerClient` + `auth.getUser()` here, with a real
+ *    request/response cookie adapter, lets valid sessions refresh
+ *    cleanly. For the FAILURE case (refresh rejected because the token
+ *    was revoked or expired) `@supabase/ssr`'s internal storage flush
+ *    via `onAuthStateChange` does NOT reliably emit a clearing
+ *    Set-Cookie header against this version pair (auth-js@2.104.1 +
+ *    ssr@0.10.2) — see the regression spec
+ *    `tests/e2e/auth-cold-start-stale-cookie.spec.ts`. We therefore
+ *    explicitly clear every `sb-*-auth-token` chunk on the response
+ *    when `getUser()` returns a non-"session missing" error. That is
+ *    side-stepping library internals on purpose: the regex match and
+ *    Set-Cookie emission are now testable end-to-end and don't depend
+ *    on auth-js firing SIGNED_OUT inside `_removeSession`.
+ *
+ * Body discipline (T-02-37): the `/api/v1/*` branch reads ONLY the URL
+ * pathname and the Authorization header. It MUST NOT consume the request
+ * body stream (no body reads, no JSON parsing, no form parsing) — doing
+ * so would render the downstream route handler unable to parse the body
+ * because the underlying stream can only be consumed once. The non-API
+ * supabase branch only touches request cookies, never the body.
  *
  * Allowlist discipline (T-02-38): public endpoints are listed as ANCHORED
  * regex literals (`^...$`). A simple substring or `startsWith` match
@@ -77,8 +111,8 @@ function hasBearer(authorizationHeader: string | null): boolean {
 
 function unauthenticatedResponse(): NextResponse {
   // Closed error registry shape — must mirror `errorResponse(...)` in
-  // `src/shared/config/errors.ts`. Inlined here to keep the proxy module
-  // dependency-free (it must not pull in DB, jose, or env modules).
+  // `src/shared/config/errors.ts`. Inlined here to keep the API-gating
+  // branch dependency-free of route-handler-only modules (DB, jose).
   return NextResponse.json(
     {
       error: {
@@ -93,12 +127,86 @@ function unauthenticatedResponse(): NextResponse {
   );
 }
 
-export default function proxy(request: NextRequest): NextResponse {
+/**
+ * @supabase/ssr middleware cookie-refresh step (debug session
+ * publiclayout-auth-refresh-token-throw).
+ *
+ * Implements the canonical `@supabase/ssr` Next.js middleware pattern:
+ *   - Build a `NextResponse.next({ request })` so per-request headers and
+ *     cookies flow through.
+ *   - Construct `createServerClient` with a cookie adapter that reads
+ *     from the incoming `request` and writes to BOTH the request (so
+ *     downstream handlers see refreshed cookies in the same request) and
+ *     the response (so the browser receives the Set-Cookie header).
+ *   - Call `supabase.auth.getUser()` once. This triggers any pending
+ *     refresh — but unlike the read-only Server Component path, the
+ *     `setAll` here actually writes, so a non-retryable refresh error
+ *     successfully clears the stale cookie via `_removeSession()` instead
+ *     of looping forever.
+ *
+ * The result/error of `getUser()` is intentionally ignored here — Server
+ * Components / route handlers each do their own `getUser` call and
+ * decide the request's auth disposition. This call is purely a cookie-
+ * coherence pass.
+ */
+async function refreshSupabaseSession(request: NextRequest): Promise<NextResponse> {
+  const response = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    clientEnv.NEXT_PUBLIC_SUPABASE_URL,
+    clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          for (const { name, value, options } of cookiesToSet) {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+
+  // Single getUser() call — refreshes valid sessions and triggers any
+  // pending refresh attempt against Supabase. The downstream route /
+  // Server-Component path makes its own auth disposition; this call is
+  // purely a cookie-coherence pass.
+  const { error } = await supabase.auth.getUser();
+
+  // Defense-in-depth cookie clear (debug session
+  // publiclayout-auth-refresh-token-throw + regression spec
+  // tests/e2e/auth-cold-start-stale-cookie.spec.ts). When `getUser`
+  // returns a non-"session missing" error, the request carried a
+  // session blob whose refresh failed (revoked, expired, malformed).
+  // `@supabase/ssr`'s internal SIGNED_OUT → `applyServerStorage` →
+  // `setAll` flush does NOT fire a clearing Set-Cookie in this version
+  // pair, so we manually clear every `sb-*-auth-token` chunk here.
+  // Idempotent: clearing absent cookies is a no-op.
+  if (error && !isAuthSessionMissingError(error)) {
+    Sentry.captureException(error, {
+      tags: { surface: "proxy.refreshSupabaseSession" },
+    });
+    for (const cookie of request.cookies.getAll()) {
+      if (SUPABASE_AUTH_TOKEN_COOKIE.test(cookie.name)) {
+        response.cookies.set(cookie.name, "", { maxAge: 0, path: "/" });
+      }
+    }
+  }
+
+  return response;
+}
+
+export default async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // Only `/api/v1/*` is in scope for auth gating. Everything else passes.
+  // Non-API routes: do the @supabase/ssr cookie-refresh middleware step
+  // so Server Components never see a stale-cookie + failed-refresh state
+  // (debug session publiclayout-auth-refresh-token-throw). The body is
+  // not touched (page navigations are GETs without bodies in practice;
+  // the supabase client only reads request cookies).
   if (!isApiV1Path(pathname)) {
-    return NextResponse.next();
+    return refreshSupabaseSession(request);
   }
 
   // Public allowlist (anchored regex) — no bearer required.

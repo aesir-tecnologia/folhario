@@ -34,9 +34,12 @@ const mocks = vi.hoisted(() => ({
       deleteUser: vi.fn(),
     },
   },
+  sentry: {
+    captureException: vi.fn(),
+  },
 }));
 
-const { fullClientAuth, readOnlyClientAuth, adminAuth } = mocks;
+const { fullClientAuth, readOnlyClientAuth, adminAuth, sentry } = mocks;
 
 vi.mock("@contexts/iam/infrastructure/supabase-server", () => ({
   getSupabaseServerClient: async () => ({ auth: mocks.fullClientAuth }),
@@ -45,6 +48,20 @@ vi.mock("@contexts/iam/infrastructure/supabase-server", () => ({
 
 vi.mock("@contexts/iam/infrastructure/supabase-admin", () => ({
   supabaseAdmin: { auth: mocks.adminAuth },
+}));
+
+vi.mock("@sentry/nextjs", () => ({
+  captureException: mocks.sentry.captureException,
+}));
+
+// Mirror the auth-js implementation: an AuthSessionMissingError is any
+// AuthError whose `name === 'AuthSessionMissingError'`. Tests pass plain
+// objects shaped that way; the predicate identifies them by name only.
+vi.mock("@supabase/supabase-js", () => ({
+  isAuthSessionMissingError: (err: unknown): boolean =>
+    !!err &&
+    typeof err === "object" &&
+    (err as { name?: string }).name === "AuthSessionMissingError",
 }));
 
 import { authAdapter } from "@contexts/iam/infrastructure/auth/auth-adapter";
@@ -60,6 +77,7 @@ beforeEach(() => {
     adminAuth.admin.createUser,
     adminAuth.admin.updateUserById,
     adminAuth.admin.deleteUser,
+    sentry.captureException,
   ]) {
     fn.mockReset();
   }
@@ -70,14 +88,27 @@ afterEach(() => {
 });
 
 describe("authAdapter.getUserBySession", () => {
-  it("returns null when no session user", async () => {
-    fullClientAuth.getUser.mockResolvedValueOnce({ data: { user: null } });
+  it("returns null on the normal anonymous case (AuthSessionMissingError) WITHOUT tagging Sentry", async () => {
+    // Realistic auth-js return shape for an anonymous request: error is
+    // `AuthSessionMissingError`, not null. This is the most common path
+    // (every public-page anonymous render). Tagging Sentry here would
+    // burn quota on routine traffic.
+    const sessionMissing = Object.assign(new Error("Auth session missing!"), {
+      name: "AuthSessionMissingError",
+      status: 400,
+    });
+    fullClientAuth.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: sessionMissing,
+    });
     expect(await authAdapter.getUserBySession()).toBeNull();
+    expect(sentry.captureException).not.toHaveBeenCalled();
   });
 
   it("returns {id, email} when session exists", async () => {
     fullClientAuth.getUser.mockResolvedValueOnce({
       data: { user: { id: "u1", email: "a@b.test" } },
+      error: null,
     });
     expect(await authAdapter.getUserBySession()).toEqual({
       id: "u1",
@@ -88,11 +119,51 @@ describe("authAdapter.getUserBySession", () => {
   it("uses the read-only client when readOnly: true (Pitfall 6 — Server Components)", async () => {
     readOnlyClientAuth.getUser.mockResolvedValueOnce({
       data: { user: { id: "u2", email: "x@y.test" } },
+      error: null,
     });
     const result = await authAdapter.getUserBySession({ readOnly: true });
     expect(result).toEqual({ id: "u2", email: "x@y.test" });
     expect(fullClientAuth.getUser).not.toHaveBeenCalled();
     expect(readOnlyClientAuth.getUser).toHaveBeenCalledTimes(1);
+  });
+
+  /**
+   * Debug session `publiclayout-auth-refresh-token-throw` belt-and-braces:
+   * when getUser() returns an OPERATIONALLY INTERESTING error (e.g.
+   * AuthApiError "Invalid Refresh Token" — not the routine
+   * AuthSessionMissingError), the adapter MUST treat the request as
+   * unauthenticated AND tag Sentry so the on-call signal is preserved.
+   * The library itself already `console.error`s the failed refresh inside
+   * auth-js — we cannot suppress that — but we ARE responsible for
+   * surfacing operationally relevant errors with our own observability
+   * primitive.
+   *
+   * Sentry payload contract: never include user email (CLAUDE.md "Sentry:
+   * setUser({ id }) only — never email").
+   */
+  it("captures Sentry exception and returns null on AuthApiError (stale refresh token)", async () => {
+    const refreshError = Object.assign(
+      new Error("Invalid Refresh Token: Refresh Token Not Found"),
+      { name: "AuthApiError", status: 400 },
+    );
+    readOnlyClientAuth.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: refreshError,
+    });
+
+    const result = await authAdapter.getUserBySession({ readOnly: true });
+
+    expect(result).toBeNull();
+    expect(sentry.captureException).toHaveBeenCalledTimes(1);
+    const firstCall = sentry.captureException.mock.calls[0] ?? [];
+    const errArg = firstCall[0];
+    const ctxArg = firstCall[1];
+    expect(errArg).toBe(refreshError);
+    expect(ctxArg).toMatchObject({
+      tags: { surface: "iam.getUserBySession" },
+    });
+    // CLAUDE.md hard rule: never include email in Sentry payloads.
+    expect(JSON.stringify(ctxArg ?? {})).not.toContain("email");
   });
 });
 

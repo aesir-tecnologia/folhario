@@ -6,6 +6,14 @@
 // form-encoded bodies. The withThrottle wrapper increments BEFORE invoking
 // the handler ("always" mode) so a flood of valid signups still triggers
 // rate_limited 429 without burning email budget.
+//
+// Phase 04 review WR-04: anti-enumeration timing-attack mitigation.
+// The created path runs ~500ms-2s (DB tx + Supabase admin + signIn);
+// the already_registered path runs ~30ms. Without padding, an attacker
+// can probe latency to enumerate registered emails. Pad the
+// already_registered branch to a constant baseline before responding so
+// the gap is statistically significant only with many samples — this is
+// option (b) from the review (bounded gap, not a thin async wrapper).
 
 import { NextResponse } from "next/server";
 
@@ -16,11 +24,27 @@ import { signupUser } from "@contexts/iam/application/signup";
 import { inngest } from "@shared/inngest/client";
 import ptBR from "../../../../../messages/pt-BR.json";
 
-const welcomeBackSubject =
-  (ptBR as { email: { welcomeBack: { subject: string } } }).email.welcomeBack.subject;
+const welcomeBackSubject = (ptBR as { email: { welcomeBack: { subject: string } } }).email
+  .welcomeBack.subject;
+
+// Phase 04 review WR-04: constant baseline floor (ms) for the
+// already_registered branch. Picked to land inside the typical bottom
+// range of the created path (~500ms-2s) so latency cannot trivially
+// distinguish the two responses. The created path is NEVER padded —
+// real signups always emerge above the floor.
+const ANTI_ENUMERATION_BASELINE_MS = 500;
+
+async function padToBaseline(startedAtMs: number): Promise<void> {
+  const elapsed = Date.now() - startedAtMs;
+  const remaining = ANTI_ENUMERATION_BASELINE_MS - elapsed;
+  if (remaining > 0) {
+    await new Promise((resolve) => setTimeout(resolve, remaining));
+  }
+}
 
 export async function POST(request: Request): Promise<Response> {
   return withThrottle(request, "signup", "always", async () => {
+    const startedAtMs = Date.now();
     let body: unknown;
     try {
       body = await request.json(); // D-31: JSON only, NEVER form-encoded
@@ -31,11 +55,9 @@ export async function POST(request: Request): Promise<Response> {
     const parsed = signupRequestSchema.safeParse(body);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
-      return errorResponse(
-        ErrorCode.ValidationFailed,
-        issue?.message ?? "Validação falhou.",
-        { field: issue?.path?.join(".") ?? "unknown" },
-      );
+      return errorResponse(ErrorCode.ValidationFailed, issue?.message ?? "Validação falhou.", {
+        field: issue?.path?.join(".") ?? "unknown",
+      });
     }
 
     try {
@@ -43,10 +65,7 @@ export async function POST(request: Request): Promise<Response> {
 
       // D-32: invalid partner_code → invalid_partner_code (HTTP 400 per closed registry).
       if (result.kind === "invalid_partner_code") {
-        return errorResponse(
-          ErrorCode.InvalidPartnerCode,
-          "Código de parceiro inválido.",
-        );
+        return errorResponse(ErrorCode.InvalidPartnerCode, "Código de parceiro inválido.");
       }
 
       // Resolved Q1: already_registered → emit welcome-back, return same generic 200.
@@ -61,6 +80,9 @@ export async function POST(request: Request): Promise<Response> {
             props: { resetUrl: result.resetUrl, userEmail: parsed.data.email },
           },
         });
+        // WR-04: baseline pad so this branch is not trivially time-separable
+        // from the created branch.
+        await padToBaseline(startedAtMs);
       }
 
       return NextResponse.json(
@@ -68,10 +90,7 @@ export async function POST(request: Request): Promise<Response> {
         { status: 200 },
       );
     } catch {
-      return errorResponse(
-        ErrorCode.InternalError,
-        "Não foi possível concluir agora.",
-      );
+      return errorResponse(ErrorCode.InternalError, "Não foi possível concluir agora.");
     }
   });
 }

@@ -6,8 +6,14 @@
 // branch, mint, dispatch) happens async here for D-11's anti-enumeration
 // timing-attack defense.
 //
-// D-25 atomicity: revoke prior + mint fresh wrapped in db.transaction so a
-// partial failure can't leave orphaned revoked tokens with no replacement.
+// D-25 atomicity: `mintResetToken` already runs revokeUnusedResetTokens
+// followed by an INSERT on the same connection. Phase 04 review WR-03:
+// wrapping that single repo call in db.transaction(...) bought no
+// additional atomicity (a connection-loss between the two statements
+// aborts the wrapped tx exactly as it would abort the bare repo call) —
+// it just added a BEGIN/COMMIT round-trip. If that two-statement pair
+// ever needs to interleave with other writes, lift the revoke + insert
+// into separate calls and put THOSE inside an explicit tx.
 // Codex HIGH #3: emits via inngest.send → notifications/send-email function.
 // Supabase auth calls go through `authAdapter` elsewhere; this file does
 // not import `@supabase/*` and does not touch the auth surface directly.
@@ -16,15 +22,13 @@
 // context that next-intl/server.getTranslations() requires, so we import
 // the JSON directly (same pattern as signup.ts and resend-verification.ts).
 
-import { db } from "@shared/db/client";
 import { inngest } from "@shared/inngest/client";
 import { getUserByEmail } from "@contexts/iam/infrastructure/db/users";
 import { mintResetToken } from "@contexts/iam/infrastructure/db/reset-tokens";
 import ptBR from "../../../messages/pt-BR.json";
 
-const passwordResetSubject = (
-  ptBR as { email: { passwordReset: { subject: string } } }
-).email.passwordReset.subject;
+const passwordResetSubject = (ptBR as { email: { passwordReset: { subject: string } } }).email
+  .passwordReset.subject;
 
 export async function requestPasswordReset(args: {
   email: string;
@@ -34,19 +38,16 @@ export async function requestPasswordReset(args: {
   if (!user) return; // anti-enumeration: no email sent
   if (!user.hasPassword) return; // OAuth-only: no email sent (anti-enumeration)
 
-  // D-25 atomicity: revoke prior + mint fresh in one tx so a partial failure
-  // can't leave orphaned revoked tokens with no replacement.
-  const { tokenId, rawToken } = await db.transaction(async (tx) => {
-    return await mintResetToken(
-      { userId: user.id, sentToEmail: args.email },
-      tx,
-    );
+  // D-25 atomicity: mintResetToken internally calls revokeUnusedResetTokens
+  // then inserts the new row on the same connection — Phase 04 review
+  // WR-03: no additional tx wrapper is needed (or useful) for the
+  // single-call shape.
+  const { tokenId, rawToken } = await mintResetToken({
+    userId: user.id,
+    sentToEmail: args.email,
   });
 
-  const resetUrl = new URL(
-    `/auth/reset?token=${rawToken}`,
-    args.requestUrl,
-  ).toString();
+  const resetUrl = new URL(`/auth/reset?token=${rawToken}`, args.requestUrl).toString();
 
   // Codex HIGH #8: inner event id is `password-reset/{tokenId}` — token-unique.
   // Outer iam/password-reset-requested event id (set in route handler) handles

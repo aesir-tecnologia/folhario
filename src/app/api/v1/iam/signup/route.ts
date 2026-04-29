@@ -16,6 +16,7 @@
 // option (b) from the review (bounded gap, not a thin async wrapper).
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 
 import { errorResponse, ErrorCode } from "@shared/config/errors";
 import { withThrottle } from "@shared/api/throttle";
@@ -77,16 +78,28 @@ export async function POST(request: Request): Promise<Response> {
 
       // Resolved Q1: already_registered → emit welcome-back, return same generic 200.
       if (result.kind === "already_registered") {
-        await inngest.send({
-          id: `welcome-back/${parsed.data.email}`,
-          name: "notifications/email.requested",
-          data: {
-            template: "welcome-back",
-            to: parsed.data.email,
-            subject: welcomeBackSubject,
-            props: { resetUrl: result.resetUrl, userEmail: parsed.data.email },
-          },
-        });
+        try {
+          await inngest.send({
+            id: `welcome-back/${parsed.data.email}`,
+            name: "notifications/email.requested",
+            data: {
+              template: "welcome-back",
+              to: parsed.data.email,
+              subject: welcomeBackSubject,
+              props: { resetUrl: result.resetUrl, userEmail: parsed.data.email },
+            },
+          });
+        } catch (err) {
+          // Phase 4 plan 04-13: a transient Inngest fault must not
+          // 500 the welcome-back response — the anti-enumeration
+          // contract (Resolved Q1) requires the response to look
+          // identical to the created path regardless of dispatch
+          // outcome. Sentry capture surfaces the operator signal.
+          Sentry.captureException(err, {
+            tags: { surface: "iam.signup.welcomeBack" },
+            extra: { email: parsed.data.email },
+          });
+        }
         // WR-04: baseline pad so this branch is not trivially time-separable
         // from the created branch.
         await padToBaseline(startedAtMs);
@@ -96,7 +109,13 @@ export async function POST(request: Request): Promise<Response> {
         { ok: true, message: "Conta criada — verifique seu email." },
         { status: 200 },
       );
-    } catch {
+    } catch (err) {
+      // Phase 4 plan 04-13 (UAT gap 2 observability fix): bare catch
+      // hid the inngest.send-cloud-delivery failure for hours and
+      // would hide every future failure here too. Capture so on-call
+      // sees the operator signal; preserve the closed-registry error
+      // shape (D-31) for the user-visible response.
+      Sentry.captureException(err, { tags: { surface: "iam.signup.route" } });
       return errorResponse(ErrorCode.InternalError, "Não foi possível concluir agora.");
     }
   });

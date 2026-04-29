@@ -136,16 +136,33 @@ export async function signupUser(input: SignupRequest, requestUrl: URL): Promise
 
   // D-25 step 3 (after commit): emit verification email + mint browser session.
   const verificationUrl = new URL(`/auth/verify?token=${rawToken}`, requestUrl).toString();
-  await inngest.send({
-    id: `email-verification/${tokenId}`,
-    name: "notifications/email.requested",
-    data: {
-      template: "verification",
-      to: input.email,
-      subject: verificationSubject,
-      props: { url: verificationUrl, userEmail: input.email },
-    },
-  });
+  // Phase 4 plan 04-13 (UAT gap 2 architectural fix): the signup DB tx
+  // has already committed by this point — `auth.users`, `public.users`,
+  // `consent_logs` (×2), `subscriptions`, and `email_verification_tokens`
+  // rows are persisted. A transient Inngest delivery failure here used
+  // to throw, which the route handler's bare `catch {}` then mapped to
+  // a generic 500 — leaving the user with an account they could not
+  // retry (email taken) and no verification email. Wrap the dispatch
+  // so the failure surfaces to Sentry but never user-traps the signup.
+  // The user can use "Reenviar e-mail" from the UnverifiedBlocker to
+  // retry the email path independently.
+  try {
+    await inngest.send({
+      id: `email-verification/${tokenId}`,
+      name: "notifications/email.requested",
+      data: {
+        template: "verification",
+        to: input.email,
+        subject: verificationSubject,
+        props: { url: verificationUrl, userEmail: input.email },
+      },
+    });
+  } catch (err) {
+    Sentry.captureException(err, {
+      tags: { surface: "iam.signup.notify" },
+      extra: { tokenId },
+    });
+  }
 
   // Mint Supabase session cookie via the AuthAdapter (Codex HIGH #3).
   // Non-fatal if signIn fails — the unverified blocker still works on next

@@ -48,5 +48,6 @@
   "claude_md_path": "./CLAUDE.md",
   "resolve_model_ids": "omit",
   "mode": "interactive",
-  "granularity": "fine"
+  "granularity": "fine",
+  "context_window": 1000000
 }

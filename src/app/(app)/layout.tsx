@@ -1,19 +1,53 @@
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
+
+import { getCurrentUserFromSessionReadOnly } from "@contexts/iam/application/current-user";
+import { UnverifiedBlocker } from "@contexts/iam/api/components/unverified-blocker";
+
 import { AppShell } from "./app-shell";
 
 /**
- * (app) route group layout — server component.
+ * (app) route group layout — server component. Phase 4 Codex HIGH #7
+ * fix: route-group layout owns the gate (replaces the unreliable
+ * x-pathname workaround the original plan templated against; route
+ * groups are App Router's idiomatic mechanism for path-based gating in
+ * Server Components).
  *
- * Mounts the client AppShell which owns bottom nav, banners, toasts, scroll
- * restoration, and focus management on route change. This layout itself does
- * NOTHING beyond the mount — it stays a server component so the children tree
- * can include both server and client components.
+ * Gate ordering — resolved Q4:
+ *   (a) Authenticated → otherwise redirect to /auth/login
+ *   (b) age_confirmed_at IS NULL → redirect to /auth/oauth-complete
+ *       (lives under (public) so the user can reach it without the
+ *       gate looping)
+ *   (c) email_verified_at IS NULL → render <UnverifiedBlocker /> (full
+ *       viewport — bypasses AppShell so there is no bottom-nav escape
+ *       hatch; UI-SPEC §5)
+ *   (d) Authorized → wrap children in AppShell (bottom-nav, banners,
+ *       toasts, scroll restoration; preserved from prior wave).
  *
- * Open Risk #4 — DOES NOT read folhario_theme cookie. Root layout
- * (src/app/layout.tsx) is the sole owner of the theme cookie + <html data-theme>
- * attribute. Adding a competing cookie read here would not be visible to the
- * root layout on cookie-write re-render.
+ * Pitfall 6 safety: uses `getCurrentUserFromSessionReadOnly()` which
+ * never mutates cookies (Server Components in Next 16 throw on cookie
+ * writes; Plan 03 D-21 already documents this).
  */
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const result = await getCurrentUserFromSessionReadOnly();
+
+  // (a) Unauthenticated → login.
+  if (!result.ok) {
+    redirect("/auth/login");
+  }
+
+  const { user } = result;
+
+  // (b) OAuth-incomplete → completion screen (lives under (public)).
+  if (!user.ageConfirmedAt) {
+    redirect("/auth/oauth-complete");
+  }
+
+  // (c) Authenticated but unverified → full-viewport blocker (no AppShell).
+  if (!user.emailVerifiedAt) {
+    return <UnverifiedBlocker email={user.email} />;
+  }
+
+  // (d) Verified → app shell.
   return <AppShell>{children}</AppShell>;
 }

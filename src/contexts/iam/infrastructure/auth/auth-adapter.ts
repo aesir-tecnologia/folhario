@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
+import * as Sentry from "@sentry/nextjs";
 
 import { ErrorCode } from "@shared/config/errors";
 import { serverEnv } from "@shared/config/server-env";
@@ -43,27 +44,27 @@ export interface AuthAdapter {
   getUserById: (id: string) => Promise<UserRow | null>;
   // ──── Phase 4 additions (Codex HIGH #3 — sole module touching supabase.auth.*) ────
   /** Returns the Supabase user id for the current request session, or null if unauthenticated. */
-  getUserBySession: (
-    opts?: { readOnly?: boolean },
-  ) => Promise<{ id: string; email: string } | null>;
+  getUserBySession: (opts?: {
+    readOnly?: boolean;
+  }) => Promise<{ id: string; email: string } | null>;
   /** D-03: admin.createUser({email_confirm: true}) — Folhário sends its own verification email. */
   createUser: (opts: { email: string; password: string }) => Promise<{ id: string }>;
   /** D-05: per-device JWT cookie via signInWithPassword. T-04-07-02: never distinguish reasons. */
-  signInWithPassword: (
-    opts: { email: string; password: string },
-  ) => Promise<{ ok: true } | { ok: false; reason: "invalid_credentials" }>;
+  signInWithPassword: (opts: {
+    email: string;
+    password: string;
+  }) => Promise<{ ok: true } | { ok: false; reason: "invalid_credentials" }>;
   /** D-05 + AUTH-14: signOut({scope: 'local'}). Idempotent. */
   signOutLocal: () => Promise<void>;
   /** D-10 + AUTH-12: admin.updateUserById({password}) WITHOUT invalidating existing JWTs. */
-  adminUpdatePassword: (
-    opts: { userId: string; newPassword: string },
-  ) => Promise<{ ok: true } | { ok: false; reason: string }>;
+  adminUpdatePassword: (opts: {
+    userId: string;
+    newPassword: string;
+  }) => Promise<{ ok: true } | { ok: false; reason: string }>;
   /** D-25 compensating delete on signup tx failure. Best-effort. */
   adminDeleteUser: (userId: string) => Promise<void>;
   /** D-04: returns the OAuth provider sign-in URL. */
-  signInWithOAuth: (
-    opts: { provider: "google"; redirectTo: string },
-  ) => Promise<{ url: string }>;
+  signInWithOAuth: (opts: { provider: "google"; redirectTo: string }) => Promise<{ url: string }>;
   /** D-04: code-for-session exchange in /auth/callback. Sets the cookie via @supabase/ssr setAll. */
   exchangeCodeForSession: (
     code: string,
@@ -231,9 +232,7 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
         email_confirm: true,
       });
       if (error || !data.user) {
-        throw new Error(
-          `authAdapter.createUser failed: ${error?.message ?? "no user returned"}`,
-        );
+        throw new Error(`authAdapter.createUser failed: ${error?.message ?? "no user returned"}`);
       }
       return { id: data.user.id };
     },
@@ -264,10 +263,24 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
     },
 
     async adminDeleteUser(userId) {
-      // D-25 compensating delete on signup tx failure. Best-effort.
-      await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => {
-        /* Sentry critical handled globally */
-      });
+      // D-25 compensating delete on signup tx failure. Best-effort BUT
+      // not silent — Phase 04 review WR-02: a failed compensating delete
+      // leaves an orphan auth.users row that can permanently lock the
+      // user out of self-service signup AND welcome-back. Capture so
+      // on-call sees the operator-action signal.
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      } catch (err) {
+        Sentry.captureException(err, {
+          tags: { context: "iam.compensating_delete" },
+          extra: { userId },
+        });
+         
+        console.error("[iam] adminDeleteUser compensating failed", {
+          userId,
+          err,
+        });
+      }
     },
 
     async signInWithOAuth({ provider, redirectTo }) {
@@ -277,9 +290,7 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
         options: { redirectTo },
       });
       if (error || !data.url) {
-        throw new Error(
-          `authAdapter.signInWithOAuth failed: ${error?.message ?? "no url"}`,
-        );
+        throw new Error(`authAdapter.signInWithOAuth failed: ${error?.message ?? "no url"}`);
       }
       return { url: data.url };
     },

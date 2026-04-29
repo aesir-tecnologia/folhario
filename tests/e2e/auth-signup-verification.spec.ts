@@ -11,18 +11,31 @@
 //   - `/api/v1/iam/me` (allowlisted while unverified) returns a body
 //     matching the seeded user, with `emailVerifiedAt` reflecting the
 //     server-side `email_verified_at` column.
+//
+// Phase 4 plan 04-13 follow-up — debug session
+// `.planning/debug/auth-e2e-tests-fail-locally.md`: signup/login/etc. POSTs
+// MUST go through `page.request.*`, NOT the top-level `request` fixture.
+// Playwright's built-in `request` fixture is an APIRequestContext with its
+// OWN cookie jar (see playwright/lib/index.js:439 — `playwright.request
+// .newContext()`). Cookies set on responses to that jar are NOT visible to
+// `page.context().cookies()` or to `page.goto(...)`. Using `page.request`
+// (the BrowserContext APIRequestContext) places the Supabase SSR session
+// cookie in the same jar the browser navigates with, so subsequent
+// `page.goto('/auth/verify?token=X')` -> redirect to `/` clears the
+// `(app)/layout.tsx` session gate, and `page.request.get('/api/v1/iam/me')`
+// reads the same jar.
 
 import { test, expect } from "@playwright/test";
 
 test("signup → email arrival → verify link → /api/v1/iam/me returns 200 with verified user", async ({
   page,
-  request,
 }) => {
   const email = `playwright-${Date.now()}@example.com`;
   const password = "TestPassword123!";
 
-  // 1. Submit signup form via JSON POST.
-  const signupResp = await request.post("/api/v1/iam/signup", {
+  // 1. Submit signup form via JSON POST. `page.request` shares the page's
+  //    cookie jar so the Supabase SSR session lands where page.goto reads it.
+  const signupResp = await page.request.post("/api/v1/iam/signup", {
     data: {
       email,
       password,
@@ -37,7 +50,7 @@ test("signup → email arrival → verify link → /api/v1/iam/me returns 200 wi
 
   // 2. Retrieve a verification raw token via the test-only diagnostics endpoint
   //    (gated by NODE_ENV != production AND IDENTIFICATION_PROVIDER_MODE=stub).
-  const tokenResp = await request.get(
+  const tokenResp = await page.request.get(
     `/api/v1/diagnostics/iam-test-helpers/latest-token?email=${encodeURIComponent(email)}`,
   );
   expect(tokenResp.status()).toBe(200);
@@ -48,6 +61,9 @@ test("signup → email arrival → verify link → /api/v1/iam/me returns 200 wi
   //    token in one db.transaction (Codex HIGH #2 ordering), then redirects '/'.
   await page.goto(`/auth/verify?token=${rawToken}`);
   // After verification the route redirects '/'; assert we landed there.
+  // The (app)/layout reads the SSR session cookie (set by signup's
+  // signInWithPassword) and renders the app shell — without it the layout
+  // would redirect to /auth/login and this assertion would never satisfy.
   await page.waitForURL(/.*\/$/);
 
   // 4. Hit /api/v1/iam/me from the same browser context — cookies set by
@@ -105,12 +121,13 @@ test("signup form: successful submit converges to /auth/check-email with calm ve
 
 test("unverified user (no verify click) sees emailVerifiedAt=null on /api/v1/iam/me", async ({
   page,
-  request,
 }) => {
   const email = `playwright-unverified-${Date.now()}@example.com`;
   const password = "TestPassword123!";
 
-  const signupResp = await request.post("/api/v1/iam/signup", {
+  // `page.request` shares the page jar — the Supabase SSR session cookie
+  // set by signup lands where the follow-up `page.request.get('/me')` reads.
+  const signupResp = await page.request.post("/api/v1/iam/signup", {
     data: {
       email,
       password,

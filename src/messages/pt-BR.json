@@ -199,7 +199,9 @@
         "confirmLabel": "Confirme a nova senha",
         "submit": "Salvar nova senha",
         "errors": {
-          "currentIncorrect": "Senha atual incorreta."
+          "currentIncorrect": "Senha atual incorreta.",
+          "passwordTooShort": "Senha precisa ter pelo menos 8 caracteres",
+          "passwordsDontMatch": "As senhas não coincidem."
         }
       },
       "oauthOnlyNotice": "Sua conta usa login com Google. Para alterar a senha, gerencie em sua conta Google.",

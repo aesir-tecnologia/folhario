@@ -30,11 +30,11 @@ export function ChangePasswordForm() {
     setClientError(null);
     setSuccess(false);
     if (form.next.length < 8) {
-      setClientError(t("errors.currentIncorrect"));
+      setClientError(t("errors.passwordTooShort"));
       return;
     }
     if (form.next !== form.confirm) {
-      setClientError(t("errors.currentIncorrect"));
+      setClientError(t("errors.passwordsDontMatch"));
       return;
     }
     const result = await submit({
@@ -107,9 +107,7 @@ export function ChangePasswordForm() {
         required
         minLength={8}
         value={form.next}
-        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-          setForm({ ...form, next: e.target.value })
-        }
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, next: e.target.value })}
       />
       <TextInput
         label={t("confirmLabel")}

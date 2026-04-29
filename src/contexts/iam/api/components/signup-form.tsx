@@ -56,10 +56,17 @@ export function SignupForm({ policyVersion, defaultTimezone }: SignupFormProps) 
     if (form.partner_code.trim().length > 0) {
       body.partner_code = form.partner_code.trim();
     }
+    // Phase 04 review WR-06: the server returns the same generic 200 for
+    // both "created" and "already_registered" (anti-enumeration). The
+    // browser is not authenticated in the already_registered branch, so
+    // pushing to "/" would bounce through the (authed) layout back to
+    // /auth/login with no acknowledgement. Route both branches to
+    // /auth/forgot-password — the destination matches "check your email"
+    // which is what the server response message instructs.
     const result = await submit({
       endpoint: "/api/v1/iam/signup",
       body,
-      onSuccess: () => router.push("/"),
+      onSuccess: () => router.push("/auth/forgot-password?from=signup"),
     });
     if (!result.ok) return;
   }

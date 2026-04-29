@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import * as Sentry from "@sentry/nextjs";
-import { createServerClient } from "@supabase/ssr";
-import { isAuthSessionMissingError } from "@supabase/supabase-js";
 
-import { clientEnv } from "@shared/config/client-env";
-
-const SUPABASE_AUTH_TOKEN_COOKIE = /^sb-[^.]+-auth-token(?:\.\d+)?$/;
+import { updateSessionInMiddleware } from "@contexts/iam/infrastructure/supabase-server";
 
 /**
- * Folhário Next 16 proxy — Plan 02-07 Task 3 + debug session
- * `publiclayout-auth-refresh-token-throw` (cold-start refresh fix).
+ * Folhário Next 16 proxy — Plan 02-07 Task 3 + Plan 04-12 (gap closure).
  *
  * Two responsibilities:
  *
@@ -21,28 +15,21 @@ const SUPABASE_AUTH_TOKEN_COOKIE = /^sb-[^.]+-auth-token(?:\.\d+)?$/;
  *    `src/shared/api/auth.ts`). Routes are authoritative; the proxy is
  *    fast fail only (D-34/D-47, T-02-18 mitigation).
  *
- * 2. **`@supabase/ssr` cookie refresh** for non-API page routes (debug
- *    session publiclayout-auth-refresh-token-throw). Server Components
- *    use `getReadOnlySupabaseServerClient` whose no-op `setAll` (Pitfall
- *    6) cannot clear stale cookies — so without a middleware step that
- *    does have cookie-write capability, every Server Component render
+ * 2. **Supabase cookie refresh** for non-API page routes (Plan 04-12 +
+ *    debug session `publiclayout-auth-refresh-token-throw`). Server
+ *    Components use `getReadOnlySupabaseServerClient` whose no-op `setAll`
+ *    (Pitfall 6) cannot clear stale cookies — so without a middleware step
+ *    that does have cookie-write capability, every Server Component render
  *    on a cold start with a leftover `sb-*` cookie triggers a failed
- *    refresh inside auth-js, which `console.error`s the AuthApiError
- *    and surfaces as "Console AuthApiError" in the Next 16 dev overlay
+ *    refresh inside auth-js, which `console.error`s the AuthApiError and
+ *    surfaces as "Console AuthApiError" in the Next 16 dev overlay
  *    (attributed to the awaiting React owner — PublicLayout / AppLayout).
- *    Running `createServerClient` + `auth.getUser()` here, with a real
- *    request/response cookie adapter, lets valid sessions refresh
- *    cleanly. For the FAILURE case (refresh rejected because the token
- *    was revoked or expired) `@supabase/ssr`'s internal storage flush
- *    via `onAuthStateChange` does NOT reliably emit a clearing
- *    Set-Cookie header against this version pair (auth-js@2.104.1 +
- *    ssr@0.10.2) — see the regression spec
- *    `tests/e2e/auth-cold-start-stale-cookie.spec.ts`. We therefore
- *    explicitly clear every `sb-*-auth-token` chunk on the response
- *    when `getUser()` returns a non-"session missing" error. That is
- *    side-stepping library internals on purpose: the regex match and
- *    Set-Cookie emission are now testable end-to-end and don't depend
- *    on auth-js firing SIGNED_OUT inside `_removeSession`.
+ *
+ *    The cookie-refresh implementation lives at the IAM infrastructure
+ *    boundary as `updateSessionInMiddleware` in
+ *    `@contexts/iam/infrastructure/supabase-server`. This file imports
+ *    only the named helper — Codex HIGH #3 enforced (proxy MUST NOT
+ *    import the Supabase SSR or supabase-js packages directly).
  *
  * Body discipline (T-02-37): the `/api/v1/*` branch reads ONLY the URL
  * pathname and the Authorization header. It MUST NOT consume the request
@@ -128,103 +115,38 @@ function unauthenticatedResponse(): NextResponse {
   );
 }
 
-/**
- * @supabase/ssr middleware cookie-refresh step (debug session
- * publiclayout-auth-refresh-token-throw).
- *
- * Implements the canonical `@supabase/ssr` Next.js middleware pattern:
- *   - Build a `NextResponse.next({ request })` so per-request headers and
- *     cookies flow through.
- *   - Construct `createServerClient` with a cookie adapter that reads
- *     from the incoming `request` and writes to BOTH the request (so
- *     downstream handlers see refreshed cookies in the same request) and
- *     the response (so the browser receives the Set-Cookie header).
- *   - Call `supabase.auth.getUser()` once. This triggers any pending
- *     refresh — but unlike the read-only Server Component path, the
- *     `setAll` here actually writes, so a non-retryable refresh error
- *     successfully clears the stale cookie via `_removeSession()` instead
- *     of looping forever.
- *
- * The result/error of `getUser()` is intentionally ignored here — Server
- * Components / route handlers each do their own `getUser` call and
- * decide the request's auth disposition. This call is purely a cookie-
- * coherence pass.
- */
-async function refreshSupabaseSession(request: NextRequest): Promise<NextResponse> {
-  const response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    clientEnv.NEXT_PUBLIC_SUPABASE_URL,
-    clientEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          for (const { name, value, options } of cookiesToSet) {
-            request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
-          }
-        },
-      },
-    },
-  );
-
-  // Single getUser() call — refreshes valid sessions and triggers any
-  // pending refresh attempt against Supabase. The downstream route /
-  // Server-Component path makes its own auth disposition; this call is
-  // purely a cookie-coherence pass.
-  const { error } = await supabase.auth.getUser();
-
-  // Defense-in-depth cookie clear (debug session
-  // publiclayout-auth-refresh-token-throw + regression spec
-  // tests/e2e/auth-cold-start-stale-cookie.spec.ts). When `getUser`
-  // returns a non-"session missing" error, the request carried a
-  // session blob whose refresh failed (revoked, expired, malformed).
-  // `@supabase/ssr`'s internal SIGNED_OUT → `applyServerStorage` →
-  // `setAll` flush does NOT fire a clearing Set-Cookie in this version
-  // pair, so we manually clear every `sb-*-auth-token` chunk here.
-  // Idempotent: clearing absent cookies is a no-op.
-  if (error && !isAuthSessionMissingError(error)) {
-    Sentry.captureException(error, {
-      tags: { surface: "proxy.refreshSupabaseSession" },
-    });
-    for (const cookie of request.cookies.getAll()) {
-      if (SUPABASE_AUTH_TOKEN_COOKIE.test(cookie.name)) {
-        response.cookies.set(cookie.name, "", { maxAge: 0, path: "/" });
-      }
-    }
-  }
-
-  return response;
-}
-
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // Non-API routes: do the @supabase/ssr cookie-refresh middleware step
-  // so Server Components never see a stale-cookie + failed-refresh state
-  // (debug session publiclayout-auth-refresh-token-throw). The body is
-  // not touched (page navigations are GETs without bodies in practice;
-  // the supabase client only reads request cookies).
-  if (!isApiV1Path(pathname)) {
-    return refreshSupabaseSession(request);
-  }
+  // Branch A: /api/v1/* — protected APIs use the fast-fail bearer gate.
+  // This branch MUST NOT consume the request body (T-02-37) and MUST
+  // NOT touch supabase.auth.* (Codex HIGH #3 — only the route handler
+  // calls authAdapter.X()). Evaluated first so it never enters Branch B.
+  if (isApiV1Path(pathname)) {
+    // Public allowlist (anchored regex) — no bearer required.
+    if (isPublicApiPath(pathname)) {
+      return NextResponse.next();
+    }
 
-  // Public allowlist (anchored regex) — no bearer required.
-  if (isPublicApiPath(pathname)) {
+    // Protected `/api/v1/*` request. Look at the Authorization header only;
+    // do not touch the body. If no Bearer is present, reject fast.
+    const authHeader = request.headers.get("authorization");
+    if (!hasBearer(authHeader)) {
+      return unauthenticatedResponse();
+    }
+
+    // Bearer present — let the request flow to the route handler, which
+    // performs cryptographic verification via `requireApiUser`.
     return NextResponse.next();
   }
 
-  // Protected `/api/v1/*` request. Look at the Authorization header only;
-  // do not touch the body. If no Bearer is present, reject fast.
-  const authHeader = request.headers.get("authorization");
-  if (!hasBearer(authHeader)) {
-    return unauthenticatedResponse();
-  }
-
-  // Bearer present — let the request flow to the route handler, which
-  // performs cryptographic verification via `requireApiUser`.
-  return NextResponse.next();
+  // Branch B: non-API page routes — Phase 4 gap closure (UAT gap 1).
+  //   Run the standard Supabase middleware-level cookie-refresh step
+  //   via the named helper. Stale cookies get cleared HERE so by the
+  //   time PublicLayout / AppLayout call getCurrentUserFromSessionReadOnly,
+  //   auth-js no longer attempts the failed refresh + console.error
+  //   that surfaces in the Next 16 dev overlay.
+  return updateSessionInMiddleware(request);
 }
 
 /**

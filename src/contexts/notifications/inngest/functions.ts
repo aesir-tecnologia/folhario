@@ -33,6 +33,7 @@ const notificationsSendEmail = inngest.createFunction(
         to: data.to,
         subject: data.subject,
         react: rendered.react,
+        templateName: data.template,
       }),
     );
     return { messageId: result.id };
@@ -48,7 +49,4 @@ const notificationsSendPush = inngest.createFunction(
   async () => ({ status: "not_implemented" }),
 );
 
-export const notificationsFunctions = [
-  notificationsSendEmail,
-  notificationsSendPush,
-];
+export const notificationsFunctions = [notificationsSendEmail, notificationsSendPush];

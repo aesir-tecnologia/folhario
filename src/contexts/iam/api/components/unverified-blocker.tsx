@@ -47,7 +47,10 @@ export async function UnverifiedBlocker({ email }: { email: string }) {
         className={`mt-4 max-w-[320px] text-center text-base/6 text-slate`}
       >
         {t.rich("body", {
-          email: () => <strong className="font-semibold text-forest">{email}</strong>,
+          value: email,
+          email: (chunks) => (
+            <strong className="font-semibold text-forest">{chunks}</strong>
+          ),
         })}
       </p>
 

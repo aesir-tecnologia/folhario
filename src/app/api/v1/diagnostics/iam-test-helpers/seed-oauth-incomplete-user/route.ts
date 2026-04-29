@@ -22,7 +22,11 @@ import { errorResponse, ErrorCode } from "@shared/config/errors";
 import { serverEnv } from "@shared/config/server-env";
 
 function isEnabled(): boolean {
-  if (process.env.NODE_ENV === "production") return false;
+  // Plan 04-10 Rule 3 amendment: production builds opt in via the same
+  // NEXT_PUBLIC_ENABLE_TEST_ROUTES flag the (test)/modal-sheet route uses.
+  const productionAllowed =
+    process.env.NEXT_PUBLIC_ENABLE_TEST_ROUTES === "1";
+  if (process.env.NODE_ENV === "production" && !productionAllowed) return false;
   if (serverEnv.IDENTIFICATION_PROVIDER_MODE !== "stub") return false;
   return true;
 }

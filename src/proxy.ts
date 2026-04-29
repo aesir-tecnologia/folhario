@@ -28,6 +28,32 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_API_ENDPOINTS: readonly RegExp[] = [
   /^\/api\/v1\/diagnostics\/ping$/,
+  // Phase 4 plan 04-10 — Rule 3 blocking-issue fix: the bearer-only
+  // proxy gate breaks Phase 4's cookie-session auth flow (every
+  // cookie-bearing request lacks the Authorization header and the proxy
+  // returns 401 before the route handler's `requireApiUser` cookie
+  // fallback can run). Mirrors `UNVERIFIED_ALLOWED_PATHS` in
+  // `src/shared/api/auth.ts` — public auth surfaces + cookie-session-
+  // protected IAM routes are added here so the route handlers can do
+  // the authoritative auth check. Anchored regexes per T-02-38.
+  /^\/api\/v1\/iam\/signup$/,
+  /^\/api\/v1\/iam\/login$/,
+  /^\/api\/v1\/iam\/logout$/,
+  /^\/api\/v1\/iam\/me$/,
+  /^\/api\/v1\/iam\/me\/password$/,
+  /^\/api\/v1\/iam\/oauth\/complete$/,
+  /^\/api\/v1\/iam\/resend-verification$/,
+  /^\/api\/v1\/iam\/password\/reset$/,
+  /^\/api\/v1\/iam\/password\/reset-request$/,
+  /^\/api\/v1\/diagnostics\/consent$/,
+  /^\/api\/v1\/diagnostics\/iam-test-helpers\/latest-token$/,
+  /^\/api\/v1\/diagnostics\/iam-test-helpers\/latest-reset-token$/,
+  /^\/api\/v1\/diagnostics\/iam-test-helpers\/seed-verified-user$/,
+  /^\/api\/v1\/diagnostics\/iam-test-helpers\/seed-oauth-incomplete-user$/,
+  /^\/api\/inngest(\/|$)/,
+  /^\/api\/v1\/health\/connectivity$/,
+  /^\/api\/v1\/photos\/upload$/,
+  /^\/api\/v1\/webhooks\/stripe$/,
   // Add future public endpoints here. Keep the `^` and `$` anchors in
   // every entry — substring matching is forbidden.
 ] as const;

@@ -171,7 +171,7 @@
     },
     "unverifiedBlocker": {
       "headline": "Verifique seu e-mail para começar.",
-      "body": "Enviamos um link de confirmação para {email}. Clique nele para liberar o app.",
+      "body": "Enviamos um link de confirmação para <email>{value}</email>. Clique nele para liberar o app.",
       "resend": "Reenviar e-mail",
       "resending": "Enviando…",
       "cooldown": "Aguarde {seconds}s",

@@ -65,6 +65,13 @@ export default defineConfig({
       // gated /modal-sheet test route. Production builds without this env var
       // call notFound() on /modal-sheet (route group `(test)` does NOT hide URLs).
       NEXT_PUBLIC_ENABLE_TEST_ROUTES: "1",
+      // Phase 4 plan 04-10 — Rule 3 fix: with no INNGEST_EVENT_KEY set, the
+      // Inngest SDK under NODE_ENV=production tries to deliver to the Inngest
+      // cloud and any route that calls `inngest.send` (signup, forgot-password,
+      // oauth-complete, etc.) 500s when delivery fails. Forcing INNGEST_DEV=1
+      // routes events to the local dev server (npx inngest-cli dev) when one
+      // is running and no-ops otherwise. Mirrors `pnpm dev` behavior.
+      INNGEST_DEV: "1",
     },
   },
 });

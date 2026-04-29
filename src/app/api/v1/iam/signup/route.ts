@@ -28,11 +28,18 @@ const welcomeBackSubject = (ptBR as { email: { welcomeBack: { subject: string } 
   .welcomeBack.subject;
 
 // Phase 04 review WR-04: constant baseline floor (ms) for the
-// already_registered branch. Picked to land inside the typical bottom
-// range of the created path (~500ms-2s) so latency cannot trivially
-// distinguish the two responses. The created path is NEVER padded —
-// real signups always emerge above the floor.
-const ANTI_ENUMERATION_BASELINE_MS = 500;
+// already_registered branch. The review measured the created path at
+// ~500ms-2s in production-shaped latency. Picking 200ms keeps the
+// floor reliably BELOW the created floor across environments
+// (preventing the inversion oracle where already_registered becomes
+// consistently SLOWER than created — a different enumeration signal),
+// while still masking the previous ~30ms vs ~500ms+ gap from casual
+// latency probing. The created path is NEVER padded — real signups
+// always emerge above the floor on the cold-cache path; warm-path
+// inversion remains possible if Supabase + DB response is <200ms but
+// the spread is then small enough that statistical attacks need many
+// samples. Revisit if production p95 drops below 200ms.
+const ANTI_ENUMERATION_BASELINE_MS = 200;
 
 async function padToBaseline(startedAtMs: number): Promise<void> {
   const elapsed = Date.now() - startedAtMs;

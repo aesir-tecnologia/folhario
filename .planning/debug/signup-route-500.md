@@ -1,8 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 trigger: "POST /api/v1/iam/signup returns 500 after ~3s of application code execution"
 created: 2026-04-28T00:00:00Z
-updated: 2026-04-28T00:00:00Z
+updated: 2026-04-29T00:00:00Z
+resolved: 2026-04-29T00:00:00Z
 ---
 
 ## Current Focus
@@ -88,6 +89,16 @@ started: First exercise of endpoint by a human after Plans 04-06 (signup) and 04
     - Line 511-535: cloud delivery path uses `retryWithBackoff` (helpers/promises.js:157-165) with maxAttempts=5, baseDelay=100ms; total ~1.5s of sleep + 4-5 attempts ≈ 3 seconds.
   implication: The user's reported 3.1s wait time matches the retry-loop math. After all retries fail, the underlying error (most likely 401 Event key not found from inngest.com) is thrown out of `_send`, propagates up to signup.ts:139, then to the route handler's bare catch.
 
+- timestamp: 2026-04-29
+  checked: git log + working tree (resume reconciliation)
+  found: Plan 04-13 shipped the full fix in three commits before this resume executed — 426653f (operational: `INNGEST_DEV=1 next dev` + `.env.example` doc), 55fb177 (architectural: signup.ts wraps inngest.send for verification email with `iam.signup.notify` Sentry surface; signup/route.ts wraps welcome-back inngest.send with `iam.signup.welcomeBack` and replaces bare `catch {}` with named catch + `iam.signup.route` Sentry capture), a67c7b3 (mirror: same shape applied to resend-verification application + route, plus oauth/complete/route.ts bare-catch replacement). `password/reset-request/route.ts` deliberately untouched (D-11 anti-enumeration silence).
+  implication: The session was created in diagnose-only mode; the user then ran the regular phase plan workflow (04-13) which executed all three branches of the fix_rationale (operational + architectural + bare-catch observability + mirror). This resume's job collapses to reconciling the stale debug file with the shipped state.
+
+- timestamp: 2026-04-29
+  checked: pnpm exec vitest run --project=unit tests/unit/iam-signup-schema.test.ts
+  found: 21/21 pass. Integration suite (`tests/integration/iam-signup.integration.test.ts`) skipped in this shell because DATABASE_POOL_URL was not exported; plan 04-13 acceptance recorded these passing under the integration env.
+  implication: Schema and request-shape contracts are intact post-fix. The architectural assertion ("inngest.send rejection does not propagate out of signupUser") is currently exercised only via plan 04-13 Task 4 manual UAT — see follow-up note in Resolution.
+
 ## Resolution
 
 root_cause: |
@@ -99,6 +110,30 @@ root_cause: |
 
   Additionally, the route handler's bare `catch {}` (route.ts:99-101) silently masks all errors with a generic 500 — making this issue invisible to logs/Sentry and prolonging diagnosis.
 
-fix: (n/a — diagnose-only mode)
-verification: (n/a — diagnose-only mode)
-files_changed: []
+fix: |
+  Shipped via plan 04-13 (`.planning/phases/04-iam-auth-verification-consent/04-13-PLAN.md`) in three commits on 2026-04-29:
+
+  - **426653f** `fix(04-13): force INNGEST_DEV=1 in pnpm dev script + document env-example (UAT gap 2 quickwin)` — operational. `package.json:11` `"dev"` script changed from `next dev` to `INNGEST_DEV=1 next dev`; `.env.example` documents the variable with operator guidance pointing back at this debug file.
+  - **55fb177** `fix(04-13): decouple inngest.send from signup write-path + replace bare catch with Sentry.captureException (UAT gap 2)` — architectural. `src/contexts/iam/application/signup.ts:149-165` wraps the verification email `inngest.send` in try/catch with `Sentry.captureException` (surface tag `iam.signup.notify`). `src/app/api/v1/iam/signup/route.ts:81-102` wraps the welcome-back `inngest.send` (surface tag `iam.signup.welcomeBack`); the bare `catch {}` at route.ts:99-101 is replaced with a named catch + `Sentry.captureException` (surface tag `iam.signup.route`). The malformed-JSON `} catch {` at route.ts:58 stays bare on purpose — it is a `validation_failed` 400 gate, not an operator signal.
+  - **a67c7b3** `fix(04-13): wrap resend-verification inngest.send + replace bare catches in resend-verification and oauth-complete routes (UAT gap 2 mirror)` — same architectural pattern applied to `resend-verification` (application + route, surface tags `iam.resendVerification.notify` / `iam.resendVerification.route`) and to `oauth/complete/route.ts` (surface tag `iam.oauthComplete.route`). `password/reset-request/route.ts` deliberately untouched: its bare catch is intentional D-11 anti-enumeration silence and remains documented in place.
+
+  Net effect: a successful DB transaction is never rolled back into a 500 by an email-dispatch fault; future Inngest faults surface to on-call via the named Sentry surface tags instead of being swallowed.
+
+verification: |
+  - `pnpm typecheck` clean (plan 04-13 acceptance, 2026-04-29).
+  - `pnpm exec vitest run --project=unit tests/unit/iam-signup-schema.test.ts` — 21/21 pass (re-run during this resume on 2026-04-29).
+  - `pnpm exec vitest run --project=unit tests/unit/env-example.test.ts` — pass (plan 04-13 Task 1 acceptance).
+  - `pnpm exec vitest run --project=integration tests/integration/iam-signup.integration.test.ts` — pass under DATABASE_POOL_URL (plan 04-13 Task 2 acceptance; skipped in this resume's shell because the env var was not exported).
+  - `pnpm exec vitest run --project=integration tests/integration/iam-password-reset-route-timing.integration.test.ts tests/integration/iam-password-reset.integration.test.ts` — pass; D-11 anti-enumeration timing + routing contract preserved (plan 04-13 Task 3 acceptance).
+  - Manual UAT (plan 04-13 Task 4): organic and partner-code signups both return 200 in <1s with the UnverifiedBlocker visible and DB rows persisted (recorded in `04-13-PLAN.md` task summary).
+
+  **Follow-up gap (closed 2026-04-29 by commit aeacc46):** Originally there was no automated regression for the architectural assertion "inngest.send rejection does NOT propagate out of signupUser / does NOT cause the route to 500" — the property was only exercised via manual UAT. Closed by `test(04-13): add inngest.send rejection regression for signup + resend-verification` (commit aeacc46), which added `inngestSendMock.mockRejectedValueOnce(...)` coverage in both `tests/integration/iam-signup.integration.test.ts` and a new `tests/integration/iam-resend-verification.integration.test.ts`. Each test asserts (1) the use-case returns its success shape (does NOT throw), (2) the email_verification_tokens row was persisted, (3) `Sentry.captureException` was invoked with the documented surface tag (`iam.signup.notify` / `iam.resendVerification.notify`) and `extra.tokenId` matching the persisted row. Falsified during authoring by removing the try/catch in `signup.ts` around `inngest.send` — the new test failed exactly as intended. 10/10 pass on the integration project at HEAD.
+
+files_changed:
+  - package.json
+  - .env.example
+  - src/contexts/iam/application/signup.ts
+  - src/contexts/iam/application/resend-verification.ts
+  - src/app/api/v1/iam/signup/route.ts
+  - src/app/api/v1/iam/resend-verification/route.ts
+  - src/app/api/v1/iam/oauth/complete/route.ts

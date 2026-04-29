@@ -28,6 +28,17 @@ export function isLocked(count: number): boolean {
   return count > LOCKOUT_TRIP_COUNT;
 }
 
+/**
+ * Phase 04 review IN-05: prod runs behind Vercel, which always sets
+ * x-forwarded-for. The 127.0.0.1 fallback is intentional CI/test
+ * fixture behavior (vitest + Playwright requests have no header).
+ *
+ * Self-hosted footgun: if the platform proxy is misconfigured and the
+ * header is missing in production, all requests collapse onto a single
+ * (127.0.0.1, endpoint, window_start) bucket — one tripped lockout
+ * locks out every IP-less caller. Until/unless we self-host, we keep
+ * the test-friendly fallback; revisit if the deployment story changes.
+ */
 export function extractClientIp(request: Request): string {
   const xff = request.headers.get("x-forwarded-for");
   if (!xff) return "127.0.0.1";

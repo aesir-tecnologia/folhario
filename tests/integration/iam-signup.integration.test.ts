@@ -20,11 +20,20 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import postgres from "postgres";
 
 import { seedCurrentPolicyVersions } from "./fixtures/seed-policy-version";
-import {
-  seedActivePartnerCode,
-  seedInactivePartnerCode,
-} from "./fixtures/seed-partner-code";
+import { seedActivePartnerCode, seedInactivePartnerCode } from "./fixtures/seed-partner-code";
 import { inngestSendMock, installInngestMock, resetInngestMock } from "./fixtures/mock-inngest";
+
+const captureExceptionMock = vi.fn();
+
+vi.mock("@sentry/nextjs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@sentry/nextjs")>().catch(
+    () => ({}) as Record<string, unknown>,
+  );
+  return {
+    ...actual,
+    captureException: captureExceptionMock,
+  };
+});
 
 installInngestMock();
 
@@ -53,6 +62,7 @@ describe.skipIf(!dbUrl)("Phase 4 plan 06 — signupUser (D-25 + Codex HIGH #2/#3
 
   beforeEach(() => {
     resetInngestMock();
+    captureExceptionMock.mockClear();
   });
 
   afterAll(async () => {
@@ -90,7 +100,14 @@ describe.skipIf(!dbUrl)("Phase 4 plan 06 — signupUser (D-25 + Codex HIGH #2/#3
     expect(authRows).toHaveLength(1);
 
     // 2. public.users
-    const userRows = await cleanupSql!<{ id: string; trial_source: string; partner_code: string | null; email_verified_at: string | null }[]>`
+    const userRows = await cleanupSql!<
+      {
+        id: string;
+        trial_source: string;
+        partner_code: string | null;
+        email_verified_at: string | null;
+      }[]
+    >`
       SELECT id, trial_source, partner_code, email_verified_at FROM public.users WHERE email = ${input.email}`;
     expect(userRows).toHaveLength(1);
     expect(userRows[0]!.trial_source).toBe("organic");
@@ -98,7 +115,9 @@ describe.skipIf(!dbUrl)("Phase 4 plan 06 — signupUser (D-25 + Codex HIGH #2/#3
     expect(userRows[0]!.email_verified_at).toBeNull();
 
     // 3. 2 consent_logs rows with purpose='signup_acceptance', source='signup'
-    const consentRows = await cleanupSql!<{ purpose: string; source: string; legal_basis: string }[]>`
+    const consentRows = await cleanupSql!<
+      { purpose: string; source: string; legal_basis: string }[]
+    >`
       SELECT purpose, source, legal_basis
         FROM public.consent_logs WHERE user_id = ${result.userId}
         ORDER BY created_at`;
@@ -108,7 +127,9 @@ describe.skipIf(!dbUrl)("Phase 4 plan 06 — signupUser (D-25 + Codex HIGH #2/#3
     expect(consentRows.every((r) => r.legal_basis === "contract")).toBe(true);
 
     // 4. subscription with status='trialing' and ~14-day trial window
-    const subRows = await cleanupSql!<{ status: string; trial_start_date: string; trial_end_date: string }[]>`
+    const subRows = await cleanupSql!<
+      { status: string; trial_start_date: string; trial_end_date: string }[]
+    >`
       SELECT status, trial_start_date, trial_end_date
         FROM public.subscriptions WHERE user_id = ${result.userId}`;
     expect(subRows).toHaveLength(1);
@@ -127,7 +148,11 @@ describe.skipIf(!dbUrl)("Phase 4 plan 06 — signupUser (D-25 + Codex HIGH #2/#3
 
     // Inngest event emitted with id pattern email-verification/{tokenId}
     expect(inngestSendMock).toHaveBeenCalledTimes(1);
-    const call = inngestSendMock.mock.calls[0]![0] as { id: string; name: string; data: { template: string } };
+    const call = inngestSendMock.mock.calls[0]![0] as {
+      id: string;
+      name: string;
+      data: { template: string };
+    };
     expect(call.id).toBe(`email-verification/${tokenRows[0]!.id}`);
     expect(call.name).toBe("notifications/email.requested");
     expect(call.data.template).toBe("verification");
@@ -211,17 +236,51 @@ describe.skipIf(!dbUrl)("Phase 4 plan 06 — signupUser (D-25 + Codex HIGH #2/#3
     expect(userRows[0]!.trial_source).toBe("organic");
   });
 
+  // Phase 4 plan 04-13 (UAT gap 2 architectural fix) regression guard:
+  // a transient inngest.send rejection must NOT propagate out of signup.
+  // The DB tx has already committed (auth.users + public.users + 2
+  // consent_logs + subscriptions + email_verification_tokens), so the
+  // user must see {kind:'created'} and the operator signal must reach
+  // Sentry via captureException with tags.surface === 'iam.signup.notify'.
+  // If a future refactor re-awaits inngest.send without a try/catch this
+  // test fails before the regression reaches prod.
+  it("inngest.send rejection: signup still returns {kind:'created'} + Sentry.captureException invoked", async () => {
+    inngestSendMock.mockRejectedValueOnce(new Error("inngest cloud delivery failed"));
+
+    const input = fixedSignupInput();
+    const result = await signupModule.signupUser(input, requestUrl);
+
+    expect(result.kind).toBe("created");
+    if (result.kind !== "created") return;
+
+    // DB rows still committed despite the dispatch failure.
+    const tokenRows = await cleanupSql!<{ id: string }[]>`
+      SELECT id FROM public.email_verification_tokens
+       WHERE user_id = ${result.userId} AND consumed_at IS NULL`;
+    expect(tokenRows).toHaveLength(1);
+
+    // Inngest was called once (the rejection consumed mockRejectedValueOnce).
+    expect(inngestSendMock).toHaveBeenCalledTimes(1);
+
+    // Operator signal reached Sentry with the documented surface tag.
+    expect(captureExceptionMock).toHaveBeenCalledTimes(1);
+    const [capturedErr, capturedCtx] = captureExceptionMock.mock.calls[0]! as [
+      Error,
+      { tags?: Record<string, string>; extra?: Record<string, unknown> },
+    ];
+    expect(capturedErr).toBeInstanceOf(Error);
+    expect((capturedErr as Error).message).toMatch(/inngest cloud delivery failed/);
+    expect(capturedCtx.tags?.surface).toBe("iam.signup.notify");
+    expect(capturedCtx.extra?.tokenId).toBe(tokenRows[0]!.id);
+  });
+
   it("atomic transaction: missing policy version mid-tx triggers compensating delete", async () => {
     // Force getCurrentPolicyVersions(tx) → null so the tx throws inside the
     // d.transaction(...) → catch block invokes authAdapter.adminDeleteUser.
     // Using vi.spyOn instead of wiping the shared policy_versions table so
     // this test plays nicely with concurrent test files.
-    const policyVersionsMod = await import(
-      "@contexts/iam/infrastructure/db/policy-versions"
-    );
-    const spy = vi
-      .spyOn(policyVersionsMod, "getCurrentPolicyVersions")
-      .mockResolvedValueOnce(null);
+    const policyVersionsMod = await import("@contexts/iam/infrastructure/db/policy-versions");
+    const spy = vi.spyOn(policyVersionsMod, "getCurrentPolicyVersions").mockResolvedValueOnce(null);
 
     const input = fixedSignupInput();
     await expect(signupModule.signupUser(input, requestUrl)).rejects.toThrow(

@@ -19,9 +19,10 @@ awaiting: user response
 ### 1. Cold Start Smoke Test
 
 expected: Kill any running Next dev/start server. Stop Supabase (`pnpm db:stop`), Inngest dev, and any background workers. Clear ephemeral state (.next/, any temp DBs/caches). Start fresh: `pnpm db:start`, `npx inngest-cli dev`, `pnpm dev`. Server boots without errors. Visiting http://localhost:3000/ either renders the home shell (if verified session) or redirects to /auth/login. No 500s, no missing-env crashes, no DB connection refused.
-result: issue
-reported: "login page is rendered but there's a nextjs issue: Console AuthApiError — Invalid Refresh Token: Refresh Token Not Found. Stack traces through @supabase/auth-js GoTrueClient and PublicLayout. Next.js 16.2.3 (Turbopack)."
-severity: major
+result: passed
+verified_at: 2026-04-29
+verified_via: "Manual UAT with stale-cookie planting flow (DevTools Console). Login page rendered cleanly, no Console AuthApiError in Next 16 dev overlay, browser received clearing Set-Cookie for sb-*-auth-token, error did not recur on second hard reload. Regression pinned by tests/e2e/auth-cold-start-stale-cookie.spec.ts."
+prior_result: "issue — login page is rendered but there's a nextjs issue: Console AuthApiError — Invalid Refresh Token: Refresh Token Not Found. Stack traces through @supabase/auth-js GoTrueClient and PublicLayout. Next.js 16.2.3 (Turbopack)."
 
 ### 2. Sign Up — Organic (no partner code)
 
@@ -171,8 +172,8 @@ result: [pending]
 ## Summary
 
 total: 29
-passed: 0
-issues: 3
+passed: 1
+issues: 2
 pending: 26
 skipped: 0
 blocked: 0
@@ -180,22 +181,17 @@ blocked: 0
 ## Gaps
 
 - truth: "Cold start renders /auth/login cleanly; PublicLayout's session probe handles the no-session / stale-cookie case without throwing"
-  status: failed
+  status: resolved
   reason: "User reported: login page is rendered but there's a nextjs issue: Console AuthApiError — Invalid Refresh Token: Refresh Token Not Found. Stack traces through @supabase/auth-js GoTrueClient and PublicLayout. Next.js 16.2.3 (Turbopack)."
+  resolved_at: 2026-04-29
+  resolution: "Two-pass fix. First pass added the canonical @supabase/ssr middleware step in src/proxy.ts (createServerClient + getUser + setAll wired through to response) and Sentry tagging in auth-adapter.getUserBySession via isAuthSessionMissingError predicate. Regression spec tests/e2e/auth-cold-start-stale-cookie.spec.ts (added in commit 4081c7e) exposed that @supabase/ssr's onAuthStateChange flush does NOT emit Set-Cookie clears for _recoverAndRefresh failures against auth-js@2.104.1 + ssr@0.10.2 — empirically the registered setAll callback was never invoked. Second pass (commit fc820f7): proxy now explicitly clears every sb-*-auth-token chunk via response.cookies.set(name, '', {maxAge: 0, path: '/'}) when getUser returns a non-AuthSessionMissingError error. Manual UAT confirmed pass on 2026-04-29: cold-start with planted stale cookie renders login page cleanly, no Console AuthApiError in Next 16 dev overlay, browser receives clearing Set-Cookie, error does not recur on subsequent reloads."
   severity: major
   test: 1
-  root_cause: "Two-layer cause. PRIMARY: @supabase/auth-js 2.104.1 calls console.error inside _recoverAndRefresh() when getCurrentUserFromSessionReadOnly() probes a stale cookie; the error is logged (not thrown) and Next.js 16's dev overlay attributes the SSR console output to the React owner stack (PublicLayout). COMPOUNDING: src/proxy.ts has no @supabase/ssr middleware-level cookie-refresh step — Server Components only see the read-only client whose no-op setAll blocks _removeSession() from clearing the bad cookie, so the failed refresh + console.error recur on every render."
-  artifacts:
-    - path: "src/proxy.ts:96-119"
-      issue: "Missing the standard @supabase/ssr middleware-level cookie-refresh step (createServerClient + getUser + setAll cookies merged into NextResponse). Structural gap that lets stale cookies reach Server Components."
-    - path: "src/contexts/iam/infrastructure/supabase-server.ts:39-53"
-      issue: "Read-only client's no-op setAll is correct for Pitfall 6, but combined with the missing middleware step prevents auth-js's _removeSession() from clearing bad cookies"
-    - path: "src/contexts/iam/infrastructure/auth/auth-adapter.ts:216-225"
-      issue: "getUserBySession destructures only data.user and ignores error — no observability into auth-js errors that surface as console.error"
-  missing:
-    - "Add @supabase/ssr cookie-refreshing middleware step in src/proxy.ts for non-API page routes — request-scoped read-write createServerClient, single supabase.auth.getUser() call, merge cookies into NextResponse via setAll"
-    - "Have auth-adapter.getUserBySession read the error field from auth.getUser() and tag any AuthApiError on Sentry as belt-and-braces observability"
   debug_session: ".planning/debug/publiclayout-auth-refresh-token-throw.md"
+  fix_commits:
+    - fc820f7
+    - 4081c7e
+    - bfe8475
 
 - truth: "POST /api/v1/iam/signup with valid organic-signup body returns 200 and lands the user on UnverifiedBlocker"
   status: failed

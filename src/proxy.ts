@@ -84,6 +84,7 @@ const PUBLIC_API_ENDPOINTS: readonly RegExp[] = [
   /^\/api\/v1\/diagnostics\/iam-test-helpers\/latest-reset-token$/,
   /^\/api\/v1\/diagnostics\/iam-test-helpers\/seed-verified-user$/,
   /^\/api\/v1\/diagnostics\/iam-test-helpers\/seed-oauth-incomplete-user$/,
+  /^\/api\/v1\/diagnostics\/iam-test-helpers\/nullify-password$/,
   /^\/api\/inngest(\/|$)/,
   /^\/api\/v1\/health\/connectivity$/,
   /^\/api\/v1\/photos\/upload$/,

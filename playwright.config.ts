@@ -1,4 +1,37 @@
+import { readFileSync } from "node:fs";
+
 import { defineConfig, devices } from "@playwright/test";
+
+// Phase 04 UAT add-tests batch — load .env.local into process.env so spec
+// workers (which inherit env from this config process) can hit the local
+// Supabase Postgres directly for DB assertions in specs like
+// auth-signup-active-partner-code and auth-login-rate-limit-trip. We use
+// an inline parser instead of a `dotenv` import because `dotenv` is not a
+// declared dependency. Existing env wins over the file (CI sets vars
+// directly, so this no-ops in CI).
+function loadEnvLocalQuiet(): void {
+  let raw: string;
+  try {
+    raw = readFileSync(".env.local", "utf8");
+  } catch {
+    return;
+  }
+  for (const line of raw.split(/\r?\n/)) {
+    const m = /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/i.exec(line);
+    if (!m) continue;
+    const key = m[1]!;
+    if (process.env[key] !== undefined) continue;
+    let value = m[2]!;
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
+loadEnvLocalQuiet();
 
 /**
  * Plan 02-09 Task 3 — wire `globalSetup` so the E2E suite has a

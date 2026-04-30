@@ -158,9 +158,39 @@ Composes Phase 3's `<EmptyState>` primitive — 4 parts, 1 CTA.
 | Headline | `catalog.empty.title` | `Sua estante ainda está esperando a primeira planta.` | Source Serif 4 24 / 30 weight 500 Forest Ink / Moonpaper |
 | Hint | `catalog.empty.hint` | `Identifique sua primeira planta ou adicione manualmente.` | Plus Jakarta Sans 16 / 24 weight 400 Calm Slate / Lantern Slate |
 | Primary CTA | `catalog.empty.cta` | `Identificar planta` | Canopy Green / Sprout primary button → links to `/identify` (Phase 6 placeholder route in Phase 5) |
-| Secondary text link | `catalog.empty.manualLink` | `Adicionar manualmente` | Tertiary button (Canopy label, no border) → links to `/catalog/add` |
 
-**Banned in empty state** (Phase 3 EmptyState contract): stock photos, "Nada por aqui" apologies, multiple CTAs, AI clichés. ONE Canopy CTA + ONE tertiary text link (the manual-add link is a documented exception aligned with PRD §16 — "camera button + manual-add text link" pattern).
+**Banned in empty state** (Phase 3 EmptyState contract): stock photos, "Nada por aqui" apologies, multiple CTAs, AI clichés. **Exactly ONE Canopy CTA.** The manual-add path is referenced inside the hint copy (`Identifique sua primeira planta ou adicione manualmente.`) — there is NO secondary text link affordance on this surface. CAT-11 + ROADMAP SC-1 + Phase 3 EmptyState contract all enforce singular CTA. The dual-affordance pattern (camera + manual link) lives on the **Home empty surface** (UI-04), not Catalog (CAT-11) — see § 4.5 below.
+
+---
+
+### 4.5. Home Empty State (UI-04)
+
+The Home tab's zero-plants surface, distinct from the Catalog tab empty state above. UI-04 specifies dual affordance: full-bleed identify CTA + manual-add text link, aligned with PRD §16 line 16 ("camera button + 'Adicionar manualmente' text link").
+
+> **Phase 3 alignment.** `home.empty.*` keys are already populated in `src/messages/pt-BR.json` from Phase 3 (lines 10–17). Phase 5 confirms these as final — no copy changes — and ships the actual full-bleed composition (Phase 3 shipped only a placeholder page). The dual affordance (CTA + text link) IS valid here per UI-04, in deliberate contrast to the singular-CTA Catalog empty (CAT-11 § 4 above).
+
+| Slot | i18n key | pt-BR copy | Token / role |
+|------|----------|------------|--------------|
+| Headline | `home.empty.title` | `Identifique sua primeira planta` | Source Serif 4 32 / 38 weight 500 Forest Ink / Moonpaper (Hero scale, full-bleed) |
+| Hint | `home.empty.hint` | `Use a câmera para descobrir o que você tem em casa.` | Plus Jakarta Sans 16 / 24 weight 400 Calm Slate / Lantern Slate |
+| Primary CTA — capture button | `home.empty.cta` | `Identificar planta` | Phase 3 `<CaptureButton>` primitive (72 px circular Canopy fill + 1.00→1.03 press bounce + 3.2 s breathing loop). Tap links to `/identify` (Phase 6 placeholder route in Phase 5). Reduced motion drops the breathing loop (Phase 3 D-08). |
+| Secondary text link | `home.empty.manualLink` | `Adicionar manualmente` | Tertiary button (Canopy label, no border) → links to `/catalog/add`. Sits below the capture button with 24 px gap. |
+
+**Layout (PRD §16 + §17):**
+
+- Vertically centered in the available viewport area (above bottom-nav, below safe-area-inset-top).
+- Capture button has 96 px minimum clearance below it (Phase 3 spacing token `space-24`).
+- NO Sage line-art illustration here — the breathing capture button IS the visual anchor (PRD §17 capture-button breathing loop is THE only perpetual micro-interaction; using illustration in addition would clutter the surface).
+- This is the only Phase 5 surface where the breathing loop is consumed (Phase 3 shipped the primitive but had no live consumer).
+
+**Read-only mode (D-21):**
+
+- Capture button STILL renders (visual continuity); tap shows the Phase 6 paywall modal (Phase 6 wires).
+- `Adicionar manualmente` text link is HIDDEN (read-only blocks plant creation).
+
+**Transition to default Home (≥ 1 plant):**
+
+- When the user adds their first plant (manual or via Phase 6 identification), Home flips to the default state — UI-05's "Hoje" + reminders surface — but UI-05 is owned by **Phase 8** (Reminders). Phase 5 ships only the empty state. Once a plant exists in Phase 5, Home renders a minimal placeholder ("Você tem {n} planta no seu catálogo." + link to Catalog) until Phase 8 builds the real default Home — Claude's discretion on the bridge copy; suggested key `home.bridge.body` with ICU plural pending Phase 8 supersession.
 
 ---
 
@@ -388,7 +418,7 @@ Reuses Phase 3 `<ModalSheet>`. Triggered from plant profile overflow popover →
   4. Cancel button (secondary, ABOVE Adicionar): `Cancelar`.
 - Submit fires `POST /api/v1/plants/:id/photo-entries` (multipart). Optimistic prepend to journal list.
 - On failure: sheet stays open with sonner toast `Não conseguimos enviar. Tente novamente.` (i18n key `catalog.journal.add.failure`). Photo bytes retained client-side (preview persists).
-- Read-only mode: "+ Foto" button hidden; tapping anywhere opens a sonner toast `Reative sua assinatura para adicionar fotos ao diário.` (i18n key `catalog.journal.add.readOnly`) — but the affordance is hidden first, so this is defense-in-depth.
+- Read-only mode: "+ Foto" button hidden; tapping anywhere opens a sonner toast `Reative sua assinatura para adicionar fotos ao diário.` (i18n key `catalog.readOnly.journalAddBlocked`) — but the affordance is hidden first, so this is defense-in-depth.
 
 ---
 
@@ -624,7 +654,6 @@ All keys live under `catalog.*` in `src/messages/pt-BR.json`. Plan 05-18 finalis
 | `catalog.empty.title` | `Sua estante ainda está esperando a primeira planta.` |
 | `catalog.empty.hint` | `Identifique sua primeira planta ou adicione manualmente.` |
 | `catalog.empty.cta` | `Identificar planta` |
-| `catalog.empty.manualLink` | `Adicionar manualmente` |
 
 ### Manual add page
 
@@ -702,7 +731,6 @@ All keys live under `catalog.*` in `src/messages/pt-BR.json`. Plan 05-18 finalis
 | `catalog.journal.add.submitting` | `Enviando…` |
 | `catalog.journal.add.failure` | `Não conseguimos enviar. Tente novamente.` |
 | `catalog.journal.add.cancel` | `Cancelar` |
-| `catalog.journal.add.readOnly` | `Reative sua assinatura para adicionar fotos ao diário.` (defense-in-depth toast; the affordance is hidden first per D-21) |
 
 ### Locations namespace
 
@@ -712,11 +740,24 @@ All keys live under `catalog.*` in `src/messages/pt-BR.json`. Plan 05-18 finalis
 | `catalog.locations.addCustom` | ICU `Adicionar '{typed}'` |
 | `catalog.locations.defaults.0..7` | (D-10 list above — `sala`, `varanda`, `quarto`, `banheiro`, `cozinha`, `escritório`, `jardim`, `outro`) |
 
+### Home empty (UI-04 — confirmed from Phase 3 placeholder, no copy delta)
+
+| Key | pt-BR copy |
+|-----|------------|
+| `home.empty.title` | `Identifique sua primeira planta` |
+| `home.empty.hint` | `Use a câmera para descobrir o que você tem em casa.` |
+| `home.empty.cta` | `Identificar planta` |
+| `home.empty.manualLink` | `Adicionar manualmente` |
+
 ### Cross-cutting toasts
 
 | Key | pt-BR copy |
 |-----|------------|
 | `catalog.offline.mutationBlocked` | `Sem conexão — tente novamente quando voltar online.` (Phase 5 ships read-side offline only — D-21 / CONTEXT.md `<deferred>` line 263; mutation queue lands in Phase 9.) |
+| `catalog.readOnly.addBlocked` | `Reative sua assinatura para adicionar plantas.` |
+| `catalog.readOnly.editBlocked` | `Reative sua assinatura para editar suas plantas.` |
+| `catalog.readOnly.deleteBlocked` | `Reative sua assinatura para excluir plantas.` |
+| `catalog.readOnly.journalAddBlocked` | `Reative sua assinatura para adicionar fotos ao diário.` (consolidates the previous `catalog.journal.add.readOnly` defense-in-depth toast under the unified `catalog.readOnly.*` namespace; the old key is removed.) |
 
 ---
 
@@ -729,7 +770,7 @@ Phase 5 ships `useSubscription()` stub returning `{active: true, readOnly: false
 | `<ReadOnlyBanner active={true} />` | Visible at top of `(app)` shell (Phase 3 component already wired) |
 | Catalog grid empty state CTA | `Identificar planta` button STILL renders — but tapping shows the Phase 6 paywall modal (CONTEXT.md `<deferred>` — Phase 6 wires paywall) |
 | Catalog grid "+ Adicionar" affordance | Hidden (the empty state's `Adicionar manualmente` text link is also hidden in read-only) |
-| `/catalog/add` route | Page redirects to `/catalog` with sonner toast `catalog.offline.mutationBlocked` (NO — different toast: `catalog.readOnly.addBlocked` = `Reative sua assinatura para adicionar plantas.`) |
+| `/catalog/add` route | Page redirects to `/catalog` with sonner toast `catalog.readOnly.addBlocked`. |
 | Plant profile inline-edit | All fields render as static read-only text (no hover, no tap) |
 | Plant profile overflow popover | Hidden entirely (delete unreachable) |
 | Photo journal "+ Foto" button | Hidden |

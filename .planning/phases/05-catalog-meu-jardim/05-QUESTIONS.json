@@ -1,0 +1,943 @@
+{
+  "phase": "05-catalog-meu-jardim",
+  "generated_at": "2026-04-29T00:00:00Z",
+  "stats": {
+    "total": 29,
+    "answered": 29,
+    "chat_more": 29,
+    "remaining": 0
+  },
+  "sections": [
+    {
+      "id": "manual-add-ux",
+      "title": "Manual Plant Add \u2014 UX & Sequencing",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "Manual add page flow",
+          "context": "PRD \u00a77 mandates name + \u22651 photo for manual creation. PhotoEntry.plant_id is NOT NULL in the existing schema (src/contexts/catalog/infrastructure/db/schema.ts:53), so a photo cannot exist without a plant. ROADMAP plan 05-17 hints \"2-step upload + bottom-sheet\". Optional fields: nickname, location, acquisition_date, notes. Decision shapes: form layout, telemetry funnel granularity, abandonment paths.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single screen \u2014 name + photo picker + optional fields all inline (recommended)",
+              "description": "One full-page form with name (required), photo picker that uploads on selection (returns photo_id stored in form state), optional nickname, location combobox, acquisition_date, notes. Submit creates Plant + first PhotoEntry atomically server-side. Lowest perceived friction; matches PRD \u00a717 anti-wizard ethos. Photo upload happens before submit so the user sees their preview."
+            },
+            {
+              "id": "b",
+              "label": "Two-step \u2014 photo first, then details",
+              "description": "Step 1: photo picker \u2192 uploads \u2192 preview confirmed. Step 2: details form (name + optional fields). Final submit creates Plant + PhotoEntry. Matches roadmap hint \"2-step upload\". More taps but gives a clean photo-first moment that mirrors the identification flow."
+            },
+            {
+              "id": "c",
+              "label": "Wizard \u2014 photo \u2192 name \u2192 location \u2192 ack date \u2192 notes",
+              "description": "Full multi-step. Highest perceived friction; not aligned with PRD anti-textbook ethos. Keep on the table only if accessibility benefits warrant it."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Use the single-screen flow because it is fastest for a beginner and keeps optional fields discoverable without turning manual add into a wizard. Treat the upload-on-selection detail as overridden by Q-02: show a local preview immediately, then submit photo + fields together.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Photo + Plant atomicity strategy",
+          "context": "PhotoEntry.plant_id is NOT NULL. The server already accepts uploads at /api/v1/photos/upload (src/app/api/v1/photos/upload/route.ts) but that route requires an existing plantId. Two-step manual create needs a sequencing answer: when does the Plant row exist relative to the first photo bytes?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Client pre-allocates plant_id (UUID v7); server idempotent on POST /plants (recommended)",
+              "description": "Client generates plant_id, uploads photo to a dedicated /api/v1/plants/draft-photos endpoint that stores bytes against (user_id, draft_plant_id) BEFORE the row exists. Final POST /plants with same id binds the draft photo as first PhotoEntry inside one TX. Idempotent retries just no-op. Phase 2 D-37 idempotency_keys fits cleanly."
+            },
+            {
+              "id": "b",
+              "label": "Server creates Plant first with placeholder cover, then accepts photo upload",
+              "description": "POST /plants creates row with cover_photo_url=NULL. Client uses returned plant_id to POST /api/v1/plants/:id/photo-entries. Server sets cover_photo_url from first PhotoEntry. Window of inconsistency: a plant exists with no photo. PRD \u00a77 says \u22651 photo required \u2014 so this option breaks the AC unless we add a status flag."
+            },
+            {
+              "id": "c",
+              "label": "Single multipart POST /plants accepting photo + form fields atomically",
+              "description": "Multipart form upload: name, fields, photo file in one request. Server uploads to storage + inserts Plant + PhotoEntry in one TX with compensating storage delete on TX rollback (matches existing upload-photo.ts:217 pattern). Most atomic; harder to retry photo independently if connection drops mid-upload."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "A single multipart create is the cleanest fit for the PRD requirement that name + photo succeed together and missing fields persist no row. It avoids draft-photo orphan cleanup and still allows compensating storage delete if the DB transaction fails.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Cover photo policy",
+          "context": "Plant.cover_photo_url is a separate column from PhotoEntry.photo_url. PRD \u00a716 Plant Profile mentions \"cover + thumbnail gallery\" \u2014 implying multiple photos with one designated cover. Need to decide: who controls the cover, how does it survive deletion of the photo it points to.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Cover auto-tracks first PhotoEntry; auto-promote next-oldest on deletion (recommended)",
+              "description": "cover_photo_url always equals (oldest non-deleted PhotoEntry).photo_url. No user override. Deleting the current cover triggers auto-promotion in the same TX. Simplest mental model; matches \"thumbnail gallery\" without exposing cover control."
+            },
+            {
+              "id": "b",
+              "label": "Cover defaults to first PhotoEntry; user can promote any photo via overflow",
+              "description": "PATCH /plants/:id { cover_photo_entry_id }. Plant Profile photo gallery has 'Definir como capa' overflow per photo. Slightly more UI complexity but matches power-user instinct that they should be able to pick the hero shot."
+            },
+            {
+              "id": "c",
+              "label": "Cover is its own dedicated upload, separate from journal photos",
+              "description": "PATCH /plants/:id/cover takes a fresh photo upload. Cover never appears in photo journal. Two upload pipes; different schema (cover bytes stored under plant-covers/ prefix). Highest UX clarity but doubles storage paths and complicates the data model."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "For MVP, keep cover behavior automatic. First photo as cover with next-oldest promotion on deletion is predictable, removes a secondary control from the profile UI, and can evolve later if users ask to choose the hero photo.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-04",
+          "title": "validation_failed UX for missing name or photo",
+          "context": "ROADMAP SC-2: \"missing name or photo returns validation_failed with field highlighting and no row persisted\". PRD \u00a717 input behavior: validate on BLUR (not keystroke), summary block ABOVE form for multi-error, role=alert announcement, auto-focus first invalid. Banned: full-screen red wall, Urgent Poppy for form errors (Overdue Rust only).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Inline per-field error + auto-focus first invalid; summary block only when 3+ errors (recommended)",
+              "description": "Per-field Overdue Rust border + helper text under input. role=alert announces first invalid field. Submit auto-focuses first invalid. Summary block (anchor links per error) appears only when \u22653 errors \u2014 matches PRD \u00a717 'multi-error: summary block above form'. Most calm for the common 1-2 error case."
+            },
+            {
+              "id": "b",
+              "label": "Always show summary block + per-field inline errors regardless of count",
+              "description": "Predictable; assistive tech users get one consistent landmark. Slightly heavier UI for the trivial 'forgot the photo' case."
+            },
+            {
+              "id": "c",
+              "label": "Inline-only ever; rely on auto-focus first invalid + role=alert announcement",
+              "description": "No summary block. Lightest. Risk: a screen-reader user with multiple errors must navigate field-by-field to discover them all."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Use inline field errors plus auto-focus/role=alert for every invalid field, and show the summary block when there are 2+ errors. That keeps the common one-error case calm while matching the PRD's multi-error summary requirement for missing name + photo.",
+          "status": "answered",
+          "answer_other": ""
+        }
+      ]
+    },
+    {
+      "id": "plant-profile-edits",
+      "title": "Plant Profile \u2014 Inline Edits & Delete",
+      "questions": [
+        {
+          "id": "Q-05",
+          "title": "Inline edit save trigger",
+          "context": "PRD \u00a716 \"edit inline\" for name/nickname/room/acquisition_date/notes. PRD \u00a717 input rule: validate on BLUR, never keystroke. PRD \u00a710 offline: edits queued. ROADMAP plan 05-14 ships InlineEditField primitive.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Tap-to-edit field \u2192 save on blur (or Enter for single-line); cancel on Esc (recommended)",
+              "description": "Field renders read-only by default. Tap converts to input with current value, focused. Blur or Enter triggers PATCH /plants/:id with that single field. Esc reverts. Optimistic UI; failure rolls back display value + sonner toast. Matches PRD \u00a717 validate-on-blur literal. No explicit Save button \u2014 minimal chrome."
+            },
+            {
+              "id": "b",
+              "label": "Tap-to-edit + explicit Salvar/Cancelar buttons per field",
+              "description": "Same enter-edit-mode trigger but committed only via tap on Save. Lower mistake rate (no accidental commits), more taps per edit, more chrome. Common pattern in admin UIs."
+            },
+            {
+              "id": "c",
+              "label": "Section-level edit: pencil icon \u2192 all fields editable simultaneously, single Save button",
+              "description": "Tap pencil header \u2192 entire profile becomes editable. Save commits all dirty fields in one PATCH. Familiar form pattern but heavier transition; conflicts more with PRD \u00a716 'edit inline' wording."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Save-on-blur matches the product rule exactly and keeps inline editing lightweight on mobile. Keep Enter for single-line fields, Esc to revert, and make failures roll back the optimistic value with one clear toast.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-06",
+          "title": "Inline-edit conflict resolution (cross-device)",
+          "context": "PRD \u00a710: \"Field edit on stale data \u2192 last-write-wins by SERVER timestamp. NO merge UI.\" Multi-device user could edit same plant from web + future native app. TanStack Query optimistic updates need a story for the LWW case.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Optimistic update + LWW; no client-side conflict detection (recommended)",
+              "description": "PATCH always wins on the server (LWW per updated_at). Client optimistic update; on response, merge server row into cache as truth. No 'updated elsewhere' warning. Matches PRD \u00a710 'NO merge UI' literal."
+            },
+            {
+              "id": "b",
+              "label": "If-Unmodified-Since precondition; 409 \u2192 revert + toast 'Atualizado em outro dispositivo'",
+              "description": "Client sends ?if_unmodified_since=<updated_at> on PATCH. Server returns 409 conflict if stale. Client reverts edit, refetches, shows toast. Stricter; deviates from PRD by adding a UI artifact for the conflict case."
+            },
+            {
+              "id": "c",
+              "label": "Pessimistic save: small spinner inside field during PATCH; rollback on failure",
+              "description": "No optimistic update \u2014 wait for server confirm before showing new value. Slower-feeling UI; eliminates flash of stale-then-updated. Doesn't address cross-device conflict directly."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The PRD explicitly calls for server timestamp last-write-wins and no merge UI. Let the optimistic client value be temporary, then replace the cache with the server row so cross-device edits converge without extra conflict surfaces.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Plant delete confirm pattern",
+          "context": "PRD \u00a716: delete in overflow menu. PRD \u00a77: cascades PhotoEntry + Reminder, schedules storage objects for deletion, sets Identification.plant_id NULL but preserves history. PRD \u00a717 destructive button: ALWAYS secondary to Cancelar in layout order. Banned: confetti, two-stage type-the-name (reserved for account delete), undo-toast race.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Bottom-sheet confirm with cascade preview + destructive Excluir button (recommended)",
+              "description": "Tap delete from overflow \u2192 ModalSheet opens: 'Excluir Maria?' headline, body 'Isso vai apagar 5 fotos do di\u00e1rio e 2 lembretes. O hist\u00f3rico de identifica\u00e7\u00f5es \u00e9 mantido.' Cancelar primary, Excluir destructive (Urgent Poppy). Cascade counts pre-fetched server-side as part of GET /plants/:id."
+            },
+            {
+              "id": "b",
+              "label": "Bottom-sheet confirm without cascade counts; generic copy",
+              "description": "Same shell but no per-plant cascade preview \u2014 just 'Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita.' Lighter API contract; less clarity for the user."
+            },
+            {
+              "id": "c",
+              "label": "Single tap with 5s undo toast (sonner action) before server delete fires",
+              "description": "Optimistic delete + sonner action toast. Fast; risks accidental confirm + race with offline (toast unmount during sync). Inconsistent with the destructive-confirm pattern Phase 4 established."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The bottom-sheet confirmation matches mobile ergonomics and the established destructive-action pattern. Showing cascade counts gives the user useful consequence clarity without adding the heavy type-the-name flow reserved for account deletion.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "location-picker",
+      "title": "Location Picker \u2014 Combobox & Suggestion Storage",
+      "questions": [
+        {
+          "id": "Q-08",
+          "title": "Combobox primitive \u2014 build vs adopt",
+          "context": "ROADMAP plan 05-12: 'Combobox primitive per WAI-ARIA APG 1.2'. Required: prior locations + defaults [sala, varanda, quarto, banheiro, cozinha, escrit\u00f3rio, jardim, outro] + free text. Existing deps: @radix-ui/react-dialog/dropdown-menu/tabs (Radix has no combobox primitive). Existing primitives: Select (native), ModalSheet (Radix Dialog).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Roll our own (~200 LOC headless) \u2014 APG 1.2 compliant, axe-core gate (recommended)",
+              "description": "Build src/shared/ui/combobox.tsx using useId + aria-controls + aria-expanded + aria-activedescendant + keyboard nav (Arrow/Home/End/Esc/Enter/printable typeahead). One a11y test surface; zero new deps; full design control. Matches Folh\u00e1rio's adapter-first philosophy. Tested via @axe-core/playwright (Phase 3 D-33)."
+            },
+            {
+              "id": "b",
+              "label": "Adopt cmdk (~6kB, used by shadcn) \u2014 pairs with Radix Popover",
+              "description": "cmdk is Radix-flavored, mature, accessible, designed for command-palette + combobox. Adds a dep (already on the roadmap if shadcn ever lands). Less code to maintain; some style override friction for our token system."
+            },
+            {
+              "id": "c",
+              "label": "Adopt @react-aria/combobox (Adobe Spectrum) \u2014 large but battle-tested",
+              "description": "Adobe-maintained, exhaustive a11y coverage. ~25kB minified. Heavier; brings react-stately as transitive dep. Overkill for one combobox surface."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Build the small headless combobox because the surface is narrow, Radix has no native primitive, and adding a large dependency for one field is not justified. Make APG keyboard behavior and axe coverage non-negotiable so accessibility is proven, not assumed.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-09",
+          "title": "location_suggestions storage model",
+          "context": "PRD \u00a77: 'Free text becomes reusable next time' \u2014 quick-select for next plant. ROADMAP plan 05-03 mentions a 'location-suggestions' repository (separate from plants). Decision shapes one new schema or zero, query complexity, and offline behavior.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Separate table \u2014 location_suggestions(user_id, label_normalized, label_display, usage_count, last_used_at) (recommended)",
+              "description": "PK (user_id, label_normalized). Upsert on plant create + plant edit (location field). DELETE plant does NOT decrement (suggestion sticks unless explicitly cleaned up). Query orders by usage_count DESC, last_used_at DESC LIMIT 20. Defaults merged at API layer. Easy to ship offline-first via IDB cache."
+            },
+            {
+              "id": "b",
+              "label": "Derive at query time \u2014 SELECT DISTINCT location FROM plants",
+              "description": "GET /api/v1/locations runs a per-user DISTINCT query ordered by MAX(plants.updated_at). No new table. Reflects deletes naturally (delete last plant in 'Lavanderia' \u2192 suggestion gone). Plant DELETE bug risk: could remove a still-meaningful location. Doesn't track usage_count without adding more SQL."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid \u2014 derive from plants but cache in IndexedDB on client",
+              "description": "Server query is option (b); client wraps it in TanStack Query + IDB persister so offline plant-add still has suggestions. Splits the source of truth across server + client cache."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "A separate suggestions table preserves user-entered locations even after plant deletion and supports ordering by real reuse rather than incidental plant recency. It also gives offline caching a stable, small query surface.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "Default-locations source",
+          "context": "PRD \u00a77 fixed list: sala, varanda, quarto, banheiro, cozinha, escrit\u00f3rio, jardim, outro. App is pt-BR only at launch but next-intl is mandatory. CLAUDE.md: no hardcoded strings.",
+          "options": [
+            {
+              "id": "a",
+              "label": "next-intl messages \u2014 catalog.locations.defaults as a string array (recommended)",
+              "description": "Drop the 8 defaults into messages/pt-BR.json under catalog.locations.defaults. Combobox imports via useTranslations. Future locale = new message file entry. Zero schema impact. Defaults are static identifiers (not user mutable)."
+            },
+            {
+              "id": "b",
+              "label": "DB seed \u2014 location_suggestions rows with is_default=true per user at signup",
+              "description": "Seed Phase 4 signup orchestration writes 8 default rows. Per-user mutable (user can 'hide' or rename a default). Bigger blast radius; requires Phase 4 signup amendment."
+            },
+            {
+              "id": "c",
+              "label": "API merge \u2014 server appends defaults to user-list response from a static const",
+              "description": "GET /api/v1/locations always returns user-list ++ DEFAULTS de-duped. Defaults live in src/contexts/catalog/domain/. Slight: defaults aren't translatable through next-intl; server has to know locale."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Keep default labels in next-intl messages so the pt-BR-only launch still follows the no-hardcoded-strings rule. There is no reason to seed per-user rows for static defaults that are not user-owned data.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "catalog-grid-sort",
+      "title": "Catalog Grid \u2014 Sort, Pagination, Empty State",
+      "questions": [
+        {
+          "id": "Q-11",
+          "title": "Sort persistence storage",
+          "context": "PRD \u00a716: 'selected sort persists for session'. Phase 3 D-23 already uses sessionStorage for scroll restoration. ROADMAP plan 05-15 mentions 'sessionStorage hook'. Sort options: name_asc | name_desc | date_new (default) | date_old | location.",
+          "options": [
+            {
+              "id": "a",
+              "label": "sessionStorage \u2014 clears on tab close (recommended, matches PRD literal)",
+              "description": "Key folhario.catalog.sort = string sort_id. PRD literal 'persists for session' fits sessionStorage exactly. Same storage layer Phase 3 already uses for scroll. Reset on every fresh session is the user's expectation per spec."
+            },
+            {
+              "id": "b",
+              "label": "localStorage \u2014 persists across sessions",
+              "description": "User picks 'name A-Z' once and it sticks across days. Friendlier; deviates from PRD literal. Risk: stale preference for users who rarely revisit catalog."
+            },
+            {
+              "id": "c",
+              "label": "Server-side User.catalog_default_sort column",
+              "description": "Cross-device persistence. Adds DB write per sort change + a User schema migration. Overkill for an MVP preference."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "sessionStorage is the literal reading of 'persists for session' and matches the existing Phase 3 browser-state pattern. Server or localStorage persistence would overstate the importance of an MVP sort preference.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-12",
+          "title": "Catalog list query \u2014 pagination strategy",
+          "context": "Phase 2 D-36 locked cursor pagination. 5 sort modes (incl. nullable acquisition_date with NULLS LAST). ROADMAP plan 05-02 mentions 'cursor extension'. Composite cursors per sort mode require a stable secondary key.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Opaque base64 cursor encoding {sort_id, last_value, last_id} with id tiebreak (recommended)",
+              "description": "Cursor encodes the sort field's last value + plant.id as tiebreak. Null-date cursors use a sentinel ('Z') so NULLS LAST stays consistent across pages. Page size 50 default, 200 max (PRD \u00a75). Stable across new inserts."
+            },
+            {
+              "id": "b",
+              "label": "Offset/limit pagination \u2014 simpler for MVP",
+              "description": "OFFSET-based. Most users have <50 plants in MVP so the page-2 case is rare. Easier to implement; skew under concurrent inserts. Revisit when avg user >200 plants. Departs from Phase 2 D-36 commitment."
+            },
+            {
+              "id": "c",
+              "label": "Cursor + first-page total count for grid affordance ('12 plantas')",
+              "description": "Same cursor as (a) but the first response also returns total_count. Lets the UI render '12 plantas' header. Slightly heavier first page. Optional: only return when ?include_count=1 to keep subsequent pages light."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "Use the opaque cursor shape from option a, but include total_count on the first page or behind include_count=1. The count supports the catalog header and empty/grid switch while keeping subsequent cursor pages light.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Empty-state vs grid switch",
+          "context": "PRD \u00a716: zero plants \u2192 'Sua estante ainda est\u00e1 esperando a primeira planta.' empty state with single Canopy CTA. \u22651 plant \u2192 grid. Currently src/app/(app)/catalog/page.tsx renders empty state unconditionally. Avoid skeleton flash on the first-plant case.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Server-render: read total count \u2192 render <CatalogEmpty/> or <CatalogGrid/> (recommended)",
+              "description": "Server component fetches first page (cursor + count). Zero rows \u2192 empty state inline. Non-zero \u2192 grid with first 50 SSR'd, TanStack Query takes over for further pages. No skeleton flash on transition; matches Next 16 RSC patterns Phase 3 established."
+            },
+            {
+              "id": "b",
+              "label": "Client-render only via TanStack Query \u2014 skeleton then result",
+              "description": "Page is 'use client' from the start. Always shows skeleton briefly, then either empty state or grid. Fewer code paths; flashes shimmer on the first-plant case (<300ms gate masks most of it)."
+            },
+            {
+              "id": "c",
+              "label": "Server-render shell + count, hydrate grid items via TanStack Query",
+              "description": "SSR the count + empty/grid shell, but defer item hydration to client. Eliminates skeleton on the empty case while still streaming grid items async. More moving parts than (a) for marginal benefit."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Server-rendering the first page avoids a skeleton flash in the exact first-plant transition this phase cares about. Hydrating TanStack Query from that data keeps later pagination and invalidation on the client without duplicating the initial fetch.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "photo-journal",
+      "title": "Photo Journal \u2014 Lightbox & Add-Entry Flow",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Lightbox primitive \u2014 build vs adopt",
+          "context": "ROADMAP plan 05-14 'Lightbox + InlineEditField primitives (Pitfall 6 a11y guard)'. Photo journal needs full-screen photo view with horizontal swipe between entries. Existing primitives: ModalSheet (Radix Dialog wrapper). Pitfall 6 a11y: focus trap + return focus + visible dismiss + reduced-motion fallback.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Roll our own (~150 LOC) \u2014 full-screen overlay over Radix Dialog (recommended)",
+              "description": "Reuse Radix Dialog for focus trap + return focus + Esc dismiss. Add horizontal swipe between photos via touch events. Visible Fechar button (top-right) + tap-anywhere-to-close. CSS transform-only animation (PRD \u00a717 motion rules). Pinch-zoom = native browser default. ~150 LOC; full design control."
+            },
+            {
+              "id": "b",
+              "label": "Reuse existing ModalSheet bottom-sheet for photo view (lighter scope)",
+              "description": "Single photo at a time inside the bottom-sheet (max-h 80dvh). No swipe-between-photos. Lower scope; loses the gallery feel. Edge case: large portrait photo gets letterboxed inside an 80dvh sheet."
+            },
+            {
+              "id": "c",
+              "label": "Adopt yet-another-react-lightbox (~30kB)",
+              "description": "Battle-tested, supports zoom + swipe + thumbnails. Adds a styling layer to override for Folh\u00e1rio tokens. New dep + style override surface."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "A Radix Dialog-backed overlay gives the required focus trap, return focus, Esc dismiss, and visible close affordance while allowing a real full-screen photo experience. A bottom sheet is too constrained for inspecting plant photos.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Photo journal add-entry flow",
+          "context": "PRD \u00a77: 'Add photo + optional note \u2192 PhotoEntry'. ROADMAP plan 05-17 hints '2-step upload + bottom-sheet'. Existing /api/v1/photos/upload route handles upload + thumbnail + GPS rejection (src/app/api/v1/photos/upload/route.ts). Note can be added to the same call (uploadPhoto already accepts note).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Bottom-sheet from journal \u2014 picker \u2192 preview + note textarea \u2192 'Adicionar' (recommended)",
+              "description": "Tap '+ Foto' on journal screen \u2192 ModalSheet opens with photo picker. After selection, sheet shows preview + note textarea + 'Adicionar' button. Single multipart POST to /photos/upload with note. Upload progress visible inside sheet. On success, sheet closes, journal optimistically prepends. On failure, sheet stays open with retry."
+            },
+            {
+              "id": "b",
+              "label": "Inline append \u2014 '+ Foto' picks \u2192 row appears in-place at top with note input",
+              "description": "No modal. Picker triggers immediate optimistic row at top of journal with inline note input + 'Adicionar' / 'Cancelar' actions. Less ceremony; risks visual confusion if user backs out (the row needs a clean removal path)."
+            },
+            {
+              "id": "c",
+              "label": "Two-step uploads \u2014 separate photo upload then separate PATCH to attach note",
+              "description": "POST /photos/upload returns photo_id. PATCH /photo-entries/:id { note }. Two API calls; lets the user retry the note independently if upload succeeded but request died before note. More complex client state."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The sheet flow keeps the journal page stable while giving preview, note, progress, retry, and cancel in one contained place. Reusing the existing upload route with the note in the same multipart call avoids unnecessary two-step client state.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "client-cache",
+      "title": "Client State \u2014 TanStack Query + IndexedDB Persistence",
+      "questions": [
+        {
+          "id": "Q-16",
+          "title": "TanStack Query persister choice",
+          "context": "ROADMAP plan 05-10 'TanStack Query provider + IDB persister'. TanStack v6 docs recommend either query-async-storage-persister (works with idb-keyval) or query-sync-storage-persister (localStorage). Catalog cache may run to several MB once photos are referenced.",
+          "options": [
+            {
+              "id": "a",
+              "label": "@tanstack/query-async-storage-persister + idb-keyval (recommended)",
+              "description": "TanStack-blessed async persister + tiny (~3.5kB) idb-keyval adapter. IndexedDB capacity (50% of disk). Doesn't block main thread on rehydration. Standard pattern in TanStack docs."
+            },
+            {
+              "id": "b",
+              "label": "@tanstack/query-sync-storage-persister + localStorage",
+              "description": "Simpler API; 5MB cap; blocks main thread on rehydration. Wrong fit for catalog cache size."
+            },
+            {
+              "id": "c",
+              "label": "Roll our own IDB persister via Dexie",
+              "description": "More control; brings Dexie (~22kB). Justified only if Phase 9 offline queue also lands on Dexie. Premature for Phase 5."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The async persister plus idb-keyval is the right fit for a photo-heavy PWA cache because it avoids localStorage limits and main-thread blocking. It is also the standard TanStack path, so maintenance risk stays low.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "What gets persisted to IDB",
+          "context": "TanStack persistence is opt-in via dehydrate filter. Cached signed URLs expire (default 1h). Photos are referenced by URL, not stored as bytes inside the query cache (those live in Serwist runtime cache \u2014 see Q-19/Q-20).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Persist catalog list + plant detail + journal queries; maxAge 24h (recommended)",
+              "description": "Allowlist by query-key prefix ['catalog','plants',...] and ['catalog','photo-entries',...]. Mutation queries excluded. maxAge 24h matches typical user revisit cadence. Photos themselves served from Serwist runtime cache, not the query cache."
+            },
+            {
+              "id": "b",
+              "label": "Persist everything TQ knows about with maxAge 1h to limit signed-URL staleness",
+              "description": "Coarse; persists subscription/IAM data we don't actually need offline. 1h shorter window forces frequent refetch \u2014 defeats offline-browse promise."
+            },
+            {
+              "id": "c",
+              "label": "Persist catalog + journal + locations; explicit dehydrate filter; storage budget watched via navigator.storage.estimate",
+              "description": "Same as (a) but with proactive size cap: if estimate >80% of quota, evict oldest queries. Prevents 'Out of quota' errors on long-running PWA installs. More code; pays back over months."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "Persist catalog, plant detail, journal, and locations with an explicit allowlist. Locations are part of the catalog experience, and adding a quota guard is cheap insurance for long-lived PWA installs where photo-heavy metadata can accumulate.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-18",
+          "title": "Query keys + invalidation pattern",
+          "context": "Folh\u00e1rio queries: list plants (varies by sort), get plant, list photo entries per plant, list locations, identification history per plant (Phase 6+). Need a consistent key shape.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Query factory pattern (Tkdodo's centralized) \u2014 exports createPlantsQuery, createPlantQuery (recommended)",
+              "description": "src/contexts/catalog/queries/index.ts exports factory functions returning {queryKey, queryFn} pairs. Auto-generated keys; types co-located with the query. Phase 5 mutations invalidate via queryClient.invalidateQueries({queryKey: plantsKeys.lists()}). Industry-standard pattern as of 2026."
+            },
+            {
+              "id": "b",
+              "label": "Hierarchical raw keys \u2014 ['catalog','plants',{userId, sort}], ['catalog','plant',plantId]",
+              "description": "Inline at call sites. Simpler bootstrap; risks key drift across files. Manual partial-match invalidation."
+            },
+            {
+              "id": "c",
+              "label": "Flat keys + manual invalidation lists per mutation",
+              "description": "['plants-list-asc'], ['plants-list-desc'], ['plant-123']. Verbose; fragile; explicit invalidation code per mutation. Anti-pattern in modern TQ."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Centralized query factories prevent key drift once list, detail, journal, locations, and later identification-history queries start invalidating each other. This is worth the small upfront structure because mutations in this phase touch multiple cached surfaces.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "offline-sw",
+      "title": "Offline & Service Worker \u2014 Catalog Cache Strategy",
+      "questions": [
+        {
+          "id": "Q-19",
+          "title": "Serwist runtime cache strategy for catalog GETs",
+          "context": "Phase 3 D-14 SW posture: NetworkOnly for /api/* (app-shell only). Phase 5 OFF-08 + ROADMAP SC-5: 'a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.' Need to extend SW for whitelisted GET endpoints.",
+          "options": [
+            {
+              "id": "a",
+              "label": "StaleWhileRevalidate for /api/v1/plants*, /api/v1/photo-entries*, /api/v1/locations; max age 7d (recommended)",
+              "description": "Whitelist GET endpoints in src/app/sw.ts. SWR returns cache instantly + revalidates in background. Cache survives 7d (matches LGPD grace expectation). NetworkOnly for everything else (mutations + identification). Belt + braces with TanStack persister: SW serves bytes, TQ serves shape."
+            },
+            {
+              "id": "b",
+              "label": "NetworkFirst with cache fallback when offline; max age 7d",
+              "description": "Always tries network first. Slightly slower on warm cache but always-fresh on slow-but-online. Same fallback story when offline."
+            },
+            {
+              "id": "c",
+              "label": "Cache-first; refresh only on user pull-to-refresh",
+              "description": "Fastest perceived load; risk of staleness across devices (user sees yesterday's location for a plant they edited on another device 2h ago). Doesn't fit cross-device LWW posture."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "StaleWhileRevalidate gives the offline-browse behavior users expect from a PWA while still refreshing in the background when online. Keep the whitelist tight to catalog GETs so mutations and identification remain network-only.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-20",
+          "title": "Photo URL strategy for offline thumbnails",
+          "context": "Phase 2 D-23/D-25 stores photos via Supabase signed URLs (default 1h TTL). Cached catalog API responses embed those URLs. After 1h offline, the URL still works inside Serwist's bytes-cache (URL is the cache key) but expires when SW eventually re-fetches.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Bump signed-URL TTL to 24h for catalog views; cache bytes in SW (recommended)",
+              "description": "Server signs catalog/journal photo URLs with 24h expiry. SW caches the byte response keyed by signed URL. As long as the JSON is cached (Q-19), the embedded URL stays valid. Catalog views work offline up to 24h since last online refresh."
+            },
+            {
+              "id": "b",
+              "label": "Switch plant-thumbnails bucket to public + path-based RLS \u2014 no signing",
+              "description": "Public bucket with bucket-policy ownership check (path starts with /{user_id}/). Direct CDN URL. Originals stay signed (1h). Risk: leaks thumbnails by URL guessing if path enumeration possible \u2014 relies on UUID-randomness for security-by-obscurity. Path-based RLS in Supabase is non-trivial."
+            },
+            {
+              "id": "c",
+              "label": "Sign on every read, cache by object-key (not URL); SW intercepts and rewrites",
+              "description": "Server returns object-key, not URL. Client requests /api/v1/photos/sign?key=... per render. SW intercepts and serves from cache by key. Cleanest separation but adds a request per photo \u2014 friction at scale."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "A 24h signed URL is a pragmatic middle ground: it improves warm-cache reliability without making thumbnails public. The service worker byte cache can still serve already-fetched images offline, while online refreshes mint fresh URLs.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-21",
+          "title": "Read-only mode UX in catalog (useSubscription stub)",
+          "context": "PRD \u00a716 Catalog: 'Read-only: Add plant hidden/disabled'. PRD \u00a710: 'Plants, photos, journal, care guides: VIEW. New plants / journal entries / edits: blocked \u2192 read_only_mode 402'. ROADMAP plan 05-11: 'useSubscription() stub + read-only mode test harness'. Phase 3 already ships ReadOnlyBanner (D-31). Phase 10 wires real Stripe state.",
+          "options": [
+            {
+              "id": "a",
+              "label": "useSubscription() returns {active, readOnly}; mutating affordances hidden when readOnly (recommended)",
+              "description": "Hook reads Phase 11 stub (returns {active: true, readOnly: false} for Phase 5; Phase 10 wires real). When readOnly: 'Adicionar' hidden, inline-edit fields render as read-only text, delete overflow item missing, photo journal '+ Foto' hidden. ReadOnlyBanner active. Matches PRD \u00a716 'hidden/disabled' literal. Test harness flips the flag for Playwright specs."
+            },
+            {
+              "id": "b",
+              "label": "Render mutating UI; intercept at submit \u2192 paywall modal",
+              "description": "All affordances visible; tap Add \u2192 modal 'Reative para adicionar plantas.' Full-friction discovery; user feels the paywall. Conflicts with 'hidden/disabled' literal; risks affordance frustration."
+            },
+            {
+              "id": "c",
+              "label": "Hide Add button only; keep edit affordances visible but onClick \u2192 paywall",
+              "description": "Halfway. Inconsistent: why is Add hidden but Edit visible? Worst of both worlds."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Read-only mode should remove or disable mutation affordances before the user hits them, matching the PRD and avoiding paywall-like dead ends. The stubbed hook gives Phase 5 a clean test seam until Stripe state exists.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "async-cleanup",
+      "title": "Async Cleanup \u2014 Inngest catalog/cleanup-storage",
+      "questions": [
+        {
+          "id": "Q-22",
+          "title": "Storage cleanup trigger after plant delete",
+          "context": "PRD \u00a77: 'Plant deletion: cascades PhotoEntry + Reminder; storage objects scheduled for delete'. Storage adapter has deletePrefix (src/shared/adapters/storage.ts). ROADMAP plan 05-06 'Plant delete + Inngest catalog/cleanup-storage + reconciler cron'. Two failure surfaces: storage call fails, or Inngest delivery fails.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Same-TX insert into pending_storage_deletions + emit plant.deleted event (recommended)",
+              "description": "DELETE /plants/:id transaction: cascades rows, INSERTs pending_storage_deletions(prefix='{userId}/{plantId}/', status='pending') for plant-photos and plant-thumbnails buckets, emits plant.deleted Inngest event. Function consumes event \u2192 calls deletePrefix \u2192 updates row status='completed' (or 'failed' with error_message). Reconciler cron picks up status='pending' rows older than X. Belt + braces; recoverable from any single failure point."
+            },
+            {
+              "id": "b",
+              "label": "Skip pending table; just emit event; trust Inngest at-least-once delivery",
+              "description": "DELETE /plants/:id emits plant.deleted; function calls deletePrefix idempotently. Failure visible in Inngest dashboard only. Simpler; loses durable retry trail; harder to ops-recover from prolonged storage outage."
+            },
+            {
+              "id": "c",
+              "label": "Synchronous best-effort delete in same request; pending row only on failure",
+              "description": "Try deletePrefix inline. If success in <2s: done. If fails or times out: insert pending row + emit event. Removes eventual-consistency window for the happy path. Bloats request latency on the rare slow-storage case."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The pending table plus event gives durable recovery for both storage failures and event-delivery gaps. It is the right level of operational bookkeeping for data deletion work, especially with later LGPD sweeps reusing the pattern.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-23",
+          "title": "pending_storage_deletions schema shape",
+          "context": "ROADMAP plan 05-02 'pending_storage_deletions schema + cursor extension'. Need: durable record per pending sweep, retry tracking, ops query by status.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Columns id, user_id, bucket, prefix, status, attempts, last_error, scheduled_at, created_at, completed_at \u2014 owner-RLS (recommended)",
+              "description": "PRIMARY KEY id (uuid). status ENUM (pending|in_progress|completed|failed). Indexed on (status, scheduled_at) for reconciler cursor. RLS: auth.uid() = user_id (owner-only). One row per (bucket, prefix) on plant delete = 2 rows per plant (photos + thumbnails). Phase 11 deletion sweeps reuse this table."
+            },
+            {
+              "id": "b",
+              "label": "Same as (a) plus plant_id FK (nullable, ON DELETE SET NULL) for audit",
+              "description": "Adds plant_id for audit trail. Slightly more storage; lets you query 'all sweeps related to plant X' before the cascade ran. Useful for ops investigations."
+            },
+            {
+              "id": "c",
+              "label": "Generic failed_storage_operations table reused across LGPD + Phase 5",
+              "description": "Forward-looking \u2014 Phase 11 LGPD bulk delete benefits from same table. Bigger schema upfront; risks scope creep into Phase 11 work."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Keep the schema focused on the sweep itself: user, bucket, prefix, status, attempts, errors, and timestamps. The prefix already carries the deleted plant scope, and a plant FK would be fragile once the plant row is gone.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-24",
+          "title": "Reconciler cron schedule + max attempts",
+          "context": "Inngest cron functions. Storage failures should retry with backoff; permanent failures need ops attention.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Hourly cron, batch 50, max 5 attempts with exponential backoff (5min/30min/4h/24h/72h) (recommended)",
+              "description": "Cron picks status='pending' AND scheduled_at <= now ORDER BY scheduled_at LIMIT 50 FOR UPDATE SKIP LOCKED. After max attempts \u2192 status='failed' surfaces in OBS-05 Phase 13 alert. Backoff doubles roughly each tier \u2014 typical Supabase outage <30min, so 5min retry catches the common case."
+            },
+            {
+              "id": "b",
+              "label": "Every 15min, batch 10 \u2014 faster recovery, more cron triggers",
+              "description": "More aggressive. Inngest free-tier function-run quota friendlier with hourly. Fast recovery rarely matters for storage cleanup (user already saw the plant disappear)."
+            },
+            {
+              "id": "c",
+              "label": "Daily cron only; rely on Inngest per-event retry policy (3 retries) for happy path",
+              "description": "Reconciler is purely fail-safe. Inngest's automatic retry (4 attempts default) handles transient. Daily reconciler catches stuck rows. Lighter ops load; longer worst-case before ops sees a stuck row."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Hourly reconciliation is fast enough for cleanup that is invisible to the user and conservative on function-run budget. Five attempts with widening backoff covers transient outages while producing a clear failed state for ops alerts.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "test-infra",
+      "title": "Wave 0 Test Infrastructure",
+      "questions": [
+        {
+          "id": "Q-25",
+          "title": "fake-indexeddb scope",
+          "context": "ROADMAP plan 05-01 Wave 0 includes fake-indexeddb. Used to test TanStack Query IDB persister + sort-persistence hook in Vitest unit suite (jsdom). Playwright runs real Chromium with real IDB.",
+          "options": [
+            {
+              "id": "a",
+              "label": "fake-indexeddb in Vitest unit setup only; Playwright uses real Chromium IDB (recommended)",
+              "description": "Add fake-indexeddb dev dep. tests/unit/setup-idb.ts imports 'fake-indexeddb/auto'. Per-test isolation via beforeEach { indexedDB.deleteDatabase(...); } or unique DB name per test. Playwright tests run real IDB; per-spec setup clears storageState. Two clean layers."
+            },
+            {
+              "id": "b",
+              "label": "fake-indexeddb only in tests that exercise persister; not as global setup",
+              "description": "Targeted import per test file. Other tests don't pay the polyfill cost. Risk: tests that touch TanStack Query cache without thinking about IDB suddenly fail. Less ergonomic."
+            },
+            {
+              "id": "c",
+              "label": "Skip fake-indexeddb; mock the persister at the boundary",
+              "description": "Persister tests use vi.mock('@tanstack/query-async-storage-persister'). Doesn't actually exercise IDB; misses persister<->idb-keyval integration bugs."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Use fake-indexeddb only for Vitest/jsdom where the browser API is missing. Playwright should exercise real Chromium storage so offline and persistence specs validate the actual runtime behavior.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-26",
+          "title": "Playwright auth-bypass fixture",
+          "context": "Phase 4 specs run real Supabase signup + verify + login flows (~3s overhead per spec). Phase 5 has many feature specs (catalog grid + sort + add + profile + journal + delete + offline + read-only). Per-spec real auth would balloon CI runtime.",
+          "options": [
+            {
+              "id": "a",
+              "label": "authedUser fixture: admin.createUser + verified User + trialing Subscription, inject session cookies (recommended)",
+              "description": "Playwright fixture in tests/e2e/fixtures/authed-user.ts. Calls supabase.auth.admin.createUser server-side, INSERTs verified public.users + ConsentLog \u00d7 2 + trialing Subscription, then injects supabase-auth-token cookies into the test browser. Tests start at the catalog already authenticated. ~50ms per spec. Real-auth specs stay in Phase 4 only."
+            },
+            {
+              "id": "b",
+              "label": "storageState approach \u2014 generate one auth state file per worker, reuse across specs",
+              "description": "Playwright globalSetup signs up + logs in once per worker, saves storageState JSON. Spec test() projects load the state. Faster per-spec; less test isolation (shared user across specs in same worker). Risk: cross-spec state leak."
+            },
+            {
+              "id": "c",
+              "label": "Keep real signup + login flow per test; accept ~3s overhead",
+              "description": "Highest fidelity; slowest CI. Doesn't match Phase 4's velocity profile when 18 plans land specs each."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "A dedicated authedUser fixture keeps Phase 5 feature specs isolated and fast without repeating the Phase 4 auth journey. Real signup/login coverage belongs in Phase 4; catalog specs should start from a verified, trialing user state.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-27",
+          "title": "Storage cleanup pattern for integration tests",
+          "context": "Phase 2 D-43 wraps each integration test in a transaction (rollback at end). Storage isn't transactional \u2014 bytes uploaded by tests need cleanup. photo-storage.ts already exposes __setStorageAdapterForTests for adapter swap.",
+          "options": [
+            {
+              "id": "a",
+              "label": "In-memory StorageAdapter for integration tests via __setStorageAdapterForTests (recommended)",
+              "description": "tests/integration/setup.ts swaps in InMemoryStorageAdapter (Map<bucket, Map<key, buffer>>). Zero real-bucket writes. UoW rollback already handles DB. Fast, hermetic, no cleanup. Real-storage path tested in unit tests of supabase-storage adapter only."
+            },
+            {
+              "id": "b",
+              "label": "Per-test bucket-prefix isolation: each test gets a UUID prefix; afterAll deletePrefix",
+              "description": "Real Supabase storage in CI; test uses prefix 'tests/{worker_uuid}/'. afterAll cleans up. Higher fidelity; flake risk on storage outages; pollutes local Supabase storage."
+            },
+            {
+              "id": "c",
+              "label": "Skip storage layer in integration tests \u2014 only unit tests cover photo-storage helper",
+              "description": "Integration tests mock the use-case at the boundary. Misses use-case<->storage integration bugs (the kind that fooled Plan 04 PostHog client capture)."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "The in-memory adapter keeps integration tests hermetic because DB rollback cannot clean real storage. Test the Supabase storage adapter separately, and let catalog integration tests focus on use-case behavior without external bucket flakes.",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "telemetry",
+      "title": "Telemetry \u2014 PostHog Events",
+      "questions": [
+        {
+          "id": "Q-28",
+          "title": "plant_added event properties",
+          "context": "ROADMAP plan 05-05: 'PostHog plant_added (Open Q6)'. Phase 1 D-21 PostHog posture: identified_only persons. Server-side capture via posthog-node (Phase 1 D-21).",
+          "options": [
+            {
+              "id": "a",
+              "label": "{ source: 'manual', has_nickname, has_location, has_acquisition_date, has_notes, photo_count } (recommended)",
+              "description": "Privacy-clean (no plant identifiers). source field reused by Phase 6 with 'identification'. has_* booleans capture optional-field engagement without PII. Fires server-side from /api/v1/plants POST handler."
+            },
+            {
+              "id": "b",
+              "label": "Same as (a) plus plant_id (UUID)",
+              "description": "Useful for funnel analysis joining PostHog \u2192 DB. Slight risk: plant IDs in PostHog (a US-cloud third party) constitute pseudonymous identifier \u2014 needs LGPD review per Phase 1 D-21."
+            },
+            {
+              "id": "c",
+              "label": "Same as (a) plus has_species (always false in Phase 5; reused by Phase 6 = true)",
+              "description": "Forward-compatible event shape. Slight redundancy with source='manual' implying has_species=false. Phase 6 might break event consistency by toggling both fields."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "These properties measure optional-field engagement without sending plant names, locations, notes, or plant IDs to PostHog. Keeping source prepares the same event for Phase 6 identification-created plants.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-29",
+          "title": "Inline-edit + delete telemetry depth",
+          "context": "Inline edits on plant profile (5 fields) + plant deletion. Optional events. Phase 1 PostHog posture is identified_only. Question: how much do we want to learn about post-add engagement before launch?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single plant_edited event with property field \u2208 {name, nickname, room, ack_date, notes} + plant_deleted event (recommended)",
+              "description": "Two events total. plant_edited fires from PATCH route with field name. plant_deleted fires from DELETE route with photo_count, journal_entry_count properties. Privacy-clean. Useful funnels: 'how many users add notes after a week?' 'do users delete plants in their first session?'"
+            },
+            {
+              "id": "b",
+              "label": "No PostHog events for edits/deletes \u2014 server logs cover audit",
+              "description": "Lean. PostHog stays focused on the identify\u2192catalog\u2192care funnel. Easy to add later if a hypothesis demands it. Trade-off: no quantitative answer for 'do users use the journal?' until Phase 7+."
+            },
+            {
+              "id": "c",
+              "label": "Per-field events (plant_renamed, plant_relocated, plant_acquisition_date_set, plant_notes_added) + plant_deleted",
+              "description": "Higher event-count growth; chatty. Easier dashboards 'top edited fields'. Trade-off: event proliferation; harder to consolidate later."
+            },
+            {
+              "id": "d",
+              "label": "Other",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "Two privacy-clean events are enough to answer whether users maintain and prune their gardens after adding plants. Use the schema field name acquisition_date rather than ack_date in the implementation to avoid telemetry drift.",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}

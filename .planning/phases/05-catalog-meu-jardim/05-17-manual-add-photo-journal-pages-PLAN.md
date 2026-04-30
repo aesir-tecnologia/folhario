@@ -22,7 +22,6 @@ files_modified:
   - tests/unit/photo-journal.test.tsx
   - tests/e2e/catalog-manual-add.spec.ts
   - tests/e2e/catalog-photo-journal.spec.ts
-  - tests/e2e/axe-placeholder-pages.spec.ts
 autonomous: true
 requirements:
   - CAT-02
@@ -47,9 +46,10 @@ must_haves:
     - "Tapping a journal entry photo opens the Lightbox at that index (UI-SPEC §8 / §9)"
     - "Tapping '+ Foto' opens a BottomSheet with photo picker + optional note textarea + Adicionar primary button (D-15 / UI-SPEC §8)"
     - "Submitting the journal add sheet POSTs multipart to /api/v1/plants/{plantId}/photo-entries and optimistically prepends the new entry on success (D-15)"
-    - "Journal add failure keeps the sheet open with sonner toast; photo bytes are retained client-side (D-15 / UI-SPEC §8 line 420)"
-    - "When useSubscription().readOnly is true, the '+ Foto' button is hidden but the Lightbox still works for browsing (D-21 / UI-SPEC §8 line 421)"
-    - "Both routes pass axe-core 0 serious + critical violations across {light,dark} × {no-preference,reduce} via the existing axe-placeholder-pages harness"
+    - "Journal add failure keeps the sheet open with sonner toast; photo bytes are retained client-side (D-15 / UI-SPEC §8 line 421)"
+    - "When useSubscription().readOnly is true, the '+ Foto' button is hidden but the Lightbox still works for browsing (D-21 / UI-SPEC §8 line 422)"
+    - "/catalog/add and /catalog/{plantId}/journal pass axe-core 0 serious + critical violations across {light,dark} × {no-preference,reduce} via dedicated authed Playwright specs (matches 05-16 pattern; `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified)"
+    - "Journal axe scan covers the BottomSheet OPEN state — sheet opened immediately before AxeBuilder.analyze() per UI-SPEC §8 line 422 a11y gate"
     - "User-typed nickname and notes render via React text-content (no dangerouslySetInnerHTML), so script tags display as literal text"
   artifacts:
     - path: "src/app/(app)/catalog/add/page.tsx"
@@ -70,11 +70,11 @@ must_haves:
     - path: "tests/unit/photo-journal.test.tsx"
       provides: "Vitest unit-dom suite covering: reverse-chrono ordering, lightbox-on-tap, '+ Foto' visibility flip on readOnly, optimistic prepend on add success, sheet stays open + bytes retained on add failure, user-typed note renders `<script>` text as literal content (T-05-17-02 XSS guard)."
     - path: "tests/e2e/catalog-manual-add.spec.ts"
-      provides: "Playwright spec — manual-add happy path (form submit → /catalog/{plantId}) AND manual-add validation (missing name + photo → ≥2 errors summary + Overdue Rust borders + first-invalid focused). Per VALIDATION.md E2E rows 'Manual add happy path' and 'Manual add validation'."
+      provides: "Dedicated authed Playwright spec — manual-add happy path (form submit → /catalog/{plantId}) AND manual-add validation (missing name + photo → ≥2 errors summary + Overdue Rust borders + first-invalid focused) AND axe scans of /catalog/add across 4 colorScheme × reducedMotion combos with 0 serious/critical violations. Per VALIDATION.md E2E rows 'Manual add happy path' and 'Manual add validation' + Axe Catalog routes stratum."
+      contains: "AxeBuilder"
     - path: "tests/e2e/catalog-photo-journal.spec.ts"
-      provides: "Playwright spec — manual-add a plant first (reusing the same flow), navigate to its journal, '+ Foto' opens BottomSheet, submit prepends optimistically, tap thumbnail opens Lightbox. Per VALIDATION.md E2E row 'Photo journal'."
-    - path: "tests/e2e/axe-placeholder-pages.spec.ts"
-      provides: "Existing axe harness — extend ROUTES array with `/catalog/add` and `/catalog/{seededPlantId}/journal`. The journal route requires a seeded plant via the manual-add flow OR direct DB seed via the authedUser fixture."
+      provides: "Dedicated authed Playwright spec — manual-add a plant first (reusing the same flow), navigate to its journal, '+ Foto' opens BottomSheet, submit prepends optimistically, tap thumbnail opens Lightbox, AND axe scans of /catalog/{plantId}/journal with the BottomSheet OPEN across 4 colorScheme × reducedMotion combos with 0 serious/critical violations. Per VALIDATION.md E2E row 'Photo journal' + Axe Catalog routes stratum."
+      contains: "AxeBuilder"
   key_links:
     - from: "src/app/(app)/catalog/add/add-plant-form.tsx"
       to: "src/shared/images/client-compress.ts"
@@ -108,10 +108,14 @@ must_haves:
       to: "src/contexts/billing/application/use-subscription.ts (from 05-11)"
       via: "import { useSubscription } from '@billing/application/use-subscription'"
       pattern: "useSubscription"
-    - from: "tests/e2e/axe-placeholder-pages.spec.ts"
-      to: "/catalog/add and /catalog/{plantId}/journal"
-      via: "ROUTES array literal extension"
-      pattern: "/catalog/add"
+    - from: "tests/e2e/catalog-manual-add.spec.ts"
+      to: "tests/e2e/fixtures/authed-user.ts"
+      via: "authedUser fixture drives all manual-add scenarios + axe scans"
+      pattern: "authedUser"
+    - from: "tests/e2e/catalog-photo-journal.spec.ts"
+      to: "tests/e2e/fixtures/authed-user.ts"
+      via: "authedUser fixture drives all journal scenarios + axe scans"
+      pattern: "authedUser"
 ---
 
 <objective>
@@ -119,7 +123,7 @@ Ship the two remaining Phase 5 user-facing surfaces — the **Manual Add** page 
 
 Purpose: close requirements **CAT-02** (manual create: name + ≥1 photo → Plant + PhotoEntry, surfaced from the user perspective), **CAT-03** (missing name OR photo → `validation_failed` + per-field highlight), **CAT-05** (location picker reuses prior + defaults), **CAT-06** (photo journal add with optional note + reverse-chrono list), **UI-07** (manual-add card geometry), and **UI-11** (photo journal + add entry + read-only variant).
 
-Output: two server-component page shells, three client components (`AddPlantForm`, `PhotoJournal`, `JournalAddSheet`), two Vitest unit-dom suites, two Playwright E2E specs, and a single-line extension to `tests/e2e/axe-placeholder-pages.spec.ts` ROUTES array — all gated by automated verification (axe + Playwright + Vitest unit-dom).
+Output: two server-component page shells, three client components (`AddPlantForm`, `PhotoJournal`, `JournalAddSheet`), two Vitest unit-dom suites, and two dedicated authed Playwright E2E specs that ALSO own the axe a11y coverage for these auth-required surfaces. `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan — that file is reserved for unauthenticated routes (its `page.goto(route)` at `tests/e2e/axe-placeholder-pages.spec.ts:22` runs without any auth fixture, so adding `/catalog/add` or `/catalog/{plantId}/journal` would scan the login redirect, not the actual page). This plan adopts the same dedicated-authed-spec pattern that 05-16 ships for `/catalog/{plantId}`.
 
 Per the planner brief: this plan is `type: execute`. The brief flagged TDD for the client-side compress/EXIF-strip helper, but `src/shared/images/client-compress.ts` already exists from Phase 02 and is already covered by `tests/unit/image-pipeline.test.ts` — it does NOT need to be (re-)test-driven here. Tasks below CONSUME `compressPlantPhoto`; they do not redefine it.
 </objective>
@@ -145,12 +149,12 @@ Per the planner brief: this plan is `type: execute`. The brief flagged TDD for t
 @.planning/phases/05-catalog-meu-jardim/05-12-combobox-primitive-PLAN.md
 @.planning/phases/05-catalog-meu-jardim/05-13-bottom-sheet-primitive-PLAN.md
 @.planning/phases/05-catalog-meu-jardim/05-14-lightbox-inline-edit-primitives-PLAN.md
+@.planning/phases/05-catalog-meu-jardim/05-16-plant-profile-page-PLAN.md
 @src/shared/images/client-compress.ts
 @src/shared/images/limits.ts
 @src/shared/ui/text-input.tsx
 @src/shared/ui/modal-sheet.tsx
 @src/app/(app)/catalog/page.tsx
-@tests/e2e/axe-placeholder-pages.spec.ts
 @CLAUDE.md
 
 <interfaces>
@@ -275,13 +279,30 @@ POST /api/v1/plants/{plantId}/photo-entries
 - **Color discipline (UI-22)** — validation uses Overdue Rust (`border-rust` Tailwind class — see Phase 3 `text-input.tsx:35` precedent), NEVER Urgent Poppy.
 - **Snake_case JSON** for API request and response bodies (PRD §5).
 - **Closed error registry only** — never invent a new code; map server errors to the existing `validation_failed | not_found | forbidden | read_only_mode | subscription_required` set.
+
+### Pattern reference — 05-16 dedicated-authed-spec axe block (this plan mirrors the structure)
+
+```typescript
+// from 05-16-plant-profile-page-PLAN.md Task 3, lines 786-803.
+const COMBOS = [
+  { colorScheme: "light", reducedMotion: "no-preference" },
+  { colorScheme: "light", reducedMotion: "reduce" },
+  { colorScheme: "dark", reducedMotion: "no-preference" },
+  { colorScheme: "dark", reducedMotion: "reduce" },
+] as const;
+for (const combo of COMBOS) {
+  test(`axe /catalog/{plantId} [${combo.colorScheme} / ${combo.reducedMotion}]`, async ({ authedUser, page }) => {
+    /* seed plant; emulateMedia; goto; AxeBuilder.analyze() ... */
+  });
+}
+```
 </interfaces>
 </context>
 
 <tasks>
 
 <task type="auto">
-  <name>Task 1: Manual Add page (/catalog/add) + AddPlantForm client component</name>
+  <name>Task 1: Manual Add page (/catalog/add) + AddPlantForm client component + authed E2E spec (incl. axe)</name>
   <files>
     src/app/(app)/catalog/add/page.tsx,
     src/app/(app)/catalog/add/add-plant-form.tsx,
@@ -327,6 +348,7 @@ POST /api/v1/plants/{plantId}/photo-entries
       5. On success (201): parse JSON → `router.push('/catalog/' + data.id)` using `next/navigation` `useRouter`.
       6. On failure: parse `error.code` from the response. If `validation_failed`: surface server-side per-field errors (the route returns `error.details.fields` per closed registry). Otherwise: `toast.error(labels.submitFailure)` via sonner (already in repo from Phase 03). Photo bytes remain in component state — preview persists, user can retry without re-picking. UI-SPEC §5 line 247.
     - **XSS guard** (T-05-17-02): nickname and notes are NEVER rendered via `dangerouslySetInnerHTML` anywhere in this component. They are rendered as React text content only. The Vitest test below proves this.
+    - Add `data-testid="add-plant-form"` to the form root wrapper so the Playwright spec can reliably anchor on it for the axe scan.
 
     **C. Unit-dom tests** — `tests/unit/add-plant-form.test.tsx`:
     - Mock `@shared/images/client-compress` so `compressPlantPhoto` is `vi.fn(async (f: File) => f)` — we are not retesting compression here, only that it is INVOKED before the POST.
@@ -339,10 +361,31 @@ POST /api/v1/plants/{plantId}/photo-entries
     - Test 5 — read-only hides submit: render with `readOnly={true}`. Assert: submit button is NOT in the document (`queryByRole('button', { name: /adicionar à minha estante/i })` is null). UI-SPEC §5 line 216.
     - Test 6 — submit failure retains photo: seed valid form, mock fetch to resolve with 500. Click submit. Assert: photo preview `<img>` is still present; sonner toast was emitted (mock `sonner` `toast.error`); submit button is re-enabled with idle label.
 
-    **D. E2E spec** — `tests/e2e/catalog-manual-add.spec.ts`:
-    - Use the `authedUser` Playwright fixture from 05-01.
+    **D. Dedicated authed E2E spec (incl. axe)** — `tests/e2e/catalog-manual-add.spec.ts`:
+    - Use the `authedUser` Playwright fixture from 05-01: `import { test, expect } from "./fixtures/authed-user";` plus `import AxeBuilder from "@axe-core/playwright";`.
+    - This spec OWNS the axe coverage for `/catalog/add`. It does NOT modify `tests/e2e/axe-placeholder-pages.spec.ts` (that file is for unauthenticated routes only — its `for (const route of ROUTES)` loop calls `page.goto(route)` without any fixture; adding `/catalog/add` there would scan the login redirect, not the form).
     - Test "manual add happy path" (per VALIDATION.md row): goto `/catalog/add` → fill name "Hera" → set photo from `tests/e2e/fixtures/sample.jpg` (use the existing 1-pixel sample if present, else seed `tests/e2e/fixtures/sample.jpg` — a minimal real JPEG checked into the repo by the catalog test infra; if absent, use Playwright's `Buffer.from(...)` PNG with a 1×1 pixel base64) → click Adicionar → assert URL matches `/catalog/[a-f0-9-]{36}` → assert plant name appears on the destination page (best-effort: 05-16 ships the profile but if not yet present the URL change alone is the gate).
     - Test "manual add validation" (per VALIDATION.md row): goto `/catalog/add` → click submit with empty form → assert summary block visible with text matching `Falta preencher` → assert at least 2 inputs have `aria-invalid="true"` → assert the first invalid input is the active element (`expect(page.locator(':focus')).toHaveAttribute('aria-invalid', 'true')`).
+    - **Axe a11y across 4 colorScheme × reducedMotion combos** (mirrors 05-16 exactly):
+      ```typescript
+      const COMBOS = [
+        { colorScheme: "light", reducedMotion: "no-preference" },
+        { colorScheme: "light", reducedMotion: "reduce" },
+        { colorScheme: "dark", reducedMotion: "no-preference" },
+        { colorScheme: "dark", reducedMotion: "reduce" },
+      ] as const;
+      for (const combo of COMBOS) {
+        test(`axe /catalog/add [${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({ page, authedUser }) => {
+          await page.emulateMedia(combo);
+          await page.goto('/catalog/add');
+          await page.waitForSelector('[data-testid="add-plant-form"]');
+          const results = await new AxeBuilder({ page }).analyze();
+          const blocking = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+          expect(blocking, `serious + critical: ${blocking.map(v => v.id).join(', ')}`).toEqual([]);
+        });
+      }
+      ```
+    - `test.describe.configure({ retries: 0 })` for deterministic timing (matches 05-16 pattern).
 
     **Test data fixture note** — if `tests/e2e/fixtures/sample.jpg` does not exist, this task creates it. Use a minimal valid JPEG (~1KB, no EXIF) committed as binary. The same fixture is reused by Task 2.
   </action>
@@ -356,12 +399,14 @@ POST /api/v1/plants/{plantId}/photo-entries
     - Submitting valid form posts to `/api/v1/plants` and routes to `/catalog/{plantId}` (Playwright happy-path spec green).
     - read-only mode hides the submit button and renders the read-only banner (Vitest Test 5 green).
     - Submit failure retains the photo preview and surfaces a sonner toast (Vitest Test 6 green).
+    - Axe scans of `/catalog/add` across 4 colorScheme × reducedMotion combos return 0 serious + critical violations (4 axe tests in `catalog-manual-add.spec.ts` green).
+    - `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this task.
     - All new files compile (`pnpm tsc --noEmit` clean), pass `pnpm lint`.
   </done>
 </task>
 
 <task type="auto">
-  <name>Task 2: Photo Journal page (/catalog/[plantId]/journal) + PhotoJournal + JournalAddSheet</name>
+  <name>Task 2: Photo Journal page (/catalog/[plantId]/journal) + PhotoJournal + JournalAddSheet + authed E2E spec (incl. axe with sheet open)</name>
   <files>
     src/app/(app)/catalog/[plantId]/journal/page.tsx,
     src/app/(app)/catalog/[plantId]/journal/photo-journal.tsx,
@@ -390,6 +435,7 @@ POST /api/v1/plants/{plantId}/photo-entries
     - Render `+ Foto` button at top right of the page only when `!readOnly` (UI-SPEC §8 line 392 + D-21). Click → `setAddSheetOpen(true)`.
     - Empty state (entries.length <= 1, only the cover): render Phase 03 `<EmptyState>` with `headline=labels.empty.title`, `hint=labels.empty.hint`, `ctaLabel=labels.empty.cta`, `onCtaClick={() => setAddSheetOpen(true)}` (UI-SPEC §8 line 394–399). Hide the CTA in read-only.
     - Render `<JournalAddSheet open={addSheetOpen} onOpenChange={setAddSheetOpen} plantId={plant.id} labels={labels.add} />`.
+    - Add `data-testid="photo-journal"` to the root wrapper so the Playwright spec can anchor on it for axe + waitForSelector.
     - **XSS guard** (T-05-17-02): `entry.note` is rendered as `<p>{entry.note}</p>` — React text-content only, NEVER `dangerouslySetInnerHTML`. The Vitest test below proves a `<script>` tag in `note` renders as literal text.
 
     **C. JournalAddSheet client** — `src/app/(app)/catalog/[plantId]/journal/journal-add-sheet.tsx`:
@@ -426,8 +472,9 @@ POST /api/v1/plants/{plantId}/photo-entries
     - Test 5 — failure rolls back + sheet re-opens: same setup but fetch resolves 500. Assert: list returns to original length; sheet is open; sonner `toast.error` was called; the file is still selected (preview persists in the sheet).
     - Test 6 — XSS guard (T-05-17-02): pass an entry with `note: "<script>alert('xss')</script>"`. Render. Assert: `document.body.innerHTML` contains the literal text `&lt;script&gt;` (escaped) and DOES NOT contain a `<script>` element (`document.querySelectorAll('script').length === 0` for the journal subtree, OR more strictly `getByText("<script>alert('xss')</script>")` matches).
 
-    **E. E2E spec** — `tests/e2e/catalog-photo-journal.spec.ts`:
-    - Use the `authedUser` fixture.
+    **E. Dedicated authed E2E spec (incl. axe with sheet open)** — `tests/e2e/catalog-photo-journal.spec.ts`:
+    - Use the `authedUser` fixture: `import { test, expect } from "./fixtures/authed-user";` plus `import AxeBuilder from "@axe-core/playwright";`.
+    - This spec OWNS the axe coverage for `/catalog/{plantId}/journal`. It does NOT modify `tests/e2e/axe-placeholder-pages.spec.ts`.
     - Test "Photo journal E2E" (per VALIDATION.md row):
       1. Drive the manual-add flow (`page.goto('/catalog/add')` → fill name → set photo → submit) to land on `/catalog/{plantId}`. This also serves as the "we don't have a separate seed-plant fixture" bridge — it's the only way to land on a real plant profile without 05-16 also being shipped or a custom seeder. (Per advisor feedback: this is the cleanest path.)
       2. Capture the plant id from the URL.
@@ -435,16 +482,36 @@ POST /api/v1/plants/{plantId}/photo-entries
       4. Click `+ Foto` → assert BottomSheet is visible (`getByRole('dialog', { name: /adicionar foto/i })` or `name: /Anotação/`).
       5. Set the photo via the sheet's input → click Adicionar → assert the sheet closes AND the journal list now shows ≥2 entries (cover + new entry).
       6. Click the second journal entry's photo → assert Lightbox is visible (`getByRole('dialog', { name: /galeria/i })`).
-
-    **F. axe ROUTES extension** — modify `tests/e2e/axe-placeholder-pages.spec.ts`:
-    - Extend the ROUTES const at line 4 to include `/catalog/add`.
-    - The journal route requires a seeded plant. Two options:
-      - (Preferred) Add a separate spec block at the bottom of the file that drives the manual-add flow first to land on a real journal URL, then runs the existing axe scan loop against it.
-      - (Simpler) Skip the dynamic journal route in the placeholder spec and rely on `tests/e2e/catalog-photo-journal.spec.ts` to include its own axe scan via `AxeBuilder` after step 4.
-    - This task implements the SIMPLER option: extend ROUTES with `/catalog/add` only, and put the journal axe scan inside `catalog-photo-journal.spec.ts` after the BottomSheet opens (so axe also covers the open-sheet state — UI-SPEC §8 line 421 a11y gate).
+    - **Axe a11y across 4 colorScheme × reducedMotion combos — BottomSheet OPEN state** (per UI-SPEC §8 line 422 a11y gate; matches 05-16 dedicated-authed-spec pattern):
+      ```typescript
+      const COMBOS = [
+        { colorScheme: "light", reducedMotion: "no-preference" },
+        { colorScheme: "light", reducedMotion: "reduce" },
+        { colorScheme: "dark", reducedMotion: "no-preference" },
+        { colorScheme: "dark", reducedMotion: "reduce" },
+      ] as const;
+      for (const combo of COMBOS) {
+        test(`axe /catalog/{plantId}/journal [sheet open, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({ page, authedUser }) => {
+          // Seed a plant via the manual-add flow (same approach as the E2E happy path above).
+          // Helper: const plantId = await seedPlantViaForm(page, { name: 'AxeJournal' });
+          await page.emulateMedia(combo);
+          await page.goto(`/catalog/${plantId}/journal`);
+          await page.waitForSelector('[data-testid="photo-journal"]');
+          // Open the BottomSheet so the axe scan covers the open-sheet a11y contract.
+          await page.getByRole('button', { name: /\+ Foto/i }).click();
+          await page.waitForSelector('[role="dialog"]');
+          const results = await new AxeBuilder({ page }).analyze();
+          const blocking = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+          expect(blocking, `serious + critical: ${blocking.map(v => v.id).join(', ')}`).toEqual([]);
+        });
+      }
+      ```
+      The BottomSheet MUST be open during the axe scan because UI-SPEC §8 line 422 specifies the open-sheet state as the a11y gate (focus trap, dialog labelling, drag-handle aria-label all only verifiable while open). 05-16 establishes the same pattern for `<DeleteConfirmSheet>`.
+    - `test.describe.configure({ retries: 0 })` for deterministic timing (matches 05-16 pattern).
+    - The shared `seedPlantViaForm` helper can be inlined at the top of this spec or imported from `tests/e2e/fixtures/seed-plant.ts` if 05-15/05-16 has promoted it (verify at write time via `grep -l "export.*seedPlant" tests/e2e/fixtures/`).
   </action>
   <verify>
-    <automated>pnpm exec vitest --run --project=unit-dom tests/unit/photo-journal.test.tsx &amp;&amp; pnpm exec playwright test tests/e2e/catalog-photo-journal.spec.ts tests/e2e/axe-placeholder-pages.spec.ts --project=chromium</automated>
+    <automated>pnpm exec vitest --run --project=unit-dom tests/unit/photo-journal.test.tsx &amp;&amp; pnpm exec playwright test tests/e2e/catalog-photo-journal.spec.ts --project=chromium</automated>
   </verify>
   <done>
     - `/catalog/{plantId}/journal` renders entries in reverse-chrono order with lightbox-on-tap.
@@ -452,7 +519,8 @@ POST /api/v1/plants/{plantId}/photo-entries
     - Submitting the add sheet POSTs multipart to the photo-entries endpoint and optimistically prepends; on failure the sheet stays open with sonner toast and bytes retained (Vitest Tests 4/5 + Playwright spec green).
     - In read-only mode the `+ Foto` button is hidden but the Lightbox remains usable (Vitest Test 2 green).
     - User-typed notes render as text content only — `<script>` injection renders as literal text (Vitest Test 6 green; T-05-17-02 mitigated).
-    - axe-core passes 0 serious + critical violations against `/catalog/add` and the open-sheet state of the journal page across all four `(theme × motion)` combinations.
+    - Axe scans of `/catalog/{plantId}/journal` with the BottomSheet OPEN across 4 colorScheme × reducedMotion combos return 0 serious + critical violations (4 axe tests in `catalog-photo-journal.spec.ts` green).
+    - `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this task.
     - All new files compile (`pnpm tsc --noEmit` clean) and pass `pnpm lint`.
   </done>
 </task>
@@ -484,8 +552,9 @@ Block-on: high. Tasks ship only when T-05-17-01 and T-05-17-02 mitigations are p
 - All new and modified files type-check cleanly (`pnpm tsc --noEmit`).
 - All new and modified files pass `pnpm lint`.
 - `pnpm exec vitest --run --project=unit-dom tests/unit/add-plant-form.test.tsx tests/unit/photo-journal.test.tsx` passes.
-- `pnpm exec playwright test tests/e2e/catalog-manual-add.spec.ts tests/e2e/catalog-photo-journal.spec.ts tests/e2e/axe-placeholder-pages.spec.ts --project=chromium` passes.
-- The axe-placeholder-pages spec covers `/catalog/add` across all 4 theme×motion combinations with 0 serious + critical violations.
+- `pnpm exec playwright test tests/e2e/catalog-manual-add.spec.ts tests/e2e/catalog-photo-journal.spec.ts --project=chromium` passes.
+- Axe coverage for `/catalog/add` and `/catalog/{plantId}/journal` (sheet open) lives in the dedicated authed specs above; 0 serious + critical violations across all 4 theme × motion combinations per spec.
+- `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan.
 - Manual visual sanity check (NOT a blocker — the Playwright + axe gates are the contract): pages render the UI-SPEC §5 + §8 layout at 375 / 600 / 900 viewports.
 </verification>
 
@@ -497,9 +566,12 @@ Block-on: high. Tasks ship only when T-05-17-01 and T-05-17-02 mitigations are p
 - **UI-07 partial (manual-add card)** satisfied: the manual-add page uses the same Plant Card geometry tokens (16px radius, 4:5 photo, 16px padding) for the photo dropzone preview state per UI-SPEC §5 line 203 and PRD §17 line 911.
 - **UI-11 satisfied**: photo journal screen + add-entry bottom sheet + read-only variant per UI-SPEC §8.
 - **D-21 honoured**: read-only mode hides the manual-add submit button (page still renders + banner + form fields read-only), hides the journal `+ Foto` button while keeping the Lightbox usable.
+- Axe a11y for both new auth-required surfaces lives in dedicated authed specs (matches 05-16 pattern); `tests/e2e/axe-placeholder-pages.spec.ts` is not modified.
 - **VALIDATION.md per-task verification map** updated with Task 1 + Task 2 entries pointing at their automated commands.
 </success_criteria>
 
 <output>
-After completion, create `.planning/phases/05-catalog-meu-jardim/05-17-SUMMARY.md` per `templates/summary.md` — including the four files created/modified by each task, the threats mitigated, and the test commands that gate this plan.
+After completion, create `.planning/phases/05-catalog-meu-jardim/05-17-SUMMARY.md` per `templates/summary.md` — including the four files created/modified by each task, the threats mitigated, the test commands that gate this plan, and a note that axe coverage for the auth-required surfaces lives in the dedicated authed Playwright specs created here (consistent with 05-16's pattern).
 </output>
+</content>
+</invoke>

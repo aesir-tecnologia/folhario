@@ -15,7 +15,6 @@ files_modified:
   - src/app/(app)/catalog/_components/plant-card.tsx
   - src/app/(app)/catalog/_components/use-sort-preference.ts
   - src/app/(app)/catalog/_components/use-sort-preference.unit.test.ts
-  - tests/e2e/axe-placeholder-pages.spec.ts
   - tests/e2e/catalog-grid-sort.spec.ts
 autonomous: true
 requirements:
@@ -44,7 +43,7 @@ must_haves:
     - "Selecting a different sort persists across in-app navigation within the same browser tab (e.g., /catalog → /catalog/[plantId] → back returns to the same sort)."
     - "Closing the tab clears the sessionStorage entry — opening a fresh tab reverts to default 'date_new'."
     - "When useSubscription().readOnly is true, the 'Adicionar planta' button in <CatalogHeader> is hidden (D-21)."
-    - "tests/e2e/axe-placeholder-pages.spec.ts ROUTES array includes /catalog (filled state via authedUser fixture seeding ≥1 plant) — 0 serious + critical violations across all 4 colorScheme/reducedMotion combos."
+    - "tests/e2e/catalog-grid-sort.spec.ts asserts authed /catalog axe scans (filled state with seeded plant AND empty state with zero plants) — 0 serious + critical violations across all 4 colorScheme × reducedMotion combos via the authedUser fixture (matches 05-16 dedicated-authed-spec pattern)."
     - "tests/e2e/catalog-grid-sort.spec.ts asserts 2/3/4 column counts at 375/600/900 viewports AND sort persists across navigation within the same tab."
   artifacts:
     - path: "src/app/(app)/catalog/page.tsx"
@@ -74,12 +73,10 @@ must_haves:
     - path: "src/app/(app)/catalog/_components/use-sort-preference.unit.test.ts"
       provides: "Vitest unit-dom coverage: round-trip read/write, default-when-absent, SSR-safe (no window), invalid value falls back to default"
       min_lines: 30
-    - path: "tests/e2e/axe-placeholder-pages.spec.ts"
-      provides: "Axe a11y gate — /catalog (filled state) added to ROUTES array; 0 serious/critical violations"
-      contains: "/catalog"
     - path: "tests/e2e/catalog-grid-sort.spec.ts"
-      provides: "Playwright E2E: responsive viewport assertions (2 cols @375, 3 @600, 4 @900) + sort persistence across navigation in same tab"
-      min_lines: 30
+      provides: "Playwright E2E (authedUser fixture): responsive viewport assertions (2 cols @375, 3 @600, 4 @900) + sort persistence across navigation in same tab + readOnly hides Add Plant + axe scans (filled AND empty /catalog) across 4 colorScheme × reducedMotion combos with 0 serious/critical violations"
+      min_lines: 60
+      contains: "AxeBuilder"
   key_links:
     - from: "src/app/(app)/catalog/page.tsx"
       to: "@contexts/catalog/queries"
@@ -107,12 +104,16 @@ must_haves:
       pattern: "<EmptyState"
     - from: "tests/e2e/catalog-grid-sort.spec.ts"
       to: "tests/e2e/fixtures/authed-user.ts"
-      via: "authedUser fixture seeds plants for the spec"
+      via: "authedUser fixture seeds plants AND drives all axe scans"
       pattern: "authedUser"
 ---
 
+<scope_rationale>
+This plan ships 5 tasks (above the standard 2-3 cap) by intent. Each task is atomic and low-coupling — they could in principle execute in parallel within a single agent session, but they share one feature seam (the `/catalog` filled-state surface) and splitting would force redundant context loading of the same UI-SPEC §1–§4 contract. Tasks 1–4 follow the interface-first ordering recommended by the planner spec (sort hook → presentational components → header w/ data wiring → SSR shell), and Task 5 closes the verification loop with the authed Playwright + axe spec. Each task remains within the 10–30% context-cost band; total plan budget targets ~50%. WARNING #2 from the verification check accepted-as-is with this rationale.
+</scope_rationale>
+
 <objective>
-Replace the empty-only `src/app/(app)/catalog/page.tsx` with a Server Component that pre-fetches the first catalog page (cursor null + `?include_count=1`) and dehydrates it into the client TanStack Query cache via `<HydrationBoundary>` per RESEARCH Pattern 1 (D-13). Branch on the SSR'd `total_count`: zero rows → `<CatalogEmpty>`; non-zero → `<CatalogHeader>` + `<CatalogGrid>` rendering `<PlantCard>` items at the locked 2/3/4-column responsive ladder. Ship the `useSortPreference` sessionStorage hook (D-11), an axe gate extension covering the filled-state route, and a Playwright spec proving responsive column counts + sort persistence across navigation.
+Replace the empty-only `src/app/(app)/catalog/page.tsx` with a Server Component that pre-fetches the first catalog page (cursor null + `?include_count=1`) and dehydrates it into the client TanStack Query cache via `<HydrationBoundary>` per RESEARCH Pattern 1 (D-13). Branch on the SSR'd `total_count`: zero rows → `<CatalogEmpty>`; non-zero → `<CatalogHeader>` + `<CatalogGrid>` rendering `<PlantCard>` items at the locked 2/3/4-column responsive ladder. Ship the `useSortPreference` sessionStorage hook (D-11), and a Playwright spec proving responsive column counts + sort persistence across navigation, with axe scans of both filled and empty `/catalog` states bundled into the same authed spec (matches the dedicated-authed-spec pattern adopted by 05-16).
 
 Purpose: this is the first user-facing surface that proves the Phase 5 catalog stack end-to-end — Server Component → use-case (05-07) → route handler (05-08) → TanStack Query (05-10) → read-only-mode gating (05-11). It also locks the visual contract (Plant Card / Grid / Header / Empty) every other Wave 4 plan reuses (05-16 reuses Plant Card geometry; 05-17 reuses card geometry on manual-add; 05-18 wires offline + read-only banners across them).
 
@@ -120,7 +121,7 @@ Output:
 - Live `/catalog` route serving SSR'd first 50 plants OR Empty State
 - `<CatalogGrid>` + `<CatalogHeader>` + `<CatalogEmpty>` + `<PlantCard>` client components
 - `useSortPreference` hook + Vitest unit-dom tests (TDD)
-- Axe + Playwright gates for responsive grid + sort persistence
+- Authed Playwright spec covering responsive grid + sort persistence + readOnly hide + axe a11y (filled + empty states × 4 combos)
 </objective>
 
 <execution_context>
@@ -153,9 +154,11 @@ Output:
 @src/shared/ui/query-provider.tsx
 @src/contexts/billing/application/use-subscription.ts
 
-<!-- Existing test fixture + axe spec to extend -->
-@tests/e2e/axe-placeholder-pages.spec.ts
+<!-- Existing test fixture this plan consumes (NOT modified) -->
 @tests/e2e/fixtures/authed-user.ts
+
+<!-- Reference exemplar for the dedicated-authed-spec pattern this plan adopts -->
+@.planning/phases/05-catalog-meu-jardim/05-16-plant-profile-page-PLAN.md
 
 <interfaces>
 <!-- Contracts the executor receives directly — no codebase exploration needed.
@@ -237,22 +240,29 @@ export default async function CatalogPage() {
 ```
 NOTE: use `fetchQuery` (returns the data) — NOT `prefetchQuery` (returns void) — because the SSR result must drive the empty/filled branch.
 
-From `tests/e2e/axe-placeholder-pages.spec.ts:4` — current ROUTES array (this plan extends it):
-```typescript
-const ROUTES = ["/", "/catalog", "/identify", "/profile", "/offline"] as const;
-// /catalog is already in the array but only ever serves the empty placeholder.
-// After this plan, /catalog can render either empty OR filled — the spec must
-// cover BOTH states. Use the authedUser fixture (05-01) to seed ≥1 plant for
-// the filled scan; keep the unauthenticated empty-route scan via existing flow.
-```
-
 From `tests/e2e/fixtures/authed-user.ts` (produced by 05-01):
 ```typescript
 export const test = base.extend<{ authedUser: { id: string; email: string } }>({
   authedUser: async ({ context }, use) => { /* seeds verified user + injects cookies */ },
 });
 ```
-This plan's E2E spec also seeds a plant via `POST /api/v1/plants` (05-08) using the authedUser session.
+This plan's E2E spec also seeds a plant via `POST /api/v1/plants` (05-08) using the authedUser session for the filled-state assertions; the empty-state axe variant uses a fresh authedUser without seeding.
+
+Pattern reference — 05-16 dedicated-authed-spec axe block (this plan mirrors the structure):
+```typescript
+// from 05-16-plant-profile-page-PLAN.md Task 3 — same COMBOS array, same assertion shape.
+const COMBOS = [
+  { colorScheme: "light", reducedMotion: "no-preference" },
+  { colorScheme: "light", reducedMotion: "reduce" },
+  { colorScheme: "dark", reducedMotion: "no-preference" },
+  { colorScheme: "dark", reducedMotion: "reduce" },
+] as const;
+for (const combo of COMBOS) {
+  test(`axe /catalog [filled, ${combo.colorScheme} / ${combo.reducedMotion}]`, async ({ authedUser, page }) => {
+    /* seed plant; emulateMedia; goto; AxeBuilder.analyze() ... */
+  });
+}
+```
 </interfaces>
 
 <i18n_keys>
@@ -519,16 +529,29 @@ catalog.card.locationPrefix     → (decorative — alt for MapPin icon if neede
 </task>
 
 <task type="auto">
-  <name>Task 5: Playwright + Axe gates — responsive grid + sort persistence + a11y</name>
-  <files>
-    tests/e2e/catalog-grid-sort.spec.ts,
-    tests/e2e/axe-placeholder-pages.spec.ts
-  </files>
+  <name>Task 5: Authed Playwright spec — responsive grid + sort persistence + readOnly + axe (filled + empty × 4 combos)</name>
+  <files>tests/e2e/catalog-grid-sort.spec.ts</files>
   <action>
-    PART A — Create NEW spec `tests/e2e/catalog-grid-sort.spec.ts`:
-    Use the `authedUser` fixture (05-01). Seed 3 plants via `POST /api/v1/plants` (multipart) using the authed session BEFORE the visual assertions; teardown lets fixture's transaction rollback handle DB cleanup (Phase 2 D-43; otherwise issue DELETE for each id created).
+    Create the dedicated authed spec `tests/e2e/catalog-grid-sort.spec.ts` (mirroring 05-16's `plant-profile.spec.ts` pattern). All scans run via the `authedUser` fixture (05-01) — `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan (auth-required surfaces require a fixture; that spec uses bare `page.goto()` per `tests/e2e/axe-placeholder-pages.spec.ts:22`).
 
-    Test 1 — responsive viewport columns (3 sub-tests):
+    Spec layout:
+    ```typescript
+    import { test, expect } from "./fixtures/authed-user";
+    import { test as readOnlyTest } from "./fixtures/read-only";
+    import AxeBuilder from "@axe-core/playwright";
+
+    const COMBOS = [
+      { colorScheme: "light", reducedMotion: "no-preference" },
+      { colorScheme: "light", reducedMotion: "reduce" },
+      { colorScheme: "dark", reducedMotion: "no-preference" },
+      { colorScheme: "dark", reducedMotion: "reduce" },
+    ] as const;
+
+    // helper — POST /api/v1/plants (multipart) using the authed session
+    async function seedPlant(page, { name }: { name: string }): Promise<string> { /* ... */ }
+    ```
+
+    PART A — Responsive viewport columns (3 sub-tests): seed 3 plants via the authed session before each viewport assertion (or in a shared `beforeAll`). At each viewport (375/600/900), `page.goto('/catalog')`, wait for `[data-testid="catalog-grid"]`, then read computed `grid-template-columns`:
     ```typescript
     for (const { width, expectedCols } of [
       { width: 375, expectedCols: 2 },
@@ -536,47 +559,39 @@ catalog.card.locationPrefix     → (decorative — alt for MapPin icon if neede
       { width: 900, expectedCols: 4 },
     ]) {
       test(`grid renders ${expectedCols} columns at ${width}px`, async ({ page, authedUser }) => {
+        await seedPlant(page, { name: `Hera-${width}` });
         await page.setViewportSize({ width, height: 800 });
-        // seed 3 plants here (or use a fixture-level seedPlants helper)
         await page.goto('/catalog');
         await page.waitForSelector('[data-testid="catalog-grid"]');
-        const grid = page.locator('[data-testid="catalog-grid"]');
-        // Computed grid-template-columns count is the source of truth — measuring
-        // child positions can be flaky with 0-result cards.
-        const cols = await grid.evaluate((el) => {
-          return getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length;
-        });
+        const cols = await page.locator('[data-testid="catalog-grid"]').evaluate(
+          (el) => getComputedStyle(el).gridTemplateColumns.split(' ').filter(Boolean).length,
+        );
         expect(cols).toBe(expectedCols);
       });
     }
     ```
 
-    Test 2 — sort persists across navigation in the same tab:
+    PART B — Sort persists across navigation in the same tab:
     ```typescript
     test('sort persists across navigation within session', async ({ page, authedUser }) => {
+      await seedPlant(page, { name: 'Babosa' });
       await page.goto('/catalog');
       await page.waitForSelector('[data-testid="catalog-grid"]');
-      // Default state — Select shows the date_new option.
       const select = page.getByLabel(/Ordenar por/i);
       await expect(select).toHaveValue('date_new');
-      // Change to name_asc.
       await select.selectOption('name_asc');
-      // sessionStorage write is synchronous in our hook.
       const stored1 = await page.evaluate(() => sessionStorage.getItem('folhario.catalog.sort'));
       expect(stored1).toBe('name_asc');
-      // Navigate away and back.
       await page.goto('/profile');
       await page.goto('/catalog');
       await page.waitForSelector('[data-testid="catalog-grid"]');
       await expect(select).toHaveValue('name_asc');
-      // Verify aria-live announce region rendered the announcement at least once.
       await expect(page.getByTestId('catalog-sort-announce')).toContainText(/Catálogo reordenado por/);
     });
     ```
 
-    Test 3 — readOnly hides Add Plant button (uses 05-01's read-only fixture):
+    PART C — readOnly hides Add Plant (uses 05-01's `read-only.ts` fixture which composes `authedUser` + `SUBSCRIPTION_READ_ONLY=1`):
     ```typescript
-    import { test as readOnlyTest, expect } from './fixtures/read-only';
     readOnlyTest('readOnly hides Adicionar planta button', async ({ page }) => {
       await page.goto('/catalog');
       await page.waitForSelector('[data-testid="catalog-grid"], [data-testid="catalog-empty"]');
@@ -584,17 +599,13 @@ catalog.card.locationPrefix     → (decorative — alt for MapPin icon if neede
     });
     ```
 
-    PART B — EXTEND `tests/e2e/axe-placeholder-pages.spec.ts`:
-    The ROUTES array already contains `/catalog`. The current test scans the empty-placeholder render. After this plan, `/catalog` can be either empty OR filled. Add a SECOND axe test specifically for the filled state using the authedUser fixture:
+    PART D — Axe a11y across BOTH /catalog states × 4 colorScheme × reducedMotion combos (mirrors 05-16 `plant-profile.spec.ts:794-803` exactly — single dedicated authed spec owns Phase 5 catalog axe coverage):
     ```typescript
-    // Append AFTER the existing ROUTES loop (do NOT remove or rewrite the existing
-    // unauthenticated empty-state scans — they cover the zero-plants case).
-    import { test as authedTest } from './fixtures/authed-user';
+    // Filled state — seed ≥1 plant, then axe-scan.
     for (const combo of COMBOS) {
-      authedTest(`axe /catalog [filled, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical violations`, async ({ page, authedUser }) => {
-        // seed ≥1 plant via the API using authed session
-        // (helper: createPlantViaApi(page.request, { name: 'Costela-de-adão' }))
-        await page.emulateMedia({ colorScheme: combo.colorScheme, reducedMotion: combo.reducedMotion });
+      test(`axe /catalog [filled, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({ page, authedUser }) => {
+        await seedPlant(page, { name: 'Costela-de-adão' });
+        await page.emulateMedia(combo);
         await page.goto('/catalog');
         await page.waitForSelector('[data-testid="catalog-grid"]');
         const results = await new AxeBuilder({ page }).analyze();
@@ -602,17 +613,34 @@ catalog.card.locationPrefix     → (decorative — alt for MapPin icon if neede
         expect(blocking, `serious + critical: ${blocking.map(v => v.id).join(', ')}`).toEqual([]);
       });
     }
+
+    // Empty state — fresh authedUser with zero plants, then axe-scan the EmptyState surface.
+    for (const combo of COMBOS) {
+      test(`axe /catalog [empty, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({ page, authedUser }) => {
+        // No seedPlant call — authedUser starts with 0 plants.
+        await page.emulateMedia(combo);
+        await page.goto('/catalog');
+        await page.waitForSelector('[data-testid="catalog-empty"], [aria-label*="planta"]');
+        const results = await new AxeBuilder({ page }).analyze();
+        const blocking = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+        expect(blocking, `serious + critical: ${blocking.map(v => v.id).join(', ')}`).toEqual([]);
+      });
+    }
     ```
+    Add `data-testid="catalog-empty"` to `<CatalogEmpty>`'s root wrapper in Task 2 if not already present (Task 2 already names the wrapper; add the testid as part of the file in this same plan revision — it costs one line).
 
-    Helper `createPlantViaApi(request, { name })` — define inline at the top of the appended block; reuse the multipart POST contract from 05-08. If 05-17 ships an existing helper at `tests/e2e/helpers/seed-plant.ts`, import that instead (Claude's discretion).
+    KEY RULES (do not deviate):
+    1. **No modification of `tests/e2e/axe-placeholder-pages.spec.ts`** — that file remains authentication-free per `tests/e2e/axe-placeholder-pages.spec.ts:1-22`. Adding authed routes there would scan the login redirect, not the actual page (the architectural defect 05-16 already documented and 05-15 inherits via this revision).
+    2. The `seedPlant` helper is inline at the top of this spec OR imported from `tests/e2e/fixtures/seed-plant.ts` if 05-16/05-17 have promoted it. Verify at write time via `grep -l "export.*seedPlant" tests/e2e/fixtures/`.
+    3. `test.describe.configure({ retries: 0 })` for deterministic timing (matches 05-16 pattern).
 
-    KEY RULE: Do NOT modify the existing OfflineBanner test loop (lines 58–79) — that's owned by Phase 3 / Plan 04 and remains untouched.
+    Total tests in this spec: 3 viewport + 1 sort persist + 1 readOnly + 4 axe filled + 4 axe empty = 13 individual tests.
   </action>
   <verify>
-    <automated>pnpm test:e2e -- --project=chromium tests/e2e/catalog-grid-sort.spec.ts tests/e2e/axe-placeholder-pages.spec.ts</automated>
+    <automated>pnpm test:e2e -- --project=chromium tests/e2e/catalog-grid-sort.spec.ts</automated>
   </verify>
   <done>
-    Both specs green; column-count assertion passes at 375/600/900; sort persists across in-app navigation; readOnly fixture hides Add Plant button; filled-state /catalog axe scan returns 0 serious/critical violations across all 4 colorScheme × reducedMotion combos.
+    `tests/e2e/catalog-grid-sort.spec.ts` contains 13 tests, all green; column-count assertion passes at 375/600/900; sort persists across in-app navigation; readOnly fixture hides Add Plant button; filled-state /catalog axe scan returns 0 serious/critical violations across all 4 colorScheme × reducedMotion combos; empty-state /catalog axe scan returns 0 serious/critical violations across all 4 combos. `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan.
   </done>
 </task>
 
@@ -642,13 +670,13 @@ Run after all tasks complete (in order):
 2. `pnpm lint src/app/(app)/catalog/` — no warnings.
 3. `pnpm vitest run src/app/(app)/catalog/_components/use-sort-preference.unit.test.ts` — 5/5 green (whitelist + round-trip + default + SSR-safe).
 4. `pnpm next build` — Server Component compiles; HydrationBoundary import is RSC-safe; no "use client" leakage from `page.tsx`.
-5. `pnpm test:e2e -- --project=chromium tests/e2e/catalog-grid-sort.spec.ts` — column counts pass at 375/600/900; sort persistence test green; read-only Add Plant hidden test green.
-6. `pnpm test:e2e -- --project=chromium tests/e2e/axe-placeholder-pages.spec.ts` — empty-state scans + new filled-state scans (4 combos) all 0 serious/critical violations.
+5. `pnpm test:e2e -- --project=chromium tests/e2e/catalog-grid-sort.spec.ts` — all 13 tests green (3 viewport + 1 sort persistence + 1 readOnly + 4 axe filled + 4 axe empty).
 
 Blocking dependencies (must already exist when this plan executes):
 - 05-08: GET /api/v1/plants returns `{ plants, next_cursor, total_count? }` and gates `?sort=` with enum whitelist.
 - 05-10: `@contexts/catalog/queries` exports `plantsKeys`; `<QueryProvider>` is mounted in `(app)/layout.tsx`; `messages/pt-BR.json` `catalog.*` namespace populated per UI-SPEC §Copywriting Contract.
 - 05-11: `useSubscription()` returns `{ active, readOnly }` and respects `SUBSCRIPTION_READ_ONLY=1`.
+- 05-01: `tests/e2e/fixtures/authed-user.ts` and `tests/e2e/fixtures/read-only.ts` ship.
 </verification>
 
 <success_criteria>
@@ -660,10 +688,11 @@ Blocking dependencies (must already exist when this plan executes):
 - [ ] Server Component uses `fetchQuery` (not `prefetchQuery`) so the empty/filled branch is driven by SSR-fetched `total_count` (D-13 / RESEARCH Pattern 1)
 - [ ] readOnly mode hides "Adicionar planta" link in CatalogHeader (D-21)
 - [ ] Vitest unit-dom suite for `useSortPreference` covers default, round-trip, invalid-value rejection, SSR-safety
-- [ ] Playwright `catalog-grid-sort.spec.ts` is green
-- [ ] Axe extension on `/catalog` filled state is 0 serious/critical violations across all 4 colorScheme × reducedMotion combos
+- [ ] Playwright `catalog-grid-sort.spec.ts` is green — all 13 tests pass
+- [ ] Authed axe scans on `/catalog` (filled AND empty states) report 0 serious/critical violations across all 4 colorScheme × reducedMotion combos
 - [ ] T-05-15-02 mitigation present: client-side enum whitelist guard in `useSortPreference`
 - [ ] No edits to `messages/pt-BR.json` (owned by 05-10)
+- [ ] No edits to `tests/e2e/axe-placeholder-pages.spec.ts` (auth-required surfaces live in dedicated authed spec — matches 05-16 pattern)
 - [ ] No edits to `/identify/page.tsx` (owned by 05-18) — only an `href="/identify"` reference
 </success_criteria>
 
@@ -675,4 +704,7 @@ After completion, create `.planning/phases/05-catalog-meu-jardim/05-15-catalog-p
 - Verification results (typecheck, lint, vitest, e2e, axe)
 - Carryovers / surfaced gaps in 05-08 / 05-10 / 05-11 (if any test failed against expected upstream contracts)
 - Patterns established for downstream plans (05-16 Plant Profile reuses PlantCard geometry; 05-17 manual-add reuses card; 05-18 wires read-only / offline banners across these surfaces)
+- Note that this plan adopts the 05-16 dedicated-authed-spec pattern for axe coverage; `tests/e2e/axe-placeholder-pages.spec.ts` is preserved for unauthenticated routes only
 </output>
+</content>
+</invoke>

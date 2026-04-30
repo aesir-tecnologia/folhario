@@ -94,7 +94,7 @@ created: 2026-04-29
 | Combobox                         | 05-12                 | 0 serious/critical violations; APG keyboard contract programmatically verified                  |
 | BottomSheet                      | 05-13                 | Focus trap inside Dialog; return-focus on Esc/close (mirrors `axe-modal-focus-trap.spec.ts`)    |
 | InlineEditField                  | 05-14                 | Edit-mode announced via `role="alert"`; focus placement on edit-open; revert announced          |
-| Catalog routes                   | 05-15, 05-16, 05-17   | Every Phase 5 route added to `axe-placeholder-pages.spec.ts` ROUTES array → 0 violations         |
+| Catalog routes                   | 05-15, 05-16, 05-17, 05-18 | Auth-required Catalog routes covered by dedicated authed Playwright specs using `authedUser` fixture (`catalog-grid-sort.spec.ts` for /catalog filled+empty, `plant-profile.spec.ts` for /catalog/{plantId}, `catalog-manual-add.spec.ts` for /catalog/add, `catalog-photo-journal.spec.ts` for /catalog/{plantId}/journal with sheet open, `catalog-offline.spec.ts` for authed Home count=0+count>=1 + offline-banner) → 0 serious/critical violations across 4 colorScheme × reducedMotion combos. Unauthenticated `/identify` placeholder may stay in `axe-placeholder-pages.spec.ts`. |
 
 ### Nyquist sampling (non-deterministic surfaces)
 
@@ -117,7 +117,7 @@ created: 2026-04-29
 - [ ] `tests/e2e/fixtures/read-only.ts` — flips `useSubscription` stub for read-only specs
 - [ ] `pnpm add -D fake-indexeddb` (dev dep)
 - [ ] `pnpm add @tanstack/react-query @tanstack/query-async-storage-persister idb-keyval` (runtime deps)
-- [ ] `tests/e2e/axe-placeholder-pages.spec.ts` — placeholder ROUTES extended for new Phase 5 surfaces (filled when surfaces ship in 05-15..05-18; entries added as routes land)
+- [ ] `tests/e2e/axe-placeholder-pages.spec.ts` — preserved AS-IS for unauthenticated routes (`/`, `/catalog` empty/redirect, `/identify` Phase 5 placeholder, `/profile`, `/offline`). Auth-required Phase 5 surfaces use dedicated authed Playwright specs instead (see Catalog routes axe stratum).
 
 ---
 

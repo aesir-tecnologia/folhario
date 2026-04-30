@@ -10,7 +10,6 @@ files_modified:
   - src/app/(app)/app-shell.tsx
   - src/app/sw.ts
   - src/messages/pt-BR.json
-  - tests/e2e/axe-placeholder-pages.spec.ts
   - tests/e2e/catalog-offline.spec.ts
   - tests/unit/sw-runtime-cache.test.ts
 autonomous: true
@@ -26,6 +25,7 @@ must_haves:
     - "Service worker StaleWhileRevalidate runtime cache serves catalog GETs from cache instantly and revalidates in background, registered BEFORE the existing NetworkOnly('/api/*') catch-all"
     - "ExpirationPlugin enforces maxAgeSeconds=7d, maxEntries=200, purgeOnQuotaError=true on the catalog runtime cache"
     - "User who loaded catalog online can go offline and still browse plants from the SW + IDB cache; identify CTA shows offline-blocked message"
+    - "Authed Home + offline-banner axe scans live in tests/e2e/catalog-offline.spec.ts using the authedUser fixture (matches 05-16 dedicated-authed-spec pattern); tests/e2e/axe-placeholder-pages.spec.ts is NOT modified by this plan"
   artifacts:
     - path: "src/app/(app)/page.tsx"
       provides: "Home empty + bridge state per UI-04 / UI-SPEC §4.5"
@@ -45,9 +45,8 @@ must_haves:
     - path: "tests/unit/sw-runtime-cache.test.ts"
       provides: "Vitest unit-dom mock test for SWR allowlist + ExpirationPlugin (Nyquist Signed URL TTL)"
     - path: "tests/e2e/catalog-offline.spec.ts"
-      provides: "OFF-08 E2E — online load → offline → catalog browsable + offline banner + identify blocked"
-    - path: "tests/e2e/axe-placeholder-pages.spec.ts"
-      provides: "Axe ROUTES extended for Phase 5 surfaces (Catalog routes a11y baseline)"
+      provides: "OFF-08 E2E + Axe authed scans — online load → offline → catalog browsable + offline banner + identify blocked + AxeBuilder scans of authed Home (count=0 AND count>=1) + offline catalog view across 4 colorScheme × reducedMotion combos"
+      contains: "AxeBuilder"
   key_links:
     - from: "src/app/(app)/page.tsx"
       to: "@shared/ui/capture-button"
@@ -69,6 +68,10 @@ must_haves:
       to: "serwist (StaleWhileRevalidate, ExpirationPlugin)"
       via: "registerCapture before NetworkOnly /api/*"
       pattern: "StaleWhileRevalidate"
+    - from: "tests/e2e/catalog-offline.spec.ts"
+      to: "tests/e2e/fixtures/authed-user.ts"
+      via: "authedUser fixture drives OFF-08 + Home + offline axe scans"
+      pattern: "authedUser"
 ---
 
 <objective>
@@ -83,8 +86,9 @@ Output:
 - `src/app/sw.ts` extended with `StaleWhileRevalidate` + `ExpirationPlugin` allowlist for `/api/v1/plants*`, `/api/v1/photo-entries*`, `/api/v1/locations`
 - `src/messages/pt-BR.json` extended with `home.bridge.body` (ICU plural), `identify.placeholder.*`, `catalog.offline.identifyBlocked` keys
 - `tests/unit/sw-runtime-cache.test.ts` Vitest unit-dom mock spec covering SWR semantics + route precedence + ExpirationPlugin
-- `tests/e2e/catalog-offline.spec.ts` Playwright spec covering OFF-08 (online load → setOffline(true) → catalog browsable + offline banner + identify CTA blocked)
-- `tests/e2e/axe-placeholder-pages.spec.ts` ROUTES extended for the Phase 5 surfaces that have shipped (`/catalog/add`, `/catalog/[plantId]`, `/catalog/[plantId]/journal`)
+- `tests/e2e/catalog-offline.spec.ts` Playwright spec covering OFF-08 (online load → setOffline(true) → catalog browsable + offline banner + identify CTA blocked) AND owning the authed axe coverage for Home (count=0, count>=1) + offline catalog view across 4 colorScheme × reducedMotion combos
+
+This plan does NOT modify `tests/e2e/axe-placeholder-pages.spec.ts`. That spec runs WITHOUT any auth fixture (`page.goto(route)` only at `tests/e2e/axe-placeholder-pages.spec.ts:22`) and so cannot reach auth-required surfaces — adding `/` (the authed Home), the filled `/catalog`, `/catalog/add`, or `/catalog/[plantId]/journal` to its ROUTES array would scan the login redirect rather than the actual page. Phase 5 axe coverage for auth-required surfaces lives in dedicated authed Playwright specs (this plan's `catalog-offline.spec.ts` for Home + offline; `plant-profile.spec.ts` from 05-16; `catalog-grid-sort.spec.ts` from 05-15; `catalog-manual-add.spec.ts` + `catalog-photo-journal.spec.ts` from 05-17). The unauthenticated `/identify` placeholder shipped by Task 2 remains covered by `axe-placeholder-pages.spec.ts` (the route is publicly accessible — it shows "Em breve" / offline-blocked text without requiring auth).
 </objective>
 
 <execution_context>
@@ -102,6 +106,7 @@ Output:
 @.planning/phases/05-catalog-meu-jardim/05-PATTERNS.md
 @.planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
 @.planning/phases/05-catalog-meu-jardim/05-VALIDATION.md
+@.planning/phases/05-catalog-meu-jardim/05-16-plant-profile-page-PLAN.md
 
 @src/app/sw.ts
 @src/app/(app)/app-shell.tsx
@@ -114,6 +119,7 @@ Output:
 @src/shared/online/use-online-status.ts
 @src/messages/pt-BR.json
 @tests/e2e/axe-placeholder-pages.spec.ts
+@tests/e2e/fixtures/authed-user.ts
 
 <interfaces>
 <!-- Key contracts the executor needs. Extracted from codebase + dependent plans. -->
@@ -178,6 +184,21 @@ i18n keys to ADD in this plan (under existing root namespaces):
 - `identify.placeholder.hint` — `Esta é a etapa onde a identificação por foto chega. Por enquanto, adicione plantas manualmente pelo catálogo.`
 - `identify.placeholder.offlineBlocked` — `Identificação requer conexão à internet.`
 - `catalog.offline.identifyBlocked` — `Identificação requer conexão à internet.` (sibling key reused by future surfaces)
+
+Pattern reference — 05-16 dedicated-authed-spec axe block (this plan's authed axe scans mirror the structure):
+```typescript
+const COMBOS = [
+  { colorScheme: "light", reducedMotion: "no-preference" },
+  { colorScheme: "light", reducedMotion: "reduce" },
+  { colorScheme: "dark", reducedMotion: "no-preference" },
+  { colorScheme: "dark", reducedMotion: "reduce" },
+] as const;
+for (const combo of COMBOS) {
+  test(`axe ... [${combo.colorScheme} / ${combo.reducedMotion}]`, async ({ authedUser, page }) => {
+    /* emulateMedia; goto; waitForSelector; AxeBuilder.analyze() ... */
+  });
+}
+```
 </interfaces>
 </context>
 
@@ -274,6 +295,8 @@ i18n keys to ADD in this plan (under existing root namespaces):
          - Body: `<p className="text-base text-forest dark:text-moonpaper">{t('home.bridge.body', { count })}</p>` — ICU plural via `next-intl` `t()` interpolation
          - Tertiary CTA: `<Link href="/catalog" className="text-canopy underline-offset-2 hover:underline mt-4">{t('home.bridge.cta')}</Link>`
 
+    Add `data-testid="home-empty"` (count===0 branch root wrapper) and `data-testid="home-bridge"` (count>=1 branch root wrapper) so the Playwright spec in Task 3 can reliably await the right surface for each axe scan.
+
     Use `getTranslations` from `next-intl/server` for the server-component i18n (mirror existing `src/app/(app)/page.tsx:1` pattern). Do not import `EmptyState` — the dual-affordance + bridge layouts compose `<CaptureButton>` + `<Link>` directly because EmptyState is single-CTA-only by contract.
 
     The capture button MUST be wrapped in a `<Link href="/identify">` for navigation. `CaptureButton` accepts `onClick` but for server-component-friendliness use the anchor wrapper — the breathing animation still fires (CaptureButton is `"use client"` and renders inside the Link DOM).
@@ -284,6 +307,8 @@ i18n keys to ADD in this plan (under existing root namespaces):
     - Calls `useOnlineStatus()`
     - Online → renders headline `t('identify.placeholder.title')` + hint `t('identify.placeholder.hint')` (no CTA — Phase 6 wires)
     - Offline → renders headline `t('identify.placeholder.title')` + a sonner-styled inline notice block with `t('identify.placeholder.offlineBlocked')` and a `WifiOffIcon` (lucide-react). Use a `<div role="status" aria-live="polite">` so screen readers announce the offline-blocked state — same accessibility contract as `<OfflineBanner>`.
+
+    `/identify` is unauthenticated-accessible by design (the Phase 6 identification flow itself will gate; Phase 5's placeholder is a pure "Em breve" page). It therefore stays in `tests/e2e/axe-placeholder-pages.spec.ts` ROUTES (already present at `tests/e2e/axe-placeholder-pages.spec.ts:4`) — no modification needed; the existing axe scan continues to apply to the updated placeholder content. If end-to-end smoke confirms `/identify` actually requires auth (i.e. the `(app)/layout.tsx` redirect catches it), surface as a deviation in the SUMMARY and move the axe coverage into `catalog-offline.spec.ts` alongside the offline `/identify` scenario.
 
     Tailwind classes follow Phase 3 conventions (Forest Ink / Moonpaper for headlines, Calm Slate / Lantern Slate for body, Rust for offline notice background `bg-rust/10 text-rust`).
 
@@ -329,11 +354,12 @@ i18n keys to ADD in this plan (under existing root namespaces):
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 3: Wire ReadOnlyBanner via useSubscription + extend axe ROUTES + ship OFF-08 catalog-offline E2E</name>
-  <files>src/app/(app)/app-shell.tsx, tests/e2e/axe-placeholder-pages.spec.ts, tests/e2e/catalog-offline.spec.ts</files>
+  <name>Task 3: Wire ReadOnlyBanner via useSubscription + ship OFF-08 catalog-offline E2E (owns authed Home + offline axe coverage)</name>
+  <files>src/app/(app)/app-shell.tsx, tests/e2e/catalog-offline.spec.ts</files>
   <behavior>
-    - Test (axe spec): `/catalog/add`, `/catalog/[plantId]` (with seeded plant), `/catalog/[plantId]/journal`, `/identify` are added to the ROUTES array; 0 serious/critical violations under all 4 color-scheme × reduced-motion combos
     - Test (offline E2E — OFF-08): `authedUser` fixture seeds a verified trialing user + at least 1 plant via the API; navigate to `/catalog` online → plants render; `context.setOffline(true)` → reload `/catalog` → plants STILL visible (from SW + IDB cache); `<OfflineBanner>` is visible (`role="status"` containing "Você está offline"); navigate to `/identify` → offline-blocked notice visible (`role="status"` containing "Identificação requer conexão"); 0 axe serious/critical violations on the offline catalog view
+    - Test (authed Home axe — count=0 AND count>=1): two axe scans of `/` (the authed Home) under the `authedUser` fixture — one with zero plants (empty composition) and one after seeding ≥1 plant (bridge composition); 0 serious/critical violations across all 4 colorScheme × reducedMotion combos
+    - Test (offline-banner axe): with the `authedUser` fixture, navigate online to `/catalog` (so the SW caches the route), `setOffline(true)`, reload to surface `<OfflineBanner>`, then run AxeBuilder; 0 serious/critical violations across all 4 colorScheme × reducedMotion combos
     - Test (read-only banner wiring): `ReadOnlyBanner` is a client component receiving `active={useSubscription().readOnly}`; under the read-only fixture (Plan 05-11) the banner appears with the locked-state copy
   </behavior>
   <action>
@@ -348,23 +374,13 @@ i18n keys to ADD in this plan (under existing root namespaces):
 
     Read `app-shell.tsx` first (the full file, not just the snippet) to understand the existing hook call positions and import organization. Follow the exact patterns. NO comments unless logic is genuinely complex per CLAUDE.md.
 
-    **Extend** `tests/e2e/axe-placeholder-pages.spec.ts`. The current `ROUTES` constant is `["/", "/catalog", "/identify", "/profile", "/offline"]` (line 4). Phase 5 surfaces that have shipped by Wave 4 are `/catalog/add`, `/catalog/[plantId]`, `/catalog/[plantId]/journal`. Routes with dynamic segments require a seeded plant — for those, switch to a `test.beforeAll` that seeds a plant via the `authedUser` fixture (Plan 05-01 ships `tests/e2e/fixtures/authed-user.ts`) and captures the plant id, then iterates dynamic routes with the seeded id.
+    **`tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan.** That file iterates a static ROUTES array via bare `page.goto(route)` (no fixture; see `tests/e2e/axe-placeholder-pages.spec.ts:13-22`). Adding any auth-required surface there causes the goto to land on the login redirect and the axe scan silently verifies the wrong page — the architectural defect 05-16 documented and 05-15/05-17/05-18 inherit by parity. Phase 5 axe coverage for auth-required surfaces lives in dedicated authed Playwright specs (`catalog-grid-sort.spec.ts` from 05-15; `plant-profile.spec.ts` from 05-16; `catalog-manual-add.spec.ts` + `catalog-photo-journal.spec.ts` from 05-17; THIS plan's `catalog-offline.spec.ts` for Home + offline-banner). The unauthenticated `/identify` placeholder remains in `axe-placeholder-pages.spec.ts` ROUTES because `/identify` is publicly accessible (Phase 5 ships only the "Em breve" placeholder; auth gating begins in Phase 6).
 
-    Implementation pattern:
-    1. Keep the existing static ROUTES + COMBOS loop unchanged.
-    2. Add a separate `test.describe('Phase 5 catalog routes axe', ...)` block that uses `authedUser` fixture + a seeded plant + iterates dynamic routes:
-       - `/catalog/add`
-       - `/catalog/${plantId}` (where `plantId` comes from the seed step)
-       - `/catalog/${plantId}/journal`
-    3. Each new test runs the same `AxeBuilder({ page }).analyze()` + 0-serious/critical assertion as the existing block.
+    **Create** `tests/e2e/catalog-offline.spec.ts` covering OFF-08 (Nyquist SW offline + IDB persistence per VALIDATION.md) AND owning the authed axe coverage for Home (count=0, count>=1) + the offline catalog view. The spec must:
 
-    The fixture is `import { test, expect } from "../fixtures/authed-user";` (Plan 05-01 ships this fixture; use the exact import the fixture exports). The seeding helper for a plant comes from the existing `seedUser` pattern + a follow-up POST to `/api/v1/plants` from the test (or via direct DB insert via the test seam — choose whichever the Phase 5 test infra exposes). If Plan 05-01 does NOT ship a `seedPlant` helper, gracefully skip the `[plantId]` and `[plantId]/journal` routes with a `test.skip` and a TODO referencing follow-up.
-
-    **Create** `tests/e2e/catalog-offline.spec.ts` for OFF-08 (Nyquist SW offline + IDB persistence per VALIDATION.md). The spec must:
-
-    1. Use the `authedUser` fixture (NOT `test` from `@playwright/test` — the fixture wraps both the page + the authenticated session cookies).
-    2. Seed at least 1 plant via the fixture (or via a direct API POST inside `test.beforeEach`). Note: this may require Plan 05-01 to ship a `seedPlant` helper or the test creates the plant via a real POST to `/api/v1/plants` while online.
-    3. Test 1 — **Online preload + offline catalog browse**:
+    1. Use the `authedUser` fixture: `import { test, expect } from "./fixtures/authed-user";` plus `import AxeBuilder from "@axe-core/playwright";`. NOT `test` from `@playwright/test` — the fixture wraps both the page + the authenticated session cookies.
+    2. Seed at least 1 plant via the fixture (or via a direct API POST inside `test.beforeEach`). Note: this may require Plan 05-01 to ship a `seedPlant` helper or the test creates the plant via a real POST to `/api/v1/plants` while online. If neither is available at write time, inline a helper at the top of this spec (matches 05-16 pattern at `plant-profile-page-PLAN.md:807`).
+    3. **Test 1 — Online preload + offline catalog browse (OFF-08 core):**
        - Navigate to `/catalog` online; `await page.waitForLoadState("networkidle")` so SW + TanStack persister fully hydrate the catalog response into the SWR runtime cache + IDB.
        - Confirm at least 1 plant card is visible (assert via the role/text of the seeded plant — the catalog grid is shipped by Plan 05-15).
        - `await context.setOffline(true)`.
@@ -373,15 +389,47 @@ i18n keys to ADD in this plan (under existing root namespaces):
        - Assert plants STILL visible (the SW served the cached `/api/v1/plants` GET via the SWR allowlist + the IDB persister rehydrated TQ).
        - Assert OfflineBanner visible: `await expect(page.getByRole("status").filter({ hasText: /Você está offline/i })).toBeVisible();`
        - Assert NO `<ReadOnlyBanner>` visible (default fixture is `readOnly: false`): `await expect(page.getByRole("status").filter({ hasText: /Sua assinatura expirou/i })).not.toBeVisible();`
-       - Run AxeBuilder + 0-serious/critical assertion on the offline catalog view (Axe Catalog routes per VALIDATION.md).
-    4. Test 2 — **Identify blocked when offline**:
+    4. **Test 2 — Identify blocked when offline:**
        - Online preload (same setup).
        - `await context.setOffline(true)` + reload `/identify`.
        - Assert `await expect(page.getByRole("status").filter({ hasText: /Identificação requer conexão/i })).toBeVisible();`
        - Assert OfflineBanner also visible at top.
-    5. After each test: `await context.setOffline(false);` cleanup (mirror line 77 of `axe-placeholder-pages.spec.ts`).
+    5. **Test 3 — Authed Home axe (count=0, dual-affordance empty composition) × 4 combos:**
+       Fresh authedUser with zero plants. Iterate the COMBOS array exactly as 05-16 does (see `<interfaces>` block):
+       ```typescript
+       for (const combo of COMBOS) {
+         test(`axe / [home empty, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({ page, authedUser }) => {
+           await page.emulateMedia(combo);
+           await page.goto('/');
+           await page.waitForSelector('[data-testid="home-empty"]');
+           const results = await new AxeBuilder({ page }).analyze();
+           const blocking = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+           expect(blocking, `serious + critical: ${blocking.map(v => v.id).join(', ')}`).toEqual([]);
+         });
+       }
+       ```
+    6. **Test 4 — Authed Home axe (count>=1, bridge composition) × 4 combos:**
+       Seed ≥1 plant via the inline helper before each test, then scan:
+       ```typescript
+       for (const combo of COMBOS) {
+         test(`axe / [home bridge, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({ page, authedUser }) => {
+           await seedPlantViaApi(page, { name: 'BridgeAxe' });
+           await page.emulateMedia(combo);
+           await page.goto('/');
+           await page.waitForSelector('[data-testid="home-bridge"]');
+           const results = await new AxeBuilder({ page }).analyze();
+           const blocking = results.violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+           expect(blocking, `serious + critical: ${blocking.map(v => v.id).join(', ')}`).toEqual([]);
+         });
+       }
+       ```
+    7. **Test 5 — Offline-banner axe on /catalog × 4 combos:**
+       Authed user with seeded plant; online preload `/catalog`; setOffline(true); reload to surface OfflineBanner; emulateMedia per combo; AxeBuilder scan; assert 0 serious/critical violations. After each test: `await context.setOffline(false);` cleanup (mirror line 77 of `axe-placeholder-pages.spec.ts`).
+    8. After EVERY test (axe + functional): `await context.setOffline(false);` cleanup hook to avoid leaking offline state between tests.
 
     The spec MUST run with real Chromium IDB + real Serwist SW (not mocked) — that's the entire point of the OFF-08 stratum per VALIDATION.md line 103. Do NOT add `playwright.config.ts` overrides that disable the SW.
+
+    `test.describe.configure({ retries: 0 })` for deterministic timing (matches 05-16 pattern).
 
     Per CLAUDE.md "Never start local dev server" — Playwright spec assumes the test command boots its own dev server (typical Playwright config). Verify via `pnpm test:e2e` (NEVER watch-mode flags).
 
@@ -390,13 +438,13 @@ i18n keys to ADD in this plan (under existing root namespaces):
     - T-05-18-02 (cross-user contamination on shared device): the SW runtime cache is per-origin (browser-enforced). The TanStack persister flush happens via Plan 05-10's logout hook (verify via grep). No additional Phase 5 work — note in SUMMARY that this is verified by Plan 05-10's mitigation, not duplicated here.
     - T-05-18-03 (offline read-only revealing identify CTA): mitigated in Task 2 — `/identify` shows the blocked notice instead of opening the flow. Verified by E2E Test 2.
 
-    Run `pnpm test:e2e -- catalog-offline` and `pnpm test:e2e -- axe-placeholder-pages` to confirm both specs pass. (NEVER watch mode per CLAUDE.md.)
+    Run `pnpm test:e2e -- catalog-offline` to confirm the spec passes. (NEVER watch mode per CLAUDE.md.)
   </action>
   <verify>
-    <automated>pnpm test:e2e -- catalog-offline && pnpm test:e2e -- axe-placeholder-pages</automated>
+    <automated>pnpm test:e2e -- catalog-offline</automated>
   </verify>
   <done>
-    `src/app/(app)/app-shell.tsx` `<ReadOnlyBanner>` is wired to `useSubscription().readOnly`; `tests/e2e/axe-placeholder-pages.spec.ts` ROUTES extended for shipped Phase 5 surfaces (with `test.skip` fallback for routes that need plant seeding helpers not yet available); `tests/e2e/catalog-offline.spec.ts` covers OFF-08 with online-preload + offline catalog + offline /identify; both specs pass under `pnpm test:e2e`; no axe serious/critical regressions on existing static routes.
+    `src/app/(app)/app-shell.tsx` `<ReadOnlyBanner>` is wired to `useSubscription().readOnly`; `tests/e2e/catalog-offline.spec.ts` covers OFF-08 (online → offline → catalog browsable + offline banner + offline /identify blocked) AND owns the authed axe coverage for Home (count=0 + count>=1) + offline-banner across all 4 colorScheme × reducedMotion combos; spec passes under `pnpm test:e2e -- catalog-offline`. `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan; the unauthenticated `/identify` placeholder remains in its ROUTES array.
   </done>
 </task>
 
@@ -429,19 +477,18 @@ i18n keys to ADD in this plan (under existing root namespaces):
 |------|---------|----------------|----------|
 | 1 | Nyquist Signed URL TTL (Vitest unit-dom mock) | `pnpm test:unit -- sw-runtime-cache` | SWR registration order, allowlist matcher, ExpirationPlugin config (maxAgeSeconds=7d, maxEntries=200, purgeOnQuotaError=true), GET-only filter |
 | 2 | i18n contract + TS + structural | `pnpm tsc --noEmit && pnpm test:run` | Server-component compiles, `next-intl` keys resolve, `pnpm build` succeeds |
-| 3a | Axe Catalog routes (E2E + AxeBuilder) | `pnpm test:e2e -- axe-placeholder-pages` | 0 serious/critical on `/`, `/catalog`, `/identify`, `/profile`, `/offline` × 4 combos + new Phase 5 routes |
-| 3b | OFF-08 + Nyquist SW offline (E2E real Chromium IDB + real SW) | `pnpm test:e2e -- catalog-offline` | Online preload → offline catalog browsable, OfflineBanner visible, identify-blocked notice on /identify, no axe regressions |
+| 3 | OFF-08 + Nyquist SW offline + Axe authed Home/offline (E2E real Chromium IDB + real SW) | `pnpm test:e2e -- catalog-offline` | Online preload → offline catalog browsable, OfflineBanner visible, identify-blocked notice on /identify, authed Home axe (count=0 + count>=1) × 4 combos, offline-banner axe × 4 combos — all 0 serious/critical |
 
 **Phase-level acceptance:**
 
 - [ ] `src/app/sw.ts` SWR allowlist registered BEFORE NetworkOnly catch-all
 - [ ] Vitest unit test asserts route precedence + ExpirationPlugin args
-- [ ] Home empty composition uses `<CaptureButton breathing>` + Adicionar manualmente link (NOT `<EmptyState>`)
-- [ ] Home bridge composition renders for `count >= 1` with ICU plural
+- [ ] Home empty composition uses `<CaptureButton breathing>` + Adicionar manualmente link (NOT `<EmptyState>`); root carries `data-testid="home-empty"`
+- [ ] Home bridge composition renders for `count >= 1` with ICU plural; root carries `data-testid="home-bridge"`
 - [ ] `/identify` placeholder shows "Em breve" online + "Identificação requer conexão" offline
 - [ ] `<ReadOnlyBanner active={useSubscription().readOnly} />` in app-shell
-- [ ] `tests/e2e/catalog-offline.spec.ts` exists and passes (OFF-08)
-- [ ] `tests/e2e/axe-placeholder-pages.spec.ts` ROUTES extended for shipped Phase 5 surfaces (with `test.skip` fallback for surfaces needing future helpers)
+- [ ] `tests/e2e/catalog-offline.spec.ts` exists and passes (OFF-08 + authed Home/offline axe)
+- [ ] `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan; the unauthenticated `/identify` placeholder remains in its ROUTES array (Phase 5 ships an unauth placeholder; auth gating starts in Phase 6)
 - [ ] No watch-mode flags in any pnpm command (CLAUDE.md project rule)
 - [ ] `pnpm tsc --noEmit` clean
 
@@ -460,7 +507,7 @@ i18n keys to ADD in this plan (under existing root namespaces):
 - OFF-08 (E2E): online → offline → catalog browsable + offline banner + identify blocked → covered by `tests/e2e/catalog-offline.spec.ts` (Task 3)
 - Nyquist SW offline + IDB persistence (Playwright): real Chromium IDB + real SW used by `catalog-offline.spec.ts` (Task 3 — no SW mocks in E2E)
 - Nyquist Signed URL TTL (Vitest unit-dom mock): `tests/unit/sw-runtime-cache.test.ts` (Task 1) asserts ExpirationPlugin args + URL-keyed cache
-- Axe Catalog routes: `axe-placeholder-pages.spec.ts` ROUTES extended (Task 3) covers all shipped Phase 5 surfaces × 4 combos
+- Axe Catalog routes (auth-required): authed Home (count=0 + count>=1) and offline-banner scans live in `catalog-offline.spec.ts`; sibling Wave 4 plans 05-15 / 05-16 / 05-17 own the rest of the dedicated-authed-spec axe coverage. `axe-placeholder-pages.spec.ts` continues to cover unauthenticated routes only (`/`, `/catalog`, `/identify`, `/profile`, `/offline` as placeholders/redirects — once Phase 6 lands, `/` and `/identify` semantics may shift; track in retrospective).
 
 </success_criteria>
 
@@ -469,6 +516,9 @@ After completion, create `.planning/phases/05-catalog-meu-jardim/05-18-home-iden
 
 1. Logout flow + SW cache flush (T-05-18-01 follow-up): should logout call `caches.delete('catalog-api-v1')`? Track for Phase 4 retro / Phase 9 mutation queue plan.
 2. Banner stacking visual (offline + readOnly both true): UI-SPEC §4.5 says "never stack visually" but doesn't address this composition. Default ships stacked; founder review for Phase 6 polish.
-3. `tests/e2e/axe-placeholder-pages.spec.ts` dynamic-route coverage: if Plan 05-01 doesn't ship a `seedPlant` helper, dynamic routes (`/catalog/[plantId]`, `/catalog/[plantId]/journal`) use `test.skip` with a TODO. Confirm with Plan 05-01 SUMMARY whether the helper landed.
+3. `/identify` Phase 6 transition: when Phase 6 ships the real identification flow, `/identify` will likely become auth-required and need to migrate from `axe-placeholder-pages.spec.ts` ROUTES into a dedicated authed spec (matches the Phase 5 dedicated-authed-spec pattern). Track for Phase 6 plan-phase.
 4. `identify.empty.*` keys removed in favor of `identify.placeholder.*` — verify no Phase 4 / Phase 5 surface still references the old keys via `grep -rn "identify.empty" src/`.
+5. `tests/e2e/axe-placeholder-pages.spec.ts` deliberately not modified by this plan — Phase 5 axe coverage for auth-required surfaces lives in dedicated authed Playwright specs to avoid the architectural defect (silent verification of login redirect rather than the actual page) documented by 05-16.
 </output>
+</content>
+</invoke>

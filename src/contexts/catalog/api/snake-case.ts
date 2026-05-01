@@ -57,16 +57,25 @@ export type PhotoEntrySnakeCase = {
   plant_id: string;
   photo_url: string;
   thumbnail_url: string;
+  photo_signed_url: string | null;
+  thumbnail_signed_url: string | null;
   note: string | null;
   created_at: string;
 };
 
-export function toPhotoEntrySnakeCase(row: PhotoEntryRow): PhotoEntrySnakeCase {
+export function toPhotoEntrySnakeCase(
+  row: PhotoEntryRow & {
+    photoSignedUrl?: string | null;
+    thumbnailSignedUrl?: string | null;
+  },
+): PhotoEntrySnakeCase {
   return {
     id: row.id,
     plant_id: row.plantId,
     photo_url: row.photoUrl,
     thumbnail_url: row.thumbnailUrl,
+    photo_signed_url: row.photoSignedUrl ?? null,
+    thumbnail_signed_url: row.thumbnailSignedUrl ?? null,
     note: row.note ?? null,
     created_at: row.createdAt,
   };

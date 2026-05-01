@@ -15,7 +15,11 @@ export interface ListPhotoEntriesInput {
 export type ListPhotoEntriesResult =
   | {
       ok: true;
-      items: (Omit<PhotoEntryRow, "thumbnailUrl"> & { thumbnailUrl: string })[];
+      items: (Omit<PhotoEntryRow, "thumbnailUrl"> & {
+        thumbnailUrl: string;
+        photoSignedUrl: string | null;
+        thumbnailSignedUrl: string | null;
+      })[];
     }
   | { ok: false; code: typeof ErrorCode.NotFound; reason: string };
 
@@ -39,13 +43,26 @@ export async function listPhotoEntries(
 
   const items = await Promise.all(
     reversed.map(async (row) => {
-      const signed = await signCatalogPhotoUrl({
-        storedUrl: row.thumbnailUrl,
-        ttlSeconds: SIGN_TTL_SECONDS,
-      });
+      const [signedThumb, signedPhoto] = await Promise.all([
+        signCatalogPhotoUrl({
+          storedUrl: row.thumbnailUrl,
+          ttlSeconds: SIGN_TTL_SECONDS,
+        }),
+        signCatalogPhotoUrl({
+          storedUrl: row.photoUrl,
+          ttlSeconds: SIGN_TTL_SECONDS,
+        }),
+      ]);
       return {
         ...row,
-        thumbnailUrl: signed.ok ? signed.signedUrl : row.thumbnailUrl,
+        // Phase 5 legacy carry-over: thumbnailUrl is the signed URL on the
+        // result row (existing consumers + tests pin this). Phase 6+ should
+        // consume thumbnailSignedUrl explicitly. photoUrl is preserved as
+        // the raw {bucket}/{key} so delete-photo-entry's extractObjectKey
+        // path keeps working when invoked on the DB row.
+        thumbnailUrl: signedThumb.ok ? signedThumb.signedUrl : row.thumbnailUrl,
+        photoSignedUrl: signedPhoto.ok ? signedPhoto.signedUrl : null,
+        thumbnailSignedUrl: signedThumb.ok ? signedThumb.signedUrl : null,
       };
     }),
   );

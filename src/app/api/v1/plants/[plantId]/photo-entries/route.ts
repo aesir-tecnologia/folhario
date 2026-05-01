@@ -156,14 +156,7 @@ export async function GET(
 
   return Response.json(
     {
-      items: result.items.map((item) => ({
-        id: item.id,
-        plant_id: item.plantId,
-        photo_url: item.photoUrl,
-        thumbnail_url: item.thumbnailUrl,
-        note: item.note ?? null,
-        created_at: item.createdAt,
-      })),
+      items: result.items.map((item) => toPhotoEntrySnakeCase(item)),
     },
     { status: 200 },
   );

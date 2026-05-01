@@ -9,7 +9,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: { label: "unit", color: "cyan" },
-          include: ["tests/unit/**/*.test.ts"],
+          include: ["tests/unit/**/*.test.ts", "src/**/*.test.ts"],
           environment: "node",
           isolate: false,
           setupFiles: ["tests/unit/setup-env.ts"],

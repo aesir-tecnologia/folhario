@@ -20,6 +20,20 @@
       "title": "Sua estante ainda está esperando a primeira planta.",
       "hint": "As plantas que você adicionar aparecem aqui.",
       "cta": "Adicionar planta"
+    },
+    "locations": {
+      "placeholder": "Adicionar local",
+      "addRow": "Adicionar '{typed}'",
+      "defaults": [
+        "sala",
+        "varanda",
+        "quarto",
+        "banheiro",
+        "cozinha",
+        "escritório",
+        "jardim",
+        "outro"
+      ]
     }
   },
   "identify": {

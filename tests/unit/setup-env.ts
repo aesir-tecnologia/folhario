@@ -1,3 +1,5 @@
+import "@testing-library/jest-dom/vitest";
+
 process.env.DATABASE_URL ??= "postgres://u:p@localhost:5432/db";
 process.env.DATABASE_POOL_URL ??= "postgres://u:p@localhost:5432/db";
 process.env.SUPABASE_SERVICE_ROLE_KEY ??= "test-key";

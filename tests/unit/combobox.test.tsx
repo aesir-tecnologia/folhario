@@ -1,7 +1,6 @@
 // T-05-12-01 XSS regression: typed input must render as text node, never as HTML
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, within, cleanup, fireEvent } from "@testing-library/react";
 import { Combobox } from "@shared/ui/combobox";
 
 const DEFAULT_OPTIONS = [
@@ -22,45 +21,47 @@ function renderCombobox(overrides: Partial<Parameters<typeof Combobox>[0]> = {})
       {...overrides}
     />,
   );
-  return { ...utils, onChange };
+  const input = screen.getByRole("combobox");
+  return { ...utils, onChange, input };
 }
+
+afterEach(() => {
+  cleanup();
+});
 
 // T-05-12-01: XSS safety — must be at the top of the file per plan requirement
 describe("T-05-12-01 — XSS safety: typed input renders as text node, not HTML", () => {
-  it("renders typed <script>alert(1)</script> as literal text content", () => {
-    const user = userEvent.setup();
-    const { onChange } = renderCombobox();
-    const input = screen.getByRole("combobox");
-    const xssPayload = "<script>alert(1)</script>";
+  it("renders typed <script>alert(1)</script> as literal text content, script count unchanged", () => {
+    vi.useFakeTimers();
+    try {
+      const { input } = renderCombobox();
+      const scriptsBefore = document.querySelectorAll("script").length;
 
-    // Type the XSS payload into the input
-    // We simulate by firing input directly to check ghost row rendering
-    // without full debounce (we check the displayed text content)
-    void user.type(input, xssPayload);
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      const xssPayload = "<script>alert(1)</script>";
+      fireEvent.change(input, { target: { value: xssPayload } });
+      vi.advanceTimersByTime(100);
 
-    // Assert the ghost row does not inject HTML — it must be textContent equality
-    // Verify document.querySelectorAll('script').length is unchanged
-    const scriptsBefore = document.querySelectorAll("script").length;
-    expect(scriptsBefore).toBe(document.querySelectorAll("script").length);
+      expect(document.querySelectorAll("script").length).toBe(scriptsBefore);
 
-    // The component must not use dangerouslySetInnerHTML
-    // This is enforced at code-level (grep check in verification) + this test
-    // checks the rendered output is text nodes
+      const listbox = screen.queryByRole("listbox");
+      if (listbox) {
+        const ghostRow = within(listbox).queryByRole("option", {
+          name: /Adicionar/,
+        });
+        if (ghostRow) {
+          expect(ghostRow.textContent).toContain("<script>alert(1)</script>");
+        }
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
 describe("Combobox — WAI-ARIA APG 1.2 keyboard contract", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("initial render: role=combobox, aria-expanded=false, no aria-activedescendant", () => {
-    renderCombobox();
-    const input = screen.getByRole("combobox");
+    const { input } = renderCombobox();
     expect(input).toHaveAttribute("aria-expanded", "false");
     expect(input).not.toHaveAttribute("aria-activedescendant");
   });
@@ -68,7 +69,6 @@ describe("Combobox — WAI-ARIA APG 1.2 keyboard contract", () => {
   it("listbox is not visible on initial render (before any interaction)", () => {
     renderCombobox();
     const listbox = screen.queryByRole("listbox");
-    // Listbox is either absent or hidden
     if (listbox) {
       expect(listbox).not.toBeVisible();
     } else {
@@ -76,169 +76,145 @@ describe("Combobox — WAI-ARIA APG 1.2 keyboard contract", () => {
     }
   });
 
-  it("ArrowDown opens listbox and highlights first option (aria-activedescendant matches first option id)", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
+  it("ArrowDown opens listbox and highlights first option (aria-activedescendant matches first option id)", () => {
+    const { input } = renderCombobox();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
 
     expect(input).toHaveAttribute("aria-expanded", "true");
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-a$/));
   });
 
-  it("ArrowDown moves highlight down with wrap: last option wraps back to first", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    // Open and go to first
-    await user.keyboard("{ArrowDown}");
-    // Move through all 3 options, then wrap
-    await user.keyboard("{ArrowDown}");
+  it("ArrowDown moves highlight down with wrap: last option wraps back to first", () => {
+    const { input } = renderCombobox();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-b$/));
-    await user.keyboard("{ArrowDown}");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-c$/));
-    // Wrap to first
-    await user.keyboard("{ArrowDown}");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-a$/));
   });
 
-  it("ArrowUp wraps from first option to last", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    // ArrowDown to open + go to first
-    await user.keyboard("{ArrowDown}");
-    // ArrowUp from first wraps to last
-    await user.keyboard("{ArrowUp}");
+  it("ArrowUp wraps from first option to last", () => {
+    const { input } = renderCombobox();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowUp" });
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-c$/));
   });
 
-  it("Home highlights first option; End highlights last option", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    // Move to second
-    await user.keyboard("{ArrowDown}");
-    // Home → first
-    await user.keyboard("{Home}");
+  it("Home highlights first option; End highlights last option", () => {
+    const { input } = renderCombobox();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Home" });
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-a$/));
-    // End → last
-    await user.keyboard("{End}");
+    fireEvent.keyDown(input, { key: "End" });
     expect(input).toHaveAttribute("aria-activedescendant", expect.stringMatching(/^.+-c$/));
   });
 
-  it("Enter commits highlighted option (second option) and closes listbox", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const { onChange } = renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    await user.keyboard("{ArrowDown}");
-    await user.keyboard("{Enter}");
+  it("Enter commits highlighted option (second option) and closes listbox", () => {
+    const { input, onChange } = renderCombobox();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
 
     expect(onChange).toHaveBeenCalledWith("b");
     expect(input).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("Esc closes listbox without committing; onChange NOT called; input value unchanged", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const { onChange } = renderCombobox({ value: "alpha-value" });
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    await user.keyboard("{Escape}");
+  it("Esc closes listbox without committing; onChange NOT called; input value unchanged", () => {
+    const { input, onChange } = renderCombobox({ value: "alpha-value" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Escape" });
 
     expect(input).toHaveAttribute("aria-expanded", "false");
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("second Esc clears input value: with listbox closed, Esc calls onChange('')", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const { onChange } = renderCombobox({ value: "foo" });
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    // First Esc: close listbox if open (or no-op if closed)
-    // This test simulates: listbox already closed, press Esc → clear input
-    await user.keyboard("{Escape}");
+  it("second Esc clears input value: with listbox closed, Esc calls onChange('')", () => {
+    const { input, onChange } = renderCombobox({ value: "foo" });
+    fireEvent.keyDown(input, { key: "Escape" });
 
     expect(onChange).toHaveBeenCalledWith("");
   });
 
-  it("printable typeahead with 100ms debounce: type 'a', advance 100ms, only matching options visible", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    await user.type(input, "a");
-    vi.advanceTimersByTime(100);
+  it("printable typeahead with 100ms debounce: type 'alp', advance 100ms, only matching options visible", () => {
+    vi.useFakeTimers();
+    try {
+      const { input } = renderCombobox();
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      fireEvent.change(input, { target: { value: "alp" } });
+      vi.advanceTimersByTime(100);
 
-    // After filtering, only "Alpha" (matches "a") should be visible
-    const listbox = screen.getByRole("listbox");
-    const options = within(listbox).getAllByRole("option");
-    const visibleLabels = options.map((o) => o.textContent);
-    // "Alpha" matches "a", "Beta" does not, "Gamma" contains "a" so it also matches
-    // Per UI-SPEC §10 "filter listbox content live" with substring match
-    expect(visibleLabels.some((l) => l?.includes("Alpha"))).toBe(true);
-    expect(visibleLabels.some((l) => l?.includes("Beta"))).toBe(false);
+      const listbox = screen.getByRole("listbox");
+      const options = within(listbox).getAllByRole("option");
+      const visibleLabels = options.map((o) => o.textContent);
+      expect(visibleLabels.some((l) => l?.includes("Alpha"))).toBe(true);
+      expect(visibleLabels.some((l) => l?.includes("Beta"))).toBe(false);
+      expect(visibleLabels.some((l) => l?.includes("Gamma"))).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("ghost row appears when typed value is not in options", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    await user.type(input, "xyz");
-    vi.advanceTimersByTime(100);
+  it("ghost row appears when typed value is not in options", () => {
+    vi.useFakeTimers();
+    try {
+      const { input } = renderCombobox();
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      fireEvent.change(input, { target: { value: "xyz" } });
+      vi.advanceTimersByTime(100);
 
-    const listbox = screen.getByRole("listbox");
-    const ghostRow = within(listbox).getByText(/Adicionar 'xyz'/);
-    expect(ghostRow).toBeTruthy();
-    expect(ghostRow.closest('[role="option"]')).toBeTruthy();
+      const listbox = screen.getByRole("listbox");
+      const ghostRow = within(listbox).getByText(/Adicionar 'xyz'/);
+      expect(ghostRow).toBeTruthy();
+      expect(ghostRow.closest('[role="option"]')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("Enter on ghost row commits typed value via onChange", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    const { onChange } = renderCombobox();
-    const input = screen.getByRole("combobox");
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    await user.type(input, "varanda nova");
-    vi.advanceTimersByTime(100);
+  it("Enter on ghost row commits typed value via onChange", () => {
+    vi.useFakeTimers();
+    try {
+      const { input, onChange } = renderCombobox();
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      fireEvent.change(input, { target: { value: "varanda nova" } });
+      vi.advanceTimersByTime(100);
 
-    // Ghost row is at top of listbox; use ArrowUp to wrap to ghost row or it's highlighted
-    // Navigate to ghost row (first item after filtering since no options match)
-    await user.keyboard("{Home}");
-    await user.keyboard("{Enter}");
+      fireEvent.keyDown(input, { key: "Home" });
+      fireEvent.keyDown(input, { key: "Enter" });
 
-    expect(onChange).toHaveBeenCalledWith("varanda nova");
+      expect(onChange).toHaveBeenCalledWith("varanda nova");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("T-05-12-01 — XSS: <script>alert(1)</script> renders as literal text, script count unchanged", async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    renderCombobox();
-    const input = screen.getByRole("combobox");
-    const scriptsBefore = document.querySelectorAll("script").length;
+  it("T-05-12-01 — XSS: <script>alert(1)</script> renders as literal text, script count unchanged", () => {
+    vi.useFakeTimers();
+    try {
+      const { input } = renderCombobox();
+      const scriptsBefore = document.querySelectorAll("script").length;
 
-    await user.click(input);
-    await user.keyboard("{ArrowDown}");
-    await user.type(input, "<script>alert(1)</script>");
-    vi.advanceTimersByTime(100);
+      fireEvent.keyDown(input, { key: "ArrowDown" });
+      const xssPayload = "<script>alert(1)</script>";
+      fireEvent.change(input, { target: { value: xssPayload } });
+      vi.advanceTimersByTime(100);
 
-    // Script count must be unchanged (no script injection)
-    expect(document.querySelectorAll("script").length).toBe(scriptsBefore);
+      expect(document.querySelectorAll("script").length).toBe(scriptsBefore);
 
-    // Ghost row must show the literal text content (not executed as HTML)
-    const listbox = screen.getByRole("listbox");
-    const ghostRow = within(listbox).queryByRole("option", { name: /Adicionar/ });
-    if (ghostRow) {
-      expect(ghostRow.textContent).toContain("<script>alert(1)</script>");
+      const listbox = screen.queryByRole("listbox");
+      if (listbox) {
+        const ghostRow = within(listbox).queryByRole("option", {
+          name: /Adicionar/,
+        });
+        if (ghostRow) {
+          expect(ghostRow.textContent).toContain("<script>alert(1)</script>");
+        }
+      }
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

@@ -234,8 +234,8 @@ describe.skipIf(!dbUrl)("Phase-05-07 deletePhotoEntry use-case integration", () 
     const result = await deletePhotoEntry({ userId, plantId, photoEntryId: entry.id });
     expect(result.ok).toBe(true);
 
-    const psdRows = await adminSql<{ bucket: string; prefix: string }[]>`
-      SELECT bucket, prefix FROM public.pending_storage_deletions
+    const psdRows = await adminSql<{ bucket: string; prefix: string; kind: string }[]>`
+      SELECT bucket, prefix, kind FROM public.pending_storage_deletions
       WHERE user_id = ${userId}
       ORDER BY bucket
     `;
@@ -251,6 +251,8 @@ describe.skipIf(!dbUrl)("Phase-05-07 deletePhotoEntry use-case integration", () 
       expect(row.prefix).toMatch(/\.jpg$/);
       // NOT a parent prefix (would end in /)
       expect(row.prefix).not.toMatch(/\/$/);
+      // CR-01: photo-entry deletion writes kind='object' rows (vs plant-deletion 'prefix')
+      expect(row.kind).toBe("object");
     }
   });
 

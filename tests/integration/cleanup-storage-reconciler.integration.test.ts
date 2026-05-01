@@ -400,4 +400,36 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorageReconciler hourly cron", () =
       expect(registryIds).toContain(fnId);
     }
   });
+
+  // =====================================================================
+  // Cycle 3E — kind discriminator (CR-01)
+  // =====================================================================
+
+  it("3E-1: reconciler with kind='object' row calls deleteObject + transitions to completed (CR-01)", async () => {
+    const fake = makeFakeAdapter();
+    setStorageAdapterForTests(fake.asAdapter);
+
+    const ago = new Date(Date.now() - 10000);
+    const photoId = randomUUID();
+    const objectKey = `${userId}/${plantId}/${photoId}.jpg`;
+
+    const [row] = await driver`
+      INSERT INTO pending_storage_deletions (user_id, bucket, prefix, kind, scheduled_at)
+      VALUES (${userId}, 'plant-photos', ${objectKey}, 'object', ${ago.toISOString()})
+      RETURNING id
+    `;
+    const rowId = row!.id as string;
+
+    await cleanupStorageReconcilerHandler({ step: makeFakeStep() });
+
+    expect(fake.asAdapter.deleteObject).toHaveBeenCalledTimes(1);
+    expect(fake.asAdapter.deleteObject).toHaveBeenCalledWith({
+      bucket: "plant-photos",
+      objectKey,
+    });
+    expect(fake.deletePrefix).not.toHaveBeenCalled();
+
+    const updated = await driver`SELECT status FROM pending_storage_deletions WHERE id = ${rowId}`;
+    expect(updated[0]!.status).toBe("completed");
+  });
 });

@@ -19,7 +19,10 @@ export default defineConfig({
         extends: true,
         test: {
           name: { label: "unit-dom", color: "magenta" },
-          include: ["tests/unit/**/*.test.tsx"],
+          // src/**/*.unit.test.tsx: colocated React-render tests (e.g. billing
+          // subscription provider). Plain *.test.tsx in src/ intentionally
+          // excluded — those are picked up by the unit (node) project above.
+          include: ["tests/unit/**/*.test.tsx", "src/**/*.unit.test.tsx"],
           environment: "jsdom",
           isolate: false,
           setupFiles: ["tests/unit/setup-env.ts", "tests/unit/setup-idb.ts"],

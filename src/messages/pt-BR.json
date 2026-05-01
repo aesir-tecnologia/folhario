@@ -16,24 +16,158 @@
     }
   },
   "catalog": {
+    "header": {
+      "title": "Meu Jardim",
+      "countPlural": "{n, plural, one {# planta} other {# plantas}}"
+    },
+    "sort": {
+      "label": "Ordenar por",
+      "options": {
+        "dateNew": "Adicionadas recentes",
+        "dateOld": "Adicionadas antigas",
+        "nameAsc": "Nome (A → Z)",
+        "nameDesc": "Nome (Z → A)",
+        "location": "Por local"
+      },
+      "announcement": "Catálogo reordenado por {label}"
+    },
     "empty": {
       "title": "Sua estante ainda está esperando a primeira planta.",
-      "hint": "As plantas que você adicionar aparecem aqui.",
-      "cta": "Adicionar planta"
+      "hint": "Identifique sua primeira planta ou adicione manualmente.",
+      "cta": "Identificar planta"
+    },
+    "add": {
+      "title": "Adicionar planta",
+      "fields": {
+        "photo": {
+          "label": "Foto da planta",
+          "placeholder": "Toque para adicionar foto",
+          "replace": "Trocar foto"
+        },
+        "name": {
+          "label": "Nome",
+          "placeholder": "Como você chama essa planta?"
+        },
+        "nickname": {
+          "label": "Apelido (opcional)",
+          "placeholder": "Um nome carinhoso"
+        },
+        "location": {
+          "label": "Local (opcional)"
+        },
+        "acquisitionDate": {
+          "label": "Data de aquisição (opcional)"
+        },
+        "notes": {
+          "label": "Notas (opcional)",
+          "placeholder": "Anotações sobre essa planta…"
+        }
+      },
+      "submit": "Adicionar à minha estante",
+      "submitLoading": "Adicionando…",
+      "submitFailure": "Não conseguimos adicionar agora. Tente novamente em instantes.",
+      "errors": {
+        "nameRequired": "Dê um nome para sua planta.",
+        "photoRequired": "Adicione pelo menos uma foto.",
+        "acquisitionDateInvalid": "Use o formato dd/mm/aaaa.",
+        "summaryHeader": "Falta preencher: {fields}"
+      }
+    },
+    "profile": {
+      "fields": {
+        "name": {
+          "label": "Nome",
+          "placeholder": "Sem nome",
+          "requiredError": "Não pode ficar vazio."
+        },
+        "nickname": {
+          "label": "Apelido",
+          "placeholder": "Adicionar apelido"
+        },
+        "location": {
+          "label": "Localização",
+          "placeholder": "Adicionar local"
+        },
+        "acquisitionDate": {
+          "label": "Adicionada em",
+          "placeholder": "Adicionar data"
+        },
+        "notes": {
+          "label": "Notas",
+          "placeholder": "Adicionar notas"
+        }
+      },
+      "savingLabel": "Salvando…",
+      "saveFailure": "Não conseguimos salvar agora — tentar de novo?",
+      "sections": {
+        "reminders": "LEMBRETES ATIVOS",
+        "journal": "DIÁRIO DE FOTOS"
+      },
+      "reminders": {
+        "empty": "Você ainda não tem lembretes para esta planta.",
+        "cta": "Criar lembrete"
+      },
+      "journal": {
+        "viewAll": "Ver tudo",
+        "empty": "Registre o crescimento adicionando fotos ao diário.",
+        "addCta": "Adicionar foto"
+      },
+      "overflow": {
+        "delete": "Excluir planta"
+      },
+      "delete": {
+        "title": "Excluir {nameOrNickname}?",
+        "bodyBoth": "Isso vai apagar {photoCount, plural, one {# foto do diário} other {# fotos do diário}} e {reminderCount, plural, one {# lembrete} other {# lembretes}}. O histórico de identificações é mantido.",
+        "bodyPhotosOnly": "Isso vai apagar {photoCount, plural, one {# foto do diário} other {# fotos do diário}}. O histórico de identificações é mantido.",
+        "bodyRemindersOnly": "Isso vai apagar {reminderCount, plural, one {# lembrete} other {# lembretes}}. O histórico de identificações é mantido.",
+        "bodyEmpty": "Esta planta ainda não tem fotos no diário ou lembretes. O histórico de identificações é mantido.",
+        "cancel": "Cancelar",
+        "confirm": "Excluir planta",
+        "deleting": "Excluindo…",
+        "failure": "Não conseguimos excluir agora. Tente novamente."
+      }
+    },
+    "journal": {
+      "titleFormat": "{name} — Diário",
+      "add": {
+        "cta": "+ Foto",
+        "title": "Nova foto",
+        "photoPlaceholder": "Toque para adicionar foto",
+        "noteLabel": "Anotação (opcional)",
+        "notePlaceholder": "Como ela está hoje?",
+        "submit": "Adicionar",
+        "submitting": "Enviando…",
+        "failure": "Não conseguimos enviar. Tente novamente.",
+        "cancel": "Cancelar"
+      },
+      "empty": {
+        "title": "Comece o diário desta planta.",
+        "hint": "Adicione fotos novas para acompanhar o crescimento ao longo do tempo.",
+        "cta": "Adicionar primeira foto"
+      }
     },
     "locations": {
       "placeholder": "Adicionar local",
-      "addRow": "Adicionar '{typed}'",
+      "addCustom": "Adicionar '{typed}'",
       "defaults": [
-        "Sala",
-        "Varanda",
-        "Quarto",
-        "Banheiro",
-        "Cozinha",
-        "Escritório",
-        "Jardim",
-        "Outro"
+        "sala",
+        "varanda",
+        "quarto",
+        "banheiro",
+        "cozinha",
+        "escritório",
+        "jardim",
+        "outro"
       ]
+    },
+    "offline": {
+      "mutationBlocked": "Sem conexão — tente novamente quando voltar online."
+    },
+    "readOnly": {
+      "addBlocked": "Reative sua assinatura para adicionar plantas.",
+      "editBlocked": "Reative sua assinatura para editar suas plantas.",
+      "deleteBlocked": "Reative sua assinatura para excluir plantas.",
+      "journalAddBlocked": "Reative sua assinatura para adicionar fotos ao diário."
     }
   },
   "identify": {

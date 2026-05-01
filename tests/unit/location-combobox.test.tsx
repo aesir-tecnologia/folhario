@@ -22,7 +22,7 @@ vi.mock("next-intl", () => ({
     if (namespace === "catalog.locations") {
       const mapping: Record<string, string> = {
         placeholder: "Adicionar local",
-        addRow: "Adicionar '{typed}'",
+        addCustom: "Adicionar '{typed}'",
       };
       const rawMapping: Record<string, unknown> = {
         defaults: MOCK_DEFAULTS,

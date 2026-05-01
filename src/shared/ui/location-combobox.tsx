@@ -56,7 +56,7 @@ export function LocationCombobox({
       value={value}
       onChange={onChange}
       options={merged}
-      ghostRowTemplate={t.raw("addRow") as string}
+      ghostRowTemplate={t.raw("addCustom") as string}
       id={id}
       name={name}
       aria-describedby={ariaDescribedby}

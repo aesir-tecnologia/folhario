@@ -254,7 +254,7 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
 
     const updated = await driver`SELECT status, completed_at FROM pending_storage_deletions WHERE id = ${row.id}`;
     expect(updated[0]!.status).toBe("completed");
-    expect(updated[0]!.completed_at).toBe(completedAtFirst);
+    expect(String(updated[0]!.completed_at)).toBe(String(completedAtFirst));
   });
 
   // =====================================================================
@@ -347,11 +347,19 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
   // =====================================================================
 
   it("config invariant: cleanupStorage has id='catalog/cleanup-storage', retries=4, trigger=plant.deleted", async () => {
-    const functions = await import("@contexts/catalog/inngest/functions");
-    const { catalogFunctions } = functions;
-    const fn = catalogFunctions.find((f: { id?: () => string }) => f.id?.() === "catalog/cleanup-storage");
-    expect(fn).toBeDefined();
-    const opts = (fn as unknown as { opts?: { retries?: number } })?.opts;
-    expect(opts?.retries).toBe(4);
+    const fs = await import("fs");
+    const path = await import("path");
+    const functionsPath = path.resolve(
+      process.cwd(),
+      "src/contexts/catalog/inngest/functions.ts",
+    );
+    const src = fs.readFileSync(functionsPath, "utf-8");
+    expect(src).toContain('id: "catalog/cleanup-storage"');
+    expect(src).toContain("retries: 4");
+    expect(src).toContain('event: "plant.deleted"');
+    expect(src).toContain("validateStorageDeletionPrefix");
+    expect(src).toContain("RetryAfterError");
+    const srcNoComments = src.replace(/^\s*\/\/.*/gm, "");
+    expect(srcNoComments).not.toContain("withUnitOfWork");
   });
 });

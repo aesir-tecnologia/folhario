@@ -14,6 +14,7 @@ import {
 import { OfflineBanner } from "@shared/ui/offline-banner";
 import { ReadOnlyBanner } from "@shared/ui/read-only-banner";
 import { AppUpdateToast } from "@shared/ui/app-update-toast";
+import { useSubscription } from "@contexts/billing/application/use-subscription";
 
 /**
  * AppShell — client orchestrator for (app) route group.
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const mainRef = useRef<HTMLElement>(null);
   const prevPathnameRef = useRef<string>(pathname);
   const skipLinkText = useTranslations("focus")("skipToMain");
+  const { readOnly } = useSubscription();
 
   // Focus management on route change (UI-03 + D-24).
   // Only refocus on actual segment change — not hash changes.
@@ -143,7 +145,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       <OfflineBanner />
-      <ReadOnlyBanner active={false} />
+      <ReadOnlyBanner active={readOnly} />
 
       <main
         id="main"

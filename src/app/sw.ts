@@ -1,6 +1,8 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkOnly, NetworkFirst } from "serwist";
+import { Serwist, NetworkOnly, NetworkFirst, StaleWhileRevalidate, ExpirationPlugin } from "serwist";
+
+export const CATALOG_API_CACHE = "folhario-catalog-api-v1";
 
 declare global {
   interface ServiceWorkerGlobalScope extends SerwistGlobalConfig {
@@ -66,6 +68,28 @@ const serwist = new Serwist({
     ],
   },
 });
+
+serwist.registerCapture(
+  ({ url, request }) => {
+    if (request.method !== "GET") return false;
+    const p = url.pathname;
+    return (
+      p.startsWith("/api/v1/plants") ||
+      p.startsWith("/api/v1/photo-entries") ||
+      p === "/api/v1/locations"
+    );
+  },
+  new StaleWhileRevalidate({
+    cacheName: CATALOG_API_CACHE,
+    plugins: [
+      new ExpirationPlugin({
+        maxAgeSeconds: 7 * 24 * 60 * 60,
+        maxEntries: 200,
+        purgeOnQuotaError: true,
+      }),
+    ],
+  }),
+);
 
 serwist.registerCapture(({ url }) => url.pathname.startsWith("/api/"), new NetworkOnly());
 

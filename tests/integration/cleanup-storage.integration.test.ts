@@ -186,7 +186,7 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
 
     expect(fake.deletePrefix).toHaveBeenCalledTimes(2);
     const buckets = fake.deletePrefix.mock.calls.map(
-      (c: [{ bucket: string; prefix: string }]) => c[0].bucket,
+      (c) => (c[0] as { bucket: string; prefix: string }).bucket,
     );
     expect(buckets.sort()).toEqual(["plant-photos", "plant-thumbnails"].sort());
 

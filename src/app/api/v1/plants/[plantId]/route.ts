@@ -7,7 +7,7 @@ import { z } from "zod";
 import { ErrorCode, errorResponse } from "@shared/config/errors";
 import { requireVerifiedUser } from "@shared/api/auth";
 import { getPlant } from "@contexts/catalog/application/get-plant";
-import { toPlantSnakeCase } from "@contexts/catalog/api/snake-case";
+import { toPlantWithSignedUrlSnakeCase } from "@contexts/catalog/api/snake-case";
 
 const uuidSchema = z.string().uuid();
 
@@ -46,7 +46,10 @@ export async function GET(
 
   return Response.json(
     {
-      plant: toPlantSnakeCase(result.plant),
+      plant: toPlantWithSignedUrlSnakeCase({
+        ...result.plant,
+        coverSignedUrl: result.coverSignedUrl,
+      }),
       _meta: {
         photo_entry_count: result._meta.photoEntryCount,
         reminder_count: result._meta.reminderCount,

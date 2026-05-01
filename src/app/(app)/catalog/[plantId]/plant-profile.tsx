@@ -371,6 +371,14 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
         )}
       </section>
 
+      {/* Section 5 — ID history placeholder (Phase 6 wires real link; UI-08) */}
+      <section className="px-4 py-4">
+        <h2 className="mb-2 text-xs font-semibold tracking-widest text-slate">
+          {t("sections.history")}
+        </h2>
+        <p className="text-sm text-slate">{t("history.empty")}</p>
+      </section>
+
       {/* Lightbox */}
       {allPhotos.length > 0 && (
         <Lightbox

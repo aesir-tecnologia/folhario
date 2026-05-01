@@ -108,11 +108,15 @@
       "saveFailure": "Não conseguimos salvar agora — tentar de novo?",
       "sections": {
         "reminders": "LEMBRETES ATIVOS",
-        "journal": "DIÁRIO DE FOTOS"
+        "journal": "DIÁRIO DE FOTOS",
+        "history": "HISTÓRICO DE IDENTIFICAÇÃO"
       },
       "reminders": {
         "empty": "Você ainda não tem lembretes para esta planta.",
         "cta": "Criar lembrete"
+      },
+      "history": {
+        "empty": "O histórico de identificações ainda não está disponível."
       },
       "journal": {
         "viewAll": "Ver tudo",

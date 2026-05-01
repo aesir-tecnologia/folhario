@@ -18,10 +18,13 @@
   "catalog": {
     "header": {
       "title": "Meu Jardim",
-      "countPlural": "{n, plural, one {# planta} other {# plantas}}"
+      "label": "MEU JARDIM",
+      "countPlural": "{n, plural, one {# planta} other {# plantas}}",
+      "addPlant": "Adicionar planta"
     },
     "sort": {
       "label": "Ordenar por",
+      "announce": "Catálogo reordenado por {label}",
       "options": {
         "dateNew": "Adicionadas recentes",
         "dateOld": "Adicionadas antigas",

@@ -19,6 +19,7 @@ export interface LightboxProps {
   onIndexChange: (next: number) => void;
   plantName: string;
   closeLabel: string;
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 export function Lightbox({
@@ -29,6 +30,7 @@ export function Lightbox({
   onIndexChange,
   plantName,
   closeLabel,
+  onCloseAutoFocus,
 }: LightboxProps) {
   const reduced = useReducedMotion();
   const touchStartRef = useRef<{ x: number; t: number } | null>(null);
@@ -47,8 +49,10 @@ export function Lightbox({
       touchStartRef.current = null;
       return;
     }
+    const touch = e.changedTouches[0];
+    if (!touch) return;
     touchStartRef.current = {
-      x: e.changedTouches[0].clientX,
+      x: touch.clientX,
       t: performance.now(),
     };
   }
@@ -58,7 +62,9 @@ export function Lightbox({
     if (!start) return;
     touchStartRef.current = null;
 
-    const endX = e.changedTouches[0].clientX;
+    const endTouch = e.changedTouches[0];
+    if (!endTouch) return;
+    const endX = endTouch.clientX;
     const endT = performance.now();
     const dx = endX - start.x;
     const dt = Math.max(endT - start.t, 1);
@@ -96,6 +102,7 @@ export function Lightbox({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-forest/90" />
         <Dialog.Content
           aria-label={`Galeria — ${plantName}`}
+          onCloseAutoFocus={onCloseAutoFocus}
           onKeyDown={handleKeyDown}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { getCurrentUserFromSessionReadOnly } from "@contexts/iam/application/current-user";
 import { UnverifiedBlocker } from "@contexts/iam/api/components/unverified-blocker";
+import { SubscriptionProvider } from "@contexts/billing/application/subscription-provider";
 
 import { AppShell } from "./app-shell";
 
@@ -48,6 +49,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return <UnverifiedBlocker email={user.email} />;
   }
 
-  // (d) Verified → app shell.
-  return <AppShell>{children}</AppShell>;
+  // (d) Verified → app shell (wrapped in subscription context for Wave 4 plans).
+  return (
+    <SubscriptionProvider>
+      <AppShell>{children}</AppShell>
+    </SubscriptionProvider>
+  );
 }

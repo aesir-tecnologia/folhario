@@ -104,14 +104,23 @@ export function useDeletePlant(
   const qc = opts?.queryClient ?? useQueryClient();
   const t = useTranslations("catalog.profile.delete");
   const subscription = useSubscription();
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   return useMutation({
     mutationFn: async () => {
       if (subscription.readOnly) throw new ReadOnlyError();
 
+      const idempotencyKey = idempotencyKeyRef.current ?? crypto.randomUUID();
+      idempotencyKeyRef.current = idempotencyKey;
+
       const res = await fetch(`/api/v1/plants/${plantId}`, {
         method: "DELETE",
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+        },
       });
+
+      idempotencyKeyRef.current = null;
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -140,6 +149,7 @@ export function useDeletePlant(
       return { snapshots };
     },
     onError: (_err, _vars, ctx) => {
+      idempotencyKeyRef.current = null;
       if (ctx?.snapshots) {
         for (const { queryKey, data } of ctx.snapshots) {
           qc.setQueryData(queryKey, data);

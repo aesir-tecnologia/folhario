@@ -129,6 +129,19 @@ To wire real Stripe state: replace `resolveSubscriptionState` body in `subscript
 - Wave 4 plans (05-15..05-18) can now gate mutating affordances: Add Plant button, inline-edit fields, delete overflow, "+ Foto", ReadOnlyBanner
 - Playwright E2E fixture (`tests/e2e/fixtures/read-only.ts`) can flip `readOnly: true` per-test via `page.context().addCookies([{ name: '__test_subscription_read_only', value: '1', ... }])` — requires `ENABLE_TEST_ROUTES=1` in `playwright.config.ts` webServer.env
 
+## Self-Check: PASSED
+
+- FOUND: src/contexts/billing/application/use-subscription.ts
+- FOUND: src/contexts/billing/application/subscription-provider.tsx
+- FOUND: src/contexts/billing/application/subscription-provider.client.tsx
+- FOUND: src/contexts/billing/application/use-subscription.unit.test.tsx
+- FOUND: src/app/(app)/layout.tsx
+- FOUND: vitest.config.ts
+- FOUND: .planning/phases/05-catalog-meu-jardim/05-11-SUMMARY.md
+- FOUND commit: 233b130
+- FOUND commit: 41f2c23
+- FOUND commit: e507932
+
 ---
 *Phase: 05-catalog-meu-jardim*
 *Completed: 2026-05-01*

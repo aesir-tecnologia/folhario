@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
 import postgres from "postgres";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { InMemoryStorageAdapter } from "./fixtures/in-memory-storage-adapter";
 
 /**
  * Phase 05 Plan 08 — catalog route handlers integration tests (Task 1 + 2 RED).
@@ -244,8 +245,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
   // ============================================================================
   // Helper: set up in-memory storage with signed URL support
   // ============================================================================
-  function useInMemoryStorage() {
-    const { InMemoryStorageAdapter } = require("../integration/fixtures/in-memory-storage-adapter") as typeof import("./fixtures/in-memory-storage-adapter");
+  function useInMemoryStorage(): InMemoryStorageAdapter {
     const adapter = new InMemoryStorageAdapter();
     setStorageAdapterForTests(adapter);
     return adapter;
@@ -256,6 +256,13 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
   // ============================================================================
 
   describe("POST /api/v1/plants", () => {
+    // Clean up plants created by POST tests so they don't interfere with GET tests
+    afterEach(async () => {
+      await driver`DELETE FROM photo_entries WHERE plant_id IN (SELECT id FROM plants WHERE user_id = ${userId})`;
+      await driver`DELETE FROM plants WHERE user_id = ${userId}`;
+      await driver`DELETE FROM idempotency_keys WHERE user_id = ${userId}`;
+    });
+
     async function buildPlantRequest(opts: {
       jpeg?: Buffer;
       fields?: Record<string, string>;

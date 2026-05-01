@@ -22,7 +22,7 @@ export default defineConfig({
           include: ["tests/unit/**/*.test.tsx"],
           environment: "jsdom",
           isolate: false,
-          setupFiles: ["tests/unit/setup-env.ts"],
+          setupFiles: ["tests/unit/setup-env.ts", "tests/unit/setup-idb.ts"],
         },
       },
       {

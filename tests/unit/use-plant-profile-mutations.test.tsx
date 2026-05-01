@@ -205,6 +205,9 @@ describe("useDeletePlant", () => {
     vi.mocked(useSubscription).mockReturnValue({ active: true, readOnly: false });
     vi.mocked(toast.error).mockClear();
     vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal("crypto", {
+      randomUUID: vi.fn(() => "test-uuid-1234-1234-1234-123456789012"),
+    });
   });
 
   it("Test 5: optimistic removal — removes plant from list cache before DELETE resolves", async () => {
@@ -313,5 +316,39 @@ describe("useDeletePlant", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(result.current.error).toBeInstanceOf(Error);
     expect((result.current.error as Error).name).toBe("ReadOnlyError");
+  });
+
+  it("Test 8: idempotency-key header — DELETE request carries Idempotency-Key from crypto.randomUUID()", async () => {
+    const { useDeletePlant } = await import(
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+    );
+
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 204,
+      json: () => Promise.resolve(null),
+    } as unknown as Response);
+
+    const { result } = renderHook(
+      () => useDeletePlant(PLANT_ID, { queryClient: qc }),
+      { wrapper: wrapper(qc) },
+    );
+
+    result.current.mutate();
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!;
+    expect(url).toBe(`/api/v1/plants/${PLANT_ID}`);
+    expect((init as RequestInit | undefined)?.method).toBe("DELETE");
+
+    const headers = ((init as RequestInit | undefined)?.headers ?? {}) as Record<string, string>;
+    const lowerHeaders = Object.fromEntries(
+      Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]),
+    );
+    expect(lowerHeaders["idempotency-key"]).toBeDefined();
+    expect(lowerHeaders["idempotency-key"]).not.toBe("");
   });
 });

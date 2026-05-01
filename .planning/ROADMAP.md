@@ -191,10 +191,10 @@ Plans:
 - [x] 05-12-combobox-primitive-PLAN.md - Combobox primitive per WAI-ARIA APG 1.2 (Open Q4 resolution)
 - [x] 05-13-bottom-sheet-primitive-PLAN.md - BottomSheet primitive [BLOCKING axe + VoiceOver/TalkBack gate] (Open Q5 resolution)
 - [x] 05-14-lightbox-inline-edit-primitives-PLAN.md - Lightbox + InlineEditField primitives (Pitfall 6 a11y guard)
-- [ ] 05-15-catalog-page-grid-sort-PLAN.md - Catalog page + responsive grid + sort + sessionStorage hook
-- [ ] 05-16-plant-profile-page-PLAN.md - Plant Profile page (single-scroll + inline edits + delete confirm + ID-history conditional)
-- [ ] 05-17-manual-add-photo-journal-pages-PLAN.md - Manual Add page + Photo Journal page (2-step upload + bottom-sheet + lightbox)
-- [ ] 05-18-home-identify-serwist-offline-banners-PLAN.md - Home empty + /identify placeholder + Serwist runtime cache + offline + read-only banners
+- [x] 05-15-catalog-page-grid-sort-PLAN.md - Catalog page + responsive grid + sort + sessionStorage hook
+- [x] 05-16-plant-profile-page-PLAN.md - Plant Profile page (single-scroll + inline edits + delete confirm + ID-history conditional)
+- [x] 05-17-manual-add-photo-journal-pages-PLAN.md - Manual Add page + Photo Journal page (2-step upload + bottom-sheet + lightbox)
+- [x] 05-18-home-identify-serwist-offline-banners-PLAN.md - Home empty + /identify placeholder + Serwist runtime cache + offline + read-only banners
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls

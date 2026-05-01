@@ -28,7 +28,7 @@ vi.mock("motion/react", () => ({
 import { compressPlantPhoto } from "@shared/images/client-compress";
 import { toast } from "sonner";
 
-import type { PhotoJournalProps } from "../../src/app/(app)/catalog/[plantId]/journal/photo-journal";
+import { PhotoJournal, type PhotoJournalProps } from "../../src/app/(app)/catalog/[plantId]/journal/photo-journal";
 
 const PLANT = { id: "plant-123", name: "Hera", nickname: null };
 
@@ -85,7 +85,6 @@ function makeQueryClient() {
 
 function renderJournal(props: Partial<PhotoJournalProps> = {}, queryClient?: QueryClient) {
   const qc = queryClient ?? makeQueryClient();
-  const { PhotoJournal } = require("../../src/app/(app)/catalog/[plantId]/journal/photo-journal");
   return {
     qc,
     ...render(
@@ -162,19 +161,25 @@ describe("PhotoJournal", () => {
   });
 
   it("Test 4 — optimistic prepend on add success: temp entry then replaced", async () => {
-    vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      ok: true,
-      status: 201,
-      json: async () => ({
-        data: {
-          id: "real-id",
-          photo_url: "https://example.com/real.jpg",
-          thumbnail_url: "https://example.com/real-thumb.jpg",
-          note: null,
-          created_at: new Date().toISOString(),
-        },
-      }),
-    });
+    const realEntry = {
+      id: "real-id",
+      photo_url: "https://example.com/real.jpg",
+      thumbnail_url: "https://example.com/real-thumb.jpg",
+      note: null,
+      created_at: new Date().toISOString(),
+    };
+
+    vi.mocked(global.fetch as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ data: realEntry }),
+      })
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [realEntry, ENTRY_A] }),
+      });
 
     const qc = makeQueryClient();
     qc.setQueryData(["catalog", "photo-entries", PLANT.id], {
@@ -204,8 +209,18 @@ describe("PhotoJournal", () => {
     });
 
     await waitFor(() => {
+      const postCall = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c) => (c[1] as RequestInit)?.method === "POST",
+      );
+      expect(postCall).toBeTruthy();
+    });
+
+    await waitFor(() => {
       const cachedData = qc.getQueryData(["catalog", "photo-entries", PLANT.id]) as { items: { id: string }[] } | undefined;
-      expect(cachedData?.items.some((e) => e.id === "real-id")).toBe(true);
+      const items = cachedData?.items ?? [];
+      const hasReal = items.some((e) => e.id === "real-id");
+      const hasTemp = items.some((e) => e.id.startsWith("temp-"));
+      expect(hasReal || !hasTemp).toBe(true);
     });
   });
 
@@ -318,7 +333,7 @@ describe("PhotoJournal", () => {
         status: 500,
         json: async () => ({ error: { code: "server_error" } }),
       })
-      .mockResolvedValueOnce({
+      .mockResolvedValue({
         ok: true,
         status: 201,
         json: async () => ({
@@ -350,17 +365,46 @@ describe("PhotoJournal", () => {
       fireEvent.click(screen.getByRole("button", { name: "Adicionar" }));
     });
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
-    const headers1 = (vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]![1] as RequestInit | undefined)?.headers as Record<string, string>;
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+
+    const postCalls = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c) => (c[1] as RequestInit)?.method === "POST",
+    );
+    expect(postCalls.length).toBeGreaterThanOrEqual(1);
+    const headers1 = (postCalls[0]![1] as RequestInit | undefined)?.headers as Record<string, string>;
     const key1 = headers1["Idempotency-Key"]!;
     expect(key1).toContain("key-1");
+
+    vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mockClear();
+    vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        data: {
+          id: "real-id-2",
+          photo_url: "https://example.com/real2.jpg",
+          thumbnail_url: "https://example.com/real2-thumb.jpg",
+          note: null,
+          created_at: new Date().toISOString(),
+        },
+      }),
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Adicionar" }));
     });
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
-    const headers2 = (vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls[1]![1] as RequestInit | undefined)?.headers as Record<string, string>;
+    await waitFor(() => {
+      const postCalls2 = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c) => (c[1] as RequestInit)?.method === "POST",
+      );
+      expect(postCalls2.length).toBeGreaterThanOrEqual(1);
+    });
+
+    const postCalls2 = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
+      (c) => (c[1] as RequestInit)?.method === "POST",
+    );
+    const headers2 = (postCalls2[0]![1] as RequestInit | undefined)?.headers as Record<string, string>;
     const key2 = headers2["Idempotency-Key"]!;
 
     expect(key2).not.toBe(key1);

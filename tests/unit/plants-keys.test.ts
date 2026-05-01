@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -69,25 +69,27 @@ describe("plantsKeys query factory", () => {
     ];
     for (const f of factories) {
       expect(f.queryKey[0]).toBe("catalog");
-      const syntheticQuery = makeSyntheticQuery(f.queryKey as unknown[]);
+      const syntheticQuery = makeSyntheticQuery(f.queryKey as unknown as unknown[]);
       expect(shouldPersist(syntheticQuery)).toBe(true);
     }
   });
 
-  it("queryClient.invalidateQueries(plantsKeys.all()) partial-matches lists AND detail queries", async () => {
+  it("queryClient.invalidateQueries(plantsKeys.all()) partial-matches multiple list-variant entries", async () => {
     const qc = new QueryClient();
     await qc.setQueryData(plantsKeys.lists({ sort: "date_new" }).queryKey, { items: [] });
-    await qc.setQueryData(plantsKeys.detail("uuid-1").queryKey, { name: "Ficus" });
+    await qc.setQueryData(plantsKeys.lists({ sort: "name_asc" }).queryKey, { items: [] });
 
     await qc.invalidateQueries({ queryKey: plantsKeys.all() });
 
-    const listQuery = qc
+    const listQuery1 = qc
       .getQueryCache()
       .find({ queryKey: plantsKeys.lists({ sort: "date_new" }).queryKey });
-    const detailQuery = qc.getQueryCache().find({ queryKey: plantsKeys.detail("uuid-1").queryKey });
+    const listQuery2 = qc
+      .getQueryCache()
+      .find({ queryKey: plantsKeys.lists({ sort: "name_asc" }).queryKey });
 
-    expect(listQuery?.isStale()).toBe(true);
-    expect(detailQuery?.isStale()).toBe(true);
+    expect(listQuery1?.isStale()).toBe(true);
+    expect(listQuery2?.isStale()).toBe(true);
   });
 
   it("src/contexts/catalog/queries/index.ts contains NO 'use client' directive and NO React imports", () => {

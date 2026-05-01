@@ -26,6 +26,20 @@ export function LogoutLink({
         body: "{}",
       });
     } finally {
+      try {
+        const { del } = await import("idb-keyval");
+        await del("folhario.query-cache");
+      } catch {
+        // swallow — best-effort IDB clear; per-user buster already
+        // mitigates cross-user IDB poisoning at the persister level
+      }
+      try {
+        if ("caches" in window) {
+          await Promise.all([caches.delete("folhario-catalog-api-v1")]);
+        }
+      } catch {
+        // swallow — best-effort SW cache purge (T-05-10-06 belt-and-braces)
+      }
       window.location.href = "/auth/login";
     }
   }

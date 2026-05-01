@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { getCurrentUserFromSessionReadOnly } from "@contexts/iam/application/current-user";
 import { UnverifiedBlocker } from "@contexts/iam/api/components/unverified-blocker";
 import { SubscriptionProvider } from "@contexts/billing/application/subscription-provider";
+import { QueryProvider } from "@shared/ui/query-provider";
 
 import { AppShell } from "./app-shell";
 
@@ -49,10 +50,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return <UnverifiedBlocker email={user.email} />;
   }
 
-  // (d) Verified → app shell (wrapped in subscription context for Wave 4 plans).
+  // (d) Verified → app shell (wrapped in QueryProvider + subscription context for Wave 4 plans).
+  // QueryProvider is mounted ONLY in this verified branch — unverified visitors
+  // and oauth-incomplete sessions never instantiate the cache (D-16, T-05-10-01).
   return (
-    <SubscriptionProvider>
-      <AppShell>{children}</AppShell>
-    </SubscriptionProvider>
+    <QueryProvider userId={user.id}>
+      <SubscriptionProvider>
+        <AppShell>{children}</AppShell>
+      </SubscriptionProvider>
+    </QueryProvider>
   );
 }

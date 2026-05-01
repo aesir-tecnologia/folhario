@@ -195,12 +195,12 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
     const plantId = plantRow[0]!.id as string;
 
     await driver`
-      INSERT INTO reminders (plant_id, user_id, reminder_type, next_due_at)
-      VALUES (${plantId}, ${userId}, 'water', NOW() + INTERVAL '1 day')
+      INSERT INTO reminders (plant_id, type, frequency_days, next_due_at)
+      VALUES (${plantId}, 'watering', 7, NOW() + INTERVAL '1 day')
     `;
     await driver`
-      INSERT INTO reminders (plant_id, user_id, reminder_type, next_due_at)
-      VALUES (${plantId}, ${userId}, 'fertilize', NOW() + INTERVAL '7 days')
+      INSERT INTO reminders (plant_id, type, frequency_days, next_due_at)
+      VALUES (${plantId}, 'fertilization', 30, NOW() + INTERVAL '7 days')
     `;
 
     await deletePlant({ userId, plantId });
@@ -222,8 +222,13 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
     const plantId = plantRow[0]!.id as string;
 
     const identRow = await driver`
-      INSERT INTO identifications (user_id, plant_id, provider, raw_response, status)
-      VALUES (${userId}, ${plantId}, 'plant_id_api', '{}', 'completed')
+      INSERT INTO identifications (
+        user_id, plant_id, photo_urls, provider, model, results, latency_ms, consent_version, status
+      )
+      VALUES (
+        ${userId}, ${plantId}, ARRAY[]::text[], 'plant_id_api', 'v1',
+        '[]'::jsonb, 0, '1.0', 'success'
+      )
       RETURNING id
     `;
     const identId = identRow[0]!.id as string;
@@ -330,12 +335,12 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
       VALUES (${plantId}, ${"plant-photos/" + userId + "/" + plantId + "/p3.jpg"}, ${"plant-thumbnails/" + userId + "/" + plantId + "/p3.jpg"})
     `;
     await driver`
-      INSERT INTO reminders (plant_id, user_id, reminder_type, next_due_at)
-      VALUES (${plantId}, ${userId}, 'water', NOW() + INTERVAL '1 day')
+      INSERT INTO reminders (plant_id, type, frequency_days, next_due_at)
+      VALUES (${plantId}, 'watering', 7, NOW() + INTERVAL '1 day')
     `;
     await driver`
-      INSERT INTO reminders (plant_id, user_id, reminder_type, next_due_at)
-      VALUES (${plantId}, ${userId}, 'fertilize', NOW() + INTERVAL '7 days')
+      INSERT INTO reminders (plant_id, type, frequency_days, next_due_at)
+      VALUES (${plantId}, 'fertilization', 30, NOW() + INTERVAL '7 days')
     `;
 
     await deletePlant({ userId, plantId });

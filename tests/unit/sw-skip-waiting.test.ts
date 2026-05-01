@@ -37,9 +37,13 @@ describe("OFF-10 + T-03-04-01 SW SKIP_WAITING handler — guards event.data.type
       function FakeStaleWhileRevalidate() {
         return {};
       }
+      function FakeExpirationPlugin() {
+        return {};
+      }
       return {
         Serwist: FakeSerwist,
         StaleWhileRevalidate: FakeStaleWhileRevalidate,
+        ExpirationPlugin: FakeExpirationPlugin,
         NetworkOnly: FakeNetworkOnly,
         NetworkFirst: FakeNetworkFirst,
       };

@@ -89,7 +89,7 @@ beforeEach(async () => {
 
   vi.resetModules();
 
-  const mod = await import("../../src/app/sw.ts");
+  const mod = await import("../../src/app/sw");
   CATALOG_API_CACHE = (mod as { CATALOG_API_CACHE?: string }).CATALOG_API_CACHE ?? "";
 });
 
@@ -168,12 +168,15 @@ describe("sw.ts — StaleWhileRevalidate catalog runtime cache (D-19/D-20)", () 
 
   it("StaleWhileRevalidate is constructed with cacheName = CATALOG_API_CACHE", () => {
     expect(staleWhileRevalidateInstances.length).toBeGreaterThan(0);
-    expect(staleWhileRevalidateInstances[0].cacheName).toBe(CATALOG_API_CACHE_VALUE);
+    const swr = staleWhileRevalidateInstances[0];
+    if (!swr) throw new Error("No StaleWhileRevalidate instance found");
+    expect(swr.cacheName).toBe(CATALOG_API_CACHE_VALUE);
   });
 
   it("ExpirationPlugin is constructed with maxAgeSeconds=604800, maxEntries=200, purgeOnQuotaError=true", () => {
     expect(expirationPluginInstances.length).toBeGreaterThan(0);
     const exp = expirationPluginInstances[0];
+    if (!exp) throw new Error("No ExpirationPlugin instance found");
     expect(exp.maxAgeSeconds).toBe(7 * 24 * 60 * 60);
     expect(exp.maxEntries).toBe(200);
     expect(exp.purgeOnQuotaError).toBe(true);

@@ -94,6 +94,11 @@ export const pendingDeletionStatus = pgEnum("pending_deletion_status", [
   "failed",
 ]);
 
+export const pendingDeletionKind = pgEnum("pending_deletion_kind", [
+  "prefix",
+  "object",
+]);
+
 export const pendingStorageDeletions = pgTable(
   "pending_storage_deletions",
   {
@@ -104,6 +109,15 @@ export const pendingStorageDeletions = pgTable(
     bucket: text("bucket").notNull(),
     prefix: text("prefix").notNull(),
     status: pendingDeletionStatus("status").notNull().default("pending"),
+    /**
+     * Discriminator for the storage operation the reconciler must perform.
+     * - 'prefix' (legacy / default): full plant cleanup via deletePrefix on
+     *   `${userId}/${plantId}/`. Used by deletePlant.
+     * - 'object': single photo-entry cleanup via deleteObject on the full
+     *   canonical key `${userId}/${plantId}/${photoId}.${ext}`. Used by
+     *   deletePhotoEntry. (CR-01)
+     */
+    kind: pendingDeletionKind("kind").notNull().default("prefix"),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),
     scheduledAt: timestamp("scheduled_at", { withTimezone: true, mode: "string" })

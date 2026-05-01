@@ -146,11 +146,13 @@ export async function deletePhotoEntry(
       userId: input.userId,
       bucket: PLANT_PHOTOS_BUCKET,
       prefix: photoKey,
+      kind: "object",
     });
     await pendingStorageDeletionsRepo.create(tx, {
       userId: input.userId,
       bucket: PLANT_THUMBNAILS_BUCKET,
       prefix: thumbKey,
+      kind: "object",
     });
 
     await photoEntriesRepo.bumpCoverFor(tx, {

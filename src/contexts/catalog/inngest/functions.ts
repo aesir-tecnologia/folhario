@@ -12,7 +12,10 @@ import { RetryAfterError } from "inngest";
 import { db } from "@shared/db/client";
 import { inngest } from "@shared/inngest/client";
 import * as pendingDeletionsRepo from "@contexts/catalog/infrastructure/db/pending-storage-deletions";
-import { validateStorageDeletionPrefix } from "@contexts/catalog/domain/storage-paths";
+import {
+  validateStorageDeletionPrefix,
+  validateStorageObjectKey,
+} from "@contexts/catalog/domain/storage-paths";
 import { getStorageAdapter } from "@contexts/catalog/infrastructure/photo-storage";
 import type { PlantDeletedPayload } from "@contexts/catalog/domain/events";
 
@@ -113,6 +116,19 @@ function extractPlantIdFromPrefix(prefix: string): string {
   return parts[1]!;
 }
 
+function extractPlantIdFromObjectKey(key: string, userId: string): string {
+  const prefix = `${userId}/`;
+  if (!key.startsWith(prefix)) {
+    throw new Error(`malformed object key (no userId prefix): ${key}`);
+  }
+  const rest = key.slice(prefix.length);
+  const slash = rest.indexOf("/");
+  if (slash <= 0) {
+    throw new Error(`malformed object key (no plantId segment): ${key}`);
+  }
+  return rest.slice(0, slash);
+}
+
 /**
  * Handler for the cleanupStorageReconciler Inngest cron function.
  * Exported for direct test invocation.
@@ -149,16 +165,29 @@ export async function cleanupStorageReconcilerHandler({
       }
 
       try {
-        const plantId = extractPlantIdFromPrefix(row.prefix);
-        validateStorageDeletionPrefix({
-          userId: row.userId,
-          plantId,
-          prefix: row.prefix,
-        });
-        await getStorageAdapter().deletePrefix({
-          bucket: row.bucket,
-          prefix: row.prefix,
-        });
+        if (row.kind === "object") {
+          const plantId = extractPlantIdFromObjectKey(row.prefix, row.userId);
+          validateStorageObjectKey({
+            userId: row.userId,
+            plantId,
+            key: row.prefix,
+          });
+          await getStorageAdapter().deleteObject({
+            bucket: row.bucket,
+            objectKey: row.prefix,
+          });
+        } else {
+          const plantId = extractPlantIdFromPrefix(row.prefix);
+          validateStorageDeletionPrefix({
+            userId: row.userId,
+            plantId,
+            prefix: row.prefix,
+          });
+          await getStorageAdapter().deletePrefix({
+            bucket: row.bucket,
+            prefix: row.prefix,
+          });
+        }
         await pendingDeletionsRepo.markCompleted(db, row.id);
       } catch (err) {
         await pendingDeletionsRepo.recordError(db, row.id, String(err));

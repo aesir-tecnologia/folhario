@@ -43,6 +43,13 @@
       "when": 1777598956594,
       "tag": "0005_add_location_suggestions",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777670299704,
+      "tag": "0006_secret_slayback",
+      "breakpoints": true
     }
   ]
 }

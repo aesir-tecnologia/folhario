@@ -949,6 +949,33 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       expect(typeof json._meta.reminder_count).toBe("number");
       expect(json._meta.reminder_count).toBe(0);
     });
+
+    it("Test 4.4 (CR-04: cover_signed_url present in response): plant without cover_photo_url returns cover_signed_url=null", async () => {
+      useInMemoryStorage();
+      setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
+      const { GET } = await import("../../src/app/api/v1/plants/[plantId]/route");
+
+      const res = await GET(
+        new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`),
+        { params: Promise.resolve({ plantId: detailPlantId }) },
+      );
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as {
+        plant: Record<string, unknown>;
+        _meta: { photo_entry_count: number; reminder_count: number };
+      };
+
+      // CR-04: cover_signed_url MUST be present on the response (was being
+      // dropped by toPlantSnakeCase before the fix). detailPlantId has no
+      // cover_photo_url so the signed URL is null, but the FIELD must exist.
+      expect(json.plant).toHaveProperty("cover_signed_url");
+      expect(json.plant.cover_signed_url).toBeNull();
+
+      // Regression: existing fields still present
+      expect(json.plant).toHaveProperty("cover_photo_url");
+      expect(json._meta).toHaveProperty("photo_entry_count");
+      expect(json._meta).toHaveProperty("reminder_count");
+    });
   });
 
   // ============================================================================

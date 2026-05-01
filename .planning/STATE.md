@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-catalog-meu-jardim Plan 02
-last_updated: "2026-05-01T01:37:15.239Z"
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: "2026-05-01T01:46:27.005Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 13
   completed_phases: 4
   total_plans: 56
-  completed_plans: 40
-  percent: 71
+  completed_plans: 41
+  percent: 73
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 05 (catalog-meu-jardim) — EXECUTING
-Plan: 3 of 18
+Plan: 4 of 18
 Status: Ready to execute
 Last activity: 2026-05-01
 
-Progress: [███████░░░] 71%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: [███████░░░] 71%
 *Updated after each plan completion*
 | Phase 05-catalog-meu-jardim P01 | 4 | 3 tasks | 7 files |
 | Phase 05-catalog-meu-jardim P02 | 7 | 3 tasks | 11 files |
+| Phase 05-catalog-meu-jardim P11 | 4 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,7 @@ Recent decisions affecting current work:
 - Plan 01-08: INFRA-12 marked complete in REQUIREMENTS.md traceability table. Phase 1 complete: INFRA-12 + INFRA-16 + INFRA-17 + INFRA-18 + INFRA-20 + INFRA-23 + INFRA-26 + OBS-01 + OBS-02 + LGPD-13 (plus INFRA-01 + INFRA-02 from Plan 01-01). OBS-05 explicitly deferred to Phase 13 on 2026-04-23 per user decision 2 (alert rules need real traffic to tune thresholds — empty-project alerts are noise).
 - Plan 01-08: First PR CI run (https://github.com/aesir-tecnologia/folhario/actions/runs/24911496475) completed green in 2m43s on the first attempt post-checkpoint-unblock; all 15 workflow steps passed including Playwright smoke (7 passed + 1 expected local-mode skip). GitHub emitted a deprecation annotation: `actions/cache@v4` and `actions/upload-artifact@v4` run on Node 20, forced to Node 24 on 2026-06-02, removed 2026-09-16 — captured as tooling todo at `.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`.
 - Post-Phase-1 (2026-04-24): **Reversed Action 6 on `next-env.d.ts` handling.** Original Action 6 (from `/gsd-plan-phase 1 --reviews` resolution pass) landed on "untracked AND not gitignored" to reconcile a textual contradiction between 01-01-PLAN (gitignore) and 01-03-PLAN (track). The Codex review that surfaced the contradiction (`01-REVIEWS.md:269`) asked for a clean binary — track OR gitignore — and the resolution invented a third option neither reviewer argued for. Next 16 docs (verified via context7 against `/vercel/next.js` canary — `docs/01-app/03-api-reference/05-config/02-typescript.mdx` and `06-cli/next.mdx`) explicitly recommend gitignoring and regenerating via `next typegen` before typecheck: *"We recommend adding `next-env.d.ts` to your `.gitignore` file"*. `next typegen` exists specifically so CI can hydrate the file cheaply before `tsc --noEmit` without paying for a full build. Resolution: added `next-env.d.ts` to `.gitignore`; inserted `pnpm exec next typegen` step in `ci.yml` between Lint and Typecheck; updated `01-CONTEXT.md` with supersedes-note pointing back to this decision. Historical references to "Action 6" in completed plan/summary artifacts left intact as frozen audit trail — current behavior is the STATE/CONTEXT decision, not the old Action 6 text.
+- [Phase ?]: Plan 05-11: subscription stub shipped; .unit.test.tsx for colocated React tests; async SubscriptionProvider; production static rendering preserved
 
 ### Pending Todos
 
@@ -150,6 +152,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-01T01:37:15.232Z
+Last session: 2026-05-01T01:46:26.994Z
 Stopped at: Phase 5 UI-SPEC approved
 Resume file: None

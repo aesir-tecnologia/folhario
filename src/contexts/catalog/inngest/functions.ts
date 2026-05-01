@@ -143,8 +143,10 @@ export async function cleanupStorageReconcilerHandler({
       const readyAt = new Date(row.scheduledAt).getTime() + waitMin * 60 * 1000;
       if (Date.now() < readyAt) continue;
 
-      const transitioned = await pendingDeletionsRepo.markInProgress(db, row.id);
-      if (!transitioned) continue;
+      if (row.status === "pending") {
+        const transitioned = await pendingDeletionsRepo.markInProgress(db, row.id);
+        if (!transitioned) continue;
+      }
 
       try {
         const plantId = extractPlantIdFromPrefix(row.prefix);

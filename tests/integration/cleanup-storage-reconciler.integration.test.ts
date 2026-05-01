@@ -233,7 +233,9 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorageReconciler hourly cron", () =
     const fake = makeFakeAdapter();
     setStorageAdapterForTests(fake.asAdapter);
 
-    const ago = new Date(Date.now() - 10000);
+    // stale row: scheduled_at must be old enough to pass backoff check
+    // attempts=1 → BACKOFF_MINUTES[0]=5min; scheduled_at must be >5min ago
+    const sixMinAgo = new Date(Date.now() - 6 * 60 * 1000);
     const staleStartedAt = new Date(Date.now() - 45 * 60 * 1000);
 
     const rowId = await insertPsdRow({
@@ -241,7 +243,7 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorageReconciler hourly cron", () =
       pid: plantId,
       status: "in_progress",
       attempts: 1,
-      scheduledAt: ago,
+      scheduledAt: sixMinAgo,
       startedAt: staleStartedAt,
     });
 

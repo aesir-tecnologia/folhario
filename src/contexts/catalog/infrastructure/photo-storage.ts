@@ -158,6 +158,42 @@ export async function deleteAllPlantMediaForUser(userId: string): Promise<void> 
   await adapter.deletePrefix({ bucket: PLANT_THUMBNAILS_BUCKET, prefix });
 }
 
+const KNOWN_BUCKETS = new Set([PLANT_PHOTOS_BUCKET, PLANT_THUMBNAILS_BUCKET] as const);
+
+export type SignCatalogPhotoUrlResult =
+  | { ok: true; signedUrl: string }
+  | { ok: false; reason: "invalid_stored_url" | "unknown_bucket" };
+
+/**
+ * Sign a catalog photo URL for read access. Takes the stored
+ * `{bucket}/{key}` shape persisted in `photo_entries.photo_url` and
+ * `photo_entries.thumbnail_url` (see `upload-photo.ts:212`). Parses
+ * once, delegates to the adapter. Pure function except for the
+ * adapter call. D-20: callers pass `ttlSeconds = 24*3600`; the
+ * literal stays in the caller, NEVER baked into this helper
+ * (drift control).
+ */
+export async function signCatalogPhotoUrl(input: {
+  storedUrl: string;
+  ttlSeconds: number;
+}): Promise<SignCatalogPhotoUrlResult> {
+  const slash = input.storedUrl.indexOf("/");
+  if (slash <= 0 || slash >= input.storedUrl.length - 1) {
+    return { ok: false, reason: "invalid_stored_url" };
+  }
+  const bucket = input.storedUrl.slice(0, slash);
+  const objectKey = input.storedUrl.slice(slash + 1);
+  if (!(KNOWN_BUCKETS as Set<string>).has(bucket)) {
+    return { ok: false, reason: "unknown_bucket" };
+  }
+  const result = await getAdapter().createSignedUrl({
+    bucket,
+    objectKey,
+    expiresInSeconds: input.ttlSeconds,
+  });
+  return { ok: true, signedUrl: result.signedUrl };
+}
+
 /**
  * CR-03 compensating deletion: remove a single photo's storage objects
  * when the DB write fails after upload. CR-01 fix: routes through the

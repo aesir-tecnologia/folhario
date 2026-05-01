@@ -199,15 +199,25 @@ describe.skipIf(!dbUrl)("Phase-05-07 updatePlant use-case integration", () => {
   });
 
   it("Test 8: PostHog NOT fired when UoW throws (T-05-07-03)", async () => {
+    const plantId = await seedPlant(userId);
     mockCapture.mockClear();
-    // Pass an invalid userId (non-UUID) so withUnitOfWork throws UnitOfWorkError
-    const result = await updatePlant({
-      userId: "not-a-uuid",
-      plantId: randomUUID(),
-      patch: { name: "Should not fire" },
-    });
-    // The UoW will throw because userId is not a UUID — use-case should surface as validation_failed or not_found
-    // Either way, PostHog must NOT fire
+
+    // Mock withUnitOfWork to throw AFTER the ownership check passes
+    const uowModule = await import("@shared/db/unit-of-work");
+    const originalUoW = uowModule.withUnitOfWork;
+    const spy = vi.spyOn(uowModule, "withUnitOfWork").mockRejectedValueOnce(
+      new Error("simulated UoW failure"),
+    );
+
+    try {
+      await expect(
+        updatePlant({ userId, plantId, patch: { name: "Should not fire" } }),
+      ).rejects.toThrow("simulated UoW failure");
+    } finally {
+      spy.mockRestore();
+    }
+
+    // PostHog must NOT have fired (UoW threw before commit)
     expect(mockCapture).not.toHaveBeenCalled();
   });
 

@@ -106,3 +106,66 @@ export function normalizeLimit(input: string | number | null | undefined): numbe
   if (floored > MAX_LIMIT) return MAX_LIMIT;
   return floored;
 }
+
+/**
+ * Phase-5 D-12 sort-aware cursor.
+ *
+ * Cursor format: `base64url(JSON.stringify({sort_id, last_value, last_id}))`.
+ *
+ * - `sort_id` is one of the 5 catalog sort modes (D-11): name_asc / name_desc /
+ *   date_new / date_old / location.
+ * - `last_value` carries the sort-key of the last row in the previous page.
+ *   For `acquisition_date` modes, NULL dates sort last (NULLS LAST). The
+ *   cursor encodes `last_value: null` as the sentinel meaning "we are now
+ *   in the NULL-tail of the result set" — the SQL layer translates that
+ *   into `WHERE acquisition_date IS NULL AND id < :last_id`.
+ * - `last_id` is the stable tiebreak — always the plant UUID.
+ *
+ * This codec is ADDITIVE: the Phase-2 `{id, createdAt}` cursor (cursorPayloadSchema /
+ * encodeCursor / decodeCursor) is unchanged and still serves the existing
+ * non-sort-aware list endpoints. Phase 5 sort-aware list-plants uses the
+ * helpers below.
+ */
+
+export const SORT_IDS = ["name_asc", "name_desc", "date_new", "date_old", "location"] as const;
+
+export type SortId = (typeof SORT_IDS)[number];
+
+const sortCursorPayloadSchema = z.object({
+  sort_id: z.enum(SORT_IDS),
+  last_value: z.union([z.string(), z.null()]),
+  last_id: z.string().uuid(),
+});
+
+export type SortCursorPayload = z.infer<typeof sortCursorPayloadSchema>;
+
+export type SortCursorDecodeResult =
+  | { ok: true; value: SortCursorPayload }
+  | { ok: false; error: typeof ErrorCode.ValidationFailed };
+
+export function encodeSortCursor(payload: SortCursorPayload): string {
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+}
+
+export function decodeSortCursor(encoded: string): SortCursorDecodeResult {
+  let json: string;
+  try {
+    json = Buffer.from(encoded, "base64url").toString("utf8");
+  } catch {
+    return { ok: false, error: ErrorCode.ValidationFailed };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    return { ok: false, error: ErrorCode.ValidationFailed };
+  }
+
+  const result = sortCursorPayloadSchema.safeParse(parsed);
+  if (!result.success) {
+    return { ok: false, error: ErrorCode.ValidationFailed };
+  }
+
+  return { ok: true, value: result.data };
+}

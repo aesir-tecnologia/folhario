@@ -89,7 +89,7 @@ export function ModalSheet({
               }}
               className="
                 mx-auto mb-4 block h-[4px] w-[36px] rounded-full bg-hairline
-                focus-visible:outline-2 focus-visible:outline-offset-2
+                focus-visible:outline-[3px] focus-visible:outline-offset-2
                 focus-visible:outline-canopy/40
               "
             />

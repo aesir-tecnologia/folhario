@@ -239,7 +239,7 @@ export function InlineEditField({
               disabled={isSaving}
               className={`
                 w-full rounded-md border-[1.5px] bg-ivory px-3 py-2 text-forest
-                focus:outline-none focus:ring-2 focus:ring-canopy/40
+                focus:outline-none focus:ring-[3px] focus:ring-canopy/40
                 ${validationError ? "border-rust" : "border-canopy"}
               `}
               style={{ minHeight: `${minRows * 1.5}rem`, maxHeight: `${maxRows * 1.5}rem` }}
@@ -260,7 +260,7 @@ export function InlineEditField({
               disabled={isSaving}
               className={`
                 w-full rounded-md border-[1.5px] bg-ivory px-3 py-2 text-forest
-                focus:outline-none focus:ring-2 focus:ring-canopy/40
+                focus:outline-none focus:ring-[3px] focus:ring-canopy/40
                 ${validationError ? "border-rust" : "border-canopy"}
               `}
             />
@@ -279,7 +279,7 @@ export function InlineEditField({
               autoFocus
               className={`
                 w-full rounded-md border-[1.5px] bg-ivory px-3 py-2 text-forest
-                focus:outline-none focus:ring-2 focus:ring-canopy/40
+                focus:outline-none focus:ring-[3px] focus:ring-canopy/40
                 ${validationError ? "border-rust" : "border-canopy"}
               `}
             />

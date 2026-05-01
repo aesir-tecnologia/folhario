@@ -32,7 +32,7 @@ export function Toggle({ label, checked, onChange, id }: ToggleProps) {
       />
       <span
         aria-hidden="true"
-        className={`relative inline-block w-[52px] h-[32px] rounded-full ${trackClass} peer-focus-visible:ring-2 peer-focus-visible:ring-canopy/40`}
+        className={`relative inline-block w-[52px] h-[32px] rounded-full ${trackClass} peer-focus-visible:ring-[3px] peer-focus-visible:ring-canopy/40`}
       >
         <span
           className={`absolute top-[2px] left-[2px] w-[28px] h-[28px] rounded-full bg-ivory transition-transform ${knobX}`}

@@ -62,10 +62,10 @@ test("inline-edit nickname saves on blur (CAT-04, D-05)", async ({
   const plantId = await seedPlant(page, { name: "Samambaia", nickname: undefined });
   await page.goto(`/catalog/${plantId}`);
 
-  let capturedIdempotencyKey: string | null = null;
+  let capturedIdempotencyKey: string | undefined;
   await page.route(`/api/v1/plants/${plantId}`, (route) => {
     capturedIdempotencyKey =
-      route.request().headers()["idempotency-key"] ?? null;
+      route.request().headers()["idempotency-key"] ?? undefined;
     void route.continue();
   });
 
@@ -78,8 +78,8 @@ test("inline-edit nickname saves on blur (CAT-04, D-05)", async ({
   expect(
     capturedIdempotencyKey,
     "Idempotency-Key header must be present on PATCH (HIGH-3)",
-  ).not.toBeNull();
-  if (capturedIdempotencyKey) {
+  ).toBeDefined();
+  if (capturedIdempotencyKey !== undefined) {
     expect(capturedIdempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
   }
 

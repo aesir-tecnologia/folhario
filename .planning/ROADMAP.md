@@ -195,11 +195,11 @@ Plans:
 - [x] 05-16-plant-profile-page-PLAN.md - Plant Profile page (single-scroll + inline edits + delete confirm + ID-history conditional)
 - [x] 05-17-manual-add-photo-journal-pages-PLAN.md - Manual Add page + Photo Journal page (2-step upload + bottom-sheet + lightbox)
 - [x] 05-18-home-identify-serwist-offline-banners-PLAN.md - Home empty + /identify placeholder + Serwist runtime cache + offline + read-only banners
-- [ ] 05-19-photo-entry-storage-cleanup-fix-PLAN.md - Gap CR-01: photo-entry deletion strands storage bytes — add kind discriminator pgEnum + reconciler branch
-- [ ] 05-20-plant-profile-api-contract-fix-PLAN.md - Gaps CR-02 + CR-04: useDeletePlant Idempotency-Key header + GET /plants/:id cover_signed_url
+- [x] 05-19-photo-entry-storage-cleanup-fix-PLAN.md - Gap CR-01: photo-entry deletion strands storage bytes — add kind discriminator pgEnum + reconciler branch
+- [x] 05-20-plant-profile-api-contract-fix-PLAN.md - Gaps CR-02 + CR-04: useDeletePlant Idempotency-Key header + GET /plants/:id cover_signed_url
 - [ ] 05-21-photo-journal-signed-urls-and-id-history-PLAN.md - Gap CR-03 + ID-history placeholder: sign photoUrl + thumbnailUrl in listPhotoEntries; add Histórico de Identificação placeholder section
-- [ ] 05-22-journal-add-response-shape-fix-PLAN.md - Gap WR-05: journal-add-sheet reads body.photo_entry from POST response
-- [ ] 05-23-focus-ring-brand-spec-PLAN.md - Gap WR-04: focus-ring 3px Canopy/40 across InlineEditField + ModalSheet + Toggle
+- [x] 05-22-journal-add-response-shape-fix-PLAN.md - Gap WR-05: journal-add-sheet reads body.photo_entry from POST response
+- [x] 05-23-focus-ring-brand-spec-PLAN.md - Gap WR-04: focus-ring 3px Canopy/40 across InlineEditField + ModalSheet + Toggle
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls

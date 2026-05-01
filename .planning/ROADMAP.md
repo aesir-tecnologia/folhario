@@ -176,7 +176,7 @@ Plans:
   3. A plant profile opens with cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link placeholder, and a delete overflow; the location picker shows the user's prior locations as quick-select plus defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` plus free text that becomes reusable next time.
   4. A user adds a new photo-journal entry with an optional note (creating a `PhotoEntry` linked to the plant), and the photo journal screen lists entries reverse-chronologically; a sort control offers name A-Z, name Z-A, date newest, date oldest, location, and the selection persists for the session.
   5. Deleting a plant cascades its PhotoEntry + Reminder rows, schedules its storage objects for deletion, sets `Identification.plant_id` NULL while preserving the history row, and a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.
-**Plans**: 18 plans (5a + 5b)
+**Plans**: 23 plans (5a + 5b + 5c gap closure)
 - [x] 05-01-wave0-test-infra-PLAN.md - Wave 0 test infra (axe-core + fake-indexeddb + transaction-rollback fixture + test directories + Playwright auth-bypass fixture)
 - [x] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
 - [x] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
@@ -195,6 +195,11 @@ Plans:
 - [x] 05-16-plant-profile-page-PLAN.md - Plant Profile page (single-scroll + inline edits + delete confirm + ID-history conditional)
 - [x] 05-17-manual-add-photo-journal-pages-PLAN.md - Manual Add page + Photo Journal page (2-step upload + bottom-sheet + lightbox)
 - [x] 05-18-home-identify-serwist-offline-banners-PLAN.md - Home empty + /identify placeholder + Serwist runtime cache + offline + read-only banners
+- [ ] 05-19-photo-entry-storage-cleanup-fix-PLAN.md - Gap CR-01: photo-entry deletion strands storage bytes — add kind discriminator pgEnum + reconciler branch
+- [ ] 05-20-plant-profile-api-contract-fix-PLAN.md - Gaps CR-02 + CR-04: useDeletePlant Idempotency-Key header + GET /plants/:id cover_signed_url
+- [ ] 05-21-photo-journal-signed-urls-and-id-history-PLAN.md - Gap CR-03 + ID-history placeholder: sign photoUrl + thumbnailUrl in listPhotoEntries; add Histórico de Identificação placeholder section
+- [ ] 05-22-journal-add-response-shape-fix-PLAN.md - Gap WR-05: journal-add-sheet reads body.photo_entry from POST response
+- [ ] 05-23-focus-ring-brand-spec-PLAN.md - Gap WR-04: focus-ring 3px Canopy/40 across InlineEditField + ModalSheet + Toggle
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls

@@ -33,3 +33,6 @@ export const MAX_UPLOAD_BYTES = 1_048_576;
  * than `MAX_UPLOAD_BYTES` once converted (1 MB ≈ 953,674 bytes < 1 MiB).
  */
 export const CLIENT_COMPRESSION_TARGET_MB = 1;
+
+export const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"] as const);
+export type AllowedMime = "image/jpeg" | "image/png" | "image/webp";

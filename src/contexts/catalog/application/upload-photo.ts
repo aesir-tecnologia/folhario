@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { ErrorCode } from "@shared/config/errors";
 import { db as defaultDb } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
+import { ALLOWED_MIME_TYPES, type AllowedMime } from "@shared/images/limits";
 import { rejectGpsMetadata, rejectOversizeBuffer } from "@shared/images/server-validate";
 import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
 import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
@@ -42,9 +43,6 @@ import type { PhotoEntryRow } from "@contexts/catalog/infrastructure/db/photo-en
  * `ParseResult`/`ApiUserResult` patterns from prior plans — routes map
  * non-ok results directly to `errorResponse(...)`.
  */
-
-const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"] as const);
-type AllowedMime = "image/jpeg" | "image/png" | "image/webp";
 
 function isAllowedMime(value: string): value is AllowedMime {
   return (ALLOWED_MIME_TYPES as Set<string>).has(value);

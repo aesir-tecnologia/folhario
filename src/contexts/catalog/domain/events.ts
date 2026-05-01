@@ -22,4 +22,9 @@ export interface PlantDeletedPayload {
   plantId: string;
   userId: string;
   deletedAt: string;
+  /** Phase 5 D-22: ids of the two pending_storage_deletions rows
+   *  (one for plant-photos, one for plant-thumbnails) inserted in
+   *  the same TX as the plant DELETE. cleanupStorage uses these
+   *  to locate the rows it must process. */
+  deletionRowIds: [string, string];
 }

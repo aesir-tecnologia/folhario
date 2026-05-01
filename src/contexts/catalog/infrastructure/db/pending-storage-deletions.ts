@@ -18,6 +18,25 @@ export async function create(
   return row;
 }
 
+export async function findById(
+  db: PsdDb,
+  id: string,
+): Promise<PendingStorageDeletionRow | null> {
+  const [row] = await db
+    .select()
+    .from(pendingStorageDeletions)
+    .where(eq(pendingStorageDeletions.id, id));
+  return row ?? null;
+}
+
+/**
+ * Conditionally transitions a row from 'pending' to 'in_progress'.
+ *
+ * Returns the updated row when the transition succeeds (status was 'pending'),
+ * or null when another worker already grabbed the row (status was already
+ * 'in_progress' or 'completed'). The conditional WHERE prevents duplicate
+ * processing in concurrent reconciler invocations (T-05-06-02).
+ */
 export async function markInProgress(
   db: PsdDb,
   id: string,
@@ -29,7 +48,7 @@ export async function markInProgress(
       attempts: sql`${pendingStorageDeletions.attempts} + 1`,
       startedAt: sql`now()`,
     })
-    .where(eq(pendingStorageDeletions.id, id))
+    .where(and(eq(pendingStorageDeletions.id, id), eq(pendingStorageDeletions.status, "pending")))
     .returning();
   return row ?? null;
 }

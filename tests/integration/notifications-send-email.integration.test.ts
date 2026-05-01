@@ -66,9 +66,9 @@ describe("Phase 4 NOTIF-01 — notifications/send-email Inngest function", () =>
     }
   });
 
-  it("registry contains exactly 9 functions after Plan 05 (Plan 04 had 8) = 8 PRD §3 MVP per D-16 + 1 Phase-4 anti-enumeration add per D-11", async () => {
+  it("registry contains exactly 11 functions after Plan 05-06 (Plan 04 had 8; Plan 05 notifications +1; Plan 05-06 catalog +2)", async () => {
     const { registry } = await import("../../src/shared/inngest/registry");
-    expect(registry).toHaveLength(9);
+    expect(registry).toHaveLength(11);
   });
 
   it("registry includes notifications-send-email", async () => {

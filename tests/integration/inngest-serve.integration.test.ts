@@ -28,9 +28,9 @@ describe("Phase 4 INFRA-10 — Inngest serve handler topology (Plan 05 final = 9
     expect(typeof mod.PUT).toBe("function");
   });
 
-  it("registry contains exactly 9 functions after Plan 05 = 8 PRD §3 MVP per D-16 + 1 Phase-4 anti-enumeration add per D-11", async () => {
+  it("registry contains exactly 11 functions after Plan 05-06 = 9 (Plan 05) + 2 catalog cleanup functions (D-22/D-24)", async () => {
     const { registry } = await import("../../src/shared/inngest/registry");
-    expect(registry).toHaveLength(9);
+    expect(registry).toHaveLength(11);
   });
 
   it("every registered function has a unique id", async () => {
@@ -40,13 +40,15 @@ describe("Phase 4 INFRA-10 — Inngest serve handler topology (Plan 05 final = 9
     expect(uniqueIds.size).toBe(ids.length);
   });
 
-  it("registry contains expected 9 function ids after Plan 05 (Codex MEDIUM topology fix + D-11 anti-enumeration add + Plan 05 send-email)", async () => {
+  it("registry contains expected 11 function ids after Plan 05-06 (9 from Plan 05 + 2 catalog cleanup)", async () => {
     const { registry } = await import("../../src/shared/inngest/registry");
     const ids = registry.map((f) => f.id()).sort();
     expect(ids).toEqual([
       "billing-process-webhook",
       "billing-trial-ending-notifier",
       "care-guide-augment",
+      "catalog/cleanup-storage",
+      "catalog/cleanup-storage-reconciler",
       "iam-generate-export",
       "iam-password-reset-requested",
       "iam-process-deletion",

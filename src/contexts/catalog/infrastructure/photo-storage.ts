@@ -67,6 +67,17 @@ function getAdapter(): StorageAdapter {
 }
 
 /**
+ * Returns the current StorageAdapter instance (real or test-injected).
+ * Used by Inngest cleanup functions that need to call `deletePrefix`
+ * outside the request lifecycle (D-22). Reads the same `cachedAdapter`
+ * that `__setStorageAdapterForTests` swaps, so integration tests work
+ * correctly when the fake adapter is injected.
+ */
+export function getStorageAdapter(): StorageAdapter {
+  return getAdapter();
+}
+
+/**
  * Test seam: swap in a fake `StorageAdapter`. Pass `null` to restore the
  * real Supabase-backed factory. Mirrors the
  * `__setCurrentUserAdapterForTests` pattern from plan 02-07.

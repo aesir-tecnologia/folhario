@@ -188,7 +188,7 @@ Plans:
 - [ ] 05-09-route-handlers-mutate-delete-PLAN.md - Route handlers (6 mutate + delete endpoints)
 - [ ] 05-10-tq-provider-idb-persister-i18n-PLAN.md - TanStack Query provider + IDB persister + i18n catalog namespace (Open Q3 resolution)
 - [x] 05-11-use-subscription-stub-PLAN.md - useSubscription() stub + read-only mode test harness
-- [ ] 05-12-combobox-primitive-PLAN.md - Combobox primitive per WAI-ARIA APG 1.2 (Open Q4 resolution)
+- [x] 05-12-combobox-primitive-PLAN.md - Combobox primitive per WAI-ARIA APG 1.2 (Open Q4 resolution)
 - [ ] 05-13-bottom-sheet-primitive-PLAN.md - BottomSheet primitive [BLOCKING axe + VoiceOver/TalkBack gate] (Open Q5 resolution)
 - [ ] 05-14-lightbox-inline-edit-primitives-PLAN.md - Lightbox + InlineEditField primitives (Pitfall 6 a11y guard)
 - [ ] 05-15-catalog-page-grid-sort-PLAN.md - Catalog page + responsive grid + sort + sessionStorage hook
@@ -311,7 +311,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Data Layer & Bounded Contexts | 11/11 | Complete | 2026-04-26 |
 | 3. Design System & App Shell | 0/5 | Ready to execute | - |
 | 4. IAM — Auth, Verification, Consent | 13/13 | Complete | 2026-04-29 |
-| 5. Catalog — Meu Jardim | 3/18 | In Progress|  |
+| 5. Catalog — Meu Jardim | 4/18 | In Progress|  |
 | 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |
 | 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |
 | 8. Reminders & Single Daily Push Nudge | 0/TBD | Not started | - |

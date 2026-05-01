@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-05-01T01:46:27.005Z"
+last_updated: "2026-05-01T02:02:21.943Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 13
   completed_phases: 4
   total_plans: 56
-  completed_plans: 41
-  percent: 73
+  completed_plans: 42
+  percent: 75
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 05 (catalog-meu-jardim) — EXECUTING
-Plan: 4 of 18
+Plan: 5 of 18
 Status: Ready to execute
 Last activity: 2026-05-01
 
-Progress: [███████░░░] 73%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [███████░░░] 73%
 | Phase 05-catalog-meu-jardim P01 | 4 | 3 tasks | 7 files |
 | Phase 05-catalog-meu-jardim P02 | 7 | 3 tasks | 11 files |
 | Phase 05-catalog-meu-jardim P11 | 4 | 2 tasks | 6 files |
+| Phase 05-catalog-meu-jardim P12 | 11 | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - Plan 05-02: schema-registry.ts must export new tables for drizzle-kit to detect schema changes — drizzle.config.ts uses registry as schema entry point, not per-context schema.ts files
 - Plan 05-02: vitest unit project extended to include src/**/*.test.ts for co-located test files (cursor.test.ts sits alongside cursor.ts)
 - Plan 05-02: Two separate drizzle-kit generate invocations (one table per pass) to produce two distinct named migration files; REFACTOR phase skipped (duplication ~6 lines)
+- Plan 05-12: Ghost row uses __ghost__ value prefix to prevent React key collision with real options sharing the same string value; commitOption strips prefix before calling onChange
+- Plan 05-12: @testing-library/jest-dom/vitest wired into unit test setup (Rule 2 — was installed but not imported; enables toHaveAttribute matcher across all unit-dom tests)
 
 - Phase 1: Next 16 App Router + Serwist (not next-pwa), GitHub Actions as sole deploy pipeline (Vercel git integration OFF)
 - Phase 1: Drizzle + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn pooler (stack lock-in from CLAUDE.md)
@@ -152,6 +155,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-01T01:46:26.994Z
+Last session: 2026-05-01T02:02:21.934Z
 Stopped at: Phase 5 UI-SPEC approved
 Resume file: None

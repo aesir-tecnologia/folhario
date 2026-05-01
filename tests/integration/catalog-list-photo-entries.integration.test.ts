@@ -195,4 +195,32 @@ describe.skipIf(!dbUrl)("Phase-05-07 listPhotoEntries use-case integration", () 
     if (!result.ok) throw new Error("expected ok");
     expect(result.items).toHaveLength(0);
   });
+
+  it("Test 5 (CR-03): result items expose photoSignedUrl alongside thumbnailSignedUrl", async () => {
+    const plantId = await seedPlant(userId);
+    const fakeAdapter = {
+      uploadObject: async () => ({ bucket: "", objectKey: "" }),
+      listBuckets: async () => [],
+      listObjectsUnderPrefix: async () => [],
+      deletePrefix: async () => {},
+      deleteObject: async () => {},
+      createSignedUrl: async ({ bucket, objectKey }: { bucket: string; objectKey: string }) =>
+        ({ signedUrl: `memory://${bucket}/${objectKey}?expires_in=86400` }),
+    } as import("@shared/adapters/storage").StorageAdapter;
+    __setStorageAdapterForTests(fakeAdapter);
+
+    await seedPhotoEntry(plantId, userId);
+
+    const result = await listPhotoEntries({ userId, plantId });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("expected ok");
+    expect(result.items).toHaveLength(1);
+    const item = result.items[0]! as Record<string, unknown>;
+    expect(item).toHaveProperty("photoSignedUrl");
+    expect(item).toHaveProperty("thumbnailSignedUrl");
+    expect(typeof item.photoSignedUrl === "string" || item.photoSignedUrl === null).toBe(true);
+    expect(typeof item.thumbnailSignedUrl === "string" || item.thumbnailSignedUrl === null).toBe(true);
+    // photoSignedUrl must be a signed URL (contains ?expires_in=) when signing succeeds
+    expect(item.photoSignedUrl).toMatch(/\?expires_in=/);
+  });
 });

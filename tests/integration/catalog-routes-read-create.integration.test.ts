@@ -1106,6 +1106,55 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
         expect(typeof item.thumbnail_url).toBe("string");
       }
     });
+
+    it("Test 5.4 (CR-03: photo_signed_url surfaces in GET response items)", async () => {
+      const adapter = useInMemoryStorage();
+      const entries = await driver<{ photo_url: string; thumbnail_url: string }[]>`
+        SELECT photo_url, thumbnail_url FROM photo_entries WHERE plant_id = ${journalPlantId}
+      `;
+      const parseBucketKey = (url: string) => {
+        const idx = url.indexOf("/");
+        return { bucket: url.slice(0, idx), objectKey: url.slice(idx + 1) };
+      };
+      for (const entry of entries) {
+        const { bucket: photoBucket, objectKey: photoKey } = parseBucketKey(entry.photo_url);
+        const { bucket: thumbBucket, objectKey: thumbKey } = parseBucketKey(entry.thumbnail_url);
+        await adapter.uploadObject({
+          bucket: photoBucket,
+          objectKey: photoKey,
+          buffer: validJpegBuffer,
+          contentType: "image/jpeg",
+        });
+        await adapter.uploadObject({
+          bucket: thumbBucket,
+          objectKey: thumbKey,
+          buffer: validJpegBuffer,
+          contentType: "image/jpeg",
+        });
+      }
+
+      setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
+      const { GET } = await import(
+        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
+      );
+      const res = await GET(
+        new Request(`http://localhost:3000/api/v1/plants/${journalPlantId}/photo-entries`),
+        { params: Promise.resolve({ plantId: journalPlantId }) },
+      );
+      expect(res.status).toBe(200);
+      const json = (await res.json()) as { items: Array<Record<string, unknown>> };
+      expect(json.items.length).toBeGreaterThan(0);
+      for (const item of json.items) {
+        expect(item).toHaveProperty("photo_signed_url");
+        expect(item).toHaveProperty("thumbnail_signed_url");
+        expect(
+          typeof item.photo_signed_url === "string" || item.photo_signed_url === null,
+        ).toBe(true);
+        expect(
+          typeof item.thumbnail_signed_url === "string" || item.thumbnail_signed_url === null,
+        ).toBe(true);
+      }
+    });
   });
 
   // ============================================================================

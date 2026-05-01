@@ -10,6 +10,7 @@ import { compressPlantPhoto } from "@shared/images/client-compress";
 import { plantsKeys } from "@contexts/catalog/queries";
 
 export interface JournalAddSheetLabels {
+  cta: string;
   title: string;
   photoPlaceholder: string;
   noteLabel: string;

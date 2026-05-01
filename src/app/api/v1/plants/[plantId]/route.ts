@@ -1,6 +1,6 @@
 // D-07 (cascade counts for delete-confirm), D-21 (requireVerifiedUser),
 // PRD §5 (snake_case + closed registry), D-17 (no Drizzle imports in route handlers).
-// NOTE: PATCH + DELETE land in 05-09 (same file, additive exports).
+// PATCH + DELETE added by 05-09 (additive exports).
 
 import { z } from "zod";
 
@@ -55,3 +55,11 @@ export async function GET(
     { status: 200 },
   );
 }
+
+// ============================================================================
+// PATCH /api/v1/plants/[plantId]  — added by 05-09
+// DELETE /api/v1/plants/[plantId] — added by 05-09
+// ============================================================================
+
+export { patchPlantHandler as PATCH } from "@contexts/catalog/api/route-handlers/update-plant-handler";
+export { deletePlantHandler as DELETE } from "@contexts/catalog/api/route-handlers/delete-plant-handler";

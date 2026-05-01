@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm";
+
 import { ErrorCode } from "@shared/config/errors";
 import { db as defaultDb } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
@@ -5,6 +7,7 @@ import type { TransactionalDb } from "@shared/db/unit-of-work";
 import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
 import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
 import * as pendingStorageDeletionsRepo from "@contexts/catalog/infrastructure/db/pending-storage-deletions";
+import { photoEntries } from "@contexts/catalog/infrastructure/db/schema";
 import { validateStorageObjectKey } from "@contexts/catalog/domain/storage-paths";
 import {
   PLANT_PHOTOS_BUCKET,
@@ -13,7 +16,8 @@ import {
 
 export interface DeletePhotoEntryInput {
   userId: string;
-  plantId: string;
+  /** Optional: when omitted, the use-case looks up the photo entry first to derive plantId. */
+  plantId?: string;
   photoEntryId: string;
 }
 
@@ -58,27 +62,49 @@ function extractPlantIdFromKey(key: string, userId: string): string | null {
  * per-photo pending_storage_deletions row insert (T-05-04-01 mitigation).
  *
  * Steps:
- *  1. Ownership check OUTSIDE UoW (plant must belong to userId).
- *  2. UoW TX:
+ *  1. Resolve plantId (from input.plantId, or look up via photoEntryId).
+ *  2. Ownership check OUTSIDE UoW (plant must belong to userId).
+ *  3. UoW TX:
  *     a. Delete the photo entry row.
  *     b. Validate both storage keys (T-05-04-01 second call site).
  *     c. Insert pending_storage_deletions for both buckets.
  *     d. bumpCoverFor — ALWAYS (defensive idempotence; cheap no-op if not cover).
- *  3. No Inngest event (cleanup via pending_storage_deletions reconciler, D-22/D-24).
- *  4. No PostHog event (no telemetry for photo-entry delete).
+ *  4. No Inngest event (cleanup via pending_storage_deletions reconciler, D-22/D-24).
+ *  5. No PostHog event (no telemetry for photo-entry delete).
  *
  * Accepts optional `deps.tx` for caller-owned transaction (HIGH-3). When
  * provided, the use-case does NOT call `withUnitOfWork`. The `ok: true`
  * result's `postCommit` field is `undefined` (no telemetry callback needed).
+ *
+ * Accepts optional `input.plantId`. When omitted (e.g. route handler has only
+ * photoEntryId in the URL), the use-case looks up the photo entry to derive
+ * the plantId for the ownership check.
  */
 export async function deletePhotoEntry(
   input: DeletePhotoEntryInput,
   deps: { tx?: TransactionalDb } = {},
 ): Promise<DeletePhotoEntryResult> {
+  // Resolve plantId: if caller provides it use it directly; otherwise look up
+  // the photo entry to derive the plantId for the ownership check.
+  let resolvedPlantId: string;
+  if (input.plantId) {
+    resolvedPlantId = input.plantId;
+  } else {
+    const [entryRow] = await defaultDb
+      .select({ plantId: photoEntries.plantId })
+      .from(photoEntries)
+      .where(eq(photoEntries.id, input.photoEntryId))
+      .limit(1);
+    if (!entryRow) {
+      return { ok: false, code: ErrorCode.NotFound, reason: "photo entry not found" };
+    }
+    resolvedPlantId = entryRow.plantId;
+  }
+
   const owned = await plantsRepo.findByIdForUser(
     defaultDb,
     input.userId,
-    input.plantId,
+    resolvedPlantId,
   );
   if (!owned) {
     return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
@@ -129,7 +155,7 @@ export async function deletePhotoEntry(
 
     await photoEntriesRepo.bumpCoverFor(tx, {
       userId: input.userId,
-      plantId: input.plantId,
+      plantId: resolvedPlantId,
     });
 
     return { kind: "ok" };

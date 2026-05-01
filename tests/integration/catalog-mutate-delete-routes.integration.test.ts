@@ -557,9 +557,9 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       expect(reminderRows.length).toBe(0);
 
       // pending_storage_deletions: 2 rows inserted
-      const psdRows = await driver`SELECT bucket, prefix FROM pending_storage_deletions WHERE user_id = ${userId}`;
+      const psdRows = await driver<{ bucket: string }[]>`SELECT bucket, prefix FROM pending_storage_deletions WHERE user_id = ${userId}`;
       expect(psdRows.length).toBe(2);
-      const buckets = psdRows.map((r: { bucket: string }) => r.bucket).sort();
+      const buckets = psdRows.map((r) => r.bucket).sort();
       expect(buckets).toContain("plant-photos");
       expect(buckets).toContain("plant-thumbnails");
 

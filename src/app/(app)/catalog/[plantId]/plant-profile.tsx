@@ -34,6 +34,8 @@ type PhotoEntrySnakeCase = {
   plant_id: string;
   photo_url: string;
   thumbnail_url: string;
+  photo_signed_url?: string | null;
+  thumbnail_signed_url?: string | null;
   note: string | null;
   created_at: string;
 };
@@ -117,13 +119,13 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
         },
         ...photoEntries.slice(1).map((pe) => ({
           id: pe.id,
-          src: pe.photo_url,
+          src: pe.photo_signed_url ?? pe.photo_url,
           caption: pe.note ?? undefined,
         })),
       ]
     : photoEntries.map((pe) => ({
         id: pe.id,
-        src: pe.photo_url,
+        src: pe.photo_signed_url ?? pe.photo_url,
         caption: pe.note ?? undefined,
       }));
 

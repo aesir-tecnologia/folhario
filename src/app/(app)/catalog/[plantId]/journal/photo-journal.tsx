@@ -15,6 +15,8 @@ export type PhotoEntry = {
   plant_id: string;
   photo_url: string;
   thumbnail_url: string;
+  photo_signed_url?: string | null;
+  thumbnail_signed_url?: string | null;
   note: string | null;
   created_at: string;
 };
@@ -62,7 +64,7 @@ export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnl
 
   const lightboxPhotos = entries.map((e) => ({
     id: e.id,
-    src: e.photo_url,
+    src: e.photo_signed_url ?? e.photo_url,
     caption: e.note ?? undefined,
   }));
 

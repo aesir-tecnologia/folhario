@@ -35,6 +35,20 @@ export interface ModalSheetProps {
    * to `event.preventDefault()` and focus a stored invoker ref themselves.
    */
   onCloseAutoFocus?: (event: Event) => void;
+  /**
+   * Override Radix's default role on Dialog.Content. UI-SPEC §7 line 367
+   * requires "alertdialog" for the destructive delete-confirm sheet so screen
+   * readers announce headline+body as a higher-priority alert.
+   * Defaults to undefined → Radix renders "dialog" (Phase 4 LGPD consumer unchanged).
+   */
+  role?: "dialog" | "alertdialog";
+  /**
+   * Promote the 36×4 drag handle to a real keyboard-reachable close button:
+   * role="button", aria-label={closeLabel}, Enter/Space → onOpenChange(false).
+   * Defaults to false (Phase 4 LGPD consumer unchanged: handle stays aria-hidden=true).
+   * BottomSheet (Plan 05-13) sets this to true.
+   */
+  interactiveDragHandle?: boolean;
 }
 
 export function ModalSheet({
@@ -44,29 +58,61 @@ export function ModalSheet({
   closeLabel,
   children,
   onCloseAutoFocus,
+  role,
+  interactiveDragHandle = false,
 }: ModalSheetProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-forest/50 z-50" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-forest/50" />
         <Dialog.Content
           onCloseAutoFocus={onCloseAutoFocus}
-          className="fixed bottom-0 left-0 right-0 z-50 bg-ivory rounded-t-[24px] p-6 max-h-[80dvh] overflow-y-auto"
+          role={role}
+          className="
+            fixed inset-x-0 bottom-0 z-50 max-h-[80dvh] overflow-y-auto
+            rounded-t-[24px] bg-ivory p-6
+          "
         >
-          {/* Drag handle (visual only) */}
-          <div
-            className="mx-auto mb-4 h-[4px] w-[36px] rounded-full bg-hairline"
-            aria-hidden="true"
-          />
+          {interactiveDragHandle ? (
+            <button
+              type="button"
+              data-testid="bottomsheet-drag-handle"
+              role="button"
+              aria-label={closeLabel}
+              tabIndex={0}
+              onClick={() => onOpenChange(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onOpenChange(false);
+                }
+              }}
+              className="
+                mx-auto mb-4 block h-[4px] w-[36px] rounded-full bg-hairline
+                focus-visible:outline-2 focus-visible:outline-offset-2
+                focus-visible:outline-canopy/40
+              "
+            />
+          ) : (
+            <div
+              className="mx-auto mb-4 h-[4px] w-[36px] rounded-full bg-hairline"
+              aria-hidden="true"
+            />
+          )}
           <div className="flex items-start justify-between gap-4">
-            <Dialog.Title className="font-serif text-2xl font-medium text-forest">
+            <Dialog.Title
+              className="font-serif text-2xl font-medium text-forest"
+            >
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
                 type="button"
                 aria-label={closeLabel}
-                className="inline-flex items-center justify-center rounded-lg min-h-[44px] min-w-[44px] text-forest"
+                className="
+                  inline-flex min-h-[44px] min-w-[44px] items-center
+                  justify-center rounded-lg text-forest
+                "
               >
                 <XIcon strokeWidth={1.5} size={24} />
               </button>

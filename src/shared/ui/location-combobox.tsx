@@ -12,6 +12,7 @@ export interface LocationComboboxProps {
   id?: string;
   name?: string;
   "aria-describedby"?: string;
+  "data-testid"?: string;
   disabled?: boolean;
 }
 
@@ -32,6 +33,7 @@ export function LocationCombobox({
   id,
   name,
   "aria-describedby": ariaDescribedby,
+  "data-testid": dataTestId,
   disabled,
 }: LocationComboboxProps) {
   const t = useTranslations("catalog.locations");
@@ -58,6 +60,7 @@ export function LocationCombobox({
       id={id}
       name={name}
       aria-describedby={ariaDescribedby}
+      data-testid={dataTestId}
       disabled={disabled}
     />
   );

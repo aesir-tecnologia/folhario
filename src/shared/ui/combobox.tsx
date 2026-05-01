@@ -17,6 +17,7 @@ export interface ComboboxProps {
   id?: string;
   name?: string;
   "aria-describedby"?: string;
+  "data-testid"?: string;
   disabled?: boolean;
 }
 
@@ -30,6 +31,7 @@ export function Combobox({
   id,
   name,
   "aria-describedby": ariaDescribedby,
+  "data-testid": dataTestId,
   disabled,
 }: ComboboxProps) {
   const reactId = useId();
@@ -213,6 +215,7 @@ export function Combobox({
         aria-autocomplete="list"
         aria-labelledby={labelId}
         aria-describedby={ariaDescribedby}
+        data-testid={dataTestId}
         disabled={disabled}
         placeholder={placeholder}
         autoComplete="off"

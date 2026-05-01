@@ -66,7 +66,7 @@ Close two CRITICAL gaps that together break SC-3 (plant profile + delete) on the
 - CR-02 is a unit-testable hook contract: write a failing test that asserts the fetch call carries `idempotency-key`, then patch `useDeletePlant` to mirror `usePatchPlantField`'s ref-based key generation.
 - CR-04 is a route integration contract: write a failing assertion in the existing route integration test that the response body contains `cover_signed_url`, then update the GET handler to use `toPlantWithSignedUrlSnakeCase`.
 
-Both gaps share scope (plant-profile API contract) and have zero `files_modified` overlap with plans 19, 21, 22, 23 — same-wave parallel safe.
+**Wave coordination:** This plan touches `tests/integration/catalog-routes-read-create.integration.test.ts` (Task 2 adds a `cover_signed_url` assertion). Plan 05-21 also adds a net-new `it(...)` block to the same integration test file (a `photo_signed_url` assertion on GET `/api/v1/plants/:plantId/photo-entries`). To prevent a parallel-execution merge conflict on that shared test file, plan 05-21 has been moved to Wave 2 with `depends_on: ["20"]` — plan 05-20 lands first, plan 05-21 rebases on top. With plans 19, 22, and 23 there is no `files_modified` overlap, so 05-20 remains parallel-safe alongside them within Wave 1.
 
 **Purpose:** restore SC-3 plant profile + delete end-to-end on the UI; restore CAT-04 plant profile cover refetch; restore SC-5 (delete cascade) reachable from UI.
 
@@ -511,3 +511,5 @@ The `_meta` block is unchanged. Only the `plant` field's mapper changes.
 <output>
 After completion, create `.planning/phases/05-catalog-meu-jardim/05-20-plant-profile-api-contract-fix-SUMMARY.md` covering RED/GREEN cycles for both gaps, test results, and CR-02 + CR-04 closure status.
 </output>
+</content>
+</invoke>

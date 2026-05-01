@@ -2,8 +2,8 @@
 phase: 05-catalog-meu-jardim
 plan: 21
 type: tdd
-wave: 1
-depends_on: []
+wave: 2
+depends_on: ["20"]
 files_modified:
   - src/contexts/catalog/application/list-photo-entries.ts
   - src/contexts/catalog/api/snake-case.ts
@@ -29,7 +29,7 @@ tags:
   - gap-closure
 must_haves:
   truths:
-    - "`listPhotoEntries` use-case signs BOTH `photoUrl` and `thumbnailUrl` (24h-TTL each); the result row carries new fields `photoSignedUrl` and `thumbnailSignedUrl` alongside the original `photoUrl`/`thumbnailUrl` (kept as raw bucket-key for non-display callers). CR-03 fix; SC-4 photo-journal full-size lightbox."
+    - "`listPhotoEntries` use-case signs BOTH `photoUrl` and `thumbnailUrl` (24h-TTL each); the result row carries new canonical signed-URL fields `photoSignedUrl` and `thumbnailSignedUrl`. `photoUrl` is preserved as the raw bucket-key (consumed by `delete-photo-entry`'s `extractObjectKey`). `thumbnailUrl` continues to carry the signed value as a Phase-5 legacy carry-over, preserved for backward-compat with the 05-10 IDB persister and existing journal consumers; new code should consume `thumbnailSignedUrl` explicitly. CR-03 fix; SC-4 photo-journal full-size lightbox."
     - "`toPhotoEntrySnakeCase` mapper emits new snake-case fields `photo_signed_url` and `thumbnail_signed_url` (string | null). The existing `photo_url` / `thumbnail_url` fields are PRESERVED for backward compatibility with existing consumers + tests."
     - "GET /api/v1/plants/:plantId/photo-entries response includes the two new fields on every item. POST response unchanged (single-item creation already returns the row via `toPhotoEntrySnakeCase` — gains the new fields automatically through the mapper change)."
     - "`photo-journal.tsx` lightbox `photos` array uses `e.photo_signed_url ?? e.photo_url` as the `src` (signed URL primary; raw bucket-key fallback only when signing fails — yields a clearly-broken image that surfaces the signing failure rather than silently showing nothing). UI-11 lightbox renders a real signed URL on tap."
@@ -84,6 +84,8 @@ Close two gaps in a single plan because both surface inside the catalog photo-jo
 2. **ID-history placeholder (CAT-04 / UI-08, user-confirmed addition):** UI-SPEC §324-326 says Section 5 "ID history link (PLACEHOLDER for Phase 6)" is HIDDEN by default in Phase 5 because manual plants have no Identifications. The verification report flagged the missing surface; the user confirmed during planning checkpoint that a structural placeholder ships in Phase 5 so Phase 6 can wire the real link without DOM-shape changes. This plan ships the placeholder section (label + body copy, no link) so reading order, scroll position, and a11y match UI-SPEC.
 
 **Why combined:** both gaps modify `plant-profile.tsx`. CR-03 changes the `allPhotos` mapping (around lines 117-128); ID-history adds a section block between photo-journal preview (line 324-370) and the lightbox + delete-confirm sheet at the bottom of the file. They cannot run in parallel as separate plans (file collision); folding into one plan with two tasks is cleaner than artificial wave-2 sequencing.
+
+**Wave coordination:** This plan adds a net-new `it(...)` block to `tests/integration/catalog-routes-read-create.integration.test.ts` (Task 1's `photo_signed_url` GET-photo-entries assertion). Plan 05-20 also touches the same test file (its `cover_signed_url` GET-plant-by-id assertion). To prevent a parallel-execution merge conflict on that shared test file, this plan now runs in **Wave 2** with `depends_on: ["20"]` — plan 05-20 lands first, this plan rebases on top.
 
 **TDD framing for CR-03:** the use-case has integration test coverage; extend the existing test to assert the new signed-URL field. Route-level integration test asserts the snake-case fields surface end-to-end. Type: `tdd` for the use-case + route layer; the UI consumer changes (photo-journal.tsx, plant-profile.tsx) are mechanical and ship inside Task 3 alongside the i18n + ID-history placeholder.
 
@@ -235,7 +237,7 @@ Use `Claude's discretion` per CONTEXT.md guidance — this is the suggested word
 ## STRIDE Threat Register
 
 | Threat ID    | Category               | Component                                                  | Disposition | Mitigation Plan                                                                                                                                                                                                       |
-| ------------ | ---------------------- | ---------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ------------ | ---------------------- | ---------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | T-05-21-01   | Information disclosure | photo_signed_url leakage in PostHog / Sentry              | accept      | Phase 1 D-21 telemetry contract redacts response bodies for /api/v1; the 24h TTL bounds the blast radius.                                                                                                            |
 | T-05-21-02   | Tampering              | client renders raw bucket-key in `src` if signing fails    | mitigate    | Use `?? e.photo_url` fallback so the original raw key still rendersa visibly-broken image — making the failure surface during dev/QA. Better than silently swapping to a blank `src`.                                |
 | T-05-21-03   | Spoofing               | rogue server returns wrong user's signed_url               | accept      | RLS at Supabase Storage level (Phase 2 D-26) ensures cross-user signed URLs cannot be generated by the storage adapter; ownership is checked in the use-case before signing.                                          |

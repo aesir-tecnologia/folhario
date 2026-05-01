@@ -66,7 +66,7 @@ describe("usePatchPlantField", () => {
 
   it("Test 1: optimistic apply — updates cache before PATCH resolves", async () => {
     const { usePatchPlantField } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     seedPlantCache(qc, {
@@ -101,7 +101,7 @@ describe("usePatchPlantField", () => {
 
   it("Test 2: server merge on success — LWW: server response replaces optimistic value", async () => {
     const { usePatchPlantField } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     seedPlantCache(qc, {
@@ -137,7 +137,7 @@ describe("usePatchPlantField", () => {
 
   it("Test 3: rollback on error — cache reverts to pre-mutation snapshot", async () => {
     const { usePatchPlantField } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     const initialData: PlantDetailCache = {
@@ -168,7 +168,7 @@ describe("usePatchPlantField", () => {
 
   it("Test 4: toast on error — emits catalog.profile.saveFailure key", async () => {
     const { usePatchPlantField } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     seedPlantCache(qc, {
@@ -209,7 +209,7 @@ describe("useDeletePlant", () => {
 
   it("Test 5: optimistic removal — removes plant from list cache before DELETE resolves", async () => {
     const { useDeletePlant } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     const listData = {
@@ -245,7 +245,7 @@ describe("useDeletePlant", () => {
 
   it("Test 6: redirect on success — calls onSuccess callback; NO redirect on error", async () => {
     const { useDeletePlant } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     const onSuccess = vi.fn();
@@ -294,7 +294,7 @@ describe("useDeletePlant", () => {
 
   it("Test 7: read-only guard — throws ReadOnlyError before fetch when readOnly=true", async () => {
     const { useDeletePlant } = await import(
-      "@app/(app)/catalog/[plantId]/use-plant-profile-mutations"
+      "../../src/app/(app)/catalog/[plantId]/use-plant-profile-mutations"
     );
 
     vi.mocked(useSubscription).mockReturnValue({ active: true, readOnly: true });

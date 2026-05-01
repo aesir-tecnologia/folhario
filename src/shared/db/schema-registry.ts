@@ -28,14 +28,14 @@ export {
 } from "@contexts/iam/infrastructure/db/schema";
 
 export {
+  locationSuggestions,
+  pendingDeletionStatus,
+  pendingStorageDeletions,
   photoEntries,
   plants,
 } from "@contexts/catalog/infrastructure/db/schema";
 
-export {
-  careGuides,
-  species,
-} from "@contexts/species-care/infrastructure/db/schema";
+export { careGuides, species } from "@contexts/species-care/infrastructure/db/schema";
 
 export {
   identificationLimits,
@@ -44,16 +44,8 @@ export {
   providerUsageCounters,
 } from "@contexts/identification/infrastructure/db/schema";
 
-export {
-  reminderLogs,
-  reminders,
-} from "@contexts/reminders/infrastructure/db/schema";
+export { reminderLogs, reminders } from "@contexts/reminders/infrastructure/db/schema";
 
-export {
-  billingEvents,
-  subscriptions,
-} from "@contexts/billing/infrastructure/db/schema";
+export { billingEvents, subscriptions } from "@contexts/billing/infrastructure/db/schema";
 
-export {
-  pushSubscriptions,
-} from "@contexts/notifications/infrastructure/db/schema";
+export { pushSubscriptions } from "@contexts/notifications/infrastructure/db/schema";

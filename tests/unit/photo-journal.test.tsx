@@ -173,7 +173,7 @@ describe("PhotoJournal", () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 201,
-        json: async () => ({ data: realEntry }),
+        json: async () => ({ photo_entry: realEntry }),
       })
       .mockResolvedValue({
         ok: true,
@@ -283,7 +283,7 @@ describe("PhotoJournal", () => {
       ok: true,
       status: 201,
       json: async () => ({
-        data: {
+        photo_entry: {
           id: "real-id",
           photo_url: "https://example.com/real.jpg",
           thumbnail_url: "https://example.com/real-thumb.jpg",
@@ -337,7 +337,7 @@ describe("PhotoJournal", () => {
         ok: true,
         status: 201,
         json: async () => ({
-          data: {
+          photo_entry: {
             id: "real-id",
             photo_url: "https://example.com/real.jpg",
             thumbnail_url: "https://example.com/real-thumb.jpg",
@@ -380,7 +380,7 @@ describe("PhotoJournal", () => {
       ok: true,
       status: 201,
       json: async () => ({
-        data: {
+        photo_entry: {
           id: "real-id-2",
           photo_url: "https://example.com/real2.jpg",
           thumbnail_url: "https://example.com/real2-thumb.jpg",

@@ -124,9 +124,9 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
       });
 
       if (response.ok) {
-        const body = (await response.json()) as { data: PhotoEntry };
+        const body = (await response.json()) as { photo_entry: PhotoEntry };
         queryClient.setQueryData<PhotoEntriesCache>(queryKey, (old) => ({
-          items: (old?.items ?? []).map((e) => (e.id === tempId ? body.data : e)),
+          items: (old?.items ?? []).map((e) => (e.id === tempId ? body.photo_entry : e)),
         }));
         await queryClient.invalidateQueries({ queryKey });
         resetState();

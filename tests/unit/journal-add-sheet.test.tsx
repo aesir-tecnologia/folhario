@@ -34,7 +34,7 @@ const labels = {
 
 function makeQueryClient() {
   return new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    defaultOptions: { queries: { retry: false, gcTime: Infinity, staleTime: Infinity } },
   });
 }
 

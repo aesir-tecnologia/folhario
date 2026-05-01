@@ -48,7 +48,7 @@
       "idx": 6,
       "version": "7",
       "when": 1777670299704,
-      "tag": "0006_secret_slayback",
+      "tag": "0006_add_pending_deletion_kind",
       "breakpoints": true
     }
   ]

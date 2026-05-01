@@ -25,14 +25,14 @@
       "placeholder": "Adicionar local",
       "addRow": "Adicionar '{typed}'",
       "defaults": [
-        "sala",
-        "varanda",
-        "quarto",
-        "banheiro",
-        "cozinha",
-        "escritório",
-        "jardim",
-        "outro"
+        "Sala",
+        "Varanda",
+        "Quarto",
+        "Banheiro",
+        "Cozinha",
+        "Escritório",
+        "Jardim",
+        "Outro"
       ]
     }
   },

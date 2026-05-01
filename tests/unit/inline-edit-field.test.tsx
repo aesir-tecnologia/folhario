@@ -1,5 +1,6 @@
 // T-05-14-01 — XSS regression: user-typed values must render as text nodes, never as parsed HTML.
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { useState } from "react";
 import {
   render,
   screen,
@@ -327,27 +328,43 @@ describe("InlineEditField", () => {
   });
 
   it("XSS safety (T-05-14-01): typed <script> renders as text node, not executed HTML", async () => {
-    const onSave = vi.fn().mockResolvedValue(undefined);
     const preCount = document.querySelectorAll("script").length;
-    render(<InlineEditField {...makeProps({ value: "", onSave })} />);
+    const xssPayload = "<script>alert(1)</script>";
+
+    // Use a controlled wrapper so the displayed value updates after save resolves.
+    function XssWrapper() {
+      const [val, setVal] = useState<string>("");
+      return (
+        <InlineEditField
+          label="Nome"
+          value={val}
+          placeholder="Sem nome"
+          variant="text"
+          onSave={async (v) => {
+            setVal(v);
+          }}
+        />
+      );
+    }
+    render(<XssWrapper />);
+
     const btn = screen.getByRole("button");
     await act(async () => {
       fireEvent.click(btn);
     });
     const input = screen.getByRole("textbox");
-    const xssPayload = "<script>alert(1)</script>";
     fireEvent.change(input, { target: { value: xssPayload } });
     await act(async () => {
       fireEvent.blur(input);
     });
+
+    // After onSave resolves, the read button shows the payload as literal text
     await waitFor(() => {
-      expect(onSave).toHaveBeenCalledWith(xssPayload);
+      const readBtn = screen.getByRole("button");
+      // textContent must contain literal angle brackets — not executed as HTML
+      expect(readBtn.textContent).toContain("<script>alert(1)</script>");
     });
-    // After onSave resolves, read state shows new value via text node (React auto-escapes)
-    const readBtn = screen.getByRole("button");
-    // textContent should contain the literal angle-bracket characters, not execute as HTML
-    expect(readBtn.textContent).toContain("<script>alert(1)</script>");
-    // No new script elements injected
+    // No new script elements were injected into the DOM
     expect(document.querySelectorAll("script").length).toBe(preCount);
   });
 });

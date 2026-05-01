@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-05-01T01:05:03.572Z"
-last_activity: 2026-05-01 -- Phase 05 planning complete
+last_updated: "2026-05-01T01:25:41.734Z"
+last_activity: 2026-05-01
 progress:
   total_phases: 13
   completed_phases: 4
   total_plans: 56
-  completed_plans: 38
-  percent: 68
+  completed_plans: 39
+  percent: 70
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** A beginner in Brazil goes from "I have no idea what this plant is" to "identified, cataloged, with care guidance" in under 2 minutes from email verification — honestly, without jargon, without fake confidence scores, and without hiding AI provenance.
-**Current focus:** Phase 04 — iam-auth-verification-consent
+**Current focus:** Phase 05 — catalog-meu-jardim
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
+Phase: 05 (catalog-meu-jardim) — EXECUTING
+Plan: 2 of 18
 Status: Ready to execute
-Last activity: 2026-05-01 -- Phase 05 planning complete
+Last activity: 2026-05-01
 
-Progress: [████░░░░░░] 41%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [████░░░░░░] 41%
 - Trend: Plan 01-08 shipped the full CI pipeline (postgres:17-alpine service container + pnpm + Playwright caches + 15-step workflow) plus 3 planning-doc reconciliations (REQUIREMENTS INFRA-12 + OBS-05 defer, ROADMAP SC-4 split wording + 9-plan list, FILE-MATRIX diag rename fix) + 1 Rule 2 housekeeping (public/sw.js.map gitignore). First PR CI run (24911496475) passed in 2m43s on the first attempt after the Task 4 checkpoint unblock: client-side posthog-js capture could not be intercepted by Playwright despite 8 commits of investigation (init/loaded/capture pipeline all execute without error); root cause never isolated. Resolved per SC-4 (b) by softening the client assertion to warn-only + deferring to the PostHog dashboard as authoritative, with the full investigation and follow-up disposition documented in 01-08-SUMMARY § 'Known gap'. D-21 privacy posture (`person_profiles: 'identified_only'`) restored post-investigation. GitHub deprecation warning on actions/cache@v4 + actions/upload-artifact@v4 captured as a tooling todo (`.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`) with hard 2026-06-02 and 2026-09-16 deadlines.
 
 *Updated after each plan completion*
+| Phase 05-catalog-meu-jardim P01 | 4 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -144,6 +145,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-04-30T00:56:03.472Z
+Last session: 2026-05-01T01:25:41.726Z
 Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
+Resume file: None

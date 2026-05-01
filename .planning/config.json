@@ -1,7 +1,7 @@
 {
-  "model_profile": "inherit",
+  "model_profile": "balanced",
   "commit_docs": true,
-  "parallelization": true,
+  "parallelization": false,
   "search_gitignored": false,
   "brave_search": "BSAWRld9te3n4WEbm48mR1gA8peyvc4",
   "firecrawl": false,
@@ -40,7 +40,7 @@
     "_auto_chain_active": false
   },
   "hooks": {
-    "context_warnings": false
+    "context_warnings": true
   },
   "project_code": null,
   "phase_naming": "sequential",

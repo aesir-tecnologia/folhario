@@ -179,11 +179,11 @@ Plans:
 **Plans**: 18 plans (5a + 5b)
 - [x] 05-01-wave0-test-infra-PLAN.md - Wave 0 test infra (axe-core + fake-indexeddb + transaction-rollback fixture + test directories + Playwright auth-bypass fixture)
 - [x] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
-- [ ] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
-- [ ] 05-04-domain-zod-schemas-PLAN.md - Domain Zod schemas + validateStoragePathOwnership helper
-- [ ] 05-05-plant-create-use-cases-PLAN.md - Plant create use cases (manual + from-identification) + PostHog plant_added (Open Q6)
-- [ ] 05-06-plant-delete-inngest-cleanup-PLAN.md - Plant delete + Inngest catalog/cleanup-storage + reconciler cron (Open Q2)
-- [ ] 05-07-patch-photo-entry-cover-use-cases-PLAN.md - PATCH/PhotoEntry/cover use cases + listPlants/listPhotoEntries
+- [x] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
+- [x] 05-04-domain-zod-schemas-PLAN.md - Domain Zod schemas + validateStoragePathOwnership helper
+- [x] 05-05-plant-create-use-cases-PLAN.md - Plant create use cases (manual + from-identification) + PostHog plant_added (Open Q6)
+- [x] 05-06-plant-delete-inngest-cleanup-PLAN.md - Plant delete + Inngest catalog/cleanup-storage + reconciler cron (Open Q2)
+- [x] 05-07-patch-photo-entry-cover-use-cases-PLAN.md - PATCH/PhotoEntry/cover use cases + listPlants/listPhotoEntries
 - [ ] 05-08-route-handlers-read-create-PLAN.md - Route handlers (5 read + create endpoints)
 - [ ] 05-09-route-handlers-mutate-delete-PLAN.md - Route handlers (6 mutate + delete endpoints)
 - [ ] 05-10-tq-provider-idb-persister-i18n-PLAN.md - TanStack Query provider + IDB persister + i18n catalog namespace (Open Q3 resolution)

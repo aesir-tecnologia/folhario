@@ -34,7 +34,7 @@ tech-stack:
 
 key-files:
   created:
-    - drizzle/migrations/0006_secret_slayback.sql
+    - drizzle/migrations/0006_add_pending_deletion_kind.sql
     - drizzle/migrations/meta/0006_snapshot.json
   modified:
     - src/contexts/catalog/infrastructure/db/schema.ts
@@ -79,7 +79,7 @@ completed: 2026-05-01
 - New `pending_deletion_kind` pgEnum with values `prefix` and `object`; `pending_storage_deletions.kind` column added as `NOT NULL DEFAULT 'prefix'`. Default keeps deletePlant flow on the legacy path with no behavior change.
 - Reconciler handler (`cleanupStorageReconcilerHandler`) now branches on `row.kind`: object rows go through `validateStorageObjectKey` + `getStorageAdapter().deleteObject({ bucket, objectKey })`; prefix rows keep the existing `validateStorageDeletionPrefix` + `deletePrefix` path. Mitigations T-05-19-01 / T-05-19-04 in place (each branch uses the validator family that matches its row shape).
 - `deletePhotoEntry` writes `kind: "object"` for both photo + thumbnail pending_storage_deletions inserts. The full canonical key `{userId}/{plantId}/{photoId}.{ext}` is preserved (no trailing slash).
-- Drizzle migration `0006_secret_slayback.sql` shipped: hand-edited to include the `CREATE TYPE` statement that drizzle-kit 0.31.10's `generate` step omitted. Applied successfully via `pnpm db:migrate`; live local DB verified.
+- Drizzle migration `0006_add_pending_deletion_kind.sql` shipped: hand-edited to include the `CREATE TYPE` statement that drizzle-kit 0.31.10's `generate` step omitted. Applied successfully via `pnpm db:migrate`; live local DB verified.
 - New integration test `Cycle 3E-1` proves end-to-end: a directly-seeded `kind='object'` row is picked up by the cron, `deleteObject` is called exactly once with the matching bucket+objectKey, `deletePrefix` is NOT called, and the row transitions to `status='completed'`.
 - Test 7 in `catalog-delete-photo-entry.integration.test.ts` extended to assert each inserted pending_storage_deletions row carries `kind='object'`.
 - Full regression suite green: 37/37 across cleanup-storage-reconciler, cleanup-storage event handler, delete-plant, and catalog-delete-photo-entry. Cycles 3A–3D (the legacy prefix path) remain untouched.
@@ -90,15 +90,17 @@ completed: 2026-05-01
 2. **Task 2: GREEN — pgEnum + column + use-case writes kind='object'** — folded into Task 4 commit (intermediate state would not pass tests)
 3. **Task 3: BLOCKING — apply migration to local Supabase** — no commit (live DB only); migration SQL committed with Task 4
 4. **Task 4: GREEN — reconciler branches on row.kind, integration tests green** — `181d313` (feat) — also includes Task 2's schema + use-case edits and the Drizzle migration file
+5. **Plan metadata** — `4d79318` (docs: SUMMARY.md)
+6. **Follow-up: rename migration to descriptive name (project convention)** — `2726033` (chore)
 
-_TDD shape: one `test(05-19)` commit followed by one `feat(05-19)` commit, exactly per plan acceptance criteria._
+_TDD shape: one `test(05-19)` commit followed by one `feat(05-19)` commit, exactly per plan acceptance criteria. Subsequent commits (`docs`, `chore`) carry no logic changes._
 
 ## Files Created/Modified
 
 - `src/contexts/catalog/infrastructure/db/schema.ts:90-126` — added `pendingDeletionKind` pgEnum + `kind` column with NOT NULL DEFAULT 'prefix' and a doc comment explaining the discriminator semantics.
 - `src/contexts/catalog/application/delete-photo-entry.ts:145-156` — both `pendingStorageDeletionsRepo.create` calls now pass `kind: "object"`.
 - `src/contexts/catalog/inngest/functions.ts:13-19,108-127,151-178` — imported `validateStorageObjectKey`, added `extractPlantIdFromObjectKey` helper, and replaced the reconciler `try` block with a kind-branched version. `cleanupStorageHandler` (event handler for plant.deleted) is unchanged — that path only handles prefix rows.
-- `drizzle/migrations/0006_secret_slayback.sql` — `CREATE TYPE pending_deletion_kind` + `ALTER TABLE pending_storage_deletions ADD COLUMN kind`. Hand-edited to add the missing CREATE TYPE.
+- `drizzle/migrations/0006_add_pending_deletion_kind.sql` — `CREATE TYPE pending_deletion_kind` + `ALTER TABLE pending_storage_deletions ADD COLUMN kind`. Hand-edited to add the missing CREATE TYPE.
 - `drizzle/migrations/meta/_journal.json` — entry for migration 0006 (drizzle-kit generated).
 - `drizzle/migrations/meta/0006_snapshot.json` — schema snapshot post-migration (drizzle-kit generated).
 - `tests/integration/cleanup-storage-reconciler.integration.test.ts:404-432` — new Cycle 3E-1 covering the kind='object' end-to-end deleteObject path.
@@ -117,11 +119,11 @@ _TDD shape: one `test(05-19)` commit followed by one `feat(05-19)` commit, exact
 **1. [Rule 3 - Blocking] drizzle-kit 0.31.10 omits `CREATE TYPE` for new pgEnums on existing tables**
 
 - **Found during:** Task 3 (BLOCKING — schema push)
-- **Issue:** `pnpm exec ... drizzle-kit push` printed the diff and then aborted with `PostgresError: type "pending_deletion_kind" does not exist` because the generated DDL only contained `ALTER TABLE pending_storage_deletions ADD COLUMN "kind" "pending_deletion_kind" ...` without the `CREATE TYPE pending_deletion_kind AS ENUM (...)` statement that the column references. Falling back to `pnpm db:generate` produced a migration file `0006_secret_slayback.sql` that had the same bug — only the `ALTER TABLE` line. The plan explicitly anticipated only an interactive-prompt failure mode, not a DDL-ordering bug.
-- **Fix:** Hand-edited `drizzle/migrations/0006_secret_slayback.sql` to prepend `CREATE TYPE "public"."pending_deletion_kind" AS ENUM('prefix', 'object');--> statement-breakpoint`. Then ran `pnpm db:migrate` — applied cleanly.
-- **Files modified:** `drizzle/migrations/0006_secret_slayback.sql` (hand-edited).
+- **Issue:** `pnpm exec ... drizzle-kit push` printed the diff and then aborted with `PostgresError: type "pending_deletion_kind" does not exist` because the generated DDL only contained `ALTER TABLE pending_storage_deletions ADD COLUMN "kind" "pending_deletion_kind" ...` without the `CREATE TYPE pending_deletion_kind AS ENUM (...)` statement that the column references. Falling back to `pnpm db:generate` produced a migration file (initially auto-named `0006_secret_slayback.sql`, later renamed) that had the same bug — only the `ALTER TABLE` line. The plan explicitly anticipated only an interactive-prompt failure mode, not a DDL-ordering bug.
+- **Fix:** Hand-edited the migration SQL file to prepend `CREATE TYPE "public"."pending_deletion_kind" AS ENUM('prefix', 'object');--> statement-breakpoint`. Then ran `pnpm db:migrate` — applied cleanly. Renamed the file from drizzle-kit's auto-generated `0006_secret_slayback.sql` to `0006_add_pending_deletion_kind.sql` to match the existing project convention (descriptive, action-prefixed names like 0004_add_pending_storage_deletions); updated the matching `tag` in `drizzle/migrations/meta/_journal.json`. Drizzle's migration runner is content-addressed (hash-based), so the rename is safe.
+- **Files modified:** `drizzle/migrations/0006_add_pending_deletion_kind.sql` (hand-edited + renamed), `drizzle/migrations/meta/_journal.json` (tag updated to match new filename).
 - **Verification:** Post-migration `information_schema.columns` query confirmed `column_name='kind'`, `is_nullable='NO'`, `column_default='prefix'::pending_deletion_kind`. `pg_type` query confirmed the enum exists. All 37 integration tests across the storage-cleanup suite pass (the 18 in target test files + 19 regression).
-- **Committed in:** `181d313` (Task 4 GREEN commit, alongside the schema + use-case + reconciler edits).
+- **Committed in:** `181d313` (Task 4 GREEN commit, alongside the schema + use-case + reconciler edits). Migration filename rename committed in follow-up `2726033` (chore).
 
 ---
 
@@ -135,7 +137,7 @@ _TDD shape: one `test(05-19)` commit followed by one `feat(05-19)` commit, exact
 
 ## User Setup Required
 
-None — schema migration is local Supabase only (Wave 1, no production deploy). The migration file `drizzle/migrations/0006_secret_slayback.sql` will run automatically in CI / preview / production via the standard `db:migrate` step in the GitHub Actions deploy pipeline.
+None — schema migration is local Supabase only (Wave 1, no production deploy). The migration file `drizzle/migrations/0006_add_pending_deletion_kind.sql` will run automatically in CI / preview / production via the standard `db:migrate` step in the GitHub Actions deploy pipeline.
 
 ## Next Phase Readiness
 
@@ -151,7 +153,7 @@ None — schema migration is local Supabase only (Wave 1, no production deploy).
 - FOUND: `src/contexts/catalog/inngest/functions.ts`
 - FOUND: `tests/integration/cleanup-storage-reconciler.integration.test.ts`
 - FOUND: `tests/integration/catalog-delete-photo-entry.integration.test.ts`
-- FOUND: `drizzle/migrations/0006_secret_slayback.sql`
+- FOUND: `drizzle/migrations/0006_add_pending_deletion_kind.sql`
 - FOUND: `drizzle/migrations/meta/0006_snapshot.json`
 - FOUND: `drizzle/migrations/meta/_journal.json`
 

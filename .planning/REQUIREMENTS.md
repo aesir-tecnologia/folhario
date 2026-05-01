@@ -60,7 +60,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **CAT-06**: Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline (AC-CAT-007)
 - [ ] **CAT-07**: Catalog default sort: `acquisition_date` desc, null dates last (AC-CAT-008)
 - [ ] **CAT-08**: Sort control offers name A-Z, name Z-A, date newest, date oldest, location; selected sort persists for session (AC-CAT-009)
-- [ ] **CAT-09**: Deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, sets `Identification.plant_id` NULL but preserves the history row (AC-CAT-010)
+- [x] **CAT-09**: Deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, sets `Identification.plant_id` NULL but preserves the history row (AC-CAT-010)
 - [ ] **CAT-10**: Catalog grid responsive: 2 cols ≤375px, 3 cols 600–899px, 4 cols ≥900px (§16)
 - [ ] **CAT-11**: Empty catalog state: "Sua estante ainda está esperando a primeira planta." with Sage line-art illustration + single Canopy Green primary CTA (§17)
 
@@ -110,7 +110,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **OFF-05**: Queued field edit on stale row: last-write-wins by server timestamp, no merge UI (AC-OFF-005)
 - [ ] **OFF-06**: Queued action failing sync 5 attempts creates an `OfflineSyncFailure` row and is removed from the active queue (AC-OFF-006)
 - [ ] **OFF-07**: `OfflineSyncFailure` rows visible in Settings "Needs attention" with retry/discard per entry (AC-OFF-007)
-- [ ] **OFF-08**: Previously loaded catalog browsable offline; new identifications blocked with clear message (AC-OFF-008, §10)
+- [x] **OFF-08**: Previously loaded catalog browsable offline; new identifications blocked with clear message (AC-OFF-008, §10)
 - [ ] **OFF-09**: Service worker + PWA manifest (installable, display `standalone`, all icon sizes, theme color matches brand, viewport allows user scaling) (§17, §2)
 - [ ] **OFF-10**: App-update toast: new SW version waiting → non-blocking bottom toast "Nova versão disponível" + "Atualizar"; tapping triggers `skipWaiting` + reload; honors `prefers-reduced-motion`; never auto-reloads mid-session (§16)
 
@@ -368,7 +368,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | CAT-06 | Phase 5 | Pending |
 | CAT-07 | Phase 5 | Pending |
 | CAT-08 | Phase 5 | Pending |
-| CAT-09 | Phase 5 | Pending |
+| CAT-09 | Phase 5 | Complete |
 | CAT-10 | Phase 5 | Pending |
 | CAT-11 | Phase 5 | Pending |
 | CARE-01 | Phase 7 | Pending |
@@ -409,7 +409,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | OFF-05 | Phase 9 | Pending |
 | OFF-06 | Phase 9 | Pending |
 | OFF-07 | Phase 9 | Pending |
-| OFF-08 | Phase 5 | Pending |
+| OFF-08 | Phase 5 | Complete |
 | OFF-09 | Phase 3 | Pending |
 | OFF-10 | Phase 3 | Pending |
 | SUB-01 | Phase 10 | Pending |

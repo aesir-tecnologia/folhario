@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-05-01T01:25:41.734Z"
+stopped_at: Completed 05-catalog-meu-jardim Plan 02
+last_updated: "2026-05-01T01:37:15.239Z"
 last_activity: 2026-05-01
 progress:
   total_phases: 13
   completed_phases: 4
   total_plans: 56
-  completed_plans: 39
-  percent: 70
+  completed_plans: 40
+  percent: 71
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 05 (catalog-meu-jardim) — EXECUTING
-Plan: 2 of 18
+Plan: 3 of 18
 Status: Ready to execute
 Last activity: 2026-05-01
 
-Progress: [███████░░░] 70%
+Progress: [███████░░░] 71%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [███████░░░] 70%
 
 *Updated after each plan completion*
 | Phase 05-catalog-meu-jardim P01 | 4 | 3 tasks | 7 files |
+| Phase 05-catalog-meu-jardim P02 | 7 | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,10 @@ Progress: [███████░░░] 70%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
+
+- Plan 05-02: schema-registry.ts must export new tables for drizzle-kit to detect schema changes — drizzle.config.ts uses registry as schema entry point, not per-context schema.ts files
+- Plan 05-02: vitest unit project extended to include src/**/*.test.ts for co-located test files (cursor.test.ts sits alongside cursor.ts)
+- Plan 05-02: Two separate drizzle-kit generate invocations (one table per pass) to produce two distinct named migration files; REFACTOR phase skipped (duplication ~6 lines)
 
 - Phase 1: Next 16 App Router + Serwist (not next-pwa), GitHub Actions as sole deploy pipeline (Vercel git integration OFF)
 - Phase 1: Drizzle + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn pooler (stack lock-in from CLAUDE.md)
@@ -145,6 +150,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-01T01:25:41.726Z
+Last session: 2026-05-01T01:37:15.232Z
 Stopped at: Phase 5 UI-SPEC approved
 Resume file: None

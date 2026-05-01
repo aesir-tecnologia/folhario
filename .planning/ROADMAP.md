@@ -178,7 +178,7 @@ Plans:
   5. Deleting a plant cascades its PhotoEntry + Reminder rows, schedules its storage objects for deletion, sets `Identification.plant_id` NULL while preserving the history row, and a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.
 **Plans**: 18 plans (5a + 5b)
 - [x] 05-01-wave0-test-infra-PLAN.md - Wave 0 test infra (axe-core + fake-indexeddb + transaction-rollback fixture + test directories + Playwright auth-bypass fixture)
-- [ ] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
+- [x] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
 - [ ] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
 - [ ] 05-04-domain-zod-schemas-PLAN.md - Domain Zod schemas + validateStoragePathOwnership helper
 - [ ] 05-05-plant-create-use-cases-PLAN.md - Plant create use cases (manual + from-identification) + PostHog plant_added (Open Q6)
@@ -311,7 +311,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Data Layer & Bounded Contexts | 11/11 | Complete | 2026-04-26 |
 | 3. Design System & App Shell | 0/5 | Ready to execute | - |
 | 4. IAM — Auth, Verification, Consent | 13/13 | Complete | 2026-04-29 |
-| 5. Catalog — Meu Jardim | 1/18 | In Progress|  |
+| 5. Catalog — Meu Jardim | 2/18 | In Progress|  |
 | 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |
 | 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |
 | 8. Reminders & Single Daily Push Nudge | 0/TBD | Not started | - |

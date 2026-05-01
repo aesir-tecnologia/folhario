@@ -401,8 +401,8 @@ describe.skipIf(!dbUrl)("Phase-05-05 createPlant use-case integration", () => {
     setStorageAdapterForTests(fake.asAdapter);
 
     const speciesRow = await driver`
-      INSERT INTO species (scientific_name, common_name_pt, family)
-      VALUES (${"Monstera deliciosa"}, ${"Costela-de-Adão"}, ${"Araceae"})
+      INSERT INTO species (scientific_name, common_name)
+      VALUES (${"Monstera deliciosa " + randomUUID()}, ${"Costela-de-Adão"})
       RETURNING id
     `;
     const speciesId = speciesRow[0]!.id as string;

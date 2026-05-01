@@ -218,15 +218,15 @@ describe("createPlant use-case — unit tests (U1–U8)", () => {
     const fake = makeFakeStorageAdapter();
     setStorageAdapterForTests(fake as unknown as Parameters<typeof setStorageAdapterForTests>[0]);
 
-    const result = await createPlant({
+    const badInput = {
       source: "manual",
       userId: validUserId,
       name: "Suculenta",
       photo: { buffer: validJpegBuffer, contentType: "image/jpeg" },
-      // speciesId MUST be rejected on the manual branch
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      speciesId: "some-uuid" as any,
-    });
+      speciesId: "some-uuid",
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createPlant(badInput as any);
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -270,7 +270,8 @@ describe("createPlant use-case — unit tests (U1–U8)", () => {
       createdAt: new Date().toISOString(),
     };
 
-    uowSpy.mockImplementationOnce(async (_userId: string, fn: (tx: unknown) => Promise<unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (uowSpy as any).mockImplementationOnce(async (_userId: string, fn: (tx: unknown) => Promise<unknown>) => {
       return fn({ insert: vi.fn(), execute: vi.fn() });
     });
 

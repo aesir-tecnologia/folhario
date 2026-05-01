@@ -49,14 +49,24 @@ describe("useSortPreference", () => {
     expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
   });
 
-  it("Test 4 (SSR-safe): when window is undefined, hook returns 'date_new' without throwing", () => {
-    vi.stubGlobal("window", undefined);
+  it("Test 4 (SSR-safe): readStoredSort returns 'date_new' without throwing when sessionStorage is not available", () => {
+    const originalSessionStorage = Object.getOwnPropertyDescriptor(window, "sessionStorage");
+    Object.defineProperty(window, "sessionStorage", {
+      get() {
+        throw new Error("sessionStorage not available");
+      },
+      configurable: true,
+    });
 
-    expect(() => {
+    try {
       const { result } = renderHook(() => useSortPreference());
       const [sortId] = result.current;
       expect(sortId).toBe("date_new");
-    }).not.toThrow();
+    } finally {
+      if (originalSessionStorage) {
+        Object.defineProperty(window, "sessionStorage", originalSessionStorage);
+      }
+    }
   });
 
   it("Test 5 (whitelist): SORT_IDS exported as 5-member readonly tuple", () => {

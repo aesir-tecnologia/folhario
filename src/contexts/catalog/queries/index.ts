@@ -5,15 +5,32 @@ export type PlantsListSort = "date_new" | "date_old" | "name_asc" | "name_desc" 
 export type PlantsListParams = {
   sort: PlantsListSort;
   cursor?: string;
+  include_count?: boolean;
 };
 
-async function fetchPlantsList(params: PlantsListParams): Promise<unknown> {
+export type PlantListItem = {
+  id: string;
+  name: string;
+  nickname: string | null;
+  location: string | null;
+  cover_signed_url: string | null;
+  acquisition_date: string | null;
+};
+
+export type ListPlantsResponse = {
+  items: PlantListItem[];
+  next_cursor: string | null;
+  total_count?: number;
+};
+
+async function fetchPlantsList(params: PlantsListParams): Promise<ListPlantsResponse> {
   const sp = new URLSearchParams();
   sp.set("sort", params.sort);
   if (params.cursor) sp.set("cursor", params.cursor);
+  if (params.include_count) sp.set("include_count", "1");
   const r = await fetch(`/api/v1/plants?${sp.toString()}`);
   if (!r.ok) throw new Error(`plants list failed: ${r.status}`);
-  return r.json();
+  return r.json() as Promise<ListPlantsResponse>;
 }
 
 async function fetchPlantDetail(plantId: string): Promise<unknown> {
@@ -39,7 +56,7 @@ export const plantsKeys = {
   lists: (params: PlantsListParams) =>
     ({
       queryKey: ["catalog", "plants", "list", params] as const,
-      queryFn: (() => fetchPlantsList(params)) as QueryFunction<unknown>,
+      queryFn: (() => fetchPlantsList(params)) as QueryFunction<ListPlantsResponse>,
       staleTime: 30_000,
     }) as const,
   detail: (plantId: string) =>

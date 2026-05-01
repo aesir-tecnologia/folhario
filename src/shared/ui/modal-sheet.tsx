@@ -67,7 +67,7 @@ export function ModalSheet({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-forest/50" />
         <Dialog.Content
           onCloseAutoFocus={onCloseAutoFocus}
-          role={role}
+          {...(role !== undefined && { role })}
           className="
             fixed inset-x-0 bottom-0 z-50 max-h-[80dvh] overflow-y-auto
             rounded-t-[24px] bg-ivory p-6
@@ -100,9 +100,9 @@ export function ModalSheet({
             />
           )}
           <div className="flex items-start justify-between gap-4">
-            <Dialog.Title
-              className="font-serif text-2xl font-medium text-forest"
-            >
+            <Dialog.Title className="
+              font-serif text-2xl font-medium text-forest
+            ">
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>

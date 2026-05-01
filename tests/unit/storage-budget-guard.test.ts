@@ -60,9 +60,10 @@ describe("checkAndEvict", () => {
     await qc.setQueryData(["catalog", "photo-entries", "uuid-1"], { data: "c" });
 
     // Simulate that removing each query reduces usage by 10
+    // With 3 queries: 85 → 75 → 65 → 55 (drops below 70 = LOW_WATER after 2 removals)
     qc.getQueryCache().subscribe(() => {
       const count = qc.getQueryCache().findAll().filter((q) => q.queryKey[0] === "catalog").length;
-      usage = 70 + count * 5;
+      usage = 65 + count * 10;
     });
 
     const result = await checkAndEvict(qc);

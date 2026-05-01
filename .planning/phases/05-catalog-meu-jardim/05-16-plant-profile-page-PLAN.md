@@ -36,6 +36,7 @@ must_haves:
     - "Visiting /catalog/{plantId} as the owner renders the plant cover photo, thumbnail strip (when ≥2 PhotoEntry rows), and 5 inline-edit fields (name, nickname, location, acquisition_date, notes) populated from the server."
     - "Tapping an inline-edit field's value text converts it to an editable input focused on the current value; blur saves via PATCH; Enter saves single-line; Esc reverts to the pre-edit value (per D-05 / UI-SPEC §6 / 05-14 InlineEditField contract)."
     - "On PATCH success the server row is merged into the TanStack Query cache as truth (D-06 last-write-wins); on PATCH failure the optimistic value is rolled back and a sonner toast renders catalog.profile.saveFailure with a retry tap target."
+    - "Every PATCH /api/v1/plants/{plantId} request carries an Idempotency-Key header generated via crypto.randomUUID() — one key per logical user save action stored in a useRef; retries reuse the same key; the ref is cleared on save success or error so the next distinct save generates a fresh key (HIGH-3)."
     - "Visiting /catalog/{plantId} for a plant the requesting user does NOT own returns notFound() — getPlant use-case scoping prevents cross-user disclosure (T-05-16-01 mitigation)."
     - "Tapping the overflow MoreVertical button opens a popover with a single 'Excluir planta' item (i18n key catalog.profile.overflow.delete); tapping it opens the <DeleteConfirmSheet> in role='alertdialog' mode."
     - "DeleteConfirmSheet body shows live cascade counts from getPlant._meta — bodyBoth when both > 0, bodyPhotosOnly when only photos > 0, bodyRemindersOnly when only reminders > 0, bodyEmpty when both 0 (per D-07 + UI-SPEC §7); ICU plural rules apply via next-intl."
@@ -44,6 +45,7 @@ must_haves:
     - "Hidden placeholder sections render for care card (Phase 7), active reminders (Phase 8), and ID history (Phase 6) per CONTEXT.md scope boundary — they emit zero observable affordances when their underlying data is absent."
     - "Photo-journal preview strip (UI-SPEC §6 Section 4) renders the last 4 PhotoEntry thumbnails fetched via plantsKeys.photoEntries(plantId) with a 'Ver tudo' link to /catalog/{plantId}/journal; empty (1 PhotoEntry, the cover) shows the catalog.profile.journal.empty hint + addCta tertiary link."
     - "Read-only variant (useSubscription().readOnly === true per 05-11 stub): all <InlineEditField> instances render with readOnly=true (no tap affordance, cursor default), the overflow MoreVertical button is hidden entirely, and the photo-journal preview strip's add affordances are hidden — Phase 3 <ReadOnlyBanner> is already flipped on by AppShell."
+    - "The plant detail response envelope includes cover_signed_url (snake_case) — a 24h-TTL signed URL produced by the get-plant use-case (05-07) which reuses the sign-on-list contract. The client reads plant.cover_signed_url for the cover photo display; the server never exposes a raw storage key to the client (MEDIUM-3)."
     - "Playwright spec tests/e2e/plant-profile.spec.ts (using authedUser fixture from 05-01) covers: inline-edit blur saves, Enter saves single-line, Esc reverts, delete-confirm cascade counts visible, plant disappears from /catalog after confirm; axe-core scans /catalog/{plantId} in 4 colorScheme × reducedMotion combos with 0 serious+critical violations."
   artifacts:
     - path: "src/app/(app)/catalog/[plantId]/page.tsx"
@@ -51,7 +53,7 @@ must_haves:
       exports: ["default"]
       min_lines: 40
     - path: "src/app/(app)/catalog/[plantId]/plant-profile.tsx"
-      provides: "Client component composing the single-scroll plant profile per UI-SPEC §6: cover + thumbnail gallery, 5 <InlineEditField> instances (3 text, 1 textarea, 1 combobox via <LocationCombobox>, 1 date), photo-journal preview strip, hidden Phase 6/7/8 placeholder sections, overflow popover delete trigger. Read-only variant per D-21."
+      provides: "Client component composing the single-scroll plant profile per UI-SPEC §6: cover + thumbnail gallery, 5 <InlineEditField> instances (3 text, 1 textarea, 1 date; location field uses renderEditor render-prop slot wrapping <LocationCombobox> per HIGH-1c), photo-journal preview strip, hidden Phase 6/7/8 placeholder sections, overflow popover delete trigger. Read-only variant per D-21."
       exports: ["PlantProfile"]
       min_lines: 200
     - path: "src/app/(app)/catalog/[plantId]/delete-confirm-sheet.tsx"
@@ -203,12 +205,11 @@ export type InlineEditFieldProps = {
   label: string;             // i18n-resolved
   value: string | null;      // null → renders the placeholder copy in italic
   placeholder: string;       // i18n-resolved
-  variant: "text" | "textarea" | "date" | "combobox";
+  variant: "text" | "textarea" | "date";
   onSave: (newValue: string) => Promise<void>;  // throws on validation/network failure
   readOnly?: boolean;        // when true: read state only, no tap affordance, cursor default
   required?: boolean;        // empty submit blocks (validation visual)
-  // combobox-only
-  options?: ComboboxOption[];
+  renderEditor?: (slot: { value: string; setValue: (v: string) => void; commit: () => void; cancel: () => void; ariaLabel: string; ariaInvalid?: boolean; ariaDescribedBy?: string }) => React.ReactNode;
   // textarea-only
   minRows?: number;
   maxRows?: number;
@@ -234,7 +235,7 @@ export interface LocationComboboxProps {
 }
 ```
 
-For the inline-edit `combobox` variant we DO NOT mount `<LocationCombobox>` directly inside `<InlineEditField>` — `<InlineEditField variant="combobox" options={merged}>` mounts the underlying `<Combobox>` per its 05-14 contract. The 6-line dedupe normalizer (NFD diacritic-strip + lowercase + trim, mirroring the merge in `<LocationCombobox>` per Plan 05-12) is duplicated inline inside `<PlantProfile>` because Plan 05-12 ships the merge as internal logic, not a public export. Six lines is well below the threshold to justify modifying a shipped plan to expose a helper.
+For the location inline-edit field, use the `renderEditor` render-prop slot (per 05-14's canonical contract — no `"combobox"` variant). Mount `<LocationCombobox>` inside the slot, wiring `slot.setValue` + `slot.commit()` to its `onChange` callback. Esc inside the combobox closes the listbox; the second Esc (or `<InlineEditField>`'s outer `onKeyDown` listener) calls `slot.cancel()`. The 6-line dedupe normalizer (NFD diacritic-strip + lowercase + trim, mirroring the merge in `<LocationCombobox>` per Plan 05-12) is duplicated inline inside `<PlantProfile>` because Plan 05-12 ships the merge as internal logic, not a public export. Six lines is well below the threshold to justify modifying a shipped plan to expose a helper.
 
 ### `<BottomSheet>` (from 05-13)
 
@@ -319,6 +320,7 @@ Mutation invalidation pattern: `queryClient.invalidateQueries({ queryKey: plants
 
 ```
 GET    /api/v1/plants/[plantId]                  → 200 { plant, _meta }                      | 404 { error: { code: 'not_found', ... } }
+                                                    plant includes cover_signed_url (snake_case, 24h-TTL signed URL — batch-signed by list-plants use-case per 05-07 MEDIUM-3 contract)
 PATCH  /api/v1/plants/[plantId]                  → 200 { plant }                              | 422 { error: { code: 'validation_failed', ... } } | 404
 DELETE /api/v1/plants/[plantId]                  → 204 (no body)                              | 404 | 5xx
 GET    /api/v1/plants/[plantId]/photo-entries    → 200 { photo_entries, next_cursor }         | 404
@@ -408,14 +410,22 @@ In Server Components we read `cookies()` instead — the `(app)/layout.tsx` gate
          const qc = opts?.queryClient ?? useQueryClient();
          const t = useTranslations("catalog.profile");
          const subscription = useSubscription();
+         const idempotencyKeyRef = useRef<string | null>(null);  // one key per logical save; cleared on success/error
          return useMutation({
            mutationFn: async ({ field, value }: { field: PatchableField; value: string }) => {
              if (subscription.readOnly) throw new ReadOnlyError();   // test 7 — throws before fetch
+             const idempotencyKey = idempotencyKeyRef.current ?? crypto.randomUUID();
+             idempotencyKeyRef.current = idempotencyKey;  // retain for retries
              const res = await fetch(`/api/v1/plants/${plantId}`, {
                method: "PATCH",
-               headers: { "Content-Type": "application/json" },
+               headers: {
+                 "Content-Type": "application/json",
+                 "Idempotency-Key": idempotencyKey,      // one key per logical save action; retries reuse same key
+               },
                body: JSON.stringify({ [field]: value === "" ? null : value }),
              });
+             // Clear after success so next save generates a fresh key
+             idempotencyKeyRef.current = null;
              if (!res.ok) {
                const body = await res.json().catch(() => null);
                throw new PatchFailedError(body?.error?.code ?? "unknown");
@@ -434,6 +444,7 @@ In Server Components we read `cookies()` instead — the `(app)/layout.tsx` gate
              return { previous };
            },
            onError: (_err, _vars, ctx) => {
+             idempotencyKeyRef.current = null;  // discard key so next retry generates a fresh one after error
              if (ctx?.previous) qc.setQueryData(["catalog", "plant", plantId], ctx.previous);
              const emit = opts?.onErrorToast ?? ((k: string) => toast.error(k));
              emit(t("saveFailure"));
@@ -505,21 +516,42 @@ In Server Components we read `cookies()` instead — the `(app)/layout.tsx` gate
 
     6. Create `src/app/(app)/catalog/[plantId]/plant-profile.tsx` (`"use client"`). Layout per UI-SPEC §6:
        - Top bar: back chevron (Lucide `ChevronLeft`), overflow `MoreVertical` (HIDDEN when `useSubscription().readOnly`); the overflow popover uses Phase 3's existing primitive (or Radix `<DropdownMenu>` if no popover primitive ships) — verify by grep'ing `src/shared/ui/` at write time. The popover has ONE item: "Excluir planta" (`catalog.profile.overflow.delete`) → opens `<DeleteConfirmSheet>` (Task 2).
-       - Section 1 — Cover + thumbnail strip: cover from `plant.cover_photo_url` (already a 24h-TTL signed URL per D-20), 4:5 aspect via Tailwind `aspect-[4/5]`. Thumbnail strip below: maps over `photoEntries` (limit 4 from the SSR'd preview query), 64×80 px tiles. Wrap cover + each thumbnail in a `<button>` that opens `<Lightbox>` from 05-14 (Wave 1, ships before this plan) at the corresponding index — see `<interfaces>` block for the prop shape.
+       - Section 1 — Cover + thumbnail strip: cover from `plant.cover_signed_url` (snake_case; 24h-TTL signed URL batch-signed by the `list-plants` / `get-plant` use-cases per MEDIUM-3 — 05-07 owns the sign-on-list contract), 4:5 aspect via Tailwind `aspect-[4/5]`. Thumbnail strip below: maps over `photoEntries` (limit 4 from the SSR'd preview query), 64×80 px tiles. Wrap cover + each thumbnail in a `<button>` that opens `<Lightbox>` from 05-14 (Wave 1, ships before this plan) at the corresponding index — see `<interfaces>` block for the prop shape.
        - Section 2 — `<InlineEditField>` × 5:
          - **Name** (`variant="text"`, `required={true}`): `value={plant.name}`, `onSave={async (v) => patchMutation.mutateAsync({ field: 'name', value: v })}`. Empty submit blocks (InlineEditField's `required` handles the in-field validation visual + `catalog.profile.fields.name.requiredError`).
          - **Apelido** (`variant="text"`): same shape, `field: 'nickname'`. Empty allowed → `null` server-side.
-         - **Localização** (`variant="combobox"`, `options={mergedLocationOptions}`): merged options come from a `useQuery(locationsKeys.all())` call inside `<PlantProfile>`. Inline the 6-line dedupe normalizer (NFD diacritic-strip + lowercase + trim + Set-based dedupe — same shape as Plan 05-12's internal merge, see `<scope_clarifications>` for rationale):
+         - **Localização** (`variant="text"` + `renderEditor` render-prop slot): merged options come from a `useQuery(locationsKeys.all())` call inside `<PlantProfile>`. Inline the 6-line dedupe normalizer (NFD diacritic-strip + lowercase + trim + Set-based dedupe — same shape as Plan 05-12's internal merge, see `<scope_clarifications>` for rationale):
            ```ts
            const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
            const seen = new Set<string>();
-           const mergedLocationOptions: ComboboxOption[] = [];
-           const t = useTranslations('catalog.locations');
-           for (const label of [...(suggestionsQuery.data?.locations ?? []), ...(t.raw('defaults') as string[])]) {
+           const mergedLocationOptions: string[] = [];
+           const tLoc = useTranslations('catalog.locations');
+           for (const label of [...(suggestionsQuery.data?.locations ?? []), ...(tLoc.raw('defaults') as string[])]) {
              const key = norm(label);
-             if (key && !seen.has(key)) { seen.add(key); mergedLocationOptions.push({ value: label, label }); }
+             if (key && !seen.has(key)) { seen.add(key); mergedLocationOptions.push(label); }
            }
            ```
+           Wire the field via the `renderEditor` slot (per HIGH-1c / 05-14's render-prop contract):
+           ```tsx
+           <InlineEditField
+             variant="text"
+             label={t("fields.location.label")}
+             value={plant.location ?? null}
+             placeholder={t("fields.location.placeholder")}
+             onSave={async (v) => patchMutation.mutateAsync({ field: 'location', value: v })}
+             readOnly={readOnly}
+             data-testid="inline-edit-location"
+             renderEditor={(slot) => (
+               <LocationCombobox
+                 value={slot.value}
+                 onChange={(next) => { slot.setValue(next); slot.commit(); }}
+                 suggestions={mergedLocationOptions}
+                 aria-label={slot.ariaLabel}
+               />
+             )}
+           />
+           ```
+           Esc inside `<LocationCombobox>` closes the listbox; the outer `onKeyDown` on `<InlineEditField>` handles the second Esc as `slot.cancel()` per the 05-14 keyboard contract. No modifications to 05-12 needed.
          - **Adicionada em** (`variant="date"`): `value={plant.acquisition_date}` (ISO date string or null), `onSave` PATCHes `acquisition_date`. Date format on display follows Phase 3's `formatDate(value, "pt-BR")` helper.
          - **Notas** (`variant="textarea"`, `minRows={4}`, `maxRows={10}`): `field: 'notes'`.
        - Section 3 — Active reminders placeholder (UI-SPEC §6 Section 3): renders `LEMBRETES ATIVOS` section label + body copy `catalog.profile.reminders.empty` + tertiary text link `catalog.profile.reminders.cta` → href `/settings/notifications` (Phase 8 destination; Phase 5 routes there for the `Em breve` placeholder).
@@ -705,10 +737,18 @@ In Server Components we read `cookies()` instead — the `(app)/layout.tsx` gate
        test("inline-edit nickname saves on blur", async ({ authedUser, page }) => {
          const plantId = await seedPlant(authedUser, { name: "Samambaia", nickname: null });
          await page.goto(`/catalog/${plantId}`);
+         // Intercept PATCH to assert Idempotency-Key header is present (HIGH-3)
+         let capturedIdempotencyKey: string | null = null;
+         await page.route(`/api/v1/plants/${plantId}`, (route) => {
+           capturedIdempotencyKey = route.request().headers()["idempotency-key"] ?? null;
+           route.continue();
+         });
          await page.getByTestId("inline-edit-nickname").click();
          await page.keyboard.type("Verdinho");
          await page.locator("body").click({ position: { x: 0, y: 0 } });  // blur
          await expect(page.getByTestId("inline-edit-nickname")).toContainText("Verdinho");
+         expect(capturedIdempotencyKey, "Idempotency-Key header must be present on PATCH").not.toBeNull();
+         expect(capturedIdempotencyKey).toMatch(/^[0-9a-f-]{36}$/);  // UUID v4 format
          // Reload — server is truth.
          await page.reload();
          await expect(page.getByTestId("inline-edit-nickname")).toContainText("Verdinho");

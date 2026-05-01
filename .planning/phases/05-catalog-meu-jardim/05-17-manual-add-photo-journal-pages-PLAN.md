@@ -51,6 +51,8 @@ must_haves:
     - "/catalog/add and /catalog/{plantId}/journal pass axe-core 0 serious + critical violations across {light,dark} × {no-preference,reduce} via dedicated authed Playwright specs (matches 05-16 pattern; `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified)"
     - "Journal axe scan covers the BottomSheet OPEN state — sheet opened immediately before AxeBuilder.analyze() per UI-SPEC §8 line 422 a11y gate"
     - "User-typed nickname and notes render via React text-content (no dangerouslySetInnerHTML), so script tags display as literal text"
+    - "Lightbox controlled-index contract is owned by 05-14 — this plan mirrors its props for executor reference; 05-14-lightbox-inline-edit-primitives-PLAN.md is canonical. Props: open/onOpenChange/photos[{src,alt?,caption?}]/index/onIndexChange/plantName (builds aria-label internally)"
+    - "Each mutation POST (/api/v1/plants and /api/v1/plants/{plantId}/photo-entries) carries Idempotency-Key: crypto.randomUUID() generated once per submit attempt, stored in a useRef, reused across retries from the same form fill, cleared on terminal success (T-05-17-04)"
   artifacts:
     - path: "src/app/(app)/catalog/add/page.tsx"
       provides: "Server Component shell for /catalog/add. Imports `<AddPlantForm>` client child, awaits `useTranslations('catalog.add')` and resolves the read-only flag via the Phase 5 `useSubscription` server seam (or its env-driven equivalent surfaced by 05-11)."
@@ -66,9 +68,9 @@ must_haves:
       provides: "Client component composing `<BottomSheet>` from 05-13: photo picker + note textarea + Adicionar primary + Cancelar secondary. Compresses + EXIF-strips client-side, multipart-POSTs to /api/v1/plants/{plantId}/photo-entries, optimistically prepends via TanStack Query, retains bytes on failure."
       exports: ["JournalAddSheet", "JournalAddSheetProps"]
     - path: "tests/unit/add-plant-form.test.tsx"
-      provides: "Vitest unit-dom suite covering: photo preview after selection, validation summary appearing only at ≥2 errors, per-field aria-invalid + helper text, first-invalid auto-focus on submit, compress+strip called before submit, hidden submit + banner in read-only mode."
+      provides: "Vitest unit-dom suite covering: photo preview after selection, validation summary appearing only at ≥2 errors, per-field aria-invalid + helper text, first-invalid auto-focus on submit, compress+strip called before submit, hidden submit + banner in read-only mode, Idempotency-Key header present on POST and reused across retries."
     - path: "tests/unit/photo-journal.test.tsx"
-      provides: "Vitest unit-dom suite covering: reverse-chrono ordering, lightbox-on-tap, '+ Foto' visibility flip on readOnly, optimistic prepend on add success, sheet stays open + bytes retained on add failure, user-typed note renders `<script>` text as literal content (T-05-17-02 XSS guard)."
+      provides: "Vitest unit-dom suite covering: reverse-chrono ordering, lightbox-on-tap, '+ Foto' visibility flip on readOnly, optimistic prepend on add success, sheet stays open + bytes retained on add failure, user-typed note renders `<script>` text as literal content (T-05-17-02 XSS guard), Idempotency-Key header present on POST and reused across retries."
     - path: "tests/e2e/catalog-manual-add.spec.ts"
       provides: "Dedicated authed Playwright spec — manual-add happy path (form submit → /catalog/{plantId}) AND manual-add validation (missing name + photo → ≥2 errors summary + Overdue Rust borders + first-invalid focused) AND axe scans of /catalog/add across 4 colorScheme × reducedMotion combos with 0 serious/critical violations. Per VALIDATION.md E2E rows 'Manual add happy path' and 'Manual add validation' + Axe Catalog routes stratum."
       contains: "AxeBuilder"
@@ -82,7 +84,7 @@ must_haves:
       pattern: "compressPlantPhoto\\("
     - from: "src/app/(app)/catalog/add/add-plant-form.tsx"
       to: "POST /api/v1/plants (from 05-08)"
-      via: "fetch('/api/v1/plants', { method: 'POST', body: FormData })"
+      via: "fetch('/api/v1/plants', { method: 'POST', body: FormData, headers: { 'Idempotency-Key': idempotencyKeyRef.current } })"
       pattern: "fetch\\([\"'`]/api/v1/plants[\"'`]"
     - from: "src/app/(app)/catalog/add/add-plant-form.tsx"
       to: "src/shared/ui/location-combobox.tsx (from 05-12)"
@@ -94,7 +96,7 @@ must_haves:
       pattern: "BottomSheet"
     - from: "src/app/(app)/catalog/[plantId]/journal/journal-add-sheet.tsx"
       to: "POST /api/v1/plants/{plantId}/photo-entries (from 05-08)"
-      via: "fetch(`/api/v1/plants/${plantId}/photo-entries`, { method: 'POST', body: FormData })"
+      via: "fetch(`/api/v1/plants/${plantId}/photo-entries`, { method: 'POST', body: FormData, headers: { 'Idempotency-Key': idempotencyKeyRef.current } })"
       pattern: "/photo-entries"
     - from: "src/app/(app)/catalog/[plantId]/journal/photo-journal.tsx"
       to: "src/shared/ui/lightbox.tsx (from 05-14)"
@@ -216,13 +218,14 @@ export function BottomSheet(props: BottomSheetProps);
 
 ```typescript
 // From 05-14: src/shared/ui/lightbox.tsx
-// (Public surface is locked by 05-14's PLAN.md must_haves; this plan consumes it as documented in UI-SPEC §9.)
+// (Canonical contract owned by 05-14-lightbox-inline-edit-primitives-PLAN.md — mirrored here for executor reference only.)
 export interface LightboxProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  photos: Array<{ url: string; alt?: string; caption?: string }>;
-  initialIndex: number;
-  ariaLabel: string;
+  photos: Array<{ src: string; alt?: string; caption?: string }>;
+  index: number;
+  onIndexChange: (next: number) => void;
+  plantName: string;           // Lightbox builds aria-label="Galeria — {plantName}" internally
 }
 export function Lightbox(props: LightboxProps);
 ```
@@ -344,9 +347,10 @@ for (const combo of COMBOS) {
       1. Build `errors` synchronously. If any errors: `setErrors`, focus first invalid, return.
       2. Call `await compressPlantPhoto(selectedFile)` to compress + strip EXIF (T-05-17-01 client-side defense; server still re-checks per Phase 02 D-30).
       3. Build `FormData`: append `name`, the compressed `photo`, and any of `nickname`, `location`, `acquisition_date`, `notes` whose values are non-empty.
-      4. `fetch('/api/v1/plants', { method: 'POST', body: formData, credentials: 'same-origin' })`. Do NOT set `Content-Type` — browser handles multipart boundary.
-      5. On success (201): parse JSON → `router.push('/catalog/' + data.id)` using `next/navigation` `useRouter`.
-      6. On failure: parse `error.code` from the response. If `validation_failed`: surface server-side per-field errors (the route returns `error.details.fields` per closed registry). Otherwise: `toast.error(labels.submitFailure)` via sonner (already in repo from Phase 03). Photo bytes remain in component state — preview persists, user can retry without re-picking. UI-SPEC §5 line 247.
+      4. **Idempotency key** (T-05-17-04): declare `const idempotencyKeyRef = useRef<string | null>(null)`. On submit (before the fetch), if `idempotencyKeyRef.current === null` set it to `crypto.randomUUID()`. This ensures retries from the same form fill reuse the same key. Clear it on terminal success (before `router.push`) and on terminal error (when the user can consciously retry — clear after displaying the toast, so the next click generates a fresh key).
+      5. `fetch('/api/v1/plants', { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'Idempotency-Key': idempotencyKeyRef.current } })`. Do NOT set `Content-Type` — browser handles multipart boundary.
+      6. On success (201): parse JSON → clear `idempotencyKeyRef.current` → `router.push('/catalog/' + data.id)` using `next/navigation` `useRouter`.
+      7. On failure: parse `error.code` from the response. If `validation_failed`: surface server-side per-field errors (the route returns `error.details.fields` per closed registry). Otherwise: `toast.error(labels.submitFailure)` via sonner (already in repo from Phase 03). Clear `idempotencyKeyRef.current` after the toast so a manual retry generates a new key. Photo bytes remain in component state — preview persists, user can retry without re-picking. UI-SPEC §5 line 247.
     - **XSS guard** (T-05-17-02): nickname and notes are NEVER rendered via `dangerouslySetInnerHTML` anywhere in this component. They are rendered as React text content only. The Vitest test below proves this.
     - Add `data-testid="add-plant-form"` to the form root wrapper so the Playwright spec can reliably anchor on it for the axe scan.
 
@@ -360,11 +364,13 @@ for (const combo of COMBOS) {
     - Test 4 — compression invoked before fetch: seed valid name + photo, click submit, await microtasks. Assert: `compressPlantPhoto` called with the original File; assert `fetch` called with first arg `'/api/v1/plants'` and second arg's `body` is a FormData containing `'name'` and `'photo'` keys; assert: order of calls — compress BEFORE fetch (`compressPlantPhoto.mock.invocationCallOrder[0] < (fetch as MockedFn).mock.invocationCallOrder[0]`).
     - Test 5 — read-only hides submit: render with `readOnly={true}`. Assert: submit button is NOT in the document (`queryByRole('button', { name: /adicionar à minha estante/i })` is null). UI-SPEC §5 line 216.
     - Test 6 — submit failure retains photo: seed valid form, mock fetch to resolve with 500. Click submit. Assert: photo preview `<img>` is still present; sonner toast was emitted (mock `sonner` `toast.error`); submit button is re-enabled with idle label.
+    - Test 7 — Idempotency-Key header present on POST: seed valid form, click submit. Assert: the `fetch` call includes `headers['Idempotency-Key']` that is a valid UUID string (matches `/^[0-9a-f-]{36}$/i`).
+    - Test 8 — Idempotency-Key reused across retries, fresh on new submit: seed valid form, mock fetch to reject twice then succeed. First submit attempt → capture `headers['Idempotency-Key']` value (call it `key1`). Second submit attempt (retry, same form fill) → assert `headers['Idempotency-Key']` equals `key1`. Third submit after success → seed form again → assert `headers['Idempotency-Key']` is a NEW UUID different from `key1`.
 
     **D. Dedicated authed E2E spec (incl. axe)** — `tests/e2e/catalog-manual-add.spec.ts`:
     - Use the `authedUser` Playwright fixture from 05-01: `import { test, expect } from "./fixtures/authed-user";` plus `import AxeBuilder from "@axe-core/playwright";`.
     - This spec OWNS the axe coverage for `/catalog/add`. It does NOT modify `tests/e2e/axe-placeholder-pages.spec.ts` (that file is for unauthenticated routes only — its `for (const route of ROUTES)` loop calls `page.goto(route)` without any fixture; adding `/catalog/add` there would scan the login redirect, not the form).
-    - Test "manual add happy path" (per VALIDATION.md row): goto `/catalog/add` → fill name "Hera" → set photo from `tests/e2e/fixtures/sample.jpg` (use the existing 1-pixel sample if present, else seed `tests/e2e/fixtures/sample.jpg` — a minimal real JPEG checked into the repo by the catalog test infra; if absent, use Playwright's `Buffer.from(...)` PNG with a 1×1 pixel base64) → click Adicionar → assert URL matches `/catalog/[a-f0-9-]{36}` → assert plant name appears on the destination page (best-effort: 05-16 ships the profile but if not yet present the URL change alone is the gate).
+    - Test "manual add happy path" (per VALIDATION.md row): goto `/catalog/add` → fill name "Hera" → set photo from `tests/e2e/fixtures/sample.jpg` (use the existing 1-pixel sample if present, else seed `tests/e2e/fixtures/sample.jpg` — a minimal real JPEG checked into the repo by the catalog test infra; if absent, use Playwright's `Buffer.from(...)` PNG with a 1×1 pixel base64) → click Adicionar → assert URL matches `/catalog/[a-f0-9-]{36}` → assert plant name appears on the destination page (best-effort: 05-16 ships the profile but if not yet present the URL change alone is the gate). Also assert the POST `/api/v1/plants` request had `Idempotency-Key` header present (intercept via `page.route('/api/v1/plants', ...)` or `request.headers()['idempotency-key']` from a `page.on('request', ...)` listener scoped to the POST).
     - Test "manual add validation" (per VALIDATION.md row): goto `/catalog/add` → click submit with empty form → assert summary block visible with text matching `Falta preencher` → assert at least 2 inputs have `aria-invalid="true"` → assert the first invalid input is the active element (`expect(page.locator(':focus')).toHaveAttribute('aria-invalid', 'true')`).
     - **Axe a11y across 4 colorScheme × reducedMotion combos** (mirrors 05-16 exactly):
       ```typescript
@@ -396,7 +402,7 @@ for (const combo of COMBOS) {
     - `/catalog/add` renders the form per UI-SPEC §5 with photo + name first, optional fields below, submit at the bottom.
     - Selecting a file shows the local preview immediately; compress + EXIF strip runs at submit (Vitest Test 4 invocation-order assertion green).
     - Submitting empty form shows summary block + per-field Overdue Rust borders + first-invalid focus (Vitest Tests 2/3 + Playwright validation spec green).
-    - Submitting valid form posts to `/api/v1/plants` and routes to `/catalog/{plantId}` (Playwright happy-path spec green).
+    - Submitting valid form posts to `/api/v1/plants` with `Idempotency-Key` header and routes to `/catalog/{plantId}` (Vitest Tests 7/8 + Playwright happy-path spec green).
     - read-only mode hides the submit button and renders the read-only banner (Vitest Test 5 green).
     - Submit failure retains the photo preview and surfaces a sonner toast (Vitest Test 6 green).
     - Axe scans of `/catalog/add` across 4 colorScheme × reducedMotion combos return 0 serious + critical violations (4 axe tests in `catalog-manual-add.spec.ts` green).
@@ -431,7 +437,7 @@ for (const combo of COMBOS) {
     - Props: `plant: { id, name, nickname? }`, `entries: PhotoEntry[]`, `readOnly: boolean`, `labels`.
     - Local state: `lightboxOpen: boolean`, `lightboxIndex: number`, `addSheetOpen: boolean`. (TanStack Query hook reads `entries` from cache via `useQuery({ ...plantsKeys.photoEntries(plant.id), initialData: entries })` so SSR data + optimistic prepends from the add sheet stay in sync.)
     - Render reverse-chrono list of entry cards (`entries.sort` by `created_at` DESC client-side as defense; the API also returns DESC). Each card per UI-SPEC §8 line 401–409: full-width 4:5 photo, Plus Jakarta Sans 14/20 Calm Slate date below (formatted via `Intl.DateTimeFormat('pt-BR')`), optional note in Plus Jakarta Sans 16/24 Forest Ink. Tap photo → setState `{ lightboxOpen: true, lightboxIndex: i }`.
-    - Render `<Lightbox open={lightboxOpen} onOpenChange={setLightboxOpen} photos={entries.map(e => ({ url: e.photo_url, caption: e.note || undefined }))} initialIndex={lightboxIndex} ariaLabel={\`Galeria — ${plant.nickname ?? plant.name}\`} />` per UI-SPEC §9.
+    - Render `<Lightbox open={lightboxOpen} onOpenChange={setLightboxOpen} photos={entries.map(e => ({ src: e.photo_url, caption: e.note || undefined }))} index={lightboxIndex} onIndexChange={setLightboxIndex} plantName={plant.nickname ?? plant.name} />` per UI-SPEC §9. (Canonical contract: 05-14-lightbox-inline-edit-primitives-PLAN.md. Lightbox builds `aria-label="Galeria — {plantName}"` internally.)
     - Render `+ Foto` button at top right of the page only when `!readOnly` (UI-SPEC §8 line 392 + D-21). Click → `setAddSheetOpen(true)`.
     - Empty state (entries.length <= 1, only the cover): render Phase 03 `<EmptyState>` with `headline=labels.empty.title`, `hint=labels.empty.hint`, `ctaLabel=labels.empty.cta`, `onCtaClick={() => setAddSheetOpen(true)}` (UI-SPEC §8 line 394–399). Hide the CTA in read-only.
     - Render `<JournalAddSheet open={addSheetOpen} onOpenChange={setAddSheetOpen} plantId={plant.id} labels={labels.add} />`.
@@ -451,15 +457,16 @@ for (const combo of COMBOS) {
       1. If no photo: surface inline error "Adicione uma foto" — same Overdue Rust treatment as Task 1's photo dropzone.
       2. `await compressPlantPhoto(file)` (T-05-17-01).
       3. Build FormData with `photo` (compressed) + optional `note`.
-      4. **Optimistic prepend via TanStack Query**:
+      4. **Idempotency key** (T-05-17-04): declare `const idempotencyKeyRef = useRef<string | null>(null)`. On submit (before the fetch), if `idempotencyKeyRef.current === null` set it to `crypto.randomUUID()`. Clear it on terminal success (after optimistic prepend, before closing the sheet) and on terminal error (after displaying the toast, so the next tap generates a fresh key).
+      5. **Optimistic prepend via TanStack Query**:
          - `const queryClient = useQueryClient()`.
          - Snapshot current entries: `const previous = queryClient.getQueryData(plantsKeys.photoEntries(plantId).queryKey)`.
          - Build a temp entry `{ id: 'temp-' + crypto.randomUUID(), photo_url: URL.createObjectURL(file), note: noteValue || null, created_at: new Date().toISOString() }`.
          - `queryClient.setQueryData(plantsKeys.photoEntries(plantId).queryKey, (old) => [tempEntry, ...(old ?? [])])`.
-         - Close the sheet immediately on optimistic success (UI-SPEC §8 line 419 "Optimistic prepend").
-      5. `fetch(\`/api/v1/plants/${plantId}/photo-entries\`, { method: 'POST', body: formData, credentials: 'same-origin' })`.
-      6. On 201: parse JSON, replace the temp entry with the server response. `queryClient.invalidateQueries({ queryKey: plantsKeys.photoEntries(plantId).queryKey })` to refetch authoritative state.
-      7. On failure: roll back the optimistic insert (`queryClient.setQueryData(... , previous)`), re-open the sheet, surface sonner toast `labels.failure` (`Não conseguimos enviar. Tente novamente.`), retain the file in component state so the user can retry without re-picking. UI-SPEC §8 line 420.
+         - Clear `idempotencyKeyRef.current`, close the sheet immediately on optimistic success (UI-SPEC §8 line 419 "Optimistic prepend").
+      6. `fetch(\`/api/v1/plants/${plantId}/photo-entries\`, { method: 'POST', body: formData, credentials: 'same-origin', headers: { 'Idempotency-Key': idempotencyKeyRef.current } })`.
+      7. On 201: parse JSON, replace the temp entry with the server response. `queryClient.invalidateQueries({ queryKey: plantsKeys.photoEntries(plantId).queryKey })` to refetch authoritative state.
+      8. On failure: roll back the optimistic insert (`queryClient.setQueryData(... , previous)`), re-open the sheet, surface sonner toast `labels.failure` (`Não conseguimos enviar. Tente novamente.`), clear `idempotencyKeyRef.current` after the toast so a manual retry generates a new key, retain the file in component state so the user can retry without re-picking. UI-SPEC §8 line 420.
 
     **D. Unit-dom tests** — `tests/unit/photo-journal.test.tsx`:
     - Wrap renders in a `QueryClientProvider` with a fresh `QueryClient` per test (TanStack v5 standard pattern; if 05-10's QueryProvider exposes a test helper, prefer it).
@@ -467,10 +474,12 @@ for (const combo of COMBOS) {
     - Mock `fetch`.
     - Test 1 — reverse-chrono ordering: pass entries `[{id:'a', created_at:'2026-01-01...'}, {id:'b', created_at:'2026-04-01...'}]`, render. Assert: in DOM order, the second entry's photo appears BEFORE the first (reverse chrono). The component should re-sort on the client even if the prop is unsorted.
     - Test 2 — '+ Foto' visible only when not readOnly: render with `readOnly={false}` → assert button visible. Re-render with `readOnly={true}` → assert button NOT in document.
-    - Test 3 — tap entry opens Lightbox at correct index: click the second card. Assert: the lightbox dialog (`getByRole('dialog')`) is visible AND contains the second entry's `photo_url`. (Use a Lightbox mock that renders `<dialog data-photo-url={photos[initialIndex].url}>` so the assertion is structural; actual lightbox behaviour is owned by 05-14 tests.)
+    - Test 3 — tap entry opens Lightbox at correct index: click the second card. Assert: the lightbox dialog (`getByRole('dialog')`) is visible AND contains the second entry's `photo_url`. (Use a Lightbox mock that renders `<dialog data-photo-src={photos[index].src}>` so the assertion is structural; actual lightbox behaviour is owned by 05-14 tests.)
     - Test 4 — optimistic prepend on add success: open the add sheet, set photo, click Adicionar. Stub fetch resolves 201 with `{ data: { id: 'real-id', photo_url: 'https://example/real.jpg', note: null, created_at: '...' } }`. Assert: immediately after click the journal list has 1 more entry at the top (the temp entry); after the fetch resolves the temp id is replaced with `'real-id'`.
     - Test 5 — failure rolls back + sheet re-opens: same setup but fetch resolves 500. Assert: list returns to original length; sheet is open; sonner `toast.error` was called; the file is still selected (preview persists in the sheet).
     - Test 6 — XSS guard (T-05-17-02): pass an entry with `note: "<script>alert('xss')</script>"`. Render. Assert: `document.body.innerHTML` contains the literal text `&lt;script&gt;` (escaped) and DOES NOT contain a `<script>` element (`document.querySelectorAll('script').length === 0` for the journal subtree, OR more strictly `getByText("<script>alert('xss')</script>")` matches).
+    - Test 7 — Idempotency-Key header present on POST: open the add sheet, set photo, click Adicionar. Assert: the `fetch` call for `/api/v1/plants/{plantId}/photo-entries` includes `headers['Idempotency-Key']` matching `/^[0-9a-f-]{36}$/i`.
+    - Test 8 — Idempotency-Key reused across retries, fresh after terminal error: set photo, click Adicionar; mock fetch to reject. Capture `headers['Idempotency-Key']` (call it `key1`). Click Adicionar again (retry same sheet open) → assert `headers['Idempotency-Key']` still equals `key1`. After the toast clears `idempotencyKeyRef`, click Adicionar a third time → assert `headers['Idempotency-Key']` is a NEW UUID different from `key1`.
 
     **E. Dedicated authed E2E spec (incl. axe with sheet open)** — `tests/e2e/catalog-photo-journal.spec.ts`:
     - Use the `authedUser` fixture: `import { test, expect } from "./fixtures/authed-user";` plus `import AxeBuilder from "@axe-core/playwright";`.
@@ -480,7 +489,7 @@ for (const combo of COMBOS) {
       2. Capture the plant id from the URL.
       3. Navigate to `/catalog/{plantId}/journal`.
       4. Click `+ Foto` → assert BottomSheet is visible (`getByRole('dialog', { name: /adicionar foto/i })` or `name: /Anotação/`).
-      5. Set the photo via the sheet's input → click Adicionar → assert the sheet closes AND the journal list now shows ≥2 entries (cover + new entry).
+      5. Set the photo via the sheet's input → click Adicionar → assert the sheet closes AND the journal list now shows ≥2 entries (cover + new entry). Assert the POST `/api/v1/plants/{plantId}/photo-entries` request had `Idempotency-Key` header present (intercept via a `page.on('request', ...)` listener scoped to the POST, checking `request.headers()['idempotency-key']`).
       6. Click the second journal entry's photo → assert Lightbox is visible (`getByRole('dialog', { name: /galeria/i })`).
     - **Axe a11y across 4 colorScheme × reducedMotion combos — BottomSheet OPEN state** (per UI-SPEC §8 line 422 a11y gate; matches 05-16 dedicated-authed-spec pattern):
       ```typescript
@@ -516,7 +525,7 @@ for (const combo of COMBOS) {
   <done>
     - `/catalog/{plantId}/journal` renders entries in reverse-chrono order with lightbox-on-tap.
     - `+ Foto` is visible when `!readOnly` and opens the BottomSheet (UI-SPEC §8).
-    - Submitting the add sheet POSTs multipart to the photo-entries endpoint and optimistically prepends; on failure the sheet stays open with sonner toast and bytes retained (Vitest Tests 4/5 + Playwright spec green).
+    - Submitting the add sheet POSTs multipart with `Idempotency-Key` header to the photo-entries endpoint and optimistically prepends; on failure the sheet stays open with sonner toast and bytes retained (Vitest Tests 4/5/7/8 + Playwright spec green).
     - In read-only mode the `+ Foto` button is hidden but the Lightbox remains usable (Vitest Test 2 green).
     - User-typed notes render as text content only — `<script>` injection renders as literal text (Vitest Test 6 green; T-05-17-02 mitigated).
     - Axe scans of `/catalog/{plantId}/journal` with the BottomSheet OPEN across 4 colorScheme × reducedMotion combos return 0 serious + critical violations (4 axe tests in `catalog-photo-journal.spec.ts` green).
@@ -543,9 +552,9 @@ for (const combo of COMBOS) {
 | T-05-17-01   | I, D     | Multipart upload from `<AddPlantForm>` and `<JournalAddSheet>` | mitigate    | Client-side compress + EXIF strip BEFORE upload via existing `compressPlantPhoto` (`src/shared/images/client-compress.ts:30`, `preserveExif: false`, `maxSizeMB: 1`). Defense in depth: server enforces same per Phase 02 D-30 (GPS rejection at the route layer). Vitest Test 4 in Task 1 asserts compress is invoked before fetch.        |
 | T-05-17-02   | I        | `<PhotoJournal>` rendering of user-typed notes; `<PlantProfile>`-side rendering of nickname (caller-side responsibility, but our components render notes inline) | mitigate    | All user-typed strings (nickname, location, notes, journal note) are rendered via React text-content only. Zero `dangerouslySetInnerHTML` calls in any of the three new client components. Vitest Test 6 in Task 2 plants `<script>alert('xss')</script>` into a note and asserts the literal text renders (no `<script>` element appears). |
 | T-05-17-03   | E        | POST `/api/v1/plants` and POST `/api/v1/plants/{plantId}/photo-entries` from the browser  | mitigate    | Same-origin multipart submit + Supabase SSR cookie session (`requireVerifiedUser` from 05-08 / Phase 04 D-21). Next.js App Router default protections + `credentials: 'same-origin'` on every fetch. We never expose the session token in any non-cookie surface; CSRF requires cross-origin form which the same-site cookie posture refuses.   |
-| T-05-17-04   | T, R     | Repeated submit of `/api/v1/plants` from a flaky network re-attempting the manual add flow | accept      | Phase 02 D-37 idempotency_keys table is wired by 05-08 with optional `Idempotency-Key` header. This plan does NOT generate the key (kept under Claude's Discretion per CONTEXT.md line 105 — the route handler treats absent key as "not idempotent"). Risk profile: at-most one accidental duplicate plant per network glitch; acceptable for MVP and easily remediated by the user via inline-edit / delete.   |
+| T-05-17-04   | T, R     | Repeated submit of `/api/v1/plants` or `/api/v1/plants/{plantId}/photo-entries` from a flaky network re-attempting the same logical mutation | mitigate    | Client generates `Idempotency-Key: crypto.randomUUID()` once per logical submit attempt and stores it in a `useRef`. Retries from the same form fill (same sheet open) reuse the same key — the server's Phase 2 D-37 `idempotency_keys` table deduplicates and returns the cached response without re-executing the use-case. Key is cleared on terminal success (preventing stale key from tainting the next intent) and on terminal error after the toast (so a deliberate manual retry generates a fresh key). Vitest Tests 7/8 in both Task 1 and Task 2 assert the header is present and the retry-reuse behaviour is correct. Playwright happy-path specs assert the header is present on the live POST. |
 
-Block-on: high. Tasks ship only when T-05-17-01 and T-05-17-02 mitigations are present + tested.
+Block-on: high. Tasks ship only when T-05-17-01, T-05-17-02, and T-05-17-04 mitigations are present + tested.
 </threat_model>
 
 <verification>
@@ -573,5 +582,3 @@ Block-on: high. Tasks ship only when T-05-17-01 and T-05-17-02 mitigations are p
 <output>
 After completion, create `.planning/phases/05-catalog-meu-jardim/05-17-SUMMARY.md` per `templates/summary.md` — including the four files created/modified by each task, the threats mitigated, the test commands that gate this plan, and a note that axe coverage for the auth-required surfaces lives in the dedicated authed Playwright specs created here (consistent with 05-16's pattern).
 </output>
-</content>
-</invoke>

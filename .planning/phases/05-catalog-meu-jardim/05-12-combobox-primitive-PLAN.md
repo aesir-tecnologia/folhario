@@ -29,6 +29,7 @@ must_haves:
     - "User-typed input is rendered via React text nodes — never executed as HTML (XSS-safe)"
     - "LocationCombobox merges user suggestions + i18n defaults from catalog.locations.defaults, de-duped by normalized label, suggestions first"
     - "axe-core finds 0 serious/critical violations across light/dark × reduced-motion/no-preference combos on the test-only /combobox route"
+    - "i18n namespace owner is 05-10 — only 05-10 introduces new top-level catalog namespace scaffold; downstream plans (incl. 05-12) extend leaf keys only (e.g., catalog.locations.defaults)"
   artifacts:
     - path: "src/shared/ui/combobox.tsx"
       provides: "WAI-ARIA APG 1.2 Combobox primitive (headless)"

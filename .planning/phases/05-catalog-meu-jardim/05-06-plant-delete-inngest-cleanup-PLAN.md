@@ -24,13 +24,17 @@ must_haves:
     - "When the UoW transaction rolls back (e.g. cascade fails), neither pending_storage_deletions row exists AND no plant.deleted Inngest event is sent AND no plant_deleted PostHog capture fires."
     - "After successful commit, exactly one plant.deleted Inngest event is dispatched with { plantId, userId, deletedAt, deletionRowIds: [psdId, ptdId] } payload."
     - "After successful commit, exactly one PostHog plant_deleted capture is sent with { photo_count, journal_entry_count, reminder_count } privacy-clean properties (D-29) — no plant id, name, location, or notes."
-    - "The cleanupStorage Inngest function consumes plant.deleted events, calls validateStoragePathOwnership (from 05-04) before any storage mutation, calls storageAdapter.deletePrefix(bucket, prefix), and updates each pending_storage_deletions row to status='completed'."
+    - "On plant_deleted mutation success, the SW cache entries /api/v1/plants/{plantId} and /api/v1/plants are purged from folhario-catalog-api-v1 to prevent stale data on subsequent navigations. (HIGH-2)"
+    - "The cleanupStorage Inngest function consumes plant.deleted events, calls validateStorageDeletionPrefix (from 05-04's split helpers) before any storage mutation, calls storageAdapter.deletePrefix(bucket, prefix), and updates each pending_storage_deletions row to status='completed'."
     - "cleanupStorage is idempotent: re-running it on a row whose prefix has already been emptied (Supabase Storage returns success for missing keys) succeeds and leaves status='completed' without erroring."
     - "On storage failure inside cleanupStorage, the function calls pendingDeletionsRepo.recordError(rowId, message), bumps attempts, and throws RetryAfterError so Inngest reschedules per its retry policy (retries: 4)."
-    - "cleanupStorageReconciler runs hourly (cron 0 * * * *), fetches up to 50 pending rows via FOR UPDATE SKIP LOCKED, and processes each according to a backoff schedule of [5min, 30min, 4h, 24h, 72h] indexed by attempts."
+    - "markInProgress sets started_at = NOW() on the pending_storage_deletions row when transitioning status from 'pending' to 'in_progress' (column added in 05-02's schema patch). (HIGH-4)"
+    - "recordError transitions the row back to status='pending' (NOT 'failed') when attempt_count < max_attempts (5). Only when attempt_count reaches 5 does recordError transition to status='failed' (terminal). (HIGH-4)"
+    - "cleanup state machine: pending → in_progress (started_at=NOW) → [success: completed] | [error & attempt<5: pending] | [error & attempt=5: failed] | [crash: stale in_progress recovered after 30min by reconciler]. (HIGH-4)"
+    - "cleanupStorageReconciler runs hourly (cron 0 * * * *), fetches up to 50 rows via fetchPendingBatch(50, { staleInProgressMinutes: 30 }) — which includes pending rows AND in_progress rows with started_at < NOW() - INTERVAL '30 minutes' (stale crash recovery). (HIGH-4)"
     - "After 5 attempts, the reconciler transitions a row to status='failed' (terminal) — surfaces in OBS-05 Phase 13 alert; no further attempts are made."
     - "The reconciler uses the service-role db client (BYPASSRLS), NOT withUnitOfWork — confirmed by Pitfall 4 (no JWT in cron context; RLS owner-only filter would deny all rows)."
-    - "Cross-user prefix mis-scope is impossible: prefix is read ONLY from the pending_storage_deletions row that the function loaded; validateStoragePathOwnership enforces the {userId}/{plantId}/ shape before adapter call."
+    - "Cross-user prefix mis-scope is impossible: prefix is read ONLY from the pending_storage_deletions row that the function loaded; validateStorageDeletionPrefix({ userId, plantId, prefix }) enforces the exact {userId}/{plantId}/ shape before adapter call. A malformed or cross-user prefix throws validation_failed. (HIGH-5)"
     - "src/shared/inngest/registry.ts imports catalogFunctions and includes it in the registry export; the registry comment block is updated from 9 to 11 functions."
   artifacts:
     - path: "src/contexts/catalog/application/delete-plant.ts"
@@ -50,10 +54,10 @@ must_haves:
       provides: "Integration tests covering cascade + identifications.plant_id NULL + 2 pending rows + rollback → no side effects + after-commit telemetry"
       contains: 'describe("delete-plant"'
     - path: "tests/integration/cleanup-storage.integration.test.ts"
-      provides: "Inngest event handler tests: deletePrefix called, status transitions, idempotent re-run on completed row, validateStoragePathOwnership invoked, RetryAfterError on failure"
+      provides: "Inngest event handler tests: deletePrefix called, status transitions, idempotent re-run on completed row, validateStorageDeletionPrefix invoked, RetryAfterError on failure, cross-user prefix throws validation_failed"
       contains: 'describe("cleanupStorage"'
     - path: "tests/integration/cleanup-storage-reconciler.integration.test.ts"
-      provides: "Cron tests with vi.useFakeTimers: 5/30/240/1440/4320min backoff windows respected, attempts cap at 5 → status='failed', service-role client used (BYPASSRLS proven by reading rows from multiple users)"
+      provides: "Cron tests with vi.useFakeTimers: 5/30/240/1440/4320min backoff windows respected, attempts cap at 5 → status='failed', service-role client used (BYPASSRLS proven by reading rows from multiple users), stale in_progress (started_at < NOW() - 45min) recovered by reconciler"
       contains: 'describe("cleanupStorageReconciler"'
   key_links:
     - from: "src/contexts/catalog/application/delete-plant.ts"
@@ -69,9 +73,9 @@ must_haves:
       via: "After-commit capture of plant_deleted with privacy-clean props (D-29)"
       pattern: 'capture\\(\\{[^}]*event: "plant_deleted"'
     - from: "src/contexts/catalog/inngest/functions.ts cleanupStorage"
-      to: "src/contexts/catalog/domain/storage-paths.ts validateStoragePathOwnership"
-      via: "MANDATORY pre-check before storageAdapter.deletePrefix — defends T-05-06-01 prefix-mis-scope (T-05-04-01 mitigation reused)"
-      pattern: "validateStoragePathOwnership\\("
+      to: "src/contexts/catalog/domain/storage-paths.ts validateStorageDeletionPrefix"
+      via: "MANDATORY pre-check before storageAdapter.deletePrefix — defends T-05-06-01 prefix-mis-scope; uses split helper from 05-04 (validateStorageDeletionPrefix asserts prefix === `${userId}/${plantId}/`)"
+      pattern: "validateStorageDeletionPrefix\\("
     - from: "src/contexts/catalog/inngest/functions.ts cleanupStorageReconciler"
       to: "src/shared/db/client.ts (raw db, BYPASSRLS via postgres connection role)"
       via: "Service-role connection — NOT withUnitOfWork (Pitfall 4: no JWT in cron context)"
@@ -208,7 +212,7 @@ export async function deleteAllPlantMediaForUser(userId: string): Promise<void> 
   await adapter.deletePrefix({ bucket: PLANT_THUMBNAILS_BUCKET, prefix });
 }
 ```
-This plan does NOT add a per-plant helper to photo-storage.ts. The Inngest function reads bucket+prefix directly from the pending_storage_deletions row and calls `getAdapter().deletePrefix({bucket, prefix})` on values it has just validated via `validateStoragePathOwnership`. Single source of truth = the DB row.
+This plan does NOT add a per-plant helper to photo-storage.ts. The Inngest function reads bucket+prefix directly from the pending_storage_deletions row and calls `getAdapter().deletePrefix({bucket, prefix})` on values it has just validated via `validateStorageDeletionPrefix` (split helper from 05-04). Single source of truth = the DB row.
 
 From `src/shared/adapters/storage.ts:50-77` (StorageAdapter contract):
 ```ts
@@ -249,9 +253,9 @@ From `src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts` (buil
 ```ts
 export async function create(db: PsdDb, input: PendingStorageDeletionInsert): Promise<PendingStorageDeletionRow>;
 export async function findById(db: PsdDb, id: string): Promise<PendingStorageDeletionRow | null>;
-export async function markInProgress(db: PsdDb, id: string): Promise<void>; // status pending → in_progress conditional update
+export async function markInProgress(db: PsdDb, id: string): Promise<void>; // status pending → in_progress conditional update; ALSO sets started_at = NOW() (HIGH-4 — column added in 05-02)
 export async function markCompleted(db: PsdDb, id: string): Promise<void>;   // sets completed_at = NOW()
-export async function recordError(db: PsdDb, id: string, errorMessage: string): Promise<void>; // bumps attempts; bumps scheduled_at by next backoff
+export async function recordError(db: PsdDb, id: string, errorMessage: string): Promise<void>; // bumps attempts; returns row to status='pending' when attempt_count < 5; transitions to status='failed' only when attempt_count reaches 5 (HIGH-4)
 export async function markFailed(db: PsdDb, id: string): Promise<void>;       // status → failed
 export async function fetchPendingBatch(db: PsdDb, limit: number): Promise<PendingStorageDeletionRow[]>; // FOR UPDATE SKIP LOCKED
 ```
@@ -271,12 +275,15 @@ plantId: uuid("plant_id").references(() => plants.id, { onDelete: "set null" }),
 ```
 **This is the only reason history is preserved.** The DELETE plant cascade fires through this FK and SETs identifications.plant_id to NULL automatically — the use-case does NOT issue an UPDATE. Verify in the integration test: an Identification row that referenced the deleted plant exists with `plantId = null` after the use-case completes.
 
-From `src/contexts/catalog/domain/storage-paths.ts validateStoragePathOwnership` (built in 05-04):
+From `src/contexts/catalog/domain/storage-paths.ts` (built in 05-04 — TWO split helpers per HIGH-5):
 ```ts
-export function validateStoragePathOwnership(input: { userId: string; plantId: string; key: string }): void;
-// Throws StoragePathValidationError on mismatch / traversal / leading slash / empty plantId.
+export function validateStorageDeletionPrefix(input: { userId: string; plantId: string; prefix: string }): void;
+// Asserts prefix === `${userId}/${plantId}/` exactly. Throws validation_failed on mismatch / cross-user prefix.
+
+export function validateStorageObjectKey(input: { userId: string; plantId: string; key: string }): void;
+// Asserts key matches ^${userId}/${plantId}/[a-zA-Z0-9-]+\.(jpg|jpeg|png|webp)$. Throws validation_failed on mismatch.
 ```
-The cleanup function calls this with `key = prefix` (the prefix is shape `{userId}/{plantId}/`); the validator rejects any cross-user or path-traversal value. Reuse exactly — do NOT inline a new check here.
+The cleanup function calls `validateStorageDeletionPrefix({ userId: row.userId, plantId, prefix: row.prefix })` BEFORE every `deletePrefix` invocation. Do NOT call the old `validateStoragePathOwnership` — it has been replaced by these two split helpers. A malformed or cross-user prefix throws `validation_failed` (asserted by integration test Cycle 2C Test 2 and a new dedicated prefix-guard test).
 
 From `src/shared/telemetry/posthog-server.ts`:
 ```ts
@@ -298,8 +305,8 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
 <binding_decisions>
 <!-- Decisions from 05-CONTEXT.md that constrain this plan -->
 - **D-22 (cleanup architecture):** Same-TX `pending_storage_deletions` INSERT + `plant.deleted` Inngest event. The event handler runs the happy path; the reconciler picks up stuck rows. Belt + braces — durable recovery on both event-delivery gaps AND storage failures.
-- **D-23 (table schema):** Status ENUM is `pending|in_progress|completed|failed`. attempts INT default 0. `(status, scheduled_at)` index drives the reconciler cursor. NO `plant_id` FK.
-- **D-24 (reconciler):** Hourly cron, batch 50, `FOR UPDATE SKIP LOCKED`, max 5 attempts, backoff `5min → 30min → 4h → 24h → 72h` indexed by attempts (so attempts=0 → 5min wait, attempts=1 → 30min, etc.). After 5 attempts → status='failed'.
+- **D-23 (table schema):** Status ENUM is `pending|in_progress|completed|failed`. attempts INT default 0. `started_at: timestamptz NULL` column (added in 05-02 schema patch) is set to NOW() by `markInProgress`. `(status, scheduled_at)` index drives the reconciler cursor. NO `plant_id` FK. (HIGH-4)
+- **D-24 (reconciler):** Hourly cron, batch 50, `FOR UPDATE SKIP LOCKED`, max 5 attempts, backoff `5min → 30min → 4h → 24h → 72h` indexed by attempts (so attempts=0 → 5min wait, attempts=1 → 30min, etc.). After 5 attempts → status='failed'. Reconciler calls `fetchPendingBatch(50, { staleInProgressMinutes: 30 })` to also recover stale in_progress rows (started_at < NOW() - 30min). `recordError` returns row to status='pending' (not 'failed') when attempt_count < 5; only at attempt_count == 5 transitions to 'failed'. (HIGH-4)
 - **D-29 (telemetry):** `plant_deleted` PostHog event MUST have `{ photo_count: int, journal_entry_count: int, reminder_count: int }` props. NO plant id, name, location, or notes.
 - **PRD §4 cascade rules (closed contract):** PhotoEntry + Reminder cascade via FK ON DELETE CASCADE; Identification.plant_id ON DELETE SET NULL; storage scheduled for delete via pending_storage_deletions. The use-case does NOT issue separate DELETEs for photo_entries / reminders — the FK does that work atomically.
 - **Pitfall 4 (canonical):** Reconciler uses the service-role `db` client. Cron context has no JWT; `withUnitOfWork` would deny all rows under owner-RLS.
@@ -321,7 +328,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
 | CONTEXT (D-23)| Schema shape (status enum, attempts, scheduled_at)                     | (lives in 05-02 — this plan consumes)          | UPSTREAM |
 | CONTEXT (D-24)| Cron cadence + batch + backoff + max attempts                          | Task 3                                         | COVERED  |
 | CONTEXT (D-29)| plant_deleted props (privacy-clean counts)                             | Task 1                                         | COVERED  |
-| THREAT        | T-05-06-01 prefix mis-scope (T-05-04-01 reuse)                          | Task 2 (validateStoragePathOwnership pre-check)| COVERED  |
+| THREAT        | T-05-06-01 prefix mis-scope                                              | Task 2 (validateStorageDeletionPrefix pre-check, HIGH-5)| COVERED  |
 | THREAT        | T-05-06-02 reconciler retries leaking partial state                     | Task 2 (state machine: markInProgress conditional) | COVERED |
 | THREAT        | T-05-06-03 hot loop on persistently-failing rows                        | Task 3 (max 5 + backoff; named test asserts cap)| COVERED |
 | PATTERNS      | notifications/inngest/functions.ts — canonical v4 shape                | interface block                                | COVERED  |
@@ -540,12 +547,12 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
 
     Cycle 2C — failure paths:
     - Test 1: Given an adapter that throws on `deletePrefix`, the handler calls `pendingDeletionsRepo.recordError(rowId, message)` AND throws RetryAfterError so Inngest reschedules. Assert: row attempts incremented from 0 to 1; last_error contains the thrown message; error type is RetryAfterError.
-    - Test 2: T-05-06-01 prefix mis-scope guard: given a row with a malformed prefix (e.g., `prefix: 'OTHERUSER/p1/'` while userId in event is 'u1'), validateStoragePathOwnership throws BEFORE any adapter mutation; row status stays 'pending'; adapter.deletePrefix was NOT called.
+    - Test 2: T-05-06-01 prefix mis-scope guard: given a row with a malformed prefix (e.g., `prefix: 'OTHERUSER/p1/'` while userId in event is 'u1'), `validateStorageDeletionPrefix({ userId: row.userId, plantId, prefix: row.prefix })` throws `validation_failed` BEFORE any adapter mutation; row status stays 'pending'; adapter.deletePrefix was NOT called. (HIGH-5)
     - Test 3: T-05-06-02 state machine guard: invoking the handler concurrently for the same row (two parallel handler calls) — only one succeeds in transitioning to 'in_progress'; the other observes a row that is already 'in_progress' or 'completed' and skips. (markInProgress is conditional via SQL UPDATE ... WHERE status='pending' RETURNING; the test uses two awaited promises.)
 
     Cross-cycle invariants:
     - `inngest.createFunction` config object contains `id: "catalog/cleanup-storage"`, `retries: 4`, `triggers: [{ event: "plant.deleted" }]` — exactly matching the canonical notifications/inngest/functions.ts shape (per Pitfall 5).
-    - cleanupStorage MUST call validateStoragePathOwnership before deletePrefix.
+    - cleanupStorage MUST call validateStorageDeletionPrefix (from 05-04 split helpers) before deletePrefix — NOT the old validateStoragePathOwnership.
   </behavior>
   <action>
     **Step 1 — RED: write failing tests for Cycles 2A, 2B, 2C in `tests/integration/cleanup-storage.integration.test.ts`.**
@@ -571,7 +578,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
     import { db } from "@shared/db/client";
     import { inngest } from "@shared/inngest/client";
     import * as pendingDeletionsRepo from "@contexts/catalog/infrastructure/db/pending-storage-deletions";
-    import { validateStoragePathOwnership } from "@contexts/catalog/domain/storage-paths";
+    import { validateStorageDeletionPrefix } from "@contexts/catalog/domain/storage-paths";
     import { __getStorageAdapterForCleanup } from "@contexts/catalog/infrastructure/photo-storage";
     import type { PlantDeletedPayload } from "@contexts/catalog/domain/events";
 
@@ -601,10 +608,10 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
             //    Validate against the row's user_id, NOT the event's userId
             //    (so a tampered event cannot redirect the delete to a foreign prefix).
             try {
-              validateStoragePathOwnership({
+              validateStorageDeletionPrefix({
                 userId: row.userId,
                 plantId: data.plantId,
-                key: row.prefix,
+                prefix: row.prefix,
               });
             } catch (err) {
               await pendingDeletionsRepo.recordError(db, rowId, `path validation failed: ${String(err)}`);
@@ -668,7 +675,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
       &&
       grep -c 'event: "plant.deleted"' src/contexts/catalog/inngest/functions.ts | grep -E "^1$"
       &&
-      grep -c "validateStoragePathOwnership" src/contexts/catalog/inngest/functions.ts | grep -E "^[1-9]"
+      grep -c "validateStorageDeletionPrefix" src/contexts/catalog/inngest/functions.ts | grep -E "^[1-9]"
       &&
       grep -c "RetryAfterError" src/contexts/catalog/inngest/functions.ts | grep -E "^[1-9]"
       &&
@@ -676,12 +683,13 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
     </automated>
   </verify>
   <done>
-    - tests/integration/cleanup-storage.integration.test.ts green under `pnpm test:integration` (all 7+ cases across 2A/2B/2C).
+    - tests/integration/cleanup-storage.integration.test.ts green under `pnpm test:integration` (all 7+ cases across 2A/2B/2C), including the new prefix-guard test: a row with a malformed/cross-user prefix throws validation_failed before any adapter call.
     - functions.ts exports `catalogFunctions = [cleanupStorage]`.
-    - cleanupStorage uses `validateStoragePathOwnership` BEFORE any deletePrefix call.
+    - cleanupStorage calls `validateStorageDeletionPrefix({ userId, plantId, prefix })` (from 05-04's split helpers) BEFORE any deletePrefix call — NOT the old `validateStoragePathOwnership`.
     - cleanupStorage throws `RetryAfterError` on transient storage failure.
     - cleanupStorage uses bare `db` (no `withUnitOfWork`) — Pitfall 4.
     - Idempotent: re-running on a 'completed' row is a no-op.
+    - HIGH-2 contract documented: the catalog page's delete-plant mutation onSuccess (in 05-16's PlantProfile or the catalog grid) MUST call `if ('caches' in window) { const c = await caches.open('folhario-catalog-api-v1'); await Promise.all([c.delete(\`/api/v1/plants/\${plantId}\`), c.delete('/api/v1/plants')]); }` — grep-verifiable by presence of `folhario-catalog-api-v1` in the relevant client mutation file.
   </done>
 </task>
 
@@ -697,7 +705,8 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
 
     Cycle 3A — happy path under cron:
     - Test 1: Seed 3 rows status='pending', scheduled_at=NOW(), attempts=0. Invoke reconciler. Assert: all 3 rows transition to 'completed'; adapter.deletePrefix called 3 times.
-    - Test 2: Batch limit — seed 60 rows, invoke reconciler, assert 50 rows are processed in this invocation (FOR UPDATE SKIP LOCKED limits batch via the repo's fetchPendingBatch(50)). Remaining 10 are picked up on the next tick.
+    - Test 2: Batch limit — seed 60 rows, invoke reconciler, assert 50 rows are processed in this invocation (FOR UPDATE SKIP LOCKED limits batch via the repo's fetchPendingBatch(50, { staleInProgressMinutes: 30 })). Remaining 10 are picked up on the next tick.
+    - Test 3: Stale in_progress recovery — insert a row with status='in_progress' and started_at = NOW() - INTERVAL '45 minutes'. Invoke reconciler. Assert: the row is picked up (staleInProgressMinutes=30 threshold exceeded), processed, and transitions to 'completed'. (HIGH-4)
 
     Cycle 3B — backoff schedule:
     - Test 1 (attempts=0 → wait 5min): Seed row attempts=0 with last error injected, scheduled_at = NOW(). Invoke reconciler IMMEDIATELY: nothing happens (waiting on backoff window — but actually, attempts=0 is initial state; backoff applies AFTER an attempt. Re-read D-24: "Backoff: 5min → 30min → 4h → 24h → 72h" indexed by attempts (0-indexed). So attempts=0 means "first attempt — process immediately"; attempts=1 means "second attempt — wait 5min from scheduled_at"; etc.). Adjust the test to seed attempts=1, scheduled_at = NOW(), and assert: invocation BEFORE 5min advance does nothing; invocation AFTER advancing fake clock by 5min processes the row.
@@ -715,7 +724,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
     Cross-cycle invariants:
     - cleanupStorageReconciler config: `id: "catalog/cleanup-storage-reconciler"`, `retries: 0`, `triggers: [{ cron: "0 * * * *" }]` (hourly).
     - reconciler uses bare `db` (BYPASSRLS), NOT withUnitOfWork.
-    - reconciler calls `pendingDeletionsRepo.fetchPendingBatch(db, 50)`.
+    - reconciler calls `pendingDeletionsRepo.fetchPendingBatch(db, 50, { staleInProgressMinutes: 30 })` — signature owned by 05-03. (HIGH-4)
     - `BACKOFF_MINUTES` array contains `[0, 5, 30, 240, 1440, 4320]` (index 0 = first attempt = no wait; index 1 = 5min after first failure; etc.) OR `[5, 30, 240, 1440, 4320]` (one-liner without the leading zero). Lock the convention in the implementation comment.
   </behavior>
   <action>
@@ -748,7 +757,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
       async ({ step }) => {
         await step.run("reconcile-batch", async () => {
           // Service-role client (Pitfall 4): cron has no JWT; BYPASSRLS reads all users' rows.
-          const rows = await pendingDeletionsRepo.fetchPendingBatch(db, 50);
+          const rows = await pendingDeletionsRepo.fetchPendingBatch(db, 50, { staleInProgressMinutes: 30 }); // HIGH-4: also recovers stale in_progress rows (started_at < NOW() - 30min)
 
           for (const row of rows) {
             // Terminal: surface in OBS-05 (Phase 13).
@@ -769,10 +778,10 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
             if (!transitioned) continue;
 
             try {
-              validateStoragePathOwnership({
+              validateStorageDeletionPrefix({
                 userId: row.userId,
                 plantId: extractPlantIdFromPrefix(row.prefix),
-                key: row.prefix,
+                prefix: row.prefix,
               });
               await __getStorageAdapterForCleanup().deletePrefix({
                 bucket: row.bucket,
@@ -867,6 +876,8 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
       &&
       grep -c "fetchPendingBatch" src/contexts/catalog/inngest/functions.ts | grep -E "^1$"
       &&
+      grep -c "staleInProgressMinutes" src/contexts/catalog/inngest/functions.ts | grep -E "^[1-9]"
+      &&
       grep -v '^\s*//' src/contexts/catalog/inngest/functions.ts | grep -c "withUnitOfWork" | grep -E "^0$"
       &&
       grep -c "catalogFunctions" src/shared/inngest/registry.ts | grep -E "^[2-9]"
@@ -875,7 +886,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
     </automated>
   </verify>
   <done>
-    - tests/integration/cleanup-storage-reconciler.integration.test.ts green under `pnpm test:integration`. Specifically: Cycle 3B test 5 (attempts=5 → status='failed') passes — this is the named test that mitigates T-05-06-03 hot-loop.
+    - tests/integration/cleanup-storage-reconciler.integration.test.ts green under `pnpm test:integration`. Specifically: Cycle 3B test 5 (attempts=5 → status='failed') passes — this is the named test that mitigates T-05-06-03 hot-loop. Cycle 3A Test 3 (stale in_progress with started_at 45min ago is recovered) passes — HIGH-4 reconciler stale recovery.
     - functions.ts now exports `catalogFunctions = [cleanupStorage, cleanupStorageReconciler]`.
     - reconciler uses bare `db` (no `withUnitOfWork`) — Pitfall 4.
     - registry.ts imports catalogFunctions and includes it in the registry; comment block updated to "EXACTLY 11 functions" with the two new catalog entries listed.
@@ -899,7 +910,7 @@ For plant.deleted use `id: `plant-deleted/${plantId}`` — re-running the use-ca
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-05-06-01 | E (Elevation) / I (Information Disclosure) | cleanupStorage handler — prefix read from event payload could be spoofed/redirected to a foreign user's prefix | mitigate | Function reads `userId` and `prefix` ONLY from the `pending_storage_deletions` row referenced by `deletionRowIds`, never directly from the event payload. `validateStoragePathOwnership(row.userId, plantId, row.prefix)` is called BEFORE every `deletePrefix` invocation. Asserted by `tests/integration/cleanup-storage.integration.test.ts` Cycle 2C Test 2. |
+| T-05-06-01 | E (Elevation) / I (Information Disclosure) | cleanupStorage handler — prefix read from event payload could be spoofed/redirected to a foreign user's prefix | mitigate | Function reads `userId` and `prefix` ONLY from the `pending_storage_deletions` row referenced by `deletionRowIds`, never directly from the event payload. `validateStorageDeletionPrefix({ userId: row.userId, plantId, prefix: row.prefix })` (split helper from 05-04) is called BEFORE every `deletePrefix` invocation. A malformed or cross-user prefix throws `validation_failed`. Asserted by `tests/integration/cleanup-storage.integration.test.ts` Cycle 2C Test 2. (HIGH-5) |
 | T-05-06-02 | T (Tampering) / R (Repudiation) | Concurrent reconciler ticks racing the event handler over the same row → double-delete attempts and inconsistent state | mitigate | `pendingDeletionsRepo.markInProgress(db, rowId)` is a conditional UPDATE (`SET status='in_progress' WHERE id=$1 AND status='pending' RETURNING id`); only the worker that wins the conditional update proceeds. Already-`completed` and `failed` rows are no-ops. Asserted by Cycle 2C Test 3 + the `FOR UPDATE SKIP LOCKED` semantics of `fetchPendingBatch`. |
 | T-05-06-03 | D (Denial of Service) | Reconciler hot-loop on a persistently-failing row consumes Inngest cron budget | mitigate | `MAX_ATTEMPTS = 5`. After the 5th attempt the reconciler transitions the row to `status='failed'` (terminal). Asserted by `tests/integration/cleanup-storage-reconciler.integration.test.ts` Cycle 3B Test 5. Failed rows surface in OBS-05 alert (Phase 13). |
 | T-05-06-04 | I (Information Disclosure) | PostHog `plant_deleted` event leaking plant identifiers/PII | mitigate | Event captures only `{photo_count, journal_entry_count, reminder_count}` per D-29 — no plantId, name, location, notes, or coverPhotoUrl. Asserted by Cycle 1A Test 8 of `delete-plant.integration.test.ts`. |
@@ -930,7 +941,8 @@ If `pnpm test:run` is feasible end-to-end (depends on Phase 5 schema being migra
 - `src/shared/inngest/registry.ts` exports a registry of length 11; comment block lists `catalog/cleanup-storage` and `catalog/cleanup-storage-reconciler`.
 - No `withUnitOfWork` references inside `src/contexts/catalog/inngest/functions.ts` (Pitfall 4 enforced).
 - No raw `delete from photo_entries` or `delete from reminders` inside `delete-plant.ts` (FK cascade only).
-- `validateStoragePathOwnership` is called before EVERY `deletePrefix` call inside the Inngest functions.
+- `validateStorageDeletionPrefix` (from 05-04 split helpers) is called before EVERY `deletePrefix` call inside the Inngest functions.
+- The delete-plant mutation onSuccess in the client page contains `folhario-catalog-api-v1` to purge the SW cache entries for the deleted plant — grep-verifiable. (HIGH-2)
 - All STRIDE threats T-05-06-01..05 have `mitigate` disposition with cited tests.
 </success_criteria>
 

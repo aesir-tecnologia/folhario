@@ -20,6 +20,7 @@ tags: [catalog, schema, drizzle, rls, cursor, pagination]
 must_haves:
   truths:
     - "The Drizzle catalog schema declares pending_storage_deletions, location_suggestions, and the pending_deletion_status pgEnum (D-23, D-09)"
+    - "pending_storage_deletions has a started_at: timestamptz NULL column; it is set during markInProgress calls (by 05-03/05-06) and used by the reconciler in 05-06 to detect stale in_progress rows (rows where started_at < NOW() - INTERVAL 30 minutes)"
     - "Two new SQL migration files exist with idempotent owner-only RLS policy blocks following the Plan 02 pattern"
     - "Live Postgres has the pending_deletion_status enum type, the pending_storage_deletions table, and the location_suggestions table after pnpm db:migrate"
     - "RLS on both new tables rejects cross-user reads/writes under the authenticated role (defense in depth alongside repo-level user_id filters)"
@@ -226,6 +227,7 @@ The blocking task runs `pnpm db:migrate` — do NOT use `pnpm db:push`. Codex HI
           .notNull()
           .defaultNow(),
         completedAt: timestamp("completed_at", { withTimezone: true, mode: "string" }),
+        startedAt: timestamp("started_at", { withTimezone: true, mode: "string" }),
       },
       (table) => [
         index("psd_status_scheduled_at_idx").on(table.status, table.scheduledAt),
@@ -282,7 +284,7 @@ The blocking task runs `pnpm db:migrate` — do NOT use `pnpm db:push`. Codex HI
      * folded form used for de-dup; label_display is what the user typed
      * (preserved casing/accents for display).
      *
-     * Combined with the i18n defaults from messages/pt-BR.json
+     * Combined with the i18n defaults from src/messages/pt-BR.json
      * `catalog.locations.defaults` (D-10), the location combobox merges
      * these two sources at the application layer.
      */
@@ -631,7 +633,7 @@ The blocking task runs `pnpm db:migrate` — do NOT use `pnpm db:push`. Codex HI
     - `psql "$DATABASE_URL" -c "select pending_deletion_status::regtype"` returns the enum type name (the brief's literal verify command).
     - `psql "$DATABASE_URL" -c "select count(*) from pg_tables where tablename in ('pending_storage_deletions','location_suggestions')"` returns `2` (the brief's literal verify command).
     - `psql "$DATABASE_URL" -c "SELECT relname, relrowsecurity FROM pg_class WHERE relname IN ('pending_storage_deletions','location_suggestions');"` shows `relrowsecurity = t` on both rows (Codex HIGH #1 smoking gun — hand-appended RLS was applied).
-    - `psql "$DATABASE_URL" -c "\d pending_storage_deletions"` lists all columns from D-23 (`id`, `user_id`, `bucket`, `prefix`, `status`, `attempts`, `last_error`, `scheduled_at`, `created_at`, `completed_at`).
+    - `psql "$DATABASE_URL" -c "\d pending_storage_deletions"` lists all columns from D-23 (`id`, `user_id`, `bucket`, `prefix`, `status`, `attempts`, `last_error`, `scheduled_at`, `created_at`, `completed_at`, `started_at`).
     - `psql "$DATABASE_URL" -c "\d location_suggestions"` lists all columns from D-09 + composite PK on `(user_id, label_normalized)`.
     - `psql "$DATABASE_URL" -c "SELECT indexname FROM pg_indexes WHERE tablename = 'pending_storage_deletions';"` includes `psd_status_scheduled_at_idx` (reconciler depends on this in 05-06).
     - Journal carries both new entries: `cat drizzle/migrations/meta/_journal.json | grep -cE '"add_pending_storage_deletions"|"add_location_suggestions"'` returns 2.

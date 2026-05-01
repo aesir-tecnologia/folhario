@@ -26,6 +26,7 @@ must_haves:
     - "ExpirationPlugin enforces maxAgeSeconds=7d, maxEntries=200, purgeOnQuotaError=true on the catalog runtime cache"
     - "User who loaded catalog online can go offline and still browse plants from the SW + IDB cache; identify CTA shows offline-blocked message"
     - "Authed Home + offline-banner axe scans live in tests/e2e/catalog-offline.spec.ts using the authedUser fixture (matches 05-16 dedicated-authed-spec pattern); tests/e2e/axe-placeholder-pages.spec.ts is NOT modified by this plan"
+    - "the SW runtime cache for `/api/v1/plants*`, `/api/v1/photo-entries*`, `/api/v1/locations` lives in cache name `folhario-catalog-api-v1` (exported as CATALOG_API_CACHE from src/app/sw.ts) and MUST be purged on logout (handled by 05-10's logout-link.tsx) and on `plant.deleted` mutation success (handled by 05-06's catalog page mutation onSuccess)"
   artifacts:
     - path: "src/app/(app)/page.tsx"
       provides: "Home empty + bridge state per UI-04 / UI-SPEC §4.5"
@@ -37,7 +38,7 @@ must_haves:
       provides: "ReadOnlyBanner wired to useSubscription() + OfflineBanner already mounted"
       contains: "useSubscription"
     - path: "src/app/sw.ts"
-      provides: "Serwist StaleWhileRevalidate allowlist for catalog GETs (D-19)"
+      provides: "Serwist StaleWhileRevalidate allowlist for catalog GETs (D-19); exports CATALOG_API_CACHE = 'folhario-catalog-api-v1'"
       contains: "StaleWhileRevalidate"
     - path: "src/messages/pt-BR.json"
       provides: "home.bridge.body ICU plural + identify.placeholder.* + catalog.offline.identifyBlocked keys"
@@ -45,7 +46,7 @@ must_haves:
     - path: "tests/unit/sw-runtime-cache.test.ts"
       provides: "Vitest unit-dom mock test for SWR allowlist + ExpirationPlugin (Nyquist Signed URL TTL)"
     - path: "tests/e2e/catalog-offline.spec.ts"
-      provides: "OFF-08 E2E + Axe authed scans — online load → offline → catalog browsable + offline banner + identify blocked + AxeBuilder scans of authed Home (count=0 AND count>=1) + offline catalog view across 4 colorScheme × reducedMotion combos"
+      provides: "OFF-08 E2E + Axe authed scans — online load → offline → catalog browsable + offline banner + identify blocked + AxeBuilder scans of authed Home (count=0 AND count>=1) + offline catalog view across 4 colorScheme × reducedMotion combos + cross-user SW cache leak prevention"
       contains: "AxeBuilder"
   key_links:
     - from: "src/app/(app)/page.tsx"
@@ -66,11 +67,11 @@ must_haves:
       pattern: "useSubscription"
     - from: "src/app/sw.ts"
       to: "serwist (StaleWhileRevalidate, ExpirationPlugin)"
-      via: "registerCapture before NetworkOnly /api/*"
+      via: "registerCapture before NetworkOnly /api/*; exports CATALOG_API_CACHE constant"
       pattern: "StaleWhileRevalidate"
     - from: "tests/e2e/catalog-offline.spec.ts"
       to: "tests/e2e/fixtures/authed-user.ts"
-      via: "authedUser fixture drives OFF-08 + Home + offline axe scans"
+      via: "authedUser fixture drives OFF-08 + Home + offline axe scans + cross-user leak prevention"
       pattern: "authedUser"
 ---
 
@@ -83,10 +84,10 @@ Output:
 - Home `(app)/page.tsx` replaced with custom dual-affordance composition (zero-plants) + bridge composition (≥1 plants)
 - `(app)/identify/page.tsx` updated to render Phase 6-placeholder copy and an offline-blocked variant
 - `(app)/app-shell.tsx` ReadOnlyBanner flipped from hardcoded `active={false}` to `useSubscription().readOnly`
-- `src/app/sw.ts` extended with `StaleWhileRevalidate` + `ExpirationPlugin` allowlist for `/api/v1/plants*`, `/api/v1/photo-entries*`, `/api/v1/locations`
+- `src/app/sw.ts` extended with `StaleWhileRevalidate` + `ExpirationPlugin` allowlist for `/api/v1/plants*`, `/api/v1/photo-entries*`, `/api/v1/locations`; exports `CATALOG_API_CACHE = 'folhario-catalog-api-v1'`
 - `src/messages/pt-BR.json` extended with `home.bridge.body` (ICU plural), `identify.placeholder.*`, `catalog.offline.identifyBlocked` keys
 - `tests/unit/sw-runtime-cache.test.ts` Vitest unit-dom mock spec covering SWR semantics + route precedence + ExpirationPlugin
-- `tests/e2e/catalog-offline.spec.ts` Playwright spec covering OFF-08 (online load → setOffline(true) → catalog browsable + offline banner + identify CTA blocked) AND owning the authed axe coverage for Home (count=0, count>=1) + offline catalog view across 4 colorScheme × reducedMotion combos
+- `tests/e2e/catalog-offline.spec.ts` Playwright spec covering OFF-08 (online load → setOffline(true) → catalog browsable + offline banner + identify CTA blocked) AND owning the authed axe coverage for Home (count=0, count>=1) + offline catalog view across 4 colorScheme × reducedMotion combos + cross-user SW cache leak prevention
 
 This plan does NOT modify `tests/e2e/axe-placeholder-pages.spec.ts`. That spec runs WITHOUT any auth fixture (`page.goto(route)` only at `tests/e2e/axe-placeholder-pages.spec.ts:22`) and so cannot reach auth-required surfaces — adding `/` (the authed Home), the filled `/catalog`, `/catalog/add`, or `/catalog/[plantId]/journal` to its ROUTES array would scan the login redirect rather than the actual page. Phase 5 axe coverage for auth-required surfaces lives in dedicated authed Playwright specs (this plan's `catalog-offline.spec.ts` for Home + offline; `plant-profile.spec.ts` from 05-16; `catalog-grid-sort.spec.ts` from 05-15; `catalog-manual-add.spec.ts` + `catalog-photo-journal.spec.ts` from 05-17). The unauthenticated `/identify` placeholder shipped by Task 2 remains covered by `axe-placeholder-pages.spec.ts` (the route is publicly accessible — it shows "Em breve" / offline-blocked text without requiring auth).
 </objective>
@@ -213,7 +214,7 @@ for (const combo of COMBOS) {
     - Test: Matcher returns false for `/api/v1/health/connectivity`, `/api/v1/identifications`, `/api/v1/iam/me`, `/api/v1/auth/login`
     - Test: Matcher returns false for non-GET methods (POST, PATCH, DELETE) — registerCapture('GET') filters method
     - Test: ExpirationPlugin is constructed with `maxAgeSeconds: 7 * 24 * 60 * 60` (604800), `maxEntries: 200`, `purgeOnQuotaError: true` (Pitfall 2)
-    - Test: cacheName is `'catalog-api-v1'`
+    - Test: `CATALOG_API_CACHE` is exported from `src/app/sw.ts` with value `'folhario-catalog-api-v1'`; `StaleWhileRevalidate` is constructed with `cacheName: CATALOG_API_CACHE`
     - Test: Cache key is the full URL including the `?expires=&token=` signed-URL query params (D-20 byte-cache by URL)
   </behavior>
   <action>
@@ -222,8 +223,10 @@ for (const combo of COMBOS) {
     ```typescript
     import { Serwist, NetworkOnly, NetworkFirst, StaleWhileRevalidate, ExpirationPlugin } from "serwist";
 
+    export const CATALOG_API_CACHE = 'folhario-catalog-api-v1';
+
     const catalogGetsStrategy = new StaleWhileRevalidate({
-      cacheName: "catalog-api-v1",
+      cacheName: CATALOG_API_CACHE,
       plugins: [
         new ExpirationPlugin({
           maxAgeSeconds: 7 * 24 * 60 * 60,
@@ -250,6 +253,8 @@ for (const combo of COMBOS) {
     serwist.registerCapture(({ url }) => url.pathname.startsWith("/api/"), new NetworkOnly());
     ```
 
+    Why export `CATALOG_API_CACHE`: the constant is consumed by 05-10's `logout-link.tsx` (which calls `caches.delete(CATALOG_API_CACHE)` on logout) and by 05-06's catalog page `onSuccess` handler (which calls `caches.open(CATALOG_API_CACHE)` on plant delete). Using the exported constant instead of a string literal in each consumer eliminates cache-name drift and makes rename-refactors safe.
+
     Why before the NetworkOnly catch-all: Serwist resolves matchers first-match-wins per RESEARCH.md Pattern 4. The SWR matcher is a strict subset of `/api/*` — placing it after would result in NetworkOnly winning every time and the SWR cache would be dead.
 
     Why `maxEntries: 200` + `purgeOnQuotaError: true`: per Pitfall 2 (signed URL expiry vs cache key collision). Each 24h-TTL refresh mints a new full URL, so each catalog refetch creates new cache entries. The 7d `maxAgeSeconds` naturally evicts dead URLs; `maxEntries` caps concurrent inflight; `purgeOnQuotaError` recovers gracefully under quota pressure.
@@ -262,7 +267,7 @@ for (const combo of COMBOS) {
     - `registerCapture` is called with the SWR matcher BEFORE the NetworkOnly `/api/*` matcher
     - The SWR matcher returns true/false for the URL/method test inputs above
     - `ExpirationPlugin` was constructed with `{ maxAgeSeconds: 604800, maxEntries: 200, purgeOnQuotaError: true }`
-    - `StaleWhileRevalidate` was constructed with `cacheName: "catalog-api-v1"`
+    - `StaleWhileRevalidate` was constructed with `cacheName: CATALOG_API_CACHE` (import `CATALOG_API_CACHE` from `src/app/sw.ts`; assert the value equals `'folhario-catalog-api-v1'`)
 
     Use `vi.fn()` constructors to capture instantiation args. Run via `pnpm test:unit` (NEVER watch mode per CLAUDE.md project rule).
   </action>
@@ -270,7 +275,7 @@ for (const combo of COMBOS) {
     <automated>pnpm test:unit -- sw-runtime-cache</automated>
   </verify>
   <done>
-    `src/app/sw.ts` has the StaleWhileRevalidate capture registered before the NetworkOnly `/api/*` catch-all; ExpirationPlugin configured with the three required options; `pnpm test:unit -- sw-runtime-cache` passes; no TypeScript errors from `pnpm tsc --noEmit`; the existing NetworkFirst navigate handler and SKIP_WAITING listener remain untouched.
+    `src/app/sw.ts` exports `CATALOG_API_CACHE = 'folhario-catalog-api-v1'` and the StaleWhileRevalidate capture is registered using that constant before the NetworkOnly `/api/*` catch-all; ExpirationPlugin configured with the three required options; `pnpm test:unit -- sw-runtime-cache` passes; no TypeScript errors from `pnpm tsc --noEmit`; the existing NetworkFirst navigate handler and SKIP_WAITING listener remain untouched.
   </done>
 </task>
 
@@ -361,6 +366,7 @@ for (const combo of COMBOS) {
     - Test (authed Home axe — count=0 AND count>=1): two axe scans of `/` (the authed Home) under the `authedUser` fixture — one with zero plants (empty composition) and one after seeding ≥1 plant (bridge composition); 0 serious/critical violations across all 4 colorScheme × reducedMotion combos
     - Test (offline-banner axe): with the `authedUser` fixture, navigate online to `/catalog` (so the SW caches the route), `setOffline(true)`, reload to surface `<OfflineBanner>`, then run AxeBuilder; 0 serious/critical violations across all 4 colorScheme × reducedMotion combos
     - Test (read-only banner wiring): `ReadOnlyBanner` is a client component receiving `active={useSubscription().readOnly}`; under the read-only fixture (Plan 05-11) the banner appears with the locked-state copy
+    - Test (cross-user SW cache leak prevention): log in as user A → load catalog (populates SW cache `folhario-catalog-api-v1`) → log out → assert `caches.has('folhario-catalog-api-v1')` returns `false` → log in as user B → assert no user A plant data is served from SW cache in any subsequent network response
   </behavior>
   <action>
     **Modify** `src/app/(app)/app-shell.tsx`. The current line 146 reads `<ReadOnlyBanner active={false} />` (Phase 3 hardcoded stub). Phase 5 D-21 wires this to the `useSubscription()` hook from Plan 05-11.
@@ -426,6 +432,42 @@ for (const combo of COMBOS) {
     7. **Test 5 — Offline-banner axe on /catalog × 4 combos:**
        Authed user with seeded plant; online preload `/catalog`; setOffline(true); reload to surface OfflineBanner; emulateMedia per combo; AxeBuilder scan; assert 0 serious/critical violations. After each test: `await context.setOffline(false);` cleanup (mirror line 77 of `axe-placeholder-pages.spec.ts`).
     8. After EVERY test (axe + functional): `await context.setOffline(false);` cleanup hook to avoid leaking offline state between tests.
+    9. **Test 6 — Cross-user SW cache leak prevention (T-05-18-04):**
+       This test requires two distinct authed-user fixtures (available per 05-01's fixtures — use `authedUserA` and `authedUserB` or inline two separate `test.use({ storageState: ... })` contexts). Implementation:
+       ```typescript
+       test('SW cache is purged on logout — user B cannot see user A data', async ({ browser }) => {
+         // --- User A session ---
+         const ctxA = await browser.newContext({ storageState: userAStorageState });
+         const pageA = await ctxA.newPage();
+         await pageA.goto('/catalog');
+         await pageA.waitForLoadState('networkidle');
+         // SW cache for folhario-catalog-api-v1 is now populated with user A's plants
+         // Trigger logout (navigates to logout endpoint or clicks logout link)
+         await pageA.getByRole('button', { name: /sair/i }).click();
+         await pageA.waitForURL('/login');
+         // Assert cache was purged by 05-10's logout-link.tsx handler
+         const cacheExists = await pageA.evaluate(
+           () => caches.has('folhario-catalog-api-v1')
+         );
+         expect(cacheExists).toBe(false);
+         await ctxA.close();
+
+         // --- User B session (fresh context, no prior SW cache) ---
+         const ctxB = await browser.newContext({ storageState: userBStorageState });
+         const pageB = await ctxB.newPage();
+         await pageB.goto('/catalog');
+         await pageB.waitForLoadState('networkidle');
+         // Assert user A's plant names do NOT appear in any rendered content
+         const userAPlantName = 'UserAOnlyPlant'; // seeded in user A setup above
+         await expect(pageB.getByText(userAPlantName)).not.toBeVisible();
+         await ctxB.close();
+       });
+       ```
+       The `userAStorageState` and `userBStorageState` paths come from the two authed-user fixture variants shipped by Plan 05-01 (e.g. `tests/e2e/.auth/user-a.json` and `tests/e2e/.auth/user-b.json`). If 05-01 ships only one authed fixture, create a second user inline in this test using a direct `POST /api/v1/iam/register` call (or seed via Supabase test client) before the test body. Document the choice in the SUMMARY.
+
+       Why this test: per T-05-18-04 — after logout the `folhario-catalog-api-v1` cache MUST be absent from the browser's CacheStorage so user B cannot receive stale user A responses from the SW. The `caches.has(name)` assertion in the browser context is the direct verification of the logout-purge mitigation.
+
+       This test depends on 05-10's `logout-link.tsx` calling `await caches.delete('folhario-catalog-api-v1')` (verified by 05-10's own unit test). If that call is not present, this test fails and surfacing the failure is intentional — it proves the contract.
 
     The spec MUST run with real Chromium IDB + real Serwist SW (not mocked) — that's the entire point of the OFF-08 stratum per VALIDATION.md line 103. Do NOT add `playwright.config.ts` overrides that disable the SW.
 
@@ -433,10 +475,11 @@ for (const combo of COMBOS) {
 
     Per CLAUDE.md "Never start local dev server" — Playwright spec assumes the test command boots its own dev server (typical Playwright config). Verify via `pnpm test:e2e` (NEVER watch-mode flags).
 
-    **Threat-model self-check (T-05-18-01/02/03 from frontmatter):**
-    - T-05-18-01 (signed URL leakage): the SW byte-cache `maxAgeSeconds: 7d` is GREATER than the 24h URL TTL, but that's safe because once the URL token expires upstream the cached response becomes useless (server rejects). Still — when the user logs out, the SW runtime cache MUST be flushed. Add an explicit follow-up TODO in the SUMMARY: "Phase 4 logout flow currently does not call `caches.delete('catalog-api-v1')`. Decide whether logout flushes SW cache or relies on per-origin scoping + verified-user gate. Track in next phase."
+    **Threat-model self-check (T-05-18-01/02/03/04 from frontmatter):**
+    - T-05-18-01 (signed URL leakage): the SW byte-cache `maxAgeSeconds: 7d` is GREATER than the 24h URL TTL, but that's safe because once the URL token expires upstream the cached response becomes useless (server rejects). Still — when the user logs out, the SW runtime cache MUST be flushed. Add an explicit follow-up TODO in the SUMMARY: "Phase 4 logout flow currently does not call `caches.delete('folhario-catalog-api-v1')`. Decide whether logout flushes SW cache or relies on per-origin scoping + verified-user gate. Track in next phase."
     - T-05-18-02 (cross-user contamination on shared device): the SW runtime cache is per-origin (browser-enforced). The TanStack persister flush happens via Plan 05-10's logout hook (verify via grep). No additional Phase 5 work — note in SUMMARY that this is verified by Plan 05-10's mitigation, not duplicated here.
     - T-05-18-03 (offline read-only revealing identify CTA): mitigated in Task 2 — `/identify` shows the blocked notice instead of opening the flow. Verified by E2E Test 2.
+    - T-05-18-04 (authenticated SW cache cross-user leakage): mitigated by logout-purge (`caches.delete(CATALOG_API_CACHE)` in 05-10's logout-link.tsx) + plant-delete cache purge (05-06's onSuccess) + versioned cache name (`folhario-catalog-api-v1`). Verified by E2E Test 6 in this plan.
 
     Run `pnpm test:e2e -- catalog-offline` to confirm the spec passes. (NEVER watch mode per CLAUDE.md.)
   </action>
@@ -444,7 +487,7 @@ for (const combo of COMBOS) {
     <automated>pnpm test:e2e -- catalog-offline</automated>
   </verify>
   <done>
-    `src/app/(app)/app-shell.tsx` `<ReadOnlyBanner>` is wired to `useSubscription().readOnly`; `tests/e2e/catalog-offline.spec.ts` covers OFF-08 (online → offline → catalog browsable + offline banner + offline /identify blocked) AND owns the authed axe coverage for Home (count=0 + count>=1) + offline-banner across all 4 colorScheme × reducedMotion combos; spec passes under `pnpm test:e2e -- catalog-offline`. `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan; the unauthenticated `/identify` placeholder remains in its ROUTES array.
+    `src/app/(app)/app-shell.tsx` `<ReadOnlyBanner>` is wired to `useSubscription().readOnly`; `tests/e2e/catalog-offline.spec.ts` covers OFF-08 (online → offline → catalog browsable + offline banner + offline /identify blocked) AND owns the authed axe coverage for Home (count=0 + count>=1) + offline-banner across all 4 colorScheme × reducedMotion combos + cross-user SW cache leak prevention (Test 6); spec passes under `pnpm test:e2e -- catalog-offline`. `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan; the unauthenticated `/identify` placeholder remains in its ROUTES array.
   </done>
 </task>
 
@@ -458,14 +501,16 @@ for (const combo of COMBOS) {
 | Browser ↔ Service Worker | SW intercepts and caches catalog API responses; tampering or cache poisoning here affects only the local origin scope |
 | SW Cache ↔ Supabase Storage signed URLs | Signed URLs are minted server-side with 24h TTL; cached bytes become useless after upstream token expiry |
 | `(app)` shell ↔ subscription state | `useSubscription` stub returns constant `{active: true, readOnly: false}` in Phase 5; flipping to readOnly via the test fixture must not bleed into production sessions |
+| SW Cache ↔ User identity boundary | `folhario-catalog-api-v1` cache is shared across all sessions in the browser origin; logout must purge it to prevent cross-user data leakage on shared devices |
 
 ## STRIDE Threat Register
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-05-18-01 | I (Information disclosure) | SW byte-cache (`catalog-api-v1`) holding signed photo URLs | mitigate | (a) `ExpirationPlugin` `maxAgeSeconds: 7d` > 24h URL TTL — but cached responses become useless after upstream token expiry (server rejects); (b) cache key is the FULL URL including `token` query param so revoked tokens cannot be served from a stale cache entry; (c) `purgeOnQuotaError: true` + `maxEntries: 200` cap growth (Pitfall 2). Follow-up surfaced in SUMMARY: logout flow should call `caches.delete('catalog-api-v1')` to flush across user switches on shared devices. |
+| T-05-18-01 | I (Information disclosure) | SW byte-cache (`folhario-catalog-api-v1`) holding signed photo URLs | mitigate | (a) `ExpirationPlugin` `maxAgeSeconds: 7d` > 24h URL TTL — but cached responses become useless after upstream token expiry (server rejects); (b) cache key is the FULL URL including `token` query param so revoked tokens cannot be served from a stale cache entry; (c) `purgeOnQuotaError: true` + `maxEntries: 200` cap growth (Pitfall 2). Follow-up surfaced in SUMMARY: logout flow should call `caches.delete('folhario-catalog-api-v1')` to flush across user switches on shared devices. |
 | T-05-18-02 | T (Tampering) | SW runtime cache cross-user pollution on shared device | mitigate | SW runtime cache is per-origin (browser-enforced — no cross-origin contamination). User logout flushes the TanStack persister via the existing Plan 05-10 logout hook (T-05-10-01 mitigation — verified there, not duplicated here). Phase 5 D-19 does NOT introduce a new attack surface beyond per-origin scoping. |
 | T-05-18-03 | I (Information disclosure) | `/identify` route revealing identification flow when offline (could leak that the feature is gated behind connectivity to a snooping shoulder-surfer) | accept | The placeholder reveals only the existence of the feature, not any user data. Offline-blocked notice + paywall semantics surface the same information any authenticated user could discover by navigating to `/identify`. Confirmed by E2E Test 2 of Task 3. |
+| T-05-18-04 | I (Information disclosure) | Authenticated SW cache `folhario-catalog-api-v1` persisting user A's catalog data after logout; user B on same device sees stale user A responses served from SW cache | mitigate | (a) logout-purge: 05-10's `logout-link.tsx` calls `await caches.delete(CATALOG_API_CACHE)` (imports constant from `src/app/sw.ts`) — cache is absent from CacheStorage before user B's session begins; (b) plant-delete cache purge: 05-06's catalog page `onSuccess` opens `CATALOG_API_CACHE` and deletes the affected plant entries; (c) versioned cache name `folhario-catalog-api-v1` — version bump in a future phase creates a new cache name, automatically orphaning stale data. Verified by E2E Test 6 in Task 3 (`caches.has('folhario-catalog-api-v1')` returns `false` after logout; user B sees no user A data). |
 
 </threat_model>
 
@@ -475,19 +520,20 @@ for (const combo of COMBOS) {
 
 | Task | Stratum | Spec / Command | Coverage |
 |------|---------|----------------|----------|
-| 1 | Nyquist Signed URL TTL (Vitest unit-dom mock) | `pnpm test:unit -- sw-runtime-cache` | SWR registration order, allowlist matcher, ExpirationPlugin config (maxAgeSeconds=7d, maxEntries=200, purgeOnQuotaError=true), GET-only filter |
+| 1 | Nyquist Signed URL TTL (Vitest unit-dom mock) | `pnpm test:unit -- sw-runtime-cache` | SWR registration order, allowlist matcher, ExpirationPlugin config (maxAgeSeconds=7d, maxEntries=200, purgeOnQuotaError=true), GET-only filter, CATALOG_API_CACHE export value |
 | 2 | i18n contract + TS + structural | `pnpm tsc --noEmit && pnpm test:run` | Server-component compiles, `next-intl` keys resolve, `pnpm build` succeeds |
-| 3 | OFF-08 + Nyquist SW offline + Axe authed Home/offline (E2E real Chromium IDB + real SW) | `pnpm test:e2e -- catalog-offline` | Online preload → offline catalog browsable, OfflineBanner visible, identify-blocked notice on /identify, authed Home axe (count=0 + count>=1) × 4 combos, offline-banner axe × 4 combos — all 0 serious/critical |
+| 3 | OFF-08 + Nyquist SW offline + Axe authed Home/offline (E2E real Chromium IDB + real SW) | `pnpm test:e2e -- catalog-offline` | Online preload → offline catalog browsable, OfflineBanner visible, identify-blocked notice on /identify, authed Home axe (count=0 + count>=1) × 4 combos, offline-banner axe × 4 combos — all 0 serious/critical; cross-user SW cache leak prevention |
 
 **Phase-level acceptance:**
 
-- [ ] `src/app/sw.ts` SWR allowlist registered BEFORE NetworkOnly catch-all
-- [ ] Vitest unit test asserts route precedence + ExpirationPlugin args
+- [ ] `src/app/sw.ts` exports `CATALOG_API_CACHE = 'folhario-catalog-api-v1'` and SWR allowlist uses the constant; registered BEFORE NetworkOnly catch-all
+- [ ] `grep -n "folhario-catalog-api-v1" src/app/sw.ts` returns ≥1 hit (the constant declaration)
+- [ ] Vitest unit test asserts route precedence + ExpirationPlugin args + CATALOG_API_CACHE value
 - [ ] Home empty composition uses `<CaptureButton breathing>` + Adicionar manualmente link (NOT `<EmptyState>`); root carries `data-testid="home-empty"`
 - [ ] Home bridge composition renders for `count >= 1` with ICU plural; root carries `data-testid="home-bridge"`
 - [ ] `/identify` placeholder shows "Em breve" online + "Identificação requer conexão" offline
 - [ ] `<ReadOnlyBanner active={useSubscription().readOnly} />` in app-shell
-- [ ] `tests/e2e/catalog-offline.spec.ts` exists and passes (OFF-08 + authed Home/offline axe)
+- [ ] `tests/e2e/catalog-offline.spec.ts` exists and passes (OFF-08 + authed Home/offline axe + cross-user leak prevention)
 - [ ] `tests/e2e/axe-placeholder-pages.spec.ts` is NOT modified by this plan; the unauthenticated `/identify` placeholder remains in its ROUTES array (Phase 5 ships an unauth placeholder; auth gating starts in Phase 6)
 - [ ] No watch-mode flags in any pnpm command (CLAUDE.md project rule)
 - [ ] `pnpm tsc --noEmit` clean
@@ -502,11 +548,13 @@ for (const combo of COMBOS) {
 - A user who loaded their catalog online can switch to airplane mode, reload `/catalog`, and STILL see all their plants (ROADMAP SC-5).
 - A user offline who taps `/identify` sees the "Identificação requer conexão à internet." notice — no broken provider call attempt.
 - When subscription state flips to `readOnly: true` (Phase 10 wires real; Phase 5 fixture flips), `<ReadOnlyBanner>` appears across all (app) surfaces.
+- After logout, `caches.has('folhario-catalog-api-v1')` returns `false` — no cross-user data leakage on shared devices.
 
 **Validation strategy hooks (per VALIDATION.md):**
 - OFF-08 (E2E): online → offline → catalog browsable + offline banner + identify blocked → covered by `tests/e2e/catalog-offline.spec.ts` (Task 3)
 - Nyquist SW offline + IDB persistence (Playwright): real Chromium IDB + real SW used by `catalog-offline.spec.ts` (Task 3 — no SW mocks in E2E)
-- Nyquist Signed URL TTL (Vitest unit-dom mock): `tests/unit/sw-runtime-cache.test.ts` (Task 1) asserts ExpirationPlugin args + URL-keyed cache
+- Nyquist Signed URL TTL (Vitest unit-dom mock): `tests/unit/sw-runtime-cache.test.ts` (Task 1) asserts ExpirationPlugin args + URL-keyed cache + CATALOG_API_CACHE export
+- Cross-user SW cache leak prevention: `catalog-offline.spec.ts` Test 6 (Task 3) asserts `caches.has('folhario-catalog-api-v1')` is `false` after logout and user B sees no user A data
 - Axe Catalog routes (auth-required): authed Home (count=0 + count>=1) and offline-banner scans live in `catalog-offline.spec.ts`; sibling Wave 4 plans 05-15 / 05-16 / 05-17 own the rest of the dedicated-authed-spec axe coverage. `axe-placeholder-pages.spec.ts` continues to cover unauthenticated routes only (`/`, `/catalog`, `/identify`, `/profile`, `/offline` as placeholders/redirects — once Phase 6 lands, `/` and `/identify` semantics may shift; track in retrospective).
 
 </success_criteria>
@@ -514,11 +562,10 @@ for (const combo of COMBOS) {
 <output>
 After completion, create `.planning/phases/05-catalog-meu-jardim/05-18-home-identify-serwist-offline-banners-SUMMARY.md` per template. Surface in the Open Questions / Followups section:
 
-1. Logout flow + SW cache flush (T-05-18-01 follow-up): should logout call `caches.delete('catalog-api-v1')`? Track for Phase 4 retro / Phase 9 mutation queue plan.
+1. Logout flow + SW cache flush (T-05-18-01 / T-05-18-04): logout-link.tsx in 05-10 MUST call `caches.delete('folhario-catalog-api-v1')` — if 05-10's unit test for this call is not passing, this plan's E2E Test 6 will also fail (intentional). Track resolution in 05-10 SUMMARY.
 2. Banner stacking visual (offline + readOnly both true): UI-SPEC §4.5 says "never stack visually" but doesn't address this composition. Default ships stacked; founder review for Phase 6 polish.
 3. `/identify` Phase 6 transition: when Phase 6 ships the real identification flow, `/identify` will likely become auth-required and need to migrate from `axe-placeholder-pages.spec.ts` ROUTES into a dedicated authed spec (matches the Phase 5 dedicated-authed-spec pattern). Track for Phase 6 plan-phase.
 4. `identify.empty.*` keys removed in favor of `identify.placeholder.*` — verify no Phase 4 / Phase 5 surface still references the old keys via `grep -rn "identify.empty" src/`.
 5. `tests/e2e/axe-placeholder-pages.spec.ts` deliberately not modified by this plan — Phase 5 axe coverage for auth-required surfaces lives in dedicated authed Playwright specs to avoid the architectural defect (silent verification of login redirect rather than the actual page) documented by 05-16.
+6. Two-user fixture availability for Test 6: if 05-01 ships only one authed fixture, Test 6 requires inline user creation. Document the approach chosen in the SUMMARY.
 </output>
-</content>
-</invoke>

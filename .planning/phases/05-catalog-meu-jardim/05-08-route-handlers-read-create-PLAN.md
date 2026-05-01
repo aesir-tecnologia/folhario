@@ -23,15 +23,17 @@ tags: [catalog, route-handlers, multipart, idempotency, cursor-pagination, signe
 
 must_haves:
   truths:
-    - "POST /api/v1/plants accepts a multipart body (name + photo + optional fields), routes through requireVerifiedUser → withIdempotency → createPlant use-case, and returns 201 with snake_case plant JSON. The Idempotency-Key header is REQUIRED on this route (closed-registry validation_failed otherwise) per D-02 + Phase 2 D-37 (first route consumer)."
-    - "POST /api/v1/plants/[plantId]/photo-entries accepts a multipart body (photo + optional note), routes through requireVerifiedUser → withIdempotency → createPhotoEntry use-case, and returns 201 with snake_case photo_entry JSON (D-15)."
-    - "GET /api/v1/plants returns a JSON page envelope `{ items, next_cursor, total_count? }` — `total_count` only present when ?include_count=1 is passed AND no cursor is present (first page only, per D-12); `sort` query param accepts the 5 D-11 sort_id values; `cursor` and `limit` flow through encodeSortCursor / decodeSortCursor + normalizeLimit."
+    - "POST /api/v1/plants accepts a multipart body (name + photo + optional fields), routes through requireVerifiedUser → withIdempotency → createPlant use-case, and returns 201 with snake_case plant JSON. The Idempotency-Key header is REQUIRED on this route (closed-registry validation_failed otherwise) per D-02 + Phase 2 D-37 (first route consumer). The route handler opens the TX via withIdempotency and passes `{ tx }` deps down to createPlant. Use-case returns `{ ...result, postCommit?: () => Promise<void> }`; route handler awaits `postCommit` AFTER `withIdempotency` returns successfully (post-commit telemetry contract: PostHog `plant_added` + Inngest `plant.created`). On idempotent replay, the stored response is returned and the use-case is NOT re-invoked (use-case call count == 1 across all retries with the same key+body) and `postCommit` is NOT called again."
+    - "POST /api/v1/plants/[plantId]/photo-entries accepts a multipart body (photo + optional note), routes through requireVerifiedUser → withIdempotency → createPhotoEntry use-case, and returns 201 with snake_case photo_entry JSON (D-15). Use-case returns `{ ...result, postCommit?: () => Promise<void> }`; route handler awaits `postCommit` AFTER `withIdempotency` returns successfully (post-commit telemetry contract: PostHog `photo_entry_added` + Inngest equivalents). On replay, `postCommit` is NOT called again."
+    - "GET /api/v1/plants returns a JSON page envelope `{ items, next_cursor, total_count? }` — `total_count` only present when ?include_count=1 is passed AND no cursor is present (first page only, per D-12); `sort` query param accepts the 5 D-11 sort_id values; `cursor` and `limit` flow through encodeSortCursor / decodeSortCursor + normalizeLimit. Each item in `items[]` includes `cover_signed_url` (snake_case, signed by the `list-plants` use-case in 05-07 via batch Promise.all signing; route passes through verbatim)."
     - "GET /api/v1/plants/[plantId] returns the plant + `_meta: { photo_entry_count, reminder_count }` for the D-07 delete-confirm cascade preview."
     - "GET /api/v1/plants/[plantId]/photo-entries returns the journal items with 24h-TTL signed thumbnail + photo URLs minted per request (D-20)."
-    - "GET /api/v1/locations returns merged user suggestions + i18n defaults from `messages/pt-BR.json` `catalog.locations.defaults` (D-09 + D-10), de-duped by normalized label."
+    - "GET /api/v1/locations returns merged user suggestions + i18n defaults from `src/messages/pt-BR.json` `catalog.locations.defaults` (D-09 + D-10), de-duped by normalized label."
     - "Every route is gated by `requireVerifiedUser` (Phase 4 D-21) — first route-handler consumer of that helper. Unverified or unauthenticated requests return the closed-registry `email_unverified` 403 or `unauthenticated` 401 respectively."
     - "Zero Drizzle imports in any of the four route files (Phase 2 D-17 / T-02-11). Verified by the existing tests/unit/no-drizzle-in-routes.test.ts allowlist scan AND by an explicit grep gate in the integration suite."
     - "Every error response goes through `errorResponse(code, message)` with codes drawn ONLY from the closed registry (`unauthenticated`, `email_unverified`, `validation_failed`, `not_found`, `forbidden`, `read_only_mode`, `subscription_required`, `conflict` for Idempotency-Key hash mismatch). NO ad-hoc codes."
+    - "i18n namespace owner is 05-10 — only 05-10 introduces new top-level catalog namespace scaffold; this plan reads `catalog.locations.defaults` only via the `list-locations` use-case (which 05-07 owns)."
+    - "If `result.postCommit?.()` rejects, the route handler MUST log the failure to Sentry (`Sentry.captureException`) but still return success to the client — the durable work is already committed, and re-running postCommit on a future request would risk double-firing telemetry."
   artifacts:
     - path: "src/app/api/v1/plants/route.ts"
       provides: "GET (list) + POST (multipart create with withIdempotency) handlers"
@@ -55,7 +57,7 @@ must_haves:
   key_links:
     - from: "src/app/api/v1/plants/route.ts POST"
       to: "src/contexts/catalog/application/create-plant.ts (from 05-05)"
-      via: "withIdempotency wraps the createPlant call so the (userId, key) idempotency row is committed in the same TX as the Plant + first PhotoEntry rows"
+      via: "withIdempotency wraps the createPlant call so the (userId, key) idempotency row is committed in the same TX as the Plant + first PhotoEntry rows. The route handler opens the TX via withIdempotency (Phase 2 D-37) and passes `{ tx }` down to the use-case via deps (`createPlant(input, { tx })`). Key derivation uses request body hash + Idempotency-Key header (confirmed Phase 2 D-37 contract). On the first successful commit, route handler awaits the use-case's `postCommit` callback (PostHog `plant_added` + Inngest `plant.created` for createPlant). Replays return the cached response WITHOUT re-firing postCommit. On replay the use-case is NOT invoked — withIdempotency returns stored response directly."
       pattern: "withIdempotency\\("
     - from: "src/app/api/v1/plants/route.ts GET"
       to: "src/contexts/catalog/application/list-plants.ts (from 05-07) + src/shared/api/cursor.ts encodeSortCursor"
@@ -71,7 +73,7 @@ must_haves:
       pattern: "signThumbnailUrl|signOriginalUrl"
     - from: "src/app/api/v1/locations/route.ts GET"
       to: "src/contexts/catalog/application/list-locations.ts (from 05-07)"
-      via: "Use-case merges location_suggestions repo output with messages/pt-BR.json `catalog.locations.defaults` and de-dupes by normalized label"
+      via: "Use-case merges location_suggestions repo output with src/messages/pt-BR.json `catalog.locations.defaults` and de-dupes by normalized label"
       pattern: "list-locations\\.ts"
 ---
 
@@ -175,12 +177,17 @@ export type CreatePlantInput =
       notes?: string | null;
     }
   | { source: "identification"; /* Phase 6 only — NOT exercised here */ };
-export type CreatePlantResult =
-  | { ok: true; plant: PlantRow; photoEntry: PhotoEntryRow }
+export interface CreatePlantResult {
+  plant: PlantRow;
+  photoEntry: PhotoEntryRow;
+  postCommit?: () => Promise<void>;
+}
+export type CreatePlantUseCaseResult =
+  | { ok: true; data: CreatePlantResult }
   | { ok: false; code: ErrorCode; reason: string };
-export function createPlant(input: CreatePlantInput, tx?: TransactionalDb): Promise<CreatePlantResult>;
+export function createPlant(input: CreatePlantInput, deps?: { tx?: TransactionalDb }): Promise<CreatePlantUseCaseResult>;
 ```
-NOTE: 05-05 is responsible for the exact signature; if the executor finds a slightly different shape on disk after 05-05 ships, follow the on-disk types and adapt the handler. The discriminator is `source: 'manual'` for Phase 5.
+NOTE: 05-05 is responsible for the exact signature; if the executor finds a slightly different shape on disk after 05-05 ships, follow the on-disk types and adapt the handler. The discriminator is `source: 'manual'` for Phase 5. The deps-object form (`deps?: { tx?: TransactionalDb }`) is the locked calling convention (HIGH-3 resolution: Phase 2 UoW does not expose `tx.afterCommit`; use-cases return `postCommit` callbacks instead).
 
 From `src/contexts/catalog/application/list-plants.ts` (from 05-07):
 ```typescript
@@ -225,10 +232,14 @@ export type CreatePhotoEntryInput = {
   photoContentType: string;
   note: string | null;
 };
-export type CreatePhotoEntryResult =
-  | { ok: true; photoEntry: PhotoEntryRow }
+export interface CreatePhotoEntryResult {
+  photoEntry: PhotoEntryRow;
+  postCommit?: () => Promise<void>;
+}
+export type CreatePhotoEntryUseCaseResult =
+  | { ok: true; data: CreatePhotoEntryResult }
   | { ok: false; code: ErrorCode; reason: string };
-export function createPhotoEntry(input: CreatePhotoEntryInput, tx?: TransactionalDb): Promise<CreatePhotoEntryResult>;
+export function createPhotoEntry(input: CreatePhotoEntryInput, deps?: { tx?: TransactionalDb }): Promise<CreatePhotoEntryUseCaseResult>;
 ```
 
 From `src/contexts/catalog/application/list-locations.ts` (from 05-07):
@@ -268,16 +279,17 @@ Reference patterns to copy verbatim (do NOT diverge):
     - **Test 1.4 (multipart parse failure):** Verified user, body is `application/json` → 400 `validation_failed` with `multipart parse failed:` prefix (mirror photos/upload route).
     - **Test 1.5 (missing required fields):** Verified user, multipart missing `name` → 400 `validation_failed` with field path `name`. Multipart missing `photo` → 400 `validation_failed` with field path `photo`. Multipart missing both → 400 with both field paths in `details.issues` (drives CAT-03 + D-04 ≥2-error summary).
     - **Test 1.6 (happy path 201 + snake_case):** Verified user, valid multipart with name + photo + nickname + location + acquisition_date + notes + `Idempotency-Key: <uuid>` → 201 with body `{ plant: { id, user_id, species_id, name, nickname, location, acquisition_date, notes, cover_photo_url, created_at, updated_at }, photo_entry: { id, plant_id, photo_url, thumbnail_url, note, created_at } }`. Every key snake_case. Plant row exists in DB; photo_entry row exists with plant_id linking back.
-    - **Test 1.7 (idempotent replay):** Repeat Test 1.6 with the SAME `Idempotency-Key` and SAME multipart bytes → 201 with the EXACT same response body. Only ONE plant row exists in the DB after both calls (count == 1, not 2).
-    - **Test 1.8 (hash-mismatch conflict):** Repeat Test 1.6 with the SAME `Idempotency-Key` but a DIFFERENT name → 409 `conflict` with the registry conflict message. Only ONE plant row exists in the DB (the original from Test 1.6).
-    - **Test 1.9 (no-Drizzle-in-route gate):** `grep -E "from .drizzle-orm|from .@contexts/.*infrastructure/db" src/app/api/v1/plants/route.ts` returns zero lines (PRD/D-17 invariant; covered by tests/unit/no-drizzle-in-routes.test.ts but assert here too with `grep -v '^//' | grep -c ...` to dodge comment false-positives per planner critical rule).
+    - **Test 1.7 (idempotent replay + postCommit fires exactly once):** Repeat Test 1.6 with the SAME `Idempotency-Key` and SAME multipart bytes → 201 with the EXACT same response body. Only ONE plant row exists in the DB after both calls (count == 1, not 2). The `createPlant` use-case mock (injected via deps) asserts `callCount === 1` — the handler callback passed to `withIdempotency` is NOT invoked on replay (stored response is returned directly, per Phase 2 D-37 contract). Spy on the use-case dep to verify: `expect(createPlantSpy).toHaveBeenCalledTimes(1)` across both HTTP calls combined. Additionally, spy on the `postCommit` side-effect (via the mock's returned `postCommit` fn): `expect(postCommitSpy).toHaveBeenCalledTimes(1)` across both calls combined — `postCommit` fires on the first success but NOT on the replay.
+    - **Test 1.8 (postCommit side-effects fire after response + NOT on replay):** On the first successful POST, the side-effect spies injected via the `postCommit` callback mock (PostHog `plant_added` event spy and Inngest `plant.created` send spy) MUST be observed as called AFTER `withIdempotency` resolves (i.e., the response is already 201 before `postCommit` is awaited — assert spies fire within the same microtask drain after the response). On a replay of the same request (same key + same body), those same spies MUST NOT receive additional calls — assert `posthogSpy.mock.calls.length` and `inngestSendSpy.mock.calls.length` remain at 1 after the second HTTP call. If `postCommit` rejects: the route handler catches the rejection, calls `Sentry.captureException(err)`, and still returns the committed 201 response — assert via a `postCommit` mock that rejects: response status is 201 AND `sentryCaptureExceptionSpy` was called once.
+    - **Test 1.9 (hash-mismatch conflict):** Repeat Test 1.6 with the SAME `Idempotency-Key` but a DIFFERENT name → 409 `conflict` with the registry conflict message. Only ONE plant row exists in the DB (the original from Test 1.6).
+    - **Test 1.10 (no-Drizzle-in-route gate):** `grep -E "from .drizzle-orm|from .@contexts/.*infrastructure/db" src/app/api/v1/plants/route.ts` returns zero lines (PRD/D-17 invariant; covered by tests/unit/no-drizzle-in-routes.test.ts but assert here too with `grep -v '^#' | grep -c ...` to dodge comment false-positives per planner critical rule).
 
     POST /api/v1/plants/[plantId]/photo-entries (mirrors POST /plants but for journal entries):
     - **Test 2.1 (auth gate / verified gate / idempotency-key required / multipart parse failure):** Same shape as Tests 1.1–1.4.
     - **Test 2.2 (plant ownership 404):** Verified user calls POST for a plant_id owned by another user → 404 `not_found` (use-case returns NotFound; route maps verbatim). NO journal row created.
     - **Test 2.3 (happy path 201 + snake_case):** Verified user, valid multipart with photo + note + `Idempotency-Key` for an OWNED plant → 201 with `{ photo_entry: { id, plant_id, photo_url, thumbnail_url, note, created_at } }`. Row exists in DB.
-    - **Test 2.4 (idempotent replay):** Same key + same bytes → identical response, ONE row in DB.
-    - **Test 2.5 (no-Drizzle-in-route gate):** Same grep as Test 1.9 against `[plantId]/photo-entries/route.ts`.
+    - **Test 2.4 (idempotent replay + postCommit fires exactly once):** Same key + same bytes → identical response, ONE row in DB. `postCommitSpy` for createPhotoEntry is called exactly once across both HTTP calls combined (same pattern as Test 1.7).
+    - **Test 2.5 (no-Drizzle-in-route gate):** Same grep as Test 1.10 against `[plantId]/photo-entries/route.ts`.
 
     Idempotency-Key requestHash strategy (LOCKED — executor must implement exactly this):
     - For multipart bodies, compute `requestHash = sha256(headerKey || ":" || sha256(rawBodyBytes))` where `rawBodyBytes` comes from `await request.clone().arrayBuffer()` BEFORE `request.formData()` consumes the stream. The `headerKey` prefix prevents collisions between multipart and JSON requests on the same `(userId, key)` row. Use `crypto.createHash("sha256")` (Node built-in). The multipart boundary varies per request, so a re-encoded retry from a different client will compute a different hash and surface as 409 `conflict` — that is the intended semantic per Phase 2 T-02-16.
@@ -286,7 +298,7 @@ Reference patterns to copy verbatim (do NOT diverge):
   <action>
     Implement BOTH POST endpoints test-first. Workflow:
 
-    1. **RED — write the integration test file FIRST** at `tests/integration/catalog-routes-read-create.integration.test.ts`. Include the full `describe("POST /api/v1/plants", ...)` and `describe("POST /api/v1/plants/[plantId]/photo-entries", ...)` blocks per the `<behavior>` Tests 1.1–1.9 + 2.1–2.5. Reuse `tests/integration/photo-upload.integration.test.ts:73-147` for the in-memory storage adapter wiring (Phase 5 D-27 — already plumbed in 05-01). Reuse Phase 2's transaction-rollback fixture for DB cleanup (D-43). Use `tests/integration/fixtures/seed-user.ts` for user creation and the existing cookie-injection helper for verified-session requests. RED commit: `pnpm vitest run tests/integration/catalog-routes-read-create.integration.test.ts` MUST fail (route files do not exist yet). Commit subject: `test(05-08): add failing route tests for plants + photo-entries POST`.
+    1. **RED — write the integration test file FIRST** at `tests/integration/catalog-routes-read-create.integration.test.ts`. Include the full `describe("POST /api/v1/plants", ...)` and `describe("POST /api/v1/plants/[plantId]/photo-entries", ...)` blocks per the `<behavior>` Tests 1.1–1.10 + 2.1–2.5. Reuse `tests/integration/photo-upload.integration.test.ts:73-147` for the in-memory storage adapter wiring (Phase 5 D-27 — already plumbed in 05-01). Reuse Phase 2's transaction-rollback fixture for DB cleanup (D-43). Use `tests/integration/fixtures/seed-user.ts` for user creation and the existing cookie-injection helper for verified-session requests. RED commit: `pnpm vitest run tests/integration/catalog-routes-read-create.integration.test.ts` MUST fail (route files do not exist yet). Commit subject: `test(05-08): add failing route tests for plants + photo-entries POST`.
 
     2. **GREEN — implement POST /api/v1/plants** at `src/app/api/v1/plants/route.ts`:
        - `export const runtime = "nodejs"` (multipart + sharp downstream).
@@ -298,32 +310,51 @@ Reference patterns to copy verbatim (do NOT diverge):
          e. Extract fields: `name` (string), `photo` (File), `nickname` (string|null), `location` (string|null), `acquisition_date` (string|null), `notes` (string|null). Convert `photo` to `Buffer` via `Buffer.from(await photo.arrayBuffer())`.
          f. Build `CreatePlantInput` with `source: "manual"` discriminator (per D-02 + 05-05 contract; the `source: "identification"` branch is Phase 6's call).
          g. Run `createPlantInputSchema.safeParse(input)` (from 05-04). On failure → `errorResponse(ValidationFailed, "Validação falhou.", { issues: parsed.error.issues })` — D-04 surfaces all error paths so the client can render the ≥2-error summary block.
-         h. Wrap in `withIdempotency`:
+         h. Wrap in `withIdempotency`, passing `{ tx }` deps to the use-case, returning the use-case result from inside the callback so `.postCommit` is accessible after commit:
             ```typescript
-            const result = await withIdempotency({ userId: auth.user.id, key: idempotencyKey, requestHash }, async (tx) => {
-              const usecase = await createPlant(parsed.data, tx);
-              if (!usecase.ok) return { status: HTTP_STATUS[usecase.code], body: { error: { code: usecase.code, message: usecase.reason } } };
-              return {
-                status: 201,
-                body: {
-                  plant: toPlantSnakeCase(usecase.plant),
-                  photo_entry: toPhotoEntrySnakeCase(usecase.photoEntry),
-                },
-              };
+            const idempotencyResult = await withIdempotency(
+              { userId: auth.user.id, key: idempotencyKey, requestHash },
+              async (tx) => {
+                const usecase = await createPlant(parsed.data, { tx });
+                if (!usecase.ok) {
+                  return { status: HTTP_STATUS[usecase.code], body: { error: { code: usecase.code, message: usecase.reason } } };
+                }
+                return {
+                  status: 201,
+                  body: {
+                    plant: toPlantSnakeCase(usecase.data.plant),
+                    photo_entry: toPhotoEntrySnakeCase(usecase.data.photoEntry),
+                  },
+                  postCommit: usecase.data.postCommit,
+                };
+              },
+            );
+            if (!idempotencyResult.replayed && idempotencyResult.postCommit) {
+              try {
+                await idempotencyResult.postCommit();
+              } catch (err) {
+                Sentry.captureException(err);
+                // postCommit failure must NOT fail the response — work is already committed
+              }
+            }
+            return new Response(JSON.stringify(idempotencyResult.body), {
+              status: idempotencyResult.status,
+              headers: { "content-type": "application/json" },
             });
-            return new Response(JSON.stringify(result.body), { status: result.status, headers: { "content-type": "application/json" } });
             ```
+            NOTE: `withIdempotency`'s `IdempotencyHandler` type currently returns `Promise<{ status: number; body: unknown }>`. The route handler extends the handler return with an additional `postCommit?` field that `withIdempotency` passes through transparently (it stores only `{ status, body }` but returns the full handler result on first call). If the existing `withIdempotency` implementation does NOT pass through extra fields from the handler, wrap with a side-channel pattern: capture `postCommit` in a closure variable inside the handler callback (assigned before the handler returns), then reference it after `withIdempotency` resolves. Executor must inspect the on-disk `withIdempotency` implementation and choose the approach that works without modifying the shared helper.
             — `toPlantSnakeCase` / `toPhotoEntrySnakeCase` are local helpers (or extract to `src/contexts/catalog/api/snake-case.ts` if both POST + GET need them; executor's discretion). Mirror `photos/upload/route.ts:91-103` snake_case shape.
-       - NO Drizzle imports. NO `@contexts/*/infrastructure/db/*` imports. Verified by tests/unit/no-drizzle-in-routes.test.ts plus the explicit grep gate in Test 1.9.
-       - Run `pnpm vitest run tests/integration/catalog-routes-read-create.integration.test.ts -t "POST /api/v1/plants"`. MUST pass Tests 1.1–1.9.
+       - NO Drizzle imports. NO `@contexts/*/infrastructure/db/*` imports. Verified by tests/unit/no-drizzle-in-routes.test.ts plus the explicit grep gate in Test 1.10.
+       - Run `pnpm vitest run tests/integration/catalog-routes-read-create.integration.test.ts -t "POST /api/v1/plants"`. MUST pass Tests 1.1–1.10.
        - Commit: `feat(05-08): POST /api/v1/plants multipart + idempotency`.
 
     3. **GREEN — implement POST /api/v1/plants/[plantId]/photo-entries** at `src/app/api/v1/plants/[plantId]/photo-entries/route.ts`:
        - Same skeleton as POST /plants, but:
          - The route's second arg is `{ params }: { params: Promise<{ plantId: string }> }`; await `params` to extract `plantId` (Next 16 App Router convention — verify against Plan 04 route patterns; if `params` is sync there, follow that).
-         - Delegate to `createPhotoEntry({ userId, plantId, photoBuffer, photoContentType, note }, tx)` from 05-07.
+         - Delegate to `createPhotoEntry({ userId, plantId, photoBuffer, photoContentType, note }, { tx })` from 05-07 (deps-object form, same as createPlant).
          - Validate input via `createPhotoEntryInputSchema` from 05-04.
          - Snake_case response: `{ photo_entry: { id, plant_id, photo_url, thumbnail_url, note, created_at } }`.
+         - Apply the same postCommit pattern: if `!idempotencyResult.replayed && idempotencyResult.postCommit`, await it inside a try/catch that calls `Sentry.captureException` on failure but does NOT re-throw.
        - Run `pnpm vitest run tests/integration/catalog-routes-read-create.integration.test.ts -t "POST /api/v1/plants/\\[plantId\\]/photo-entries"`. MUST pass Tests 2.1–2.5.
        - Commit: `feat(05-08): POST /api/v1/plants/[plantId]/photo-entries multipart + idempotency`.
 
@@ -335,12 +366,13 @@ Reference patterns to copy verbatim (do NOT diverge):
     - D-37 (Phase 2): Idempotency-Key required on both POSTs. First route consumers; helper enforces hash-mismatch-409 semantics.
     - PRD §5: snake_case JSON keys; closed error registry only.
     - D-17 (Phase 2): NO Drizzle in route handlers; tests/unit/no-drizzle-in-routes.test.ts is the standing gate.
+    - HIGH-3 resolution: Use-cases accept `deps?: { tx?: TransactionalDb }` (not positional `tx?`) and return `postCommit?` callbacks. Route handler awaits `postCommit` ONLY on first success (`!replayed`). Rejection is swallowed to Sentry — never propagated to the client.
   </action>
   <verify>
     <automated>pnpm vitest run tests/integration/catalog-routes-read-create.integration.test.ts tests/unit/no-drizzle-in-routes.test.ts</automated>
   </verify>
   <done>
-    `src/app/api/v1/plants/route.ts` exports `POST` + `runtime = "nodejs"`. `src/app/api/v1/plants/[plantId]/photo-entries/route.ts` exports `POST` + `runtime = "nodejs"`. Tests 1.1–1.9 + 2.1–2.5 pass. tests/unit/no-drizzle-in-routes.test.ts passes (no Drizzle imports added to route files). Three commits land (RED, GREEN-plants, GREEN-photo-entries; optional REFACTOR commit if extraction needed).
+    `src/app/api/v1/plants/route.ts` exports `POST` + `runtime = "nodejs"`. `src/app/api/v1/plants/[plantId]/photo-entries/route.ts` exports `POST` + `runtime = "nodejs"`. Tests 1.1–1.10 + 2.1–2.5 pass. tests/unit/no-drizzle-in-routes.test.ts passes (no Drizzle imports added to route files). Three commits land (RED, GREEN-plants, GREEN-photo-entries; optional REFACTOR commit if extraction needed). postCommit spies assert exactly 1 invocation across two identical requests and 0 invocations on replay for both POST endpoints.
   </done>
 </task>
 
@@ -358,7 +390,7 @@ Reference patterns to copy verbatim (do NOT diverge):
 
     GET /api/v1/plants:
     - **Test 3.1 (auth/verified gates):** Same as Tests 1.1–1.2.
-    - **Test 3.2 (default sort + first page):** Verified user with 3 plants seeded. `GET /api/v1/plants` → 200 with `{ items: [...], next_cursor: null, total_count: <undefined> }`. `items.length === 3`. `total_count` MUST be absent (or null) when `?include_count` not provided. `items` ordered by `acquisition_date DESC NULLS LAST` (CAT-07 default) — the seed should include one plant with `acquisition_date = null` to verify NULLS LAST sentinel.
+    - **Test 3.2 (default sort + first page):** Verified user with 3 plants seeded. `GET /api/v1/plants` → 200 with `{ items: [...], next_cursor: null, total_count: <undefined> }`. `items.length === 3`. `total_count` MUST be absent (or null) when `?include_count` not provided. `items` ordered by `acquisition_date DESC NULLS LAST` (CAT-07 default) — the seed should include one plant with `acquisition_date = null` to verify NULLS LAST sentinel. Each item MUST include `cover_signed_url` (string, contains `token=` or `expires_at=` — exact signed-URL shape from the in-memory storage adapter; confirms 05-07 batch-signing passes through the route without modification).
     - **Test 3.3 (?include_count=1 first page):** Same seed. `GET /api/v1/plants?include_count=1` → 200 with `total_count === 3`. With cursor present (e.g., `?cursor=abc&include_count=1`) → 200 with `total_count` absent (D-12 first-page-only contract).
     - **Test 3.4 (sort variants):** `?sort=name_asc`, `?sort=name_desc`, `?sort=date_old`, `?sort=location` each return correctly ordered items. Invalid `?sort=foo` → 400 `validation_failed`.
     - **Test 3.5 (cursor pagination):** Seed 5 plants. `GET /api/v1/plants?limit=2` → 200 with `items.length === 2`, `next_cursor !== null`. `GET /api/v1/plants?limit=2&cursor=<next_cursor>` → 200 with the next 2 items, `next_cursor !== null`. Final page: `items.length === 1`, `next_cursor === null`.
@@ -377,7 +409,7 @@ Reference patterns to copy verbatim (do NOT diverge):
 
     GET /api/v1/locations:
     - **Test 6.1 (auth/verified gates):** Same as Tests 1.1–1.2.
-    - **Test 6.2 (defaults + suggestions merged):** Verified user with no location_suggestions rows. `GET /api/v1/locations` → 200 with `{ items: [{ label_display: "sala" }, ..., { label_display: "outro" }] }` — exactly the 8 D-10 defaults (`messages/pt-BR.json` `catalog.locations.defaults`).
+    - **Test 6.2 (defaults + suggestions merged):** Verified user with no location_suggestions rows. `GET /api/v1/locations` → 200 with `{ items: [{ label_display: "sala" }, ..., { label_display: "outro" }] }` — exactly the 8 D-10 defaults (`src/messages/pt-BR.json` `catalog.locations.defaults`).
     - **Test 6.3 (user suggestions take priority):** Seed `location_suggestions` row `(userId, "sacada", "Sacada", usage_count=5, last_used_at=now())`. `GET /api/v1/locations` → 200 with `items[0].label_display === "Sacada"` (top of list per D-09 ranking). The defaults still appear after, de-duped by normalized label.
 
     No-Drizzle-in-routes gate (covered by Task 1's grep + tests/unit/no-drizzle-in-routes.test.ts) extends to all four route files.
@@ -486,7 +518,7 @@ Reference patterns to copy verbatim (do NOT diverge):
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
 | T-05-08-01 | I / D | Multipart upload size + EXIF/GPS leakage on POST `/plants` and POST `/plants/[plantId]/photo-entries` | mitigate | Client compresses ≤1 MB + strips EXIF (CLAUDE.md). Server defense in depth: `createPlantInputSchema` / `createPhotoEntryInputSchema` (from 05-04) reject content-types outside `image/{jpeg,png,webp}` and byte lengths >`MAX_UPLOAD_BYTES` (1 MB). The use-case (from 05-05/05-07) calls `rejectGpsMetadata` from Phase 2 D-30 BEFORE any storage write. Route handler scope here: surface 400 `validation_failed` with the offending field path; never write to storage when validation fails. |
-| T-05-08-02 | T / R | Idempotency-Key collisions on POST `/plants` and POST `/plants/[plantId]/photo-entries` | mitigate | First route consumers of `withIdempotency` (Phase 2 D-37). Helper enforces (userId, key, requestHash) uniqueness via Postgres `INSERT ... ON CONFLICT DO NOTHING RETURNING`. Hash-mismatch on existing (userId, key) → 409 `conflict` (Test 1.8 / 2.4 prove it). Helper invokes the use-case inside the same transaction so a thrown handler rolls back BOTH the idempotency row and the use-case writes (Phase 2 T-02-36 mitigation). The route's `requestHash` strategy is locked: `sha256(headerKey || ":" || sha256(rawBodyBytes))` against `request.clone().arrayBuffer()` BEFORE `formData()` consumes the stream — guarantees the same key + same body always replays. |
+| T-05-08-02 | T / R | Idempotency-Key collisions on POST `/plants` and POST `/plants/[plantId]/photo-entries` | mitigate | First route consumers of `withIdempotency` (Phase 2 D-37). Helper enforces (userId, key, requestHash) uniqueness via Postgres `INSERT ... ON CONFLICT DO NOTHING RETURNING`. Hash-mismatch on existing (userId, key) → 409 `conflict` (Test 1.9 / 2.4 prove it). Helper invokes the use-case inside the same transaction so a thrown handler rolls back BOTH the idempotency row and the use-case writes (Phase 2 T-02-36 mitigation). The route's `requestHash` strategy is locked: `sha256(headerKey || ":" || sha256(rawBodyBytes))` against `request.clone().arrayBuffer()` BEFORE `formData()` consumes the stream — guarantees the same key + same body always replays. `postCommit` is invoked outside the TX boundary and only on first success (`!replayed`) — telemetry fires at most once per committed write. |
 | T-05-08-03 | I | Signed URL TTL leakage in journal list response | mitigate | Use-case mints 24h-TTL signed URLs per request (D-20). URLs are NOT stored long-term in the response cache layer; SW cache (05-18) is keyed by full signed URL, so each new mint produces a new cache key. The 7-day Serwist max-age (D-19) applies to the JSON response envelope, not the underlying photo bytes — so when JSON falls out of cache, no further bytes are served. Route handler scope here: do NOT cache signed URLs server-side; mint per request. |
 | T-05-08-04 | E | RLS bypass via cursor manipulation on GET `/plants` | mitigate | (Mitigation lives in 05-07 list-plants.ts use-case — listed here for surface traceability.) Cursor is opaque base64url JSON `{sort_id, last_value, last_id}`; `decodeSortCursor` (from 05-02) parses into a typed schema (NOT freeform). The use-case then composes a parameterized Drizzle query against the user's RLS-bound TX — the cursor cannot inject WHERE values or change the `auth.uid()` boundary. Route handler scope: validate cursor decode succeeded; reject malformed → 400 `validation_failed` (Test 3.6 proves it). |
 | T-05-08-05 | I | Plant existence leakage on GET `/plants/[plantId]` and POST `/plants/[plantId]/photo-entries` for cross-user plantId | mitigate | The use-case (05-07 get-plant.ts) returns `NotFound` (NOT `Forbidden`) when a plantId is owned by another user — closed-registry posture per Phase 2 mirrors the auth error surface and avoids confirming the plant exists. Route handler scope: pass `result.code` verbatim through `errorResponse`. Tests 4.2 + 2.2 prove the 404 response. |
@@ -522,6 +554,7 @@ Reference patterns to copy verbatim (do NOT diverge):
 - Every handler calls `requireVerifiedUser` (first route-level consumers of Phase 4 D-21).
 - All integration tests + no-drizzle gate green.
 - Threat register: 5/5 mitigated (no `accept` dispositions).
+- `postCommit` is awaited after `withIdempotency` resolves, only on first success (`!replayed`). Rejection is caught → `Sentry.captureException` → response still returns 201.
 </success_criteria>
 
 <output>
@@ -529,6 +562,7 @@ After completion, create `.planning/phases/05-catalog-meu-jardim/05-08-SUMMARY.m
 - Final decision pointer table (every D-XX referenced and where it shipped).
 - Closed-registry error code coverage table (which routes emit which codes).
 - Idempotency-Key requestHash strategy notes (the exact `sha256(headerKey || ":" || sha256(rawBytes))` pattern for future maintainers).
+- postCommit callback pattern note (HIGH-3 resolution: deps-object form, postCommit returned from use-case, route awaits after withIdempotency on first success only, Sentry on rejection).
 - Cross-plan coordination note for 05-09: confirm PATCH + DELETE were added to `[plantId]/route.ts` without disturbing the GET handler from this plan.
 - Pointer to the integration test file (`tests/integration/catalog-routes-read-create.integration.test.ts`) for future regression debugging.
 </output>

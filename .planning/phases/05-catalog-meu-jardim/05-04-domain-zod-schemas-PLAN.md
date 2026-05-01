@@ -21,20 +21,21 @@ must_haves:
     - "Submitting update-plant PATCH body with unknown fields fails validation via `.strict()` (rejects prototype-pollution / unknown-key payloads — T-05-04-02)."
     - "create-photo-entry input rejects content-types outside `image/jpeg | image/png | image/webp` and byte-lengths over `MAX_UPLOAD_BYTES` (1 MB / 1_048_576) without duplicating the constants — domain schema imports the existing `ALLOWED_MIME_TYPES` set and `MAX_UPLOAD_BYTES`."
     - "create-photo-entry input rejects notes longer than 500 chars."
-    - "validateStoragePathOwnership accepts the canonical D-26 path `{userId}/{plantId}/{photoId}.{ext}` and rejects mismatched userId, traversal sequences (`..`), absolute paths (leading `/`), and empty plantId — defends T-05-04-01 prefix-mis-scope race."
+    - "`validateStorageObjectKey({ userId, plantId, key })` accepts canonical D-26 paths `{userId}/{plantId}/{photoId}.{ext}` (ext: jpg|jpeg|png|webp) and throws `StoragePathValidationError` on mismatched userId, mismatched plantId, traversal sequences (`..`), absolute paths (leading `/`), empty plantId, and unsupported extension — defends T-05-04-01 prefix-mis-scope race for single-object operations."
+    - "`validateStorageDeletionPrefix({ userId, plantId, prefix })` accepts only the exact prefix `` `${userId}/${plantId}/` `` and throws `StoragePathValidationError` on any mismatch — including a cross-user-prefix attack where prefix begins with a different userId (e.g. `u2/p1/` when userId is `u1`)."
   artifacts:
     - path: "src/contexts/catalog/domain/schemas.ts"
       provides: "Refined Zod schemas: `createPlantInputSchema`, `updatePlantInputSchema`, `createPhotoEntryInputSchema` (drizzle-zod-derived per Phase 2 D-19)"
       exports: ["createPlantInputSchema", "updatePlantInputSchema", "createPhotoEntryInputSchema", "CreatePlantInput", "UpdatePlantInput", "CreatePhotoEntryInput"]
     - path: "src/contexts/catalog/domain/storage-paths.ts"
-      provides: "`validateStoragePathOwnership({ userId, plantId, key })` ownership/traversal validator for storage adapter mutations"
-      exports: ["validateStoragePathOwnership", "StoragePathValidationError"]
+      provides: "`validateStorageObjectKey` (single-key ownership/traversal guard) and `validateStorageDeletionPrefix` (prefix-scope guard) for storage adapter mutations"
+      exports: ["validateStorageObjectKey", "validateStorageDeletionPrefix", "StoragePathValidationError"]
     - path: "tests/unit/catalog-schemas.test.ts"
       provides: "RED→GREEN tests covering all three refined schemas and their failure paths"
       contains: "describe(\"createPlantInputSchema\""
     - path: "tests/unit/catalog-storage-path-validator.test.ts"
-      provides: "RED→GREEN tests covering validateStoragePathOwnership accept + reject cases"
-      contains: "describe(\"validateStoragePathOwnership\""
+      provides: "RED→GREEN tests covering validateStorageObjectKey and validateStorageDeletionPrefix accept + reject cases including cross-user-prefix attack"
+      contains: "describe(\"validateStorageObjectKey\""
   key_links:
     - from: "src/contexts/catalog/domain/schemas.ts"
       to: "src/contexts/catalog/infrastructure/db/schema.ts"
@@ -44,20 +45,24 @@ must_haves:
       to: "src/shared/images/limits.ts + src/contexts/catalog/application/upload-photo.ts"
       via: "import `MAX_UPLOAD_BYTES` and reuse `ALLOWED_MIME_TYPES` set (no constant duplication — drift forbidden)"
       pattern: "MAX_UPLOAD_BYTES"
-    - from: "downstream plans 05-06, 05-07, 05-09"
-      to: "validateStoragePathOwnership"
-      via: "MANDATORY pre-check before any `storageAdapter.deleteObject` / `deletePrefix` call (CAT-09 deletion path)"
-      pattern: "validateStoragePathOwnership\\("
+    - from: "downstream plan 05-06"
+      to: "validateStorageDeletionPrefix"
+      via: "MANDATORY pre-check before any `storageAdapter.deletePrefix` call (CAT-09 plant-delete cleanup path)"
+      pattern: "validateStorageDeletionPrefix\\("
+    - from: "downstream plans 05-07, 05-09"
+      to: "validateStorageObjectKey"
+      via: "MANDATORY pre-check before any `storageAdapter.deleteObject` call (single-object deletion in use-cases and route handlers)"
+      pattern: "validateStorageObjectKey\\("
 ---
 
 <objective>
-Ship refined Zod schemas (drizzle-zod-derived) and a storage-path ownership validator for the catalog domain. Closes the validation-stratum requirement for CAT-02 (manual create input shape) and CAT-03 (validation_failed when name OR photo missing). Hardens the deletion path against prefix-mis-scope leaks (T-05-04-01).
+Ship refined Zod schemas (drizzle-zod-derived) and two storage-path ownership validators for the catalog domain. Closes the validation-stratum requirement for CAT-02 (manual create input shape) and CAT-03 (validation_failed when name OR photo missing). Hardens the deletion path against prefix-mis-scope leaks (T-05-04-01).
 
-Purpose: Phase 4 use-cases (05-05 create-plant, 05-07 update/photo-entry use-cases, 05-08/05-09 route handlers) need a single source of truth for input validation. drizzle-zod derivation keeps schemas in lockstep with the table definitions shipped in 05-02. `validateStoragePathOwnership` ships HERE so that downstream wiring plans (05-06, 05-07, 05-09) can call it without inventing their own path checks.
+Purpose: Phase 4 use-cases (05-05 create-plant, 05-07 update/photo-entry use-cases, 05-08/05-09 route handlers) need a single source of truth for input validation. drizzle-zod derivation keeps schemas in lockstep with the table definitions shipped in 05-02. `validateStorageObjectKey` and `validateStorageDeletionPrefix` ship HERE so that downstream wiring plans (05-06, 05-07, 05-09) can call them without inventing their own path checks.
 
 Output:
 - `src/contexts/catalog/domain/schemas.ts` extended with three refined schemas (no consumers added in this plan — wired by 05-05/05-07/05-08/05-09).
-- `src/contexts/catalog/domain/storage-paths.ts` exporting `validateStoragePathOwnership(...)`.
+- `src/contexts/catalog/domain/storage-paths.ts` exporting `validateStorageObjectKey(...)` and `validateStorageDeletionPrefix(...)`.
 - Two new Vitest unit tests (`catalog-schemas.test.ts`, `catalog-storage-path-validator.test.ts`) green under `pnpm test:unit`.
 </objective>
 
@@ -165,7 +170,7 @@ Domain schemas DO NOT throw `ErrorCode.ValidationFailed` — they return Zod iss
 - **D-04 (validation behavior):** Inline per-field error + summary block at ≥2 errors. The schema must report BOTH `name` and `photo` paths when both are missing — this drives the summary-block rendering in 05-17. A schema that only reports the first failure is INSUFFICIENT.
 - **D-05 (PATCH single-field):** Client always sends one dirty field. Server tolerance is `≥1 known field, reject empty, reject unknown via .strict()` — NOT "exactly one". This avoids over-constraining future use-cases (e.g. cover auto-promote may write a side-effect column).
 - **D-19 (Phase 2):** All catalog domain Zod schemas are drizzle-zod-derived. Refinements are added via `.omit({...server-managed columns}).extend({...non-DB inputs like `photo`}).strict().superRefine(...)` — never hand-rolled `z.object({...})`.
-- **D-26 (Phase 2):** Canonical storage path is `{userId}/{plantId}/{photoId}.{ext}`. The validator enforces userId match, plantId non-empty, no traversal (`..`), no leading `/`, no `\`, ext in `{jpg,png,webp}`.
+- **D-26 (Phase 2):** Canonical storage path is `{userId}/{plantId}/{photoId}.{ext}`. The validator enforces userId match, plantId non-empty, no traversal (`..`), no leading `/`, no `\`, ext in `{jpg,jpeg,png,webp}`.
 </binding_decisions>
 
 <source_audit>
@@ -180,8 +185,8 @@ Domain schemas DO NOT throw `ErrorCode.ValidationFailed` — they return Zod iss
 | CONTEXT (D-04)| Per-field error + summary at ≥2 errors                             | superRefine reports BOTH fields when both missing | COVERED |
 | CONTEXT (D-05)| PATCH single-field semantics                                       | `updatePlantInputSchema` partial + .strict | COVERED  |
 | CONTEXT (D-19)| drizzle-zod-derived schemas                                        | All three schemas chain off `createInsertSchema(plants/photoEntries)` | COVERED |
-| CONTEXT (D-26)| Storage path conventions                                           | `validateStoragePathOwnership` enforces    | COVERED  |
-| THREAT        | T-05-04-01 prefix-mis-scope deletion race                          | `validateStoragePathOwnership` (Task 2)    | COVERED  |
+| CONTEXT (D-26)| Storage path conventions                                           | `validateStorageObjectKey` + `validateStorageDeletionPrefix` enforce | COVERED  |
+| THREAT        | T-05-04-01 prefix-mis-scope deletion race                          | Both helpers in Task 2                     | COVERED  |
 | THREAT        | T-05-04-02 validation bypass (unknown keys, prototype pollution)   | `.strict()` on all schemas + tests         | COVERED  |
 </source_audit>
 
@@ -357,136 +362,173 @@ Domain schemas DO NOT throw `ErrorCode.ValidationFailed` — they return Zod iss
 </task>
 
 <task type="tdd" tdd="true">
-  <name>Task 2: validateStoragePathOwnership helper (TDD)</name>
+  <name>Task 2: validateStorageObjectKey + validateStorageDeletionPrefix helpers (TDD)</name>
   <files>
     src/contexts/catalog/domain/storage-paths.ts
     tests/unit/catalog-storage-path-validator.test.ts
   </files>
   <behavior>
-    RED→GREEN per reject case (one or two cycles is fine — small surface).
+    Two helpers, each with its own RED→GREEN cycle.
 
-    Accept cases (must succeed):
-    - Test 1: `validateStoragePathOwnership({ userId: "u1", plantId: "p1", key: "u1/p1/photo-id.jpg" })` returns `{ ok: true }`.
-    - Test 2: same shape with ext `png` and `webp` returns `{ ok: true }`.
-    - Test 3: photoId can be a UUID with hyphens — `validateStoragePathOwnership({ userId: "u1", plantId: "p1", key: "u1/p1/2f3a-9b4c.jpg" })` succeeds.
+    --- Cycle 2A: `validateStorageObjectKey` ---
 
-    Reject cases (must fail with discriminated `{ ok: false, reason: ... }`):
-    - Test 4: mismatched userId — `key: "u2/p1/photo.jpg"` with `userId: "u1"` → `reason: "user_id_mismatch"`.
-    - Test 5: mismatched plantId — `key: "u1/p2/photo.jpg"` with `plantId: "p1"` → `reason: "plant_id_mismatch"`.
-    - Test 6: empty plantId — `plantId: ""` → `reason: "plant_id_empty"`.
-    - Test 7: empty userId — `userId: ""` → `reason: "user_id_empty"`.
-    - Test 8: traversal `..` segment — `key: "u1/../p1/x.jpg"` → `reason: "path_traversal"`.
-    - Test 9: trailing traversal — `key: "u1/p1/../x.jpg"` → `reason: "path_traversal"`.
-    - Test 10: leading slash — `key: "/u1/p1/x.jpg"` → `reason: "absolute_path"`.
-    - Test 11: backslash — `key: "u1\\p1\\x.jpg"` → `reason: "invalid_separator"`.
-    - Test 12: extension outside `{jpg, png, webp}` — `key: "u1/p1/x.heic"` → `reason: "unsupported_extension"`.
-    - Test 13: missing extension — `key: "u1/p1/x"` → `reason: "unsupported_extension"`.
-    - Test 14: extra path segments — `key: "u1/p1/sub/x.jpg"` → `reason: "invalid_segment_count"` (canonical D-26 has exactly 3 segments).
-    - Test 15: too few segments — `key: "u1/x.jpg"` → `reason: "invalid_segment_count"`.
-
-    Discriminated union return shape:
+    Function signature:
     ```ts
-    type StoragePathValidationResult =
-      | { ok: true }
-      | { ok: false; reason:
-            | "user_id_empty" | "user_id_mismatch"
-            | "plant_id_empty" | "plant_id_mismatch"
-            | "path_traversal" | "absolute_path"
-            | "invalid_separator" | "unsupported_extension"
-            | "invalid_segment_count" };
+    function validateStorageObjectKey(input: { userId: string; plantId: string; key: string }): void
+    // throws StoragePathValidationError on any mismatch
     ```
+
+    Regex enforced: `^${userId}/${plantId}/[a-zA-Z0-9-]+\.(jpg|jpeg|png|webp)$`
+
+    Accept cases (must NOT throw):
+    - Test 1: `validateStorageObjectKey({ userId: "u1", plantId: "p1", key: "u1/p1/photo-id.jpg" })` — returns void.
+    - Test 2: same shape with ext `png` — returns void.
+    - Test 3: same shape with ext `webp` — returns void.
+    - Test 4: same shape with ext `jpeg` — returns void.
+    - Test 5: photoId is a UUID with hyphens — `key: "u1/p1/2f3a-9b4c.jpg"` — returns void.
+
+    Reject cases (must throw `StoragePathValidationError`):
+    - Test 6: mismatched userId — `key: "u2/p1/photo.jpg"` with `userId: "u1"` — throws.
+    - Test 7: mismatched plantId — `key: "u1/p2/photo.jpg"` with `plantId: "p1"` — throws.
+    - Test 8: empty userId — `userId: ""` — throws.
+    - Test 9: empty plantId — `plantId: ""` — throws.
+    - Test 10: traversal `..` segment — `key: "u1/../p1/x.jpg"` — throws.
+    - Test 11: trailing traversal — `key: "u1/p1/../x.jpg"` — throws.
+    - Test 12: leading slash — `key: "/u1/p1/x.jpg"` — throws.
+    - Test 13: backslash — `key: "u1\\p1\\x.jpg"` — throws.
+    - Test 14: extension outside allow-list — `key: "u1/p1/x.heic"` — throws.
+    - Test 15: missing extension — `key: "u1/p1/x"` — throws.
+    - Test 16: extra path segments — `key: "u1/p1/sub/x.jpg"` — throws (regex has no `sub/` component).
+    - Test 17: too few segments — `key: "u1/x.jpg"` — throws.
+
+    --- Cycle 2B: `validateStorageDeletionPrefix` ---
+
+    Function signature:
+    ```ts
+    function validateStorageDeletionPrefix(input: { userId: string; plantId: string; prefix: string }): void
+    // throws StoragePathValidationError on any mismatch
+    ```
+
+    Rule enforced: `prefix === \`${userId}/${plantId}/\``
+
+    Accept cases (must NOT throw):
+    - Test 1: `validateStorageDeletionPrefix({ userId: "u1", plantId: "p1", prefix: "u1/p1/" })` — returns void.
+    - Test 2: different valid userId/plantId pair — `{ userId: "abc", plantId: "def", prefix: "abc/def/" }` — returns void.
+
+    Reject cases (must throw `StoragePathValidationError`):
+    - Test 3: cross-user-prefix attack — `{ userId: "u1", plantId: "p1", prefix: "u2/p1/" }` — throws (prefix begins with a different userId).
+    - Test 4: missing trailing slash — `{ userId: "u1", plantId: "p1", prefix: "u1/p1" }` — throws.
+    - Test 5: extra path after prefix — `{ userId: "u1", plantId: "p1", prefix: "u1/p1/photo.jpg" }` — throws (not a bare prefix).
+    - Test 6: empty userId — `{ userId: "", plantId: "p1", prefix: "u1/p1/" }` — throws.
+    - Test 7: empty plantId — `{ userId: "u1", plantId: "", prefix: "u1//"}` — throws.
+    - Test 8: mismatched plantId — `{ userId: "u1", plantId: "p1", prefix: "u1/p2/" }` — throws.
   </behavior>
   <action>
-    1. Create `tests/unit/catalog-storage-path-validator.test.ts` with `describe("validateStoragePathOwnership", ...)` and the 15 listed cases (one `it(...)` per case, RED initially).
+    1. Create `tests/unit/catalog-storage-path-validator.test.ts` with:
+       - `describe("validateStorageObjectKey", ...)` containing Tests 1–17 (Cycle 2A).
+       - `describe("validateStorageDeletionPrefix", ...)` containing Tests 1–8 (Cycle 2B).
+       All test cases MUST initially fail (RED).
 
-    2. Commit RED with subject `test(05-04): add failing tests for validateStoragePathOwnership`.
+    2. Commit RED with subject `test(05-04): add failing tests for validateStorageObjectKey and validateStorageDeletionPrefix`.
 
     3. Create `src/contexts/catalog/domain/storage-paths.ts`:
 
        ```ts
        /**
-        * Storage-path ownership validator (D-26 canonical path:
+        * Storage-path ownership validators (D-26 canonical path:
         * `{userId}/{plantId}/{photoId}.{ext}`). Defends against
-        * prefix-mis-scope deletion races (T-05-04-01) by rejecting
-        * any key whose userId/plantId scope doesn't match the
-        * caller's expected scope. Pure function, no I/O.
+        * prefix-mis-scope deletion races (T-05-04-01).
+        * Pure functions, no I/O.
         *
-        * Downstream consumers (delete-plant.ts, delete-photo-entry.ts,
-        * route handlers in 05-09) MUST call this BEFORE any
+        * - validateStorageObjectKey: use before deleteObject (single file).
+        * - validateStorageDeletionPrefix: use before deletePrefix (plant cleanup).
+        *
+        * Downstream consumers (05-06 delete-plant, 05-07 delete-photo-entry,
+        * 05-09 route handlers) MUST call the appropriate helper BEFORE any
         * `storageAdapter.deleteObject(...)` or `deletePrefix(...)`.
         */
 
-       export type StoragePathValidationResult =
-         | { ok: true }
-         | { ok: false; reason: StoragePathValidationReason };
-
-       export type StoragePathValidationReason =
-         | "user_id_empty" | "user_id_mismatch"
-         | "plant_id_empty" | "plant_id_mismatch"
-         | "path_traversal" | "absolute_path"
-         | "invalid_separator" | "unsupported_extension"
-         | "invalid_segment_count";
-
        export class StoragePathValidationError extends Error {
-         readonly reason: StoragePathValidationReason;
-         constructor(reason: StoragePathValidationReason) {
-           super(`storage path validation failed: ${reason}`);
-           this.reason = reason;
+         constructor(message: string) {
+           super(`storage path validation failed: ${message}`);
            this.name = "StoragePathValidationError";
          }
        }
 
-       const ALLOWED_EXT = new Set(["jpg", "png", "webp"] as const);
-
-       export interface StoragePathValidationInput {
+       /**
+        * Validates a full storage object key for single-file operations.
+        * Asserts key matches `^{userId}/{plantId}/[a-zA-Z0-9-]+\.(jpg|jpeg|png|webp)$`.
+        * Throws `StoragePathValidationError` on any mismatch.
+        */
+       export function validateStorageObjectKey({
+         userId,
+         plantId,
+         key,
+       }: {
          userId: string;
          plantId: string;
-         /** Object key WITHIN the bucket — no `bucket/` prefix. */
          key: string;
+       }): void {
+         if (!userId) throw new StoragePathValidationError("userId empty");
+         if (!plantId) throw new StoragePathValidationError("plantId empty");
+         // Build pattern dynamically so mismatched userId/plantId prefix is caught
+         // before checking the filename segment. Escape special regex chars in ids.
+         const escapedUserId = userId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+         const escapedPlantId = plantId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+         const pattern = new RegExp(
+           `^${escapedUserId}/${escapedPlantId}/[a-zA-Z0-9-]+\\.(jpg|jpeg|png|webp)$`,
+         );
+         if (!pattern.test(key)) {
+           throw new StoragePathValidationError(
+             `key "${key}" does not match expected pattern for userId="${userId}" plantId="${plantId}"`,
+           );
+         }
        }
 
-       export function validateStoragePathOwnership(
-         input: StoragePathValidationInput,
-       ): StoragePathValidationResult {
-         if (input.userId === "") return { ok: false, reason: "user_id_empty" };
-         if (input.plantId === "") return { ok: false, reason: "plant_id_empty" };
-         if (input.key.includes("\\")) return { ok: false, reason: "invalid_separator" };
-         if (input.key.startsWith("/")) return { ok: false, reason: "absolute_path" };
-         const segments = input.key.split("/");
-         if (segments.some((s) => s === ".." || s === ".")) {
-           return { ok: false, reason: "path_traversal" };
+       /**
+        * Validates a prefix path used for bulk storage deletion (e.g. plant cleanup).
+        * Asserts prefix === `${userId}/${plantId}/` exactly.
+        * Throws `StoragePathValidationError` on any mismatch, including cross-user-prefix attacks.
+        */
+       export function validateStorageDeletionPrefix({
+         userId,
+         plantId,
+         prefix,
+       }: {
+         userId: string;
+         plantId: string;
+         prefix: string;
+       }): void {
+         if (!userId) throw new StoragePathValidationError("userId empty");
+         if (!plantId) throw new StoragePathValidationError("plantId empty");
+         const expected = `${userId}/${plantId}/`;
+         if (prefix !== expected) {
+           throw new StoragePathValidationError(
+             `prefix "${prefix}" does not match expected "${expected}"`,
+           );
          }
-         if (segments.length !== 3) {
-           return { ok: false, reason: "invalid_segment_count" };
-         }
-         const [keyUserId, keyPlantId, fileSegment] = segments;
-         if (keyUserId !== input.userId) return { ok: false, reason: "user_id_mismatch" };
-         if (keyPlantId !== input.plantId) return { ok: false, reason: "plant_id_mismatch" };
-         const dot = fileSegment.lastIndexOf(".");
-         if (dot < 0) return { ok: false, reason: "unsupported_extension" };
-         const ext = fileSegment.slice(dot + 1).toLowerCase();
-         if (!(ALLOWED_EXT as Set<string>).has(ext)) {
-           return { ok: false, reason: "unsupported_extension" };
-         }
-         return { ok: true };
        }
        ```
 
-       Adjust segment-counting / traversal-detection logic to keep ALL 15 tests green. Do NOT introduce regex unless plain-string checks fail a test case — keep the implementation auditable (security code).
+       Adjust only as needed to keep ALL test cases in both describe blocks green. Keep implementation auditable — security code should be straightforward. Do NOT add side effects, I/O, or imports from `infrastructure/`, `application/`, `db/`, or `adapters/`.
 
-    4. Run `pnpm test:unit -- catalog-storage-path-validator` until GREEN.
+    4. Run `pnpm test:unit -- catalog-storage-path-validator` until ALL tests green.
 
-    5. REFACTOR (collapse duplicates, tighten reason ordering) keeping tests GREEN.
+    5. REFACTOR only if there is genuine duplication to remove; keep tests GREEN.
 
-    6. Commit GREEN with subject `feat(05-04): validateStoragePathOwnership domain helper`.
+    6. Commit GREEN with subject `feat(05-04): validateStorageObjectKey and validateStorageDeletionPrefix domain helpers`.
 
-    **Note for downstream plans (key_links):** This helper ships unused in this plan. 05-06 (delete-plant) and 05-09 (DELETE routes) MUST add the call site as part of their wiring tasks. Failure to do so reopens T-05-04-01.
+    **Note for downstream plans (key_links):** Both helpers ship unused in this plan.
+    - 05-06 (delete-plant cleanup) MUST call `validateStorageDeletionPrefix` before `deletePrefix`.
+    - 05-07 (delete-photo-entry, create-photo-entry) MUST call `validateStorageObjectKey` before `deleteObject`.
+    - 05-09 (DELETE route handlers) MUST call `validateStorageObjectKey` before any storage mutation.
+    Failure to add call sites reopens T-05-04-01.
   </action>
   <verify>
     <automated>pnpm test:unit -- catalog-storage-path-validator</automated>
   </verify>
   <done>
-    All 15 cases pass. `src/contexts/catalog/domain/storage-paths.ts` exports `validateStoragePathOwnership`, `StoragePathValidationResult`, `StoragePathValidationReason`, and `StoragePathValidationError`. Helper has zero side effects (no imports from `infrastructure/`, `application/`, `db/`, `adapters/`).
+    All Cycle 2A (17 cases) and Cycle 2B (8 cases) tests pass. `src/contexts/catalog/domain/storage-paths.ts` exports `validateStorageObjectKey`, `validateStorageDeletionPrefix`, and `StoragePathValidationError`. Both helpers have zero side effects (no imports from `infrastructure/`, `application/`, `db/`, `adapters/`). The cross-user-prefix attack test (Cycle 2B Test 3) is green.
   </done>
 </task>
 
@@ -498,14 +540,14 @@ Domain schemas DO NOT throw `ErrorCode.ValidationFailed` — they return Zod iss
 | Boundary                 | Description                                                                                       |
 |--------------------------|---------------------------------------------------------------------------------------------------|
 | client → API             | Untrusted multipart input (name, photo, optional fields) parsed by `createPlantInputSchema` in 05-08. |
-| application → storage    | `validateStoragePathOwnership` is the gate before any `deleteObject`/`deletePrefix` against the bucket. |
+| application → storage    | `validateStorageObjectKey` and `validateStorageDeletionPrefix` are the gates before any `deleteObject`/`deletePrefix` against the bucket. |
 | API JSON body → application | PATCH single-field body parsed by `updatePlantInputSchema`; rejects unknown keys via `.strict()`. |
 
 ## STRIDE Threat Register
 
 | Threat ID    | Category | Component                                                          | Disposition | Mitigation Plan                                                                                                                                                                  |
 |--------------|----------|--------------------------------------------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| T-05-04-01   | E, I     | `delete-plant.ts` (05-06) / `delete-photo-entry.ts` (05-07) / DELETE route handlers (05-09) | mitigate    | Ship `validateStoragePathOwnership` here (Task 2) covering 15 reject cases. **Block-on-high:** downstream wiring plans (05-06, 05-07, 05-09) MUST call it before any storage mutation; integration tests in those plans assert cross-user keys raise. This plan ships the unit-tested helper; the cross-user integration test belongs to the wiring plan because no use-case wiring exists yet here. |
+| T-05-04-01   | E, I     | `delete-plant.ts` (05-06) / `delete-photo-entry.ts` (05-07) / DELETE route handlers (05-09) | mitigate    | Ship `validateStorageObjectKey` (single-object guard) and `validateStorageDeletionPrefix` (prefix guard) here (Task 2), each with dedicated unit tests. **Block-on-high:** downstream wiring plans (05-06, 05-07, 05-09) MUST call the appropriate helper before any storage mutation; integration tests in those plans assert cross-user keys raise `StoragePathValidationError`. This plan ships the unit-tested helpers; the cross-user integration test belongs to the wiring plans because no use-case wiring exists yet here. |
 | T-05-04-02   | T        | `createPlantInputSchema`, `updatePlantInputSchema`, `createPhotoEntryInputSchema` parse paths | mitigate    | All three schemas terminate the chain with `.strict()` (Zod rejects unknown keys). Test cases in Task 1 (Cycle 1A test 6, Cycle 1B test 5, Cycle 1C test 7) cover prototype-pollution attempt patterns. `Object.prototype.admin` assertion ensures parsed object does not pollute prototype.                                                                                                                  |
 | T-05-04-03   | I        | `createPhotoEntryInputSchema` byte-length bound                    | mitigate    | `byteLength` capped at `MAX_UPLOAD_BYTES` (1 MiB) imported from `@shared/images/limits` — single source of truth, no drift risk. Server-side `rejectOversizeBuffer` (Phase 2) provides defense in depth against header lying about byteLength; that check stays in 05-07's create-photo-entry use-case (out of scope here).                                                                                  |
 | T-05-04-04   | S        | drizzle-zod chain — server-managed columns leaking into write path  | accept      | `SERVER_MANAGED_PLANT_KEYS` omits `id, userId, coverPhotoUrl, createdAt, updatedAt, speciesId`. Even if a future column is added, drizzle-zod will surface it via type errors when use-cases compile. Accept residual: a developer adding a new server-managed column without updating the omit set is caught at TS compile (e.g. `userId` in `CreatePlantInput` would be a type-level red flag).                                       |
@@ -515,7 +557,7 @@ Domain schemas DO NOT throw `ErrorCode.ValidationFailed` — they return Zod iss
 
 <verification>
 - `pnpm test:unit -- catalog-schemas` → green (all Cycle 1A/1B/1C cases).
-- `pnpm test:unit -- catalog-storage-path-validator` → green (all 15 cases).
+- `pnpm test:unit -- catalog-storage-path-validator` → green (all Cycle 2A + 2B cases, including cross-user-prefix attack test).
 - `pnpm test:unit -- image-pipeline` → green (regression check after moving `ALLOWED_MIME_TYPES` to limits.ts).
 - `pnpm test:unit` (full unit suite) → green (no collateral breakage in adjacent suites).
 - Grep guard: schemas.ts contains zero literal duplications of MIME strings or the byte-size constant.
@@ -524,7 +566,7 @@ Domain schemas DO NOT throw `ErrorCode.ValidationFailed` — they return Zod iss
 
 <success_criteria>
 - `src/contexts/catalog/domain/schemas.ts` exports `createPlantInputSchema`, `updatePlantInputSchema`, `createPhotoEntryInputSchema` and their inferred types, all drizzle-zod-derived.
-- `src/contexts/catalog/domain/storage-paths.ts` exports `validateStoragePathOwnership` and the discriminated result types.
+- `src/contexts/catalog/domain/storage-paths.ts` exports `validateStorageObjectKey`, `validateStorageDeletionPrefix`, and `StoragePathValidationError`.
 - All listed test cases in Task 1 and Task 2 are green under `pnpm test:unit`.
 - No new constants for MIME or upload size — both imported from `@shared/images/limits`.
 - All schemas use `.strict()` (T-05-04-02 unknown-key rejection).
@@ -538,6 +580,6 @@ After completion, create `.planning/phases/05-catalog-meu-jardim/05-04-domain-zo
 - Constants moved: `ALLOWED_MIME_TYPES` and `AllowedMime` migrated from upload-photo.ts to `@shared/images/limits` (re-exported in upload-photo.ts).
 - TDD cycles: 4 RED commits, 4 GREEN commits (or grouped per task — author's call within Conventional Commit discipline).
 - Unblocks: 05-05 (create-plant), 05-07 (update-plant + create/delete-photo-entry), 05-08 / 05-09 (route handler validation).
-- key_link reminder: 05-06 / 05-07 / 05-09 MUST call `validateStoragePathOwnership` before any storage adapter mutation. Document this in the SUMMARY's "Open follow-ups" section so the executor of those plans cannot miss it.
+- key_link reminder: 05-06 MUST call `validateStorageDeletionPrefix` before any `storageAdapter.deletePrefix` mutation. 05-07 and 05-09 MUST call `validateStorageObjectKey` before any `storageAdapter.deleteObject` mutation. Document this in the SUMMARY's "Open follow-ups" section so the executor of those plans cannot miss it.
 - VALIDATION.md Per-Task Verification Map row for Task 1 and Task 2 should be filled (or the SUMMARY should note that the planner needs to update it after this plan ships).
 </output>

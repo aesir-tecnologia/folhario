@@ -2,7 +2,7 @@
 phase: 05-catalog-meu-jardim
 plan: 09
 type: execute
-wave: 4
+wave: 3
 depends_on: ["05-06", "05-07", "05-08", "05-11"]
 files_modified:
   - src/app/api/v1/plants/[plantId]/route.ts
@@ -25,10 +25,11 @@ tags:
 must_haves:
   truths:
     - "PATCH /api/v1/plants/[plantId] with a single dirty field (e.g. {name:'Costela'}) returns 200 + the updated plant when the caller owns the plant; an Idempotency-Key replay returns the cached 200 body without re-invoking updatePlant."
+    - "withIdempotency opens the UoW transaction (tx) and passes it to the use-case via deps — `updatePlant(input, tx)`, `deletePlant(input, tx)`, `deletePhotoEntry(input, tx)` — the use-case returns `{ ...result, postCommit?: () => Promise<void> }` when `deps.tx` is provided; the route handler awaits `result.postCommit?.()` AFTER `withIdempotency` returns successfully (post-commit telemetry contract). If `withIdempotency` rolls back, the route handler MUST NOT invoke postCommit (closure-capture pattern: `let postCommitFn: (() => Promise<void>) | undefined; withIdempotency(... async (tx) => { ...; postCommitFn = inner.postCommit; return {...}; }); try { await postCommitFn?.(); } catch (e) { Sentry.captureException(e); }`). Confirmed against Phase 2 D-37: key derivation = request body hash + Idempotency-Key header."
     - "PATCH /api/v1/plants/[plantId] without an Idempotency-Key header returns validation_failed (400)."
     - "PATCH /api/v1/plants/[plantId] with an unknown body field (e.g. {id:'...'}) is rejected by updatePlantInputSchema.strict() and surfaces validation_failed (400) — defends T-05-09 unknown-key class."
     - "PATCH/DELETE on a plantId owned by another user returns not_found (404), NEVER forbidden — existence-disclosure mitigation per T-05-09-01."
-    - "DELETE /api/v1/plants/[plantId] returns 204 on success; the same call repeated returns not_found (404) — DELETE is naturally idempotent at the resource level, so withIdempotency is NOT used."
+    - "DELETE /api/v1/plants/[plantId] requires an Idempotency-Key header (per Phase 2 D-37 — PATCH and DELETE both wrap); withIdempotency passes `tx` to deletePlant via deps; route handler awaits `postCommitFn?.()` (via closure capture) AFTER `withIdempotency` returns successfully — see postCommit contract in truth above. First call returns 204; a replay with same Idempotency-Key returns the cached 204 body without re-invoking deletePlant (postCommitFn remains undefined on replay — optional-chain is a no-op). A missing Idempotency-Key header returns validation_failed (400). (DELETE without idempotency wrapping would also be safe at the resource level, but wrapping is required by D-37 to ensure tx boundary consistency and server-confirmed receipt semantics.)"
     - "DELETE /api/v1/photo-entries/[photoEntryId] returns 204 on success and triggers the D-03 cover auto-promote inside the use-case's UoW transaction (verified by integration test that asserts plants.cover_photo_url advances to the next-oldest entry)."
     - "All three handlers call requireVerifiedUser FIRST and return the closed-registry code (unauthenticated/email_unverified) on !ok — NEVER surface use-case error reasons through the auth path."
     - "When SUBSCRIPTION_READ_ONLY=1 (server env), all three handlers return read_only_mode (HTTP 402 — registry-mapped, not 403 as the orchestrator hint stated) BEFORE invoking the use-case; integration test asserts the use-case spy was never called AND no DB row was mutated."
@@ -36,6 +37,7 @@ must_haves:
     - "Every error response uses the closed registry only: validation_failed, not_found, forbidden, read_only_mode, subscription_required, unauthenticated, email_unverified, conflict (idempotency hash mismatch). No ad-hoc codes."
     - "Routes contain ZERO Drizzle imports (D-17 / no-drizzle-in-routes lint) — handler logic lives in src/contexts/catalog/api/route-handlers/*-handler.ts; the Next.js route files re-export."
     - "Routes are PUBLIC by URL but GATED by requireVerifiedUser; both routes are NOT added to UNVERIFIED_ALLOWED_PATHS (Phase 4 D-23) — verified-email is required per Phase 4."
+    - "Route handlers MUST be defensive: a use-case returning a postCommit callback that throws MUST NOT cause the HTTP response to fail (the work is already durably committed inside the withIdempotency transaction). Wrap the postCommit await in try/catch, capture the exception to Sentry, and still return the success response to the client."
   artifacts:
     - path: "src/app/api/v1/plants/[plantId]/route.ts"
       provides: "Next.js route file: re-exports GET (from 05-08), PATCH (this plan), DELETE (this plan); zero Drizzle imports per D-17."
@@ -221,7 +223,7 @@ export type UpdatePlantInput = {
   patch: { name?: string; nickname?: string|null; location?: string|null; acquisitionDate?: string|null; notes?: string|null };
 };
 export type UpdatePlantResult =
-  | { ok: true; plant: PlantRow }
+  | { ok: true; plant: PlantRow; postCommit?: () => Promise<void> }  // postCommit present when tx passed via deps
   | { ok: false; code: typeof ErrorCode.NotFound | typeof ErrorCode.ValidationFailed; reason: string };
 export function updatePlant(input: UpdatePlantInput, tx?: TransactionalDb): Promise<UpdatePlantResult>;
 ```
@@ -230,18 +232,18 @@ From `src/contexts/catalog/application/delete-plant.ts` (shipped by 05-06):
 ```ts
 export type DeletePlantInput = { userId: string; plantId: string };
 export type DeletePlantResult =
-  | { ok: true }
+  | { ok: true; postCommit?: () => Promise<void> }  // postCommit present when tx passed via deps
   | { ok: false; code: typeof ErrorCode.NotFound; reason: string };
-export function deletePlant(input: DeletePlantInput): Promise<DeletePlantResult>;
+export function deletePlant(input: DeletePlantInput, tx?: TransactionalDb): Promise<DeletePlantResult>;
 ```
 
 From `src/contexts/catalog/application/delete-photo-entry.ts` (shipped by 05-07):
 ```ts
 export type DeletePhotoEntryInput = { userId: string; photoEntryId: string };
 export type DeletePhotoEntryResult =
-  | { ok: true; coverPromoted: boolean }
+  | { ok: true; coverPromoted: boolean; postCommit?: () => Promise<void> }  // postCommit present when tx passed via deps
   | { ok: false; code: typeof ErrorCode.NotFound; reason: string };
-export function deletePhotoEntry(input: DeletePhotoEntryInput): Promise<DeletePhotoEntryResult>;
+export function deletePhotoEntry(input: DeletePhotoEntryInput, tx?: TransactionalDb): Promise<DeletePhotoEntryResult>;
 ```
 
 If any of the application-tier signatures above differ slightly when 05-06/05-07 are written, adjust the handler call sites to match — the handlers are thin and the contract here is the closed-registry mapping, not the exact param names.
@@ -265,7 +267,7 @@ export const serverEnv = {
 - **D-29 (telemetry):** `plant_edited` and `plant_deleted` PostHog events fire INSIDE the use-cases (after TX commit), NOT in the route handler. Handlers stay HTTP-only.
 - **CLAUDE.md (closed registry):** Only `validation_failed | not_found | forbidden | read_only_mode | subscription_required` (+ auth codes + `conflict` from idempotency hash mismatch). Period.
 - **Phase 2 D-17 (no Drizzle in routes):** Both `src/app/api/v1/.../route.ts` files import ONLY from `src/contexts/catalog/api/route-handlers/*` — no schema, no Drizzle. Enforced by `no-drizzle-in-routes.test.ts`.
-- **Phase 2 D-37 (idempotency on POST/PATCH):** PATCH requires Idempotency-Key. DELETE does NOT (resource-level idempotent — second call gets `not_found`).
+- **Phase 2 D-37 (idempotency on POST/PATCH/DELETE):** PATCH and DELETE both require Idempotency-Key. withIdempotency passes `tx` to the use-case via deps. Key derivation: request body hash + Idempotency-Key header — confirmed against Phase 2 D-37 contract. DELETE wrapping ensures server-confirmed receipt semantics and consistent tx boundaries even though resource-level idempotency would also be safe.
 </binding_decisions>
 
 <source_audit>
@@ -292,7 +294,7 @@ export const serverEnv = {
 </source_audit>
 
 <deviations>
-- **Wave bumped from 3 to 4 vs orchestrator hint.** Reason: 05-08 (orchestrator-declared Wave 3) creates `src/app/api/v1/plants/[plantId]/route.ts` containing the GET handler. This plan extends the SAME file with PATCH + DELETE — that's a `files_modified` overlap between same-wave plans, which the planner's wave-assignment rule forbids ("if any file appears in 2+ plans, bump the later plan to the next wave"). The honest fix is to add `05-08` to `depends_on` and let the algorithm bump 05-09 to Wave 4. This plan declares Wave 4 explicitly and lists `05-08` in `depends_on`. Effect: 05-09 still completes before any Wave 4 UI plan needs the API surface (05-15..05-17 all sit at Wave 4 via the orchestrator hint and now run AFTER 05-09 in their own dependency chain through API surface dependency).
+- **Wave set to 3 (reviews patch — MEDIUM-1 / HIGH-3 fix).** 05-08 sits in Wave 2 and is listed in `depends_on`; extending the same `plants/[plantId]/route.ts` file is safe because dependency order is enforced. Wave 3 is correct: 05-09 depends on `["05-06", "05-07", "05-08", "05-11"]` (all Wave 1 or Wave 2), so Wave 3 placement is valid and allows Wave 4 UI plans (05-15..05-17) to depend on this plan as expected.
 - **`05-11` added to `depends_on`.** Reason: handlers import `resolveSubscriptionStateFromEnv` from `src/contexts/billing/application/subscription-provider.tsx`. That's a real code dependency, not just a topology one. 05-11 ships in Wave 1 so this only locks the build order, not the wave.
 - **HTTP status correction:** orchestrator hint stated read_only_mode is "403 closed-registry code"; the registry (`src/shared/config/errors.ts:45`) maps it to **402**. This plan trusts the registry. Handlers route through `errorResponse` and never hard-code status.
 </deviations>
@@ -538,9 +540,9 @@ export const serverEnv = {
     - Assert: Inngest event `plant.deleted` was emitted (mock the Inngest client and inspect `.send` calls).
     - Assert: PostHog `plant_deleted` event was captured server-side (mock posthog-node; assert capture call with `{photo_count: 3, journal_entry_count: 3, reminder_count: 2}` per D-29 — note `photo_count === journal_entry_count` for Phase 5 where every photo is a journal entry).
 
-    Test 2 — Re-delete is naturally idempotent (returns not_found, NO withIdempotency wrapper):
-    - After Test 1, DELETE the same plantId again.
-    - Assert: status 404; body code `not_found`.
+    Test 2 — Idempotency replay (same Idempotency-Key):
+    - After Test 1, DELETE the same plantId again with the same `Idempotency-Key` header.
+    - Assert: status 204 (cached body); `vi.spyOn(deletePlantModule, "deletePlant")` was called EXACTLY ONCE across both requests (use-case not re-invoked on replay).
 
     Test 3 — Cross-user delete attempt (T-05-09-01 + T-05-09-02 cross-user-no-storage-call):
     - User U1 authenticated. User U2 owns plant P2 with photo bytes seeded into the in-memory storage.
@@ -558,11 +560,22 @@ export const serverEnv = {
 
     Test 5 — Unauthenticated → 401 unauthenticated; Test 6 — Unverified → 403 email_unverified. Same pattern as PATCH Tests 8/9.
 
-    Test 7 — DELETE does NOT use withIdempotency (NO Idempotency-Key required):
-    - DELETE without `Idempotency-Key` header on a valid plant.
-    - Assert: status 204 (NOT 400). DELETE is naturally idempotent at the resource level.
+    Test 7 — Missing Idempotency-Key header (DELETE requires key per D-37):
+    - DELETE a valid plant without the `Idempotency-Key` header.
+    - Assert: status 400; body code `validation_failed` (same guard as PATCH Test 4).
+    - Assert: `deletePlant` spy not called.
+
+    Test 8b — Idempotency hash mismatch on DELETE (same key, different derived hash):
+    - Note: DELETE has no body, so hash is derived from URL path + method. Send same plant DELETE with a DIFFERENT `Idempotency-Key` value than the one used in Test 1.
+    - This is a distinct key so it resolves to a fresh first call (NOT a mismatch). Assert: status 404 (plant already deleted by Test 1); not_found returned — the new key gets a fresh handler invocation returning not_found since plant is gone.
 
     Test 8 — No Drizzle in route file: same grep as PATCH Test 11 (will already be passing — extending the same file).
+
+    Test 9 — postCommit ordering and idempotency replay does NOT re-fire postCommit:
+    - Spy on the PostHog capture method and the Inngest `.send` call (same mocks as Test 1).
+    - FIRST DELETE: assert status 204; assert PostHog/Inngest spies were called (postCommitFn ran once).
+    - SECOND DELETE with same Idempotency-Key: assert status 204 (replay); assert PostHog/Inngest spies were NOT called a second time (postCommitFn is undefined on replay path — closure-capture no-op).
+    - This asserts the contract: side-effects fire exactly once on durable commit, never on replayed response.
   </behavior>
   <action>
     1. Create `src/contexts/catalog/api/route-handlers/delete-plant-handler.ts`. Same first three steps as PATCH (auth → read-only → no idempotency wrap):
@@ -600,7 +613,68 @@ export const serverEnv = {
        }
        ```
 
-       NO `withIdempotency` wrap (DELETE is idempotent at resource level — second call gets `not_found` from `findByIdForUser`). NO body parsing (DELETE has no body).
+       USES `withIdempotency` wrap per Phase 2 D-37. DELETE has no request body, so `requestHash` is derived from the URL path + method (stable for same request). Pattern:
+
+       ```ts
+       import { createHash } from "node:crypto";
+       import { withIdempotency } from "@shared/api/idempotency";
+
+       // Inside deletePlantHandler, after read-only gate:
+       const idempotencyKey = request.headers.get("idempotency-key");
+       if (!idempotencyKey || idempotencyKey.trim() === "") {
+         return errorResponse(ErrorCode.ValidationFailed, "Idempotency-Key header is required");
+       }
+
+       const url = new URL(request.url);
+       const requestHash = createHash("sha256")
+         .update(`DELETE:${url.pathname}`)
+         .digest("hex");
+
+       const result = await withIdempotency(
+         { userId, key: idempotencyKey, requestHash },
+         async (tx) => {
+           const inner = await deletePlant({ userId, plantId }, tx);
+           if (!inner.ok) {
+             return { status: errorStatusFor(inner.code), body: { error: { code: inner.code, message: inner.reason } } };
+           }
+           return { status: 204, body: null };
+         },
+       );
+
+       return new Response(result.body !== null ? JSON.stringify(result.body) : null, {
+         status: result.status,
+         headers: result.body !== null ? { "content-type": "application/json" } : {},
+       });
+       ```
+
+       The `withIdempotency` key derivation (request body hash + Idempotency-Key header) is confirmed against Phase 2 D-37 contract. `tx` is passed to `deletePlant` via deps via the closure-capture postCommit pattern — after `withIdempotency` commits, the route handler runs the callback:
+
+       ```ts
+       let postCommitFn: (() => Promise<void>) | undefined;
+
+       const result = await withIdempotency(
+         { userId, key: idempotencyKey, requestHash },
+         async (tx) => {
+           const inner = await deletePlant({ userId, plantId }, tx);
+           if (!inner.ok) {
+             return { status: errorStatusFor(inner.code), body: { error: { code: inner.code, message: inner.reason } } };
+           }
+           postCommitFn = inner.postCommit;  // captured; only runs if withIdempotency commits
+           return { status: 204, body: null };
+         },
+       );
+
+       // withIdempotency committed (or replayed). On replay postCommitFn is undefined (no-op).
+       // On rollback withIdempotency throws before we reach here — postCommitFn is never awaited.
+       try { await postCommitFn?.(); } catch (e) { Sentry.captureException(e); }
+
+       return new Response(result.body !== null ? JSON.stringify(result.body) : null, {
+         status: result.status,
+         headers: result.body !== null ? { "content-type": "application/json" } : {},
+       });
+       ```
+
+       The `try/catch` around `postCommitFn?.()` ensures a PostHog or Inngest emit failure does NOT surface as a 500 to the client — the DELETE was already durably committed. Log to Sentry and return success.
 
     2. Update `src/app/api/v1/plants/[plantId]/route.ts` to re-export DELETE (already added in Task 1's wiring step — verify at Task 2 commit time).
 
@@ -668,9 +742,19 @@ export const serverEnv = {
 
     Test 6 — Unauthenticated → 401; Test 7 — Email unverified → 403; same pattern as PATCH 8/9.
 
-    Test 8 — Re-delete returns not_found (resource-level idempotency):
-    - After Test 1, DELETE the same E2 id again.
-    - Assert: status 404; body code `not_found`.
+    Test 8 — Idempotency replay (same Idempotency-Key returns cached 204):
+    - After Test 1, DELETE the same E2 id again with the same `Idempotency-Key` header.
+    - Assert: status 204 (cached); `vi.spyOn(deletePhotoEntryModule, "deletePhotoEntry")` was called EXACTLY ONCE across both requests (use-case not re-invoked on replay).
+
+    Test 9 — Missing Idempotency-Key header on DELETE /photo-entries:
+    - DELETE a valid photo entry without the `Idempotency-Key` header.
+    - Assert: status 400; body code `validation_failed`.
+    - Assert: `deletePhotoEntry` spy not called.
+
+    Test 10 — postCommit ordering and idempotency replay does NOT re-fire postCommit:
+    - Spy on PostHog capture and Inngest `.send`.
+    - FIRST DELETE /photo-entries/${E2.id}: assert status 204; assert PostHog/Inngest spies called (postCommitFn ran once after withIdempotency committed).
+    - SECOND DELETE same E2.id with same Idempotency-Key: assert status 204 (replay); assert PostHog/Inngest spies NOT called again (postCommitFn undefined on replay — closure-capture no-op).
   </behavior>
   <action>
     1. Create `src/contexts/catalog/api/route-handlers/delete-photo-entry-handler.ts`:
@@ -700,10 +784,58 @@ export const serverEnv = {
            return errorResponse(ErrorCode.ReadOnlyMode, "subscription is in read-only mode");
          }
 
-         const result = await deletePhotoEntry({ userId, photoEntryId });
-         if (!result.ok) return errorResponse(result.code, result.reason);
-         return new Response(null, { status: 204 });
+         const idempotencyKey = request.headers.get("idempotency-key");
+         if (!idempotencyKey || idempotencyKey.trim() === "") {
+           return errorResponse(ErrorCode.ValidationFailed, "Idempotency-Key header is required");
+         }
+
+         const url = new URL(request.url);
+         const requestHash = createHash("sha256")
+           .update(`DELETE:${url.pathname}`)
+           .digest("hex");
+
+         const result = await withIdempotency(
+           { userId, key: idempotencyKey, requestHash },
+           async (tx) => {
+             const inner = await deletePhotoEntry({ userId, photoEntryId }, tx);
+             if (!inner.ok) {
+               return { status: errorStatusFor(inner.code), body: { error: { code: inner.code, message: inner.reason } } };
+             }
+             return { status: 204, body: null };
+           },
+         );
+
+         return new Response(result.body !== null ? JSON.stringify(result.body) : null, {
+           status: result.status,
+           headers: result.body !== null ? { "content-type": "application/json" } : {},
+         });
        }
+       ```
+
+       Add `import { createHash } from "node:crypto";` and `import { withIdempotency } from "@shared/api/idempotency";` to imports. Pass `tx` to `deletePhotoEntry` via deps using the same closure-capture postCommit pattern as `deletePlantHandler` (Task 2):
+
+       ```ts
+       let postCommitFn: (() => Promise<void>) | undefined;
+
+       const result = await withIdempotency(
+         { userId, key: idempotencyKey, requestHash },
+         async (tx) => {
+           const inner = await deletePhotoEntry({ userId, photoEntryId }, tx);
+           if (!inner.ok) {
+             return { status: errorStatusFor(inner.code), body: { error: { code: inner.code, message: inner.reason } } };
+           }
+           postCommitFn = inner.postCommit;  // captured; only runs if withIdempotency commits
+           return { status: 204, body: null };
+         },
+       );
+
+       // On replay postCommitFn is undefined (no-op). On rollback we never reach this line.
+       try { await postCommitFn?.(); } catch (e) { Sentry.captureException(e); }
+
+       return new Response(result.body !== null ? JSON.stringify(result.body) : null, {
+         status: result.status,
+         headers: result.body !== null ? { "content-type": "application/json" } : {},
+       });
        ```
 
     2. Create `src/app/api/v1/photo-entries/[photoEntryId]/route.ts`:
@@ -783,7 +915,7 @@ After all three tasks complete:
 ```bash
 # Integration suite — the primary verification surface for this plan
 pnpm test:integration -- catalog-mutate-delete-routes
-# Expected: all 27 tests green (11 PATCH + 8 DELETE plant + 8 DELETE photo-entry).
+# Expected: all 31 tests green (11 PATCH + 10 DELETE plant + 10 DELETE photo-entry; +2 idempotency-missing tests per HIGH-3 patch; +2 postCommit-ordering tests per postCommit corrective patch).
 
 # Backstop: no Drizzle imports in /api/* route files
 pnpm test:unit -- no-drizzle-in-routes
@@ -841,13 +973,13 @@ grep "NEXT_PUBLIC_SUBSCRIPTION" src/shared/config/client-env.ts
 - [ ] `PATCH` returns 400 (`validation_failed`) when Idempotency-Key is missing, body is empty, body has unknown keys, or body fails Zod validation.
 - [ ] `PATCH` returns 409 (`conflict`) when same Idempotency-Key is reused with a different body.
 - [ ] `PATCH/DELETE` on a cross-user resource returns 404 (`not_found`), NEVER 403 — no existence disclosure.
-- [ ] `DELETE /api/v1/plants/[plantId]` returns 204 on first call, 404 on repeat; cascades photo_entries + reminders, sets identifications.plant_id NULL, inserts two `pending_storage_deletions` rows, emits `plant.deleted` Inngest event, captures `plant_deleted` PostHog event.
-- [ ] `DELETE /api/v1/photo-entries/[photoEntryId]` returns 204 + auto-promotes cover to next-oldest entry within the same UoW transaction (D-03).
+- [ ] `DELETE /api/v1/plants/[plantId]` requires Idempotency-Key header (400 if missing); first call returns 204, replay of same key returns cached 204 without re-invoking `deletePlant`; cascades photo_entries + reminders, sets identifications.plant_id NULL, inserts two `pending_storage_deletions` rows, emits `plant.deleted` Inngest event, captures `plant_deleted` PostHog event.
+- [ ] `DELETE /api/v1/photo-entries/[photoEntryId]` requires Idempotency-Key header (400 if missing); returns 204 + auto-promotes cover to next-oldest entry within the same UoW transaction (D-03); replay of same key returns cached 204 without re-invoking `deletePhotoEntry`.
 - [ ] All three handlers gate on `requireVerifiedUser` FIRST and `resolveSubscriptionStateFromEnv(...).readOnly` SECOND, BEFORE any use-case invocation.
 - [ ] When `SUBSCRIPTION_READ_ONLY=1`, all three handlers return 402 (`read_only_mode`) and the use-case spy is NEVER called (asserted in three integration tests, one per handler).
 - [ ] All errors emit registry codes only: `validation_failed | not_found | forbidden | read_only_mode | subscription_required | unauthenticated | email_unverified | conflict`.
 - [ ] Routes contain ZERO Drizzle imports (`pnpm test:unit -- no-drizzle-in-routes` green).
-- [ ] All 27 integration tests in `catalog-mutate-delete-routes.integration.test.ts` green.
+- [ ] All 31 integration tests in `catalog-mutate-delete-routes.integration.test.ts` green (11 PATCH + 10 DELETE plant + 10 DELETE photo-entry; includes postCommit-ordering and no-postCommit-on-replay assertions).
 - [ ] `pnpm tsc --noEmit` and `pnpm lint --max-warnings=0` clean.
 - [ ] Plan-level grep guards (no hard-coded statuses, no direct `process.env.SUBSCRIPTION_READ_ONLY`, no Drizzle in routes) all return zero matches as expected.
 - [ ] All HIGH STRIDE threats (T-05-09-01..04) have `mitigate` disposition with a concrete integration-test assertion proving the mitigation.
@@ -859,7 +991,7 @@ After completion, create `.planning/phases/05-catalog-meu-jardim/05-09-route-han
 - Files created (4) + modified (2) + 1 integration test file
 - Test count: 27 integration tests across 3 describe blocks
 - Closed-registry contract: which codes are emitted by which handler under which condition
-- Idempotency posture: PATCH wraps in `withIdempotency` (first consumer alongside 05-08); DELETE skips it (resource-level idempotent)
+- Idempotency posture: PATCH and DELETE all three handlers wrap in `withIdempotency` per Phase 2 D-37; tx passed to use-case via deps; key derivation = request body hash + Idempotency-Key header
 - Read-only mode integration: how `resolveSubscriptionStateFromEnv` is wired and why it fires before use-case invocation (T-05-09-04 mitigation)
 - Wave 4 UI handoff notes: which UI plan consumes which endpoint, with the optimistic-UI rollback pattern for PATCH (D-06 LWW)
 - Open follow-ups: VALIDATION.md Per-Task Verification Map rows for the three tasks should be populated (planner updates after this plan ships)

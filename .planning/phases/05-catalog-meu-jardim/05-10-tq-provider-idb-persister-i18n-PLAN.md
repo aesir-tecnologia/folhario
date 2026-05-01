@@ -30,11 +30,13 @@ must_haves:
     - "Persister buster includes both the deploy SHA and a SHA-256-derived per-user hash so a different user on the same device cannot rehydrate the previous user's catalog cache"
     - "storage-budget-guard.ts exports a checkAndEvict() function that calls navigator.storage.estimate() and removes oldest queries (by dataUpdatedAt) until used/quota drops below 0.7 once it crosses 0.8"
     - "storage-budget-guard.ts is SSR-safe: every navigator-touching code path is gated by typeof navigator !== 'undefined' and resolves to a no-op when navigator is unavailable"
-    - "src/contexts/catalog/queries/index.ts exports plantsKeys.{all, lists, detail, photoEntries} and locationsKeys.all factories with stable query-key shapes the planner spec dictates"
+    - "src/contexts/catalog/queries/index.ts is a server-safe pure factory module with NO 'use client' directive and NO React imports; it exports plantsKeys.{all, lists, detail, photoEntries} and locationsKeys.all factories returning {queryKey, queryFn, staleTime}; queryFn uses fetch() which works in both Server Components (Next.js fetch) and client"
+    - "src/contexts/catalog/queries/hooks.ts is a 'use client' hook layer that exports usePlants, usePlant, usePhotoEntries, useLocations — each wrapping useQuery(plantsQueryOptions(...)) from index.ts; downstream UI plans import hooks from this file, NOT from index.ts"
     - "Calling queryClient.invalidateQueries({queryKey: plantsKeys.all()}) partial-matches every list-variant + detail + photoEntries entry under 'catalog'"
     - "(app)/layout.tsx mounts <QueryProvider userId={user.id}> after the verified-user gate so unverified visitors never instantiate the cache"
-    - "On logout, the persister is removed (idb-keyval del('folhario.query-cache')) BEFORE the redirect so the next user on the same device starts with a fresh cache"
+    - "On logout, both the IDB persister (idb-keyval del('folhario.query-cache')) AND the SW API cache are purged BEFORE the redirect: if ('caches' in window) { await Promise.all([caches.delete('folhario-catalog-api-v1')]); } — this prevents cross-user data leakage from the SW runtime cache that 05-18 registers for /api/v1/plants*, /api/v1/photo-entries*, /api/v1/locations"
     - "messages/pt-BR.json catalog.* namespace contains every key UI-SPEC § Copywriting Contract enumerates (header, sort options, empty, manual add + errors, profile fields + delete sheet, photo journal, locations defaults, cross-cutting toasts); existing catalog.empty.hint and catalog.empty.cta are REPLACED with the Phase 5 contract values, not appended"
+    - "this plan owns the top-level catalog namespace scaffold in src/messages/pt-BR.json; downstream plans (05-07, 05-08, 05-12) extend leaf keys only — they do NOT introduce new sibling namespaces"
 
   artifacts:
     - path: "src/shared/ui/query-provider.tsx"
@@ -46,9 +48,13 @@ must_haves:
       min_lines: 40
       contains: "navigator.storage"
     - path: "src/contexts/catalog/queries/index.ts"
-      provides: "Tkdodo-style query factories: plantsKeys (all/lists/detail/photoEntries) + locationsKeys.all"
+      provides: "Server-safe Tkdodo-style query factories: plantsKeys (all/lists/detail/photoEntries) + locationsKeys.all; NO 'use client' directive; NO React imports; queryFn uses fetch()"
       min_lines: 40
       exports: ["plantsKeys", "locationsKeys"]
+    - path: "src/contexts/catalog/queries/hooks.ts"
+      provides: "Client-only 'use client' hook layer: usePlants, usePlant, usePhotoEntries, useLocations — each wrapping useQuery() with the corresponding factory from index.ts"
+      min_lines: 30
+      exports: ["usePlants", "usePlant", "usePhotoEntries", "useLocations"]
     - path: "tests/unit/idb-keyval-storage-adapter.test.ts"
       provides: "Round-trip test for the AsyncStoragePersister-compatible idb-keyval adapter (getItem/setItem/removeItem) using fake-indexeddb"
       min_lines: 30
@@ -59,10 +65,10 @@ must_haves:
       provides: "navigator.storage.estimate mock: <0.8 returns no-op; >0.8 evicts oldest; SSR (typeof navigator === 'undefined') returns no-op"
       min_lines: 40
     - path: "tests/unit/plants-keys.test.ts"
-      provides: "Query factory shape + partial-match invalidation test (plantsKeys.all() partial-matches lists/detail/photoEntries)"
+      provides: "Query factory shape + partial-match invalidation test (plantsKeys.all() partial-matches lists/detail/photoEntries); also asserts caches.delete called with 'folhario-catalog-api-v1' on logout"
       min_lines: 40
     - path: "src/messages/pt-BR.json"
-      provides: "catalog.* namespace expanded to cover header/sort/empty/add/profile/journal/locations/readOnly/offline keys per UI-SPEC § Copywriting Contract"
+      provides: "catalog.* namespace expanded to cover header/sort/empty/add/profile/journal/locations/readOnly/offline keys per UI-SPEC § Copywriting Contract; canonical i18n namespace owner for phase 5 catalog"
       contains: "\"locations\""
     - path: "package.json"
       provides: "@tanstack/react-query, @tanstack/query-async-storage-persister, @tanstack/react-query-persist-client, idb-keyval as runtime dependencies"
@@ -86,8 +92,8 @@ must_haves:
       via: "persistOptions.buster = `${deploySha}.${userIdHash}` mitigating T-05-10-01"
       pattern: "buster"
     - from: "src/contexts/iam/api/components/logout-link.tsx"
-      to: "idb-keyval del('folhario.query-cache')"
-      via: "fetch(/api/v1/iam/logout) → del IDB cache → window.location redirect"
+      to: "idb-keyval del('folhario.query-cache') + caches.delete('folhario-catalog-api-v1')"
+      via: "fetch(/api/v1/iam/logout) → del IDB cache → purge SW cache → window.location redirect"
       pattern: "folhario\\.query-cache"
 ---
 
@@ -99,14 +105,16 @@ Concretely, this plan delivers:
 1. **Runtime dependencies installed** — `@tanstack/react-query`, `@tanstack/query-async-storage-persister`, `@tanstack/react-query-persist-client`, `idb-keyval` (deferred from Wave 0 plan 05-01 per the orchestrator's "keep Wave 0 lean" guidance).
 2. **`<QueryProvider>` client component** at `src/shared/ui/query-provider.tsx` that wraps `<PersistQueryClientProvider>` with an `idb-keyval`-backed AsyncStoragePersister, an allowlist `shouldDehydrateQuery` filter (D-17), `maxAge: 24h` (Pitfall 1), and a `buster` string composed of `${deploySha}.${userIdHash}` to mitigate cross-user IDB poisoning on shared devices (T-05-10-01).
 3. **Storage budget guard** at `src/shared/ui/storage-budget-guard.ts` — SSR-safe LRU eviction triggered when `navigator.storage.estimate()` reports `used/quota > 0.8`, evicting oldest queries until the ratio drops below 0.7 (Pitfall 7).
-4. **Tkdodo-style query factory** at `src/contexts/catalog/queries/index.ts` — `plantsKeys.{all, lists, detail, photoEntries}` + `locationsKeys.all` with co-located query keys + queryFn stubs + `staleTime` (D-18). Wave 4 UI plans consume directly.
+4. **Tkdodo-style query factory split into two files:**
+   - `src/contexts/catalog/queries/index.ts` — server-safe pure factory with NO `'use client'` directive and NO React imports: `plantsKeys.{all, lists, detail, photoEntries}` + `locationsKeys.all` with co-located query keys + `fetch()`-based queryFn + `staleTime` (D-18). Works in both Server Components and client. Wave 4 UI Server Components import `plantsQueryOptions` from this path.
+   - `src/contexts/catalog/queries/hooks.ts` — client-only `'use client'` hook layer: `usePlants`, `usePlant`, `usePhotoEntries`, `useLocations` each wrapping `useQuery(plantsQueryOptions(...))` from `index.ts`. Wave 4 client components import hooks from this path.
 5. **Mount `<QueryProvider>` inside `(app)/layout.tsx`** AFTER the verified-user gate (D-16, RESEARCH § "Wired in a client `<QueryProvider>` mounted inside `(app)/layout.tsx` after the auth gate"). Unverified visitors never instantiate the cache.
-6. **Logout cache clear** — extend `LogoutLink` to call `idb-keyval del('folhario.query-cache')` BEFORE the redirect so the next user on the same device starts with a fresh persisted cache (T-05-10-01 mitigation half two).
-7. **i18n catalog namespace** — extend `src/messages/pt-BR.json` `catalog.*` per UI-SPEC § Copywriting Contract (~55 keys covering header, sort options, empty state, manual add + errors, profile fields + delete sheet, photo journal, locations defaults, cross-cutting toasts). Existing placeholders `catalog.empty.hint` and `catalog.empty.cta` are **replaced** (not appended) per UI-SPEC §4 conflict resolution.
+6. **Logout cache clear** — extend `LogoutLink` to clear BOTH the IDB persister (`idb-keyval del('folhario.query-cache')`) AND the SW API cache (`caches.delete('folhario-catalog-api-v1')`) BEFORE the redirect, preventing cross-user data leakage from the Service Worker runtime cache that plan 05-18 registers (T-05-10-01 mitigation).
+7. **i18n catalog namespace** — extend `src/messages/pt-BR.json` `catalog.*` per UI-SPEC § Copywriting Contract (~55 keys covering header, sort options, empty state, manual add + errors, profile fields + delete sheet, photo journal, locations defaults, cross-cutting toasts). Existing placeholders `catalog.empty.hint` and `catalog.empty.cta` are **replaced** (not appended) per UI-SPEC §4 conflict resolution. This plan is the canonical i18n namespace owner for phase 5 catalog; downstream plans (05-07, 05-08, 05-12) extend leaf keys only.
 
 This plan does NOT touch the Service Worker (D-19 ships in plan 05-18) and does NOT install `fake-indexeddb` (already shipped in 05-01). It mounts the provider but does not consume it — Wave 4 UI plans (05-15..05-18) are the first consumers.
 
-Output: 4 new source files + 4 new unit test files + 3 edits (`package.json`, `src/messages/pt-BR.json`, `src/app/(app)/layout.tsx`, `src/contexts/iam/api/components/logout-link.tsx`).
+Output: 5 new source files + 4 new unit test files + 3 edits (`package.json`, `src/messages/pt-BR.json`, `src/app/(app)/layout.tsx`, `src/contexts/iam/api/components/logout-link.tsx`).
 </objective>
 
 <execution_context>
@@ -235,10 +243,12 @@ export async function checkAndEvict(queryClient: QueryClient): Promise<{
 }>;
 ```
 
-### Query factory public API (this plan creates)
+### Query factory public API — TWO files (MEDIUM-2 split)
 
 ```typescript
 // src/contexts/catalog/queries/index.ts
+// SERVER-SAFE: NO 'use client' directive. NO React imports.
+// queryFn uses fetch() — works in Server Components (Next.js fetch) and client.
 
 import type { QueryFunction } from "@tanstack/react-query";
 
@@ -282,9 +292,37 @@ export const locationsKeys = {
 };
 ```
 
+```typescript
+// src/contexts/catalog/queries/hooks.ts
+// CLIENT-ONLY: 'use client' directive required.
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { plantsKeys, locationsKeys, type PlantsListParams } from "./index";
+
+export function usePlants(params: PlantsListParams) {
+  return useQuery(plantsKeys.lists(params));
+}
+
+export function usePlant(plantId: string) {
+  return useQuery(plantsKeys.detail(plantId));
+}
+
+export function usePhotoEntries(plantId: string) {
+  return useQuery(plantsKeys.photoEntries(plantId));
+}
+
+export function useLocations() {
+  return useQuery(locationsKeys.all());
+}
+```
+
+NOTE: Server Components import `plantsKeys` / `locationsKeys` from `@/contexts/catalog/queries`
+(the `index.ts` server-safe path) and call `await queryClient.prefetchQuery(plantsKeys.lists(...))`.
+Client components import hooks from `@/contexts/catalog/queries/hooks`.
+
 NOTE: `fetchPlantsList`, `fetchPlantDetail`, `fetchPhotoEntries`, `fetchLocations`
-are imported from `src/contexts/catalog/api/route-handlers/*` consumers (Wave 4 UI plans).
-This plan ships these as **typed `fetch()` wrappers** that POST/GET against the
+are thin `fetch()` wrappers in `index.ts` that POST/GET against the
 already-shipped routes from plans 05-08/05-09. Wire them as thin `fetch(...).then(r => r.json())`
 shims; full type fidelity is the consumer plan's responsibility.
 
@@ -317,7 +355,7 @@ shims; full type fidelity is the consumer plan's responsibility.
 //   await fetch("/api/v1/iam/logout", {...});
 //   window.location.href = "/auth/login";
 //
-// THIS PLAN'S CHANGE — clear the persister BEFORE the redirect:
+// THIS PLAN'S CHANGE — clear the IDB persister AND the SW API cache BEFORE the redirect:
 //
 //   try {
 //     await fetch("/api/v1/iam/logout", { method: "POST", ... });
@@ -325,14 +363,20 @@ shims; full type fidelity is the consumer plan's responsibility.
 //     try {
 //       const { del } = await import("idb-keyval");
 //       await del("folhario.query-cache");
-//     } catch { /* swallow — best-effort cache clear */ }
+//     } catch { /* swallow — best-effort IDB clear */ }
+//     try {
+//       if ('caches' in window) {
+//         await Promise.all([caches.delete('folhario-catalog-api-v1')]);
+//       }
+//     } catch { /* swallow — best-effort SW cache purge */ }
 //     window.location.href = "/auth/login";
 //   }
 //
 // Dynamic import keeps idb-keyval out of the auth-flow bundle for users who
-// never log out from this device. Failure is best-effort (per-user buster
-// already mitigates the cross-user IDB-poisoning risk; this clear is a
-// belt-and-braces second line of defense).
+// never log out from this device. Both clears are best-effort (per-user buster
+// already mitigates the cross-user IDB-poisoning risk; these clears are
+// belt-and-braces second line of defense). The SW cache name
+// 'folhario-catalog-api-v1' is the canonical identifier exported by plan 05-18.
 ```
 
 ### Deploy SHA source
@@ -696,9 +740,10 @@ Per D-XX trace:
 </task>
 
 <task type="auto" tdd="true">
-  <name>Task 3: Query factory + (app)/layout.tsx mount + logout cache clear</name>
+  <name>Task 3: Query factory (index.ts + hooks.ts) + (app)/layout.tsx mount + logout cache clear</name>
   <files>
     src/contexts/catalog/queries/index.ts,
+    src/contexts/catalog/queries/hooks.ts,
     src/app/(app)/layout.tsx,
     src/contexts/iam/api/components/logout-link.tsx,
     tests/unit/plants-keys.test.ts
@@ -712,10 +757,12 @@ Per D-XX trace:
 - Test 5 — `locationsKeys.all()` returns `queryKey: ['catalog','locations']`.
 - Test 6 — invariant: every factory output's `queryKey[0]` is `'catalog'` AND the first two segments match an allowlisted prefix from `shouldPersist` (import the helper, run it on a synthesized `Query` for each factory output, assert `true`).
 - Test 7 — `queryClient.invalidateQueries({queryKey: plantsKeys.all()})` partial-matches a query registered under `plantsKeys.lists(...)` AND another under `plantsKeys.detail(...)`. Use `QueryCache.find` after the invalidate to confirm both are flagged stale.
+- Test 8 — `src/contexts/catalog/queries/index.ts` contains NO `'use client'` directive and NO `import.*from.*react` statement (assert via reading the file content as a string in the test).
+- Test 9 — logout button unit test: mock `globalThis.caches = { delete: vi.fn().mockResolvedValue(true) }`; trigger the logout handleClick; assert `caches.delete` was called with `'folhario-catalog-api-v1'` (per HIGH-2 SW cache purge requirement).
 
   </behavior>
   <action>
-**Implement `src/contexts/catalog/queries/index.ts`:**
+**Implement `src/contexts/catalog/queries/index.ts` (server-safe — NO 'use client', NO React imports):**
 
 ```typescript
 import type { QueryFunction } from "@tanstack/react-query";
@@ -727,10 +774,10 @@ export type PlantsListParams = {
   cursor?: string;
 };
 
-// Thin fetch wrappers — Wave 4 UI plans replace these with type-checked
-// API contracts; for now the consumers receive `unknown`. The shape contract
-// is enforced at the API route level (plans 05-08/05-09); UI plans wrap with
-// drizzle-zod parse on consumption.
+// Thin fetch wrappers — works in Server Components (Next.js fetch) and client.
+// Wave 4 UI plans replace these with type-checked API contracts; for now the
+// consumers receive `unknown`. The shape contract is enforced at the API route
+// level (plans 05-08/05-09); UI plans wrap with drizzle-zod parse on consumption.
 
 async function fetchPlantsList(params: PlantsListParams): Promise<unknown> {
   const sp = new URLSearchParams();
@@ -791,6 +838,33 @@ export const locationsKeys = {
 };
 ```
 
+**Implement `src/contexts/catalog/queries/hooks.ts` (client-only 'use client' hook layer):**
+
+```typescript
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { plantsKeys, locationsKeys, type PlantsListParams } from "./index";
+
+export function usePlants(params: PlantsListParams) {
+  return useQuery(plantsKeys.lists(params));
+}
+
+export function usePlant(plantId: string) {
+  return useQuery(plantsKeys.detail(plantId));
+}
+
+export function usePhotoEntries(plantId: string) {
+  return useQuery(plantsKeys.photoEntries(plantId));
+}
+
+export function useLocations() {
+  return useQuery(locationsKeys.all());
+}
+```
+
+Wave 4 client components MUST import hooks from `hooks.ts`. Server Components MUST import factories from `index.ts`. Do NOT import hooks in Server Components — the `'use client'` boundary is the split point.
+
 **Modify `src/app/(app)/layout.tsx`** (Edit, NOT Write — read first to preserve the four-branch gate):
 
 Wrap `<AppShell>{children}</AppShell>` (currently the verified branch return on line 52) in `<QueryProvider userId={user.id}>`:
@@ -810,7 +884,7 @@ NOTHING else in the file changes. Branches (a), (b), (c) — redirects and `<Unv
 
 **Modify `src/contexts/iam/api/components/logout-link.tsx`** (Edit, NOT Write — read first to preserve the existing fetch + redirect):
 
-Inside the `try { await fetch(...); } finally { ... }` block, BEFORE the `window.location.href = '/auth/login'` line, dynamically import `idb-keyval` and clear the persister key. Swallow errors (the redirect must always run):
+Inside the `try { await fetch(...); } finally { ... }` block, BEFORE the `window.location.href = '/auth/login'` line, clear BOTH the IDB persister key AND the SW API cache. Swallow errors on each independently so the redirect always runs:
 
 ```typescript
 async function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
@@ -826,27 +900,39 @@ async function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
       const { del } = await import("idb-keyval");
       await del("folhario.query-cache");
     } catch {
-      /* swallow — best-effort cache clear; per-user buster already
+      /* swallow — best-effort IDB clear; per-user buster already
          mitigates cross-user IDB poisoning at the persister level */
+    }
+    try {
+      if ('caches' in window) {
+        await Promise.all([caches.delete('folhario-catalog-api-v1')]);
+      }
+    } catch {
+      /* swallow — best-effort SW cache purge */
     }
     window.location.href = "/auth/login";
   }
 }
 ```
 
-The dynamic import keeps `idb-keyval` out of the auth-flow bundle for users who never log out from this device.
+The SW cache name `'folhario-catalog-api-v1'` is the canonical identifier exported by plan 05-18's runtime cache rule. This plan references it as a string constant — if 05-18 ships first and exports `CATALOG_API_CACHE`, update to use that constant; otherwise the string literal is acceptable as a coordination comment.
 
-**Implement `tests/unit/plants-keys.test.ts`** verifying every behavior under `<behavior>`. Import `shouldPersist` from `@shared/ui/query-provider` for Test 6 (synthesize a minimal `Query`-shaped object: `{queryKey, state: {status: 'success', data: {}, dataUpdatedAt: Date.now()}}`).
+**Implement `tests/unit/plants-keys.test.ts`** verifying every behavior under `<behavior>`.
+- Tests 1-7: Import `shouldPersist` from `@shared/ui/query-provider` for Test 6 (synthesize a minimal `Query`-shaped object: `{queryKey, state: {status: 'success', data: {}, dataUpdatedAt: Date.now()}}`).
+- Test 8: Read `src/contexts/catalog/queries/index.ts` as a string via `fs.readFileSync`; assert it does NOT contain `'use client'` or `from "react"` / `from 'react'`.
+- Test 9 (HIGH-2 logout SW purge): Import the `LogoutLink` component (or its `handleClick` callback directly if exported); mock `globalThis.caches = { delete: vi.fn().mockResolvedValue(true) }`; mock `window.location` assign; trigger the logout; assert `caches.delete` was called with `'folhario-catalog-api-v1'`. If `handleClick` is not directly importable, test the behavior via a React Testing Library `render` + `userEvent.click` on the rendered anchor.
 
 Per D-XX trace:
-- Query factory shape — D-18
+- Query factory shape + server-safe split — D-18, MEDIUM-2
+- Client hooks layer — MEDIUM-2
 - Mount inside (app)/layout.tsx — D-16
-- Logout cache clear — threat T-05-10-01 belt-and-braces mitigation
+- Logout IDB clear — threat T-05-10-01 belt-and-braces mitigation
+- Logout SW cache purge — HIGH-2, cross-user SW data leakage prevention
   </action>
   <verify>
-    <automated>pnpm test:unit -- plants-keys 2>&1 | tail -10 && pnpm typecheck 2>&1 | tail -5</automated>
+    <automated>pnpm test:unit -- plants-keys 2>&1 | tail -15 && pnpm typecheck 2>&1 | tail -5</automated>
   </verify>
-  <done>plants-keys.test.ts green; `pnpm typecheck` exits 0 (the layout edit and logout-link edit are typed correctly); `(app)/layout.tsx` wraps `<AppShell>` in `<QueryProvider userId={user.id}>` ONLY in the verified branch; `LogoutLink` calls `del('folhario.query-cache')` before the redirect; query factory exports match the public API in `<interfaces>`.</done>
+  <done>plants-keys.test.ts green (9 tests including SW cache purge assertion and server-safe index.ts check); `pnpm typecheck` exits 0; `(app)/layout.tsx` wraps `<AppShell>` in `<QueryProvider userId={user.id}>` ONLY in the verified branch; `LogoutLink` calls both `del('folhario.query-cache')` AND `caches.delete('folhario-catalog-api-v1')` before the redirect; `src/contexts/catalog/queries/index.ts` has NO 'use client' directive and NO React imports; `src/contexts/catalog/queries/hooks.ts` has 'use client' and exports usePlants/usePlant/usePhotoEntries/useLocations; `grep -n "caches.delete.*folhario-catalog-api-v1" src/contexts/iam/api/components/logout-link.tsx` returns at least 1 hit.</done>
 </task>
 
 </tasks>
@@ -858,20 +944,22 @@ Per D-XX trace:
 |----------|-------------|
 | Browser ↔ IndexedDB | TanStack Query cache persists user-owned catalog data into a same-origin IDB database. On a shared device, this data MUST be partitioned per user. |
 | Layout gate ↔ QueryProvider | `<QueryProvider>` is mounted ONLY in the verified-user branch of `(app)/layout.tsx`. Unverified or oauth-incomplete sessions never instantiate the cache. |
-| Logout ↔ persister | `LogoutLink` clears the persister key before the page-reload redirect so the next user starts fresh. |
+| Logout ↔ persister + SW cache | `LogoutLink` clears the IDB persister key AND purges the SW runtime cache (`folhario-catalog-api-v1`) before the page-reload redirect so the next user starts with a completely fresh cache state. |
 | Layout ↔ child SSR data | Phase 5 D-13 (in plan 05-15) uses `<HydrationBoundary>` per-route; this plan does NOT introduce a global hydration leak surface. |
+| Server Component ↔ Client Component boundary | `index.ts` is server-safe (no 'use client'); `hooks.ts` is client-only ('use client'). Importing hooks in a Server Component would break the boundary — the split enforces this at the module level. |
 
 ## STRIDE Threat Register
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-05-10-01 | T (Tampering) / I (Information Disclosure) | IndexedDB persister key `folhario.query-cache` on a device shared between users | mitigate | (a) `buster: ${deploySha}.${userIdHash}` (SHA-256(userId).slice(0,12) hex) — different user produces a different buster, forcing TQ to discard the previously-persisted cache on rehydrate; (b) `LogoutLink` calls `idb-keyval del('folhario.query-cache')` before redirect — belt-and-braces second line of defense; (c) allowlist excludes any non-catalog query (e.g., IAM, identification) from the persister so identity-bearing payloads never land in IDB |
+| T-05-10-01 | T (Tampering) / I (Information Disclosure) | IndexedDB persister key `folhario.query-cache` on a device shared between users | mitigate | (a) `buster: ${deploySha}.${userIdHash}` (SHA-256(userId).slice(0,12) hex) — different user produces a different buster, forcing TQ to discard the previously-persisted cache on rehydrate; (b) `LogoutLink` calls `idb-keyval del('folhario.query-cache')` before redirect — IDB belt-and-braces; (c) `LogoutLink` calls `caches.delete('folhario-catalog-api-v1')` before redirect — SW cache belt-and-braces; (d) allowlist excludes any non-catalog query (e.g., IAM, identification) from the persister so identity-bearing payloads never land in IDB |
 | T-05-10-02 | T (Tampering) | RSC `<HydrationBoundary>` leaking server state to wrong client cache | mitigate | This plan does NOT install a global `<HydrationBoundary>`. Per D-13, hydration is per-route inside the catalog page server component (plan 05-15); each request mints a fresh `QueryClient` server-side that is discarded after dehydration |
 | T-05-10-03 | I (Information Disclosure) | Storage-budget eviction race during quota pressure leaking partial data | mitigate | `checkAndEvict` calls `queryClient.removeQueries({exact: true})` per query — eviction is whole-query, never partial; the helper is idempotent (re-runs collapse to no-op below `LOW_WATER`); guarded by `typeof navigator !== 'undefined'` so SSR + older browsers no-op |
 | T-05-10-04 | E (Elevation of Privilege) | Allowlist regression letting a non-catalog query (e.g., `['iam','me']`) into IDB | mitigate | `tests/unit/should-persist-query.test.ts` Tests 5 + 6 lock the allowlist behavior; CI green-gate on the unit project means future regressions fail the suite. Allowlist prefixes are `as const` readonly tuples — a typo widens the allowlist, immediately failing the unit tests |
 | T-05-10-05 | I (Information Disclosure) | Deploy SHA exposure via `NEXT_PUBLIC_DEPLOY_SHA` | accept | Deploy SHA is already public via Sentry release headers and source-map URLs (PROJECT.md observability constraint). Re-using it in the buster string adds no new disclosure |
+| T-05-10-06 | I (Information Disclosure) | SW runtime cache (`folhario-catalog-api-v1`) serving previous user's authenticated API responses to new user on same device | mitigate | `LogoutLink` calls `caches.delete('folhario-catalog-api-v1')` in the finally block before redirect; guarded by `'caches' in window` for environments without SW support; swallows errors so redirect always runs |
 
-`block_on: high` per ASVS L1. T-05-10-01 has TWO independent mitigations (buster partition + logout clear) — high-severity threat has redundant defense. T-05-10-04 is locked by automated unit tests in this plan's deliverable set.
+`block_on: high` per ASVS L1. T-05-10-01 has THREE independent mitigations (buster partition + IDB logout clear + SW cache logout purge) — high-severity threat has redundant defense. T-05-10-04 is locked by automated unit tests in this plan's deliverable set. T-05-10-06 is a new threat added per HIGH-2 review finding.
 
 </threat_model>
 
@@ -879,7 +967,7 @@ Per D-XX trace:
 ## Phase-level checks
 
 1. `pnpm test:unit` — all four new test files green (idb-keyval-storage-adapter, should-persist-query, storage-budget-guard, plants-keys).
-2. `pnpm typecheck` — exits 0 with the layout edit, logout-link edit, query factory, and provider all in tree.
+2. `pnpm typecheck` — exits 0 with the layout edit, logout-link edit, query factory files, and provider all in tree.
 3. `pnpm lint` — exits 0; no ESLint violations in new files.
 4. **Sanity: allowlist coverage matches D-17 verbatim.**
    - `grep -E "ALLOWED_PREFIXES|catalog.*plants|catalog.*plant|catalog.*photo-entries|catalog.*locations" src/shared/ui/query-provider.tsx` returns the four prefixes (and only those four).
@@ -889,6 +977,12 @@ Per D-XX trace:
    - `grep -B 2 "<QueryProvider" src/app/(app)/layout.tsx` shows the surrounding context — must be after the `if (!user.emailVerifiedAt)` block, NOT before.
 7. **Sanity: i18n catalog namespace coverage.**
    - The Task 1 verify command's `node -e ...` script asserts the 14 representative keys are present. Reviewer manually scans the diff for the full 79-item list.
+8. **Sanity: HIGH-2 SW cache purge in logout.**
+   - `grep -n "caches.delete.*folhario-catalog-api-v1" src/contexts/iam/api/components/logout-link.tsx` returns at least 1 hit.
+9. **Sanity: MEDIUM-2 server-safe query factory.**
+   - `grep -v '^#' src/contexts/catalog/queries/index.ts | grep -c "use client"` returns 0 (no 'use client' directive).
+   - `grep -v '^#' src/contexts/catalog/queries/index.ts | grep -c "from ['\"]react['\"]"` returns 0 (no React imports).
+   - `grep -c "use client" src/contexts/catalog/queries/hooks.ts` returns at least 1 (hooks file IS client-only).
 
 ## Run order
 
@@ -906,9 +1000,10 @@ pnpm lint
 - [ ] `@tanstack/react-query`, `@tanstack/query-async-storage-persister`, `@tanstack/react-query-persist-client`, `idb-keyval` are listed under `dependencies` in `package.json` (NOT `devDependencies`)
 - [ ] `src/shared/ui/query-provider.tsx` exports `QueryProvider` and is `'use client'`; wraps `<PersistQueryClientProvider>` with the idb-keyval adapter, allowlist filter, `maxAge: 24h`, and `buster = ${deploySha}.${userIdHash}`
 - [ ] `src/shared/ui/storage-budget-guard.ts` exports `getStorageUsageRatio` and `checkAndEvict`; SSR-safe; LRU eviction targets ONLY catalog queries
-- [ ] `src/contexts/catalog/queries/index.ts` exports `plantsKeys.{all, lists, detail, photoEntries}` and `locationsKeys.all` with the exact key shapes in `<interfaces>`
+- [ ] `src/contexts/catalog/queries/index.ts` exports `plantsKeys.{all, lists, detail, photoEntries}` and `locationsKeys.all` with the exact key shapes in `<interfaces>`; NO `'use client'` directive; NO React imports; `queryFn` uses `fetch()`
+- [ ] `src/contexts/catalog/queries/hooks.ts` has `'use client'` directive and exports `usePlants`, `usePlant`, `usePhotoEntries`, `useLocations` each wrapping `useQuery()` with the corresponding factory from `index.ts`
 - [ ] `src/app/(app)/layout.tsx` wraps `<AppShell>` in `<QueryProvider userId={user.id}>` ONLY in the verified-user branch; redirects + `<UnverifiedBlocker />` remain unwrapped
-- [ ] `src/contexts/iam/api/components/logout-link.tsx` calls `idb-keyval del('folhario.query-cache')` (dynamic import, error-swallowed) before `window.location.href` redirect
+- [ ] `src/contexts/iam/api/components/logout-link.tsx` calls both `idb-keyval del('folhario.query-cache')` AND `caches.delete('folhario-catalog-api-v1')` (each in its own try/catch, error-swallowed) before `window.location.href` redirect; `grep -n "caches.delete.*folhario-catalog-api-v1" src/contexts/iam/api/components/logout-link.tsx` returns at least 1 hit
 - [ ] `src/messages/pt-BR.json` `catalog.*` namespace covers all 79 keys from the UI-SPEC § Copywriting Contract; `catalog.empty.hint` and `catalog.empty.cta` are REPLACED (not appended); `catalog.locations.defaults` is an 8-element string array
 - [ ] All four new unit tests green under `pnpm test:unit`; `pnpm typecheck` exits 0; `pnpm lint` exits 0
 
@@ -918,11 +1013,12 @@ pnpm lint
 After completion, create `.planning/phases/05-catalog-meu-jardim/05-10-SUMMARY.md` per `.claude/get-shit-done/templates/summary.md` covering:
 
 - The four runtime deps installed (with resolved versions)
-- The four new source files + four new test files + three edits
+- The five new source files (query-provider, storage-budget-guard, queries/index.ts, queries/hooks.ts, logout-link edits) + four new test files + three edits
 - Confirmation that the persister allowlist matches D-17 verbatim
 - Confirmation that the buster string mitigates T-05-10-01 (deploy SHA + per-user hash)
 - Confirmation that `<QueryProvider>` is mounted ONLY in the verified-user branch (defense at the gate)
-- Confirmation that logout clears the persister key before redirect (belt-and-braces)
-- The 79-key i18n catalog namespace expansion (replaced placeholders + new keys)
+- Confirmation that logout clears both the IDB persister key AND the SW cache `folhario-catalog-api-v1` before redirect (belt-and-braces, HIGH-2)
+- Confirmation that `src/contexts/catalog/queries/index.ts` is server-safe (no 'use client', no React imports, fetch-based queryFn) and `hooks.ts` is client-only (MEDIUM-2 split)
+- The 79-key i18n catalog namespace expansion (replaced placeholders + new keys); this plan is the canonical namespace owner (MEDIUM-4)
 - Any deviations from the plan (if `pnpm` resolves a different major version than RESEARCH.md anticipated, document)
 </output>

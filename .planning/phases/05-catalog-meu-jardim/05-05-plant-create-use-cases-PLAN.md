@@ -17,14 +17,19 @@ must_haves:
     - "PostHog `plant_added` is captured ONLY after the UoW transaction commits, with privacy-clean properties per D-28: `{source, has_nickname, has_location, has_acquisition_date, has_notes, photo_count}`."
     - "Inngest `plant.created` event is emitted ONLY after the UoW transaction commits."
     - "On UoW rollback (DB insert failure after storage upload succeeded), the original photo bytes AND thumbnail bytes are best-effort deleted via `deleteSinglePlantPhotoBestEffort`, mirroring `upload-photo.ts:217-225`."
-    - "On UoW rollback, NEITHER PostHog NOR Inngest fires (the post-commit block is skipped because the `await withUnitOfWork(...)` rejects before the block runs)."
+    - "On UoW rollback (own-UoW path), NEITHER PostHog NOR Inngest fires — the use-case throws before reaching the postCommit return path; telemetry is never scheduled."
     - "Validation failures (missing name, missing photo, oversized buffer, GPS-bearing buffer, unsupported MIME) return discriminated-union `{ok: false, code: ErrorCode.ValidationFailed, reason}` BEFORE any storage write."
     - "`source: 'identification'` branch type-checks and accepts `species_id` + optional name pre-fill; this branch is shipped here but Phase 5 only exercises `source: 'manual'` (CAT-01 contributor; Phase 6 closes)."
     - "`userId` only ever flows from the caller (route handler will use `requireVerifiedUser` in 05-08); the use-case never reads userId from request input shapes."
+    - "Use-case signature is `createPlant(input: CreatePlantInput, deps: { tx?: TransactionalDb; ... })`. If `deps.tx` is provided by the caller (e.g., the `withIdempotency` wrapper in 05-08), the use-case USES that transaction and DOES NOT commit — the outermost wrapper owns the commit. If `deps.tx` is absent, the use-case opens its own UoW and runs telemetry inline after the `withUnitOfWork` await resolves."
+    - "When `deps.tx` is absent: `createPlant` opens its own `withUnitOfWork`, inserts Plant + PhotoEntry, and on successful return runs PostHog capture + Inngest send inline (sequential, after the UoW promise resolves). Returns `{ ok: true, plant, photoEntry }` with NO `postCommit` field."
+    - "When `deps.tx` is provided: `createPlant` uses it for DB inserts, does NOT commit, and returns `{ ok: true, plant, photoEntry, postCommit: async () => { ... } }`. The `postCommit` callback contains the PostHog capture + Inngest send. The caller (route handler 05-08 / `withIdempotency`) MUST await `postCommit` AFTER the outer commit succeeds. If the outer tx rolls back, the caller MUST NOT call `postCommit`."
+    - "Route handlers (05-08, 05-09) MUST await the use-case's `postCommit` callback AFTER `withIdempotency` returns. The route handler is responsible for invoking postCommit when the outer commit succeeded; if `withIdempotency` rolls back, postCommit MUST NOT be called."
+    - "Integration test I7 asserts: when `deps.tx` is provided, `createPlant` returns a `postCommit` callback; PostHog and Inngest spies are NOT called until `result.postCommit()` is explicitly awaited; if the outer tx is rolled back instead, `postCommit` is never called and no telemetry fires."
   artifacts:
     - path: "src/contexts/catalog/application/create-plant.ts"
-      provides: "createPlant use-case with discriminated input + compensating-delete on UoW failure + post-commit telemetry"
-      exports: ["createPlant", "CreatePlantInput", "CreatePlantResult"]
+      provides: "createPlant use-case with discriminated input + optional outer tx + compensating-delete on UoW failure + postCommit-callback return pattern for telemetry"
+      exports: ["createPlant", "CreatePlantInput", "CreatePlantResult", "PostCommitCallback"]
       min_lines: 150
     - path: "tests/integration/create-plant.integration.test.ts"
       provides: "Integration suite proving Plant create (Integration stratum from VALIDATION.md)"
@@ -35,7 +40,7 @@ must_haves:
   key_links:
     - from: "src/contexts/catalog/application/create-plant.ts"
       to: "@shared/db/unit-of-work#withUnitOfWork"
-      via: "UoW TX wrapping plants.create + photoEntries.create"
+      via: "UoW TX wrapping plants.create + photoEntries.create (used only when deps.tx is absent)"
       pattern: "withUnitOfWork\\(input\\.userId"
     - from: "src/contexts/catalog/application/create-plant.ts"
       to: "@contexts/catalog/infrastructure/photo-storage#uploadOriginalPlantPhoto"
@@ -47,11 +52,11 @@ must_haves:
       pattern: "deleteSinglePlantPhotoBestEffort"
     - from: "src/contexts/catalog/application/create-plant.ts"
       to: "@shared/telemetry/posthog-server#getPostHog"
-      via: "Post-commit `plant_added` capture"
+      via: "postCommit callback `plant_added` capture (deps.tx path) or inline after withUnitOfWork (own-UoW path)"
       pattern: "getPostHog"
     - from: "src/contexts/catalog/application/create-plant.ts"
       to: "@shared/inngest/client#inngest"
-      via: "Post-commit `plant.created` event emit"
+      via: "postCommit callback `plant.created` event emit (deps.tx path) or inline after withUnitOfWork (own-UoW path)"
       pattern: "inngest\\.send"
     - from: "src/contexts/catalog/application/create-plant.ts"
       to: "@contexts/catalog/domain/schemas#createPlantInputSchema"
@@ -62,7 +67,7 @@ must_haves:
 <objective>
 Ship the catalog `createPlant` use-case (D-02 + D-28 + CAT-01 contributor) at `src/contexts/catalog/application/create-plant.ts`. This is the application-layer entry point that the Phase 5 manual-add multipart route (05-08) and the Phase 6 from-identification flow will both invoke.
 
-Purpose: Establish the TX-atomic Plant + first-PhotoEntry create with compensating-delete on storage-vs-DB split-brain (per `upload-photo.ts:200-225`), and the post-commit telemetry contract (PostHog `plant_added` + Inngest `plant.created`) — strictly post-commit so a rolled-back insert NEVER leaks an analytics event (T-05-05-01).
+Purpose: Establish the TX-atomic Plant + first-PhotoEntry create with compensating-delete on storage-vs-DB split-brain (per `upload-photo.ts:200-225`), and the post-commit telemetry contract (PostHog `plant_added` + Inngest `plant.created`) — strictly post-commit so a rolled-back insert NEVER leaks an analytics event (T-05-05-01). When the use-case owns its own UoW, telemetry runs inline after `withUnitOfWork` resolves. When a caller provides `deps.tx`, telemetry is packaged as a `postCommit` callback the caller MUST await after the outer commit succeeds. The use-case accepts an optional outer transaction from callers such as the `withIdempotency` wrapper in 05-08, supporting nested ownership of commit/rollback per D-37.
 
 Output: Working `createPlant` use-case with full unit + integration test coverage, validating both `source: 'manual'` (Phase 5 invocation) and `source: 'identification'` discrimination (Phase 6 invocation; type-checked and unit-covered here, end-to-end exercised in Phase 6).
 
@@ -138,7 +143,7 @@ export async function withUnitOfWork<T>(
 // Sets `set local role authenticated` + `request.jwt.claim.sub = userId` GUC.
 // userId MUST be a UUID — UnitOfWorkError(code='validation_failed') otherwise.
 // COMMIT happens when the returned promise RESOLVES; ROLLBACK on rejection.
-// There is NO `tx.afterCommit` hook — post-commit work runs AFTER `await withUnitOfWork(...)` resolves.
+// No tx.afterCommit hook — only exports withUnitOfWork(userId, fn) and the TransactionalDb type.
 ```
 
 From `src/shared/config/errors.ts`:
@@ -219,29 +224,38 @@ export async function create(db: PhotoEntriesDb, input: PhotoEntryInsert): Promi
 </interfaces>
 
 <post_commit_pattern>
-**CRITICAL — there is NO `tx.afterCommit` hook in this codebase.** The pattern, copied from `signup.ts:128-165`, is:
+**Contract: postCommit-callback return pattern — no tx.afterCommit hook required.**
+
+The telemetry callbacks (PostHog `plant_added` + Inngest `plant.created`) are delivered via two paths depending on whether an outer transaction is provided:
+
+**Exported types:**
+```typescript
+export type PostCommitCallback = () => Promise<void>;
+
+export type CreatePlantResult =
+  | { ok: true; plant: PlantRow; photoEntry: PhotoEntryRow; postCommit?: PostCommitCallback }
+  | { ok: false; code: typeof ErrorCode.ValidationFailed | typeof ErrorCode.Unauthenticated; reason: string };
+```
+
+**Pattern when `deps.tx` is absent (use-case owns its own UoW):**
 
 ```typescript
 // 1) Pre-UoW: validate, upload bytes (compensating delete on UoW catch).
-// 2) UoW commits when the await resolves:
+// 2) Open own UoW — COMMIT happens when withUnitOfWork resolves.
 const { plant, photoEntry } = await withUnitOfWork(input.userId, async (tx) => {
   const createdPlant = await plantsRepo.create(tx, {...});
   const createdPhoto = await photoEntriesRepo.create(tx, {...});
   return { plant: createdPlant, photoEntry: createdPhoto };
 });
-// ↑ If this rejects (constraint violation, RLS, etc.) the catch block ABOVE runs the
-//   compensating delete and rethrows — the lines below are SKIPPED.
-
-// 3) Post-commit telemetry. UoW already committed; failures here go to Sentry, never user.
+// 3) UoW committed. Run telemetry inline — sequential, after commit.
 try {
   await inngest.send({
     name: "plant.created",
     data: { userId: input.userId, plantId: plant.id, source: input.source },
   });
 } catch (err) {
-  Sentry.captureException(err, { tags: { surface: "catalog.create-plant.notify" } });
+  Sentry.captureException(err, { tags: { surface: "catalog.create-plant.notify" }, extra: { plantId: plant.id } });
 }
-
 const ph = getPostHog();
 if (ph) {
   ph.capture({
@@ -258,11 +272,68 @@ if (ph) {
   });
   await ph.shutdown();
 }
-
+// No postCommit field — telemetry already ran.
 return { ok: true, plant, photoEntry };
 ```
 
-**Why this satisfies T-05-05-01 (PostHog leak on rollback):** if `withUnitOfWork(...)` rejects, the `try`/`catch` already issues compensating-delete and rethrows. The post-commit block never executes. There is no other code path between INSERT and event emit; the "after the await resolves" ordering is the ENTIRE guarantee.
+**Why T-05-05-01 is satisfied (own-UoW path):** If `withUnitOfWork` rejects (DB insert failure), execution never reaches the telemetry block — the catch re-throws after compensating-delete, and PostHog/Inngest are never called. Integration test I3 asserts this.
+
+**Pattern when `deps.tx` is provided by caller (e.g., `withIdempotency` in 05-08):**
+
+```typescript
+// Use caller's tx — DO NOT call commit; caller owns the commit lifecycle.
+let plant: PlantRow;
+let photoEntry: PhotoEntryRow;
+try {
+  plant = await plantsRepo.create(deps.tx, {...});
+  photoEntry = await photoEntriesRepo.create(deps.tx, {...});
+} catch (err) {
+  await deleteSinglePlantPhotoBestEffort({
+    userId: input.userId, plantId, photoId, originalExt: ext,
+  });
+  throw err;
+}
+// Package telemetry as a postCommit callback — caller MUST await it after outer commit.
+const postCommit: PostCommitCallback = async () => {
+  try {
+    await inngest.send({
+      name: "plant.created",
+      data: { userId: input.userId, plantId: plant.id, source: input.source },
+    });
+  } catch (err) {
+    Sentry.captureException(err, { tags: { surface: "catalog.create-plant.notify" }, extra: { plantId: plant.id } });
+  }
+  const ph = getPostHog();
+  if (ph) {
+    ph.capture({
+      distinctId: input.userId,
+      event: "plant_added",
+      properties: {
+        source: input.source,
+        has_nickname: Boolean(input.nickname),
+        has_location: Boolean(input.location),
+        has_acquisition_date: Boolean(input.acquisitionDate),
+        has_notes: Boolean(input.notes),
+        photo_count: 1,
+      },
+    });
+    await ph.shutdown();
+  }
+};
+return { ok: true, plant, photoEntry, postCommit };
+```
+
+**Why T-05-05-01 is satisfied (outer-tx path):** `postCommit` is returned but NOT invoked by the use-case. The caller invokes it only after the outer commit succeeds. If the outer tx rolls back, the caller MUST NOT call `postCommit` — PostHog and Inngest are never invoked. Integration test I7 asserts this sequence.
+
+**Route handler responsibility (05-08, 05-09):** After `withIdempotency` returns, the route handler MUST check for `result.postCommit` and await it:
+```typescript
+const result = await createPlant(input, { tx: outerTx });
+// ... withIdempotency commits outerTx ...
+if (result.ok && result.postCommit) {
+  await result.postCommit();
+}
+```
+If `withIdempotency` rolls back, `result.postCommit` MUST NOT be called.
 </post_commit_pattern>
 
 <id_ordering>
@@ -270,7 +341,7 @@ return { ok: true, plant, photoEntry };
 
 Pre-generate `plantId = randomUUID()` and `photoId = randomUUID()` BEFORE the UoW. Construct the storage object keys via `buildPlantPhotoObjectKey({...})`. Insert the Plant with `cover_photo_url = '{PLANT_PHOTOS_BUCKET}/{originalKey}'` AND insert the PhotoEntry with `photo_url = '{PLANT_PHOTOS_BUCKET}/{originalKey}'`, `thumbnail_url = '{PLANT_THUMBNAILS_BUCKET}/{thumbnailKey}'` IN THE SAME TX. This avoids an UPDATE Plant SET cover_photo_url after PhotoEntry insert, and matches the established upload-photo pattern.
 
-Sequence inside `withUnitOfWork`:
+Sequence inside `withUnitOfWork` (or outer tx):
 1. `plantsRepo.create(tx, { id: plantId, userId, name, nickname, location, acquisition_date, notes, species_id, cover_photo_url: '{bucket}/{originalKey}' })`
 2. `photoEntriesRepo.create(tx, { id: photoId, plantId, photoUrl: '{bucket}/{originalKey}', thumbnailUrl: '{thumb-bucket}/{thumbKey}', note: null })`
 3. Return `{ plant, photoEntry }`.
@@ -308,10 +379,19 @@ type CreatePlantInput = {
 };
 ```
 
-**Result shape** (matches `UploadPhotoResult` discriminated-union convention):
+**Deps shape** (second argument):
 ```typescript
+type CreatePlantDeps = {
+  tx?: TransactionalDb;   // optional outer transaction from withIdempotency wrapper (05-08)
+};
+```
+
+**Result shape** (matches `UploadPhotoResult` discriminated-union convention, with optional postCommit on ok branch):
+```typescript
+export type PostCommitCallback = () => Promise<void>;
+
 type CreatePlantResult =
-  | { ok: true; plant: PlantRow; photoEntry: PhotoEntryRow }
+  | { ok: true; plant: PlantRow; photoEntry: PhotoEntryRow; postCommit?: PostCommitCallback }
   | { ok: false; code: typeof ErrorCode.ValidationFailed | typeof ErrorCode.Unauthenticated; reason: string };
 ```
 
@@ -333,8 +413,8 @@ Setup mirrors `tests/integration/photo-upload.integration.test.ts:149-160`:
 - Seeded user + cleanup via Phase 2 D-43 transaction-rollback fixture (`tests/integration/db-rollback.ts`).
 
 - Test I1 (happy path, `source: 'manual'`):
-  Given a verified user and a valid JPEG buffer, when `createPlant({source:'manual', userId, name:'Suculenta', photo:{buffer, contentType:'image/jpeg'}, nickname:'Susu', location:'sala'})` is called, then:
-  - Result is `{ok: true, plant, photoEntry}`.
+  Given a verified user and a valid JPEG buffer, when `createPlant({source:'manual', userId, name:'Suculenta', photo:{buffer, contentType:'image/jpeg'}, nickname:'Susu', location:'sala'})` is called (no `deps.tx` — own UoW), then:
+  - Result is `{ok: true, plant, photoEntry}` with no `postCommit` field (telemetry ran inline).
   - Exactly one row exists in `plants` with `cover_photo_url = '{PLANT_PHOTOS_BUCKET}/{originalKey}'` matching the photoEntry.photo_url.
   - Exactly one row exists in `photo_entries` with `plant_id = plant.id`.
   - Storage adapter `uploadObject` was called twice in order: first with `bucket: 'plant-photos'`, then with `bucket: 'plant-thumbnails'`.
@@ -356,7 +436,7 @@ Setup mirrors `tests/integration/photo-upload.integration.test.ts:149-160`:
   - Inngest `inngest.send` was NOT called (zero invocations).
   - PostHog `capture` was NOT called (zero invocations).
   - PostHog `shutdown` was NOT called.
-  These three assertions form the explicit T-05-05-01 mitigation evidence.
+  These three assertions form the explicit T-05-05-01 mitigation evidence (own-UoW case). Mechanism: `withUnitOfWork` rejects, execution never reaches the inline telemetry block, the catch block calls `deleteSinglePlantPhotoBestEffort` then re-throws — telemetry is never scheduled.
 
 - Test I4 (GPS rejection BEFORE storage write):
   Given a buffer for which `exifr.gps` returns `{latitude, longitude}`, when `createPlant({source:'manual', ...})` is called, then:
@@ -374,17 +454,29 @@ Setup mirrors `tests/integration/photo-upload.integration.test.ts:149-160`:
 
 - Test I6 (cross-user RLS defense in depth):
   Given two seeded users U1 and U2, when `createPlant({userId: U1, ...})` runs, the plant + photo entry are created under U1 only. Querying `plants WHERE user_id = U2` returns zero. (RLS GUC bound to U1 inside UoW per `withUnitOfWork`; ownership filter at SQL layer per Phase 2 D-20.)
+
+- Test I7 (outer-tx provided — no internal commit, postCommit callback returned, fires only when caller invokes it):
+  Given a valid input and a manually opened outer transaction `outerTx` (opened via the test's raw DB connection), when `createPlant(input, { tx: outerTx })` is called, then:
+  - The call resolves successfully with `{ok: true, plant, photoEntry, postCommit: [Function]}`.
+  - `result.postCommit` is defined (not undefined) — the use-case returned a callback rather than invoking telemetry inline.
+  - Inngest `inngest.send` was NOT yet called (zero invocations immediately after createPlant returns, before `postCommit` is invoked).
+  - PostHog `capture` was NOT yet called (zero invocations before `postCommit` is invoked).
+  - After `await result.postCommit()` is explicitly called by the test:
+    - Inngest `inngest.send` IS called once with `name: "plant.created"`.
+    - PostHog `capture` IS called once with `event: "plant_added"`.
+  - Rollback variant sub-case: if instead `outerTx.rollback()` is called and `postCommit` is NOT invoked (caller responsibility), neither Inngest nor PostHog is ever called.
+  This test provides T-05-05-01 mitigation evidence for the outer-tx case (callers like `withIdempotency` in 05-08).
   </behavior>
   <implementation>
 After RED tests are committed, implement `src/contexts/catalog/application/create-plant.ts`:
 
-1. **Imports** (mirror upload-photo.ts):
+1. **Imports** (mirror upload-photo.ts, plus TransactionalDb type):
    ```typescript
    import { randomUUID } from "node:crypto";
    import sharp from "sharp";
    import * as Sentry from "@sentry/nextjs";
    import { ErrorCode } from "@shared/config/errors";
-   import { withUnitOfWork } from "@shared/db/unit-of-work";
+   import { withUnitOfWork, type TransactionalDb } from "@shared/db/unit-of-work";
    import { rejectGpsMetadata, rejectOversizeBuffer } from "@shared/images/server-validate";
    import { getPostHog } from "@shared/telemetry/posthog-server";
    import { inngest } from "@shared/inngest/client";
@@ -404,9 +496,17 @@ After RED tests are committed, implement `src/contexts/catalog/application/creat
 
 2. **Constants + helpers** copied verbatim from upload-photo.ts: `ALLOWED_MIME_TYPES`, `isAllowedMime`, `extFromMime`, `THUMBNAIL_MAX_DIMENSION = 512`, `THUMBNAIL_QUALITY = 80`. (Do not duplicate by extracting yet — that refactor is a separate concern; mirror the existing convention.)
 
-3. **Public types**: `CreatePlantInput` discriminated union (`source: 'manual' | 'identification'`) and `CreatePlantResult` discriminated union (matches `UploadPhotoResult` shape).
+3. **Public types**: `CreatePlantInput` discriminated union (`source: 'manual' | 'identification'`), `CreatePlantDeps` (`{ tx?: TransactionalDb }`), `PostCommitCallback` (`() => Promise<void>`), and `CreatePlantResult` discriminated union (matches `UploadPhotoResult` shape with optional `postCommit` on the ok branch).
 
-4. **`createPlant` function body** in this exact order:
+4. **`createPlant` function signature**:
+   ```typescript
+   export async function createPlant(
+     input: CreatePlantInput,
+     deps: CreatePlantDeps = {},
+   ): Promise<CreatePlantResult>
+   ```
+
+5. **`createPlant` function body** in this exact order:
    - **(0) Schema parse**: `const parsed = createPlantInputSchema.safeParse(input);` — on failure return `{ok:false, code: ErrorCode.ValidationFailed, reason: parsed.error.issues[0]?.message ?? 'invalid input'}`.
    - **(1) MIME validation** on `input.photo.contentType` → `validation_failed` if not allowed.
    - **(2) Size validation** via `rejectOversizeBuffer(input.photo.buffer)`.
@@ -416,73 +516,96 @@ After RED tests are committed, implement `src/contexts/catalog/application/creat
    - **(6) Pre-generate IDs**: `const plantId = randomUUID(); const photoId = randomUUID();`
      Compute `originalKey = buildPlantPhotoObjectKey({userId, plantId, photoId, ext})` and `thumbnailKey = buildPlantThumbnailObjectKey({userId, plantId, photoId, ext: "jpg"})`.
      Upload original then thumbnail (sequential, original first — matches upload-photo.ts:165-192).
-   - **(7) UoW**: wrap a try/catch around `await withUnitOfWork(input.userId, async (tx) => { ... })`.
-     Inside:
+   - **(7) TX execution**: Branch on `deps.tx`:
+
+     **When `deps.tx` is provided** (caller owns commit — return postCommit callback):
      ```typescript
-     const plant = await plantsRepo.create(tx, {
-       id: plantId,
-       userId: input.userId,
-       name: input.name,
-       nickname: input.nickname ?? null,
-       location: input.location ?? null,
-       acquisitionDate: input.acquisitionDate ?? null,
-       notes: input.notes ?? null,
-       speciesId: input.source === 'identification' ? input.speciesId : null,
-       coverPhotoUrl: `${PLANT_PHOTOS_BUCKET}/${originalKey}`,
-     });
-     const photoEntry = await photoEntriesRepo.create(tx, {
-       id: photoId,
-       plantId,
-       photoUrl: `${PLANT_PHOTOS_BUCKET}/${originalKey}`,
-       thumbnailUrl: `${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}`,
-       note: null,
-     });
-     return { plant, photoEntry };
+     let plant: PlantRow;
+     let photoEntry: PhotoEntryRow;
+     try {
+       plant = await plantsRepo.create(deps.tx, {
+         id: plantId,
+         userId: input.userId,
+         name: input.name,
+         nickname: input.nickname ?? null,
+         location: input.location ?? null,
+         acquisitionDate: input.acquisitionDate ?? null,
+         notes: input.notes ?? null,
+         speciesId: input.source === 'identification' ? input.speciesId : null,
+         coverPhotoUrl: `${PLANT_PHOTOS_BUCKET}/${originalKey}`,
+       });
+       photoEntry = await photoEntriesRepo.create(deps.tx, {
+         id: photoId,
+         plantId,
+         photoUrl: `${PLANT_PHOTOS_BUCKET}/${originalKey}`,
+         thumbnailUrl: `${PLANT_THUMBNAILS_BUCKET}/${thumbnailKey}`,
+         note: null,
+       });
+     } catch (err) {
+       await deleteSinglePlantPhotoBestEffort({
+         userId: input.userId, plantId, photoId, originalExt: ext,
+       });
+       throw err;
+     }
+     // Package telemetry as postCommit — caller MUST await after outer commit.
+     const postCommit: PostCommitCallback = buildTelemetryCallback(input, plant);
+     return { ok: true, plant, photoEntry, postCommit };
      ```
-     On catch:
+
+     **When `deps.tx` is absent** (use-case owns its own UoW — run telemetry inline):
      ```typescript
-     await deleteSinglePlantPhotoBestEffort({
-       userId: input.userId, plantId, photoId, originalExt: ext,
-     });
-     throw err;
+     let plant: PlantRow;
+     let photoEntry: PhotoEntryRow;
+     try {
+       ({ plant, photoEntry } = await withUnitOfWork(input.userId, async (tx) => {
+         const createdPlant = await plantsRepo.create(tx, { ... });
+         const createdPhoto = await photoEntriesRepo.create(tx, { ... });
+         return { plant: createdPlant, photoEntry: createdPhoto };
+       }));
+     } catch (err) {
+       await deleteSinglePlantPhotoBestEffort({
+         userId: input.userId, plantId, photoId, originalExt: ext,
+       });
+       throw err;
+     }
+     // UoW committed — run telemetry inline (sequential, after commit resolves).
+     await buildTelemetryCallback(input, plant)();
+     return { ok: true, plant, photoEntry };
      ```
-     (rethrow — caller decides; route handler in 05-08 maps to `internal_error`).
 
-   - **(8) Post-commit telemetry** (only reached if UoW resolved):
-     - Inngest emit (try/catch + Sentry on failure, never user-trap):
-       ```typescript
-       try {
-         await inngest.send({
-           name: "plant.created",
-           data: { userId: input.userId, plantId: plant.id, source: input.source },
-         });
-       } catch (err) {
-         Sentry.captureException(err, { tags: { surface: "catalog.create-plant.notify" }, extra: { plantId: plant.id } });
-       }
-       ```
-     - PostHog capture (D-28 privacy-clean props):
-       ```typescript
-       const ph = getPostHog();
-       if (ph) {
-         ph.capture({
-           distinctId: input.userId,
-           event: "plant_added",
-           properties: {
-             source: input.source,
-             has_nickname: Boolean(input.nickname),
-             has_location: Boolean(input.location),
-             has_acquisition_date: Boolean(input.acquisitionDate),
-             has_notes: Boolean(input.notes),
-             photo_count: 1,
-           },
-         });
-         await ph.shutdown();
-       }
-       ```
+     Extract the shared telemetry logic into a helper that returns an async function:
+     ```typescript
+     function buildTelemetryCallback(input: CreatePlantInput, plant: PlantRow): PostCommitCallback {
+       return async () => {
+         try {
+           await inngest.send({
+             name: "plant.created",
+             data: { userId: input.userId, plantId: plant.id, source: input.source },
+           });
+         } catch (err) {
+           Sentry.captureException(err, { tags: { surface: "catalog.create-plant.notify" }, extra: { plantId: plant.id } });
+         }
+         const ph = getPostHog();
+         if (ph) {
+           ph.capture({
+             distinctId: input.userId,
+             event: "plant_added",
+             properties: {
+               source: input.source,
+               has_nickname: Boolean(input.nickname),
+               has_location: Boolean(input.location),
+               has_acquisition_date: Boolean(input.acquisitionDate),
+               has_notes: Boolean(input.notes),
+               photo_count: 1,
+             },
+           });
+           await ph.shutdown();
+         }
+       };
+     }
+     ```
 
-   - **(9) Return** `{ ok: true, plant, photoEntry }`.
-
-5. Run integration suite + unit suite; ensure RED→GREEN per behavior.
+6. Run integration suite + unit suite; ensure RED→GREEN per behavior.
   </implementation>
 </feature>
 
@@ -510,13 +633,14 @@ Create `tests/unit/create-plant.unit.test.ts`. Import the (not-yet-existing) `cr
   <name>Task 2 (RED): Write failing integration tests for createPlant TX + compensating-delete + post-commit telemetry</name>
   <files>tests/integration/create-plant.integration.test.ts</files>
   <behavior>
-- Tests I1–I6 from `<feature><behavior>`.
+- Tests I1–I7 from `<feature><behavior>`.
 - Setup mirrors `tests/integration/photo-upload.integration.test.ts:149-160` (cloud-Supabase guard, `describe.skipIf(!dbUrl)`, fake StorageAdapter with `_stored` set + `_storedKey` helper).
 - Use Phase 2 D-43 transaction-rollback fixture (`tests/integration/db-rollback.ts`) for DB cleanup between tests.
 - Mock `@shared/inngest/client` with `{ inngest: { send: vi.fn() } }` and `@shared/telemetry/posthog-server` with `{ getPostHog: vi.fn(() => ({ capture: vi.fn(), shutdown: vi.fn() })), shutdownPostHog: vi.fn() }`.
 - I3 (leak guard) explicitly references threat ID `T-05-05-01` in the test description string for traceability.
 - I5 seeds a `species` row directly via SQL before invoking createPlant with `source: 'identification'`.
 - I6 seeds two users; assert RLS+ownership filter prevents cross-user write.
+- I7 opens an outer transaction manually via the test's raw DB connection, calls `createPlant(input, { tx: outerTx })`, asserts result has a `postCommit` function, asserts zero telemetry before `postCommit` is invoked, then calls `await result.postCommit()` and asserts telemetry fires. Also verifies rollback variant: outer tx rolled back and `postCommit` is never invoked — no telemetry fires.
   </behavior>
   <action>
 Create `tests/integration/create-plant.integration.test.ts` mirroring the `photo-upload.integration.test.ts` setup. Use `valid-jpeg.png` fixture buffer or generate via sharp. Run `pnpm test:run -- create-plant.integration` and confirm ALL tests fail (createPlant not yet exported). Commit: `test(05-05): add failing integration tests for createPlant TX + telemetry`.
@@ -524,7 +648,7 @@ Create `tests/integration/create-plant.integration.test.ts` mirroring the `photo
   <verify>
     <automated>pnpm test:run -- create-plant.integration 2>&1 | grep -E "(FAIL|✗|×)" | head -20</automated>
   </verify>
-  <done>All 6 integration tests authored, all currently FAIL or skip-with-no-implementation, commit pushed with `test(05-05):` prefix.</done>
+  <done>All 7 integration tests authored, all currently FAIL or skip-with-no-implementation, commit pushed with `test(05-05):` prefix.</done>
 </task>
 
 <task type="auto" tdd="true">
@@ -532,19 +656,19 @@ Create `tests/integration/create-plant.integration.test.ts` mirroring the `photo
   <files>src/contexts/catalog/application/create-plant.ts</files>
   <behavior>
 - All 8 unit tests pass.
-- All 6 integration tests pass.
-- The implementation follows the exact step ordering in `<feature><implementation>` (validation pre-UoW, IDs pre-generated, UoW with TX, compensating-delete on catch, post-commit Inngest then PostHog).
-- T-05-05-01 mitigation: post-commit block sits AFTER `await withUnitOfWork(...)` resolves; UoW rejection skips the entire block (proven by I3).
+- All 7 integration tests pass.
+- The implementation follows the exact step ordering in `<feature><implementation>` (validation pre-UoW, IDs pre-generated, branch on deps.tx, UoW with own TX or outer tx, compensating-delete on catch, postCommit-callback return pattern for telemetry).
+- T-05-05-01 mitigation: when `deps.tx` is absent, telemetry runs inline only after `withUnitOfWork` resolves successfully — a rejection propagates through catch without touching the telemetry block (proven by I3). When `deps.tx` is provided, telemetry is returned as `postCommit` and is only invoked by the caller after the outer commit succeeds; if the outer tx rolls back, the caller does not invoke `postCommit` (proven by I7).
 - T-05-05-02 mitigation: `rejectOversizeBuffer` + `rejectGpsMetadata` run BEFORE any storage write (proven by U4/U5/I4).
 - T-05-05-03 mitigation: `userId` flows from caller only; type signature does NOT accept request-body shapes; documented in JSDoc that callers MUST derive `userId` from `requireVerifiedUser` (route handler concern, enforced in 05-08).
   </behavior>
   <action>
-Implement `src/contexts/catalog/application/create-plant.ts` per the implementation block. Follow `upload-photo.ts` style for constants, helpers, and the compensating-delete `try/catch`. Use the post-commit pattern from `signup.ts:128-165` (Inngest `try/catch` + Sentry; PostHog null-guarded). Run `pnpm test:run -- create-plant` and confirm ALL 14 tests pass. Commit: `feat(05-05): implement createPlant use-case with compensating-delete + post-commit telemetry`.
+Implement `src/contexts/catalog/application/create-plant.ts` per the implementation block. Branch on `deps.tx`: when provided, insert using the outer tx and return `{ ok: true, plant, photoEntry, postCommit }` without committing; when absent, open own UoW, insert, then run `await buildTelemetryCallback(input, plant)()` inline after the UoW resolves, and return `{ ok: true, plant, photoEntry }`. Follow `upload-photo.ts` style for constants, helpers, and the compensating-delete `try/catch`. Run `pnpm test:run -- create-plant` and confirm ALL 15 tests pass. Commit: `feat(05-05): implement createPlant use-case with postCommit-callback pattern`.
   </action>
   <verify>
     <automated>pnpm test:run -- create-plant 2>&1 | tail -20</automated>
   </verify>
-  <done>All 14 tests (8 unit + 6 integration) GREEN. File exports `createPlant`, `CreatePlantInput`, `CreatePlantResult`. JSDoc references T-05-05-01/02/03 mitigations. Commit pushed with `feat(05-05):` prefix.</done>
+  <done>All 15 tests (8 unit + 7 integration) GREEN. File exports `createPlant`, `CreatePlantInput`, `CreatePlantDeps`, `CreatePlantResult`, `PostCommitCallback`. JSDoc references T-05-05-01/02/03 mitigations, documents that when `deps.tx` is provided the caller MUST await `result.postCommit` after the outer commit, and MUST NOT call `postCommit` on rollback. Commit pushed with `feat(05-05):` prefix.</done>
 </task>
 
 </tasks>
@@ -557,17 +681,17 @@ Implement `src/contexts/catalog/application/create-plant.ts` per the implementat
 | Route handler → use-case | Route (05-08) calls `requireVerifiedUser` then passes `userId` here; use-case never reads userId from request body. |
 | Use-case → Storage | Storage uploads happen pre-UoW; failures rejected via discriminated union (no exception leak to caller for known-bad input); compensating delete on UoW catch handles the storage-vs-DB split-brain. |
 | Use-case → DB (RLS) | `withUnitOfWork` binds `auth.uid()` GUC to `userId`; repositories also apply explicit `WHERE user_id = $1` filters at SQL layer (defense in depth per Phase 2 D-20). |
-| Use-case → PostHog/Inngest | Post-commit only; failures Sentry-captured but never user-traps; never block the user-facing success response. |
+| Use-case → PostHog/Inngest | In own-UoW path: telemetry runs inline only after `withUnitOfWork` resolves; a rejection skips the telemetry block entirely. In outer-tx path: telemetry is packaged as `postCommit` and only executes when the caller explicitly awaits it after the outer commit succeeds. |
 
 ## STRIDE Threat Register
 
 | Threat ID | Category | Component | Disposition | Mitigation Plan |
 |-----------|----------|-----------|-------------|-----------------|
-| T-05-05-01 | I (Information Disclosure) | post-commit `posthog.capture` | mitigate | PostHog capture + Inngest emit ONLY after `await withUnitOfWork(...)` resolves. UoW rejection skips entire post-commit block (no `tx.afterCommit` hook exists; ordering by `await` IS the guarantee). Integration test I3 asserts zero `inngest.send` calls AND zero `posthog.capture` calls when `photoEntriesRepo.create` is forced to reject inside the TX. |
+| T-05-05-01 | I (Information Disclosure) | post-commit `posthog.capture` | mitigate | Own-UoW path: telemetry block is sequenced inline AFTER `withUnitOfWork` resolves — a rejection propagates through the catch block (which calls `deleteSinglePlantPhotoBestEffort` then re-throws) and execution never reaches the telemetry block. PostHog and Inngest are never called on rollback. Integration test I3 asserts zero telemetry calls when own UoW rejects. Outer-tx path: telemetry is returned as `postCommit` callback; the use-case does NOT invoke it. The caller (route handler 05-08) invokes `postCommit` only after the outer commit succeeds; if the outer tx rolls back, the caller MUST NOT call `postCommit`. Integration test I7 asserts: `postCommit` is returned but not auto-invoked; PostHog and Inngest are zero before caller invokes it; telemetry fires only when `result.postCommit()` is explicitly awaited. |
 | T-05-05-02 | I, D (Information Disclosure / DoS) | multipart upload buffer | mitigate | `rejectOversizeBuffer(input.photo.buffer)` and `await rejectGpsMetadata(input.photo.buffer)` run BEFORE any storage write (steps 2 + 3 of the use-case, per upload-photo.ts:104-123). Client-side compression to ≤1MB + EXIF strip per CLAUDE.md is the primary control; server rejection per Phase 2 D-30 is defense in depth. Tests U4/U5/I4 assert no storage call on GPS or oversize rejection. |
 | T-05-05-03 | E (Elevation of Privilege) | `userId` parameter | mitigate | The `userId` parameter type in `CreatePlantInput` is documented (JSDoc) as caller-derived from `requireVerifiedUser(request)` only — never from request body. Route handler 05-08 enforces. UoW `withUnitOfWork` validates `userId` is a UUID via `assertValidUserId` (T-02-32 mitigation), so a malformed userId rejects with `UnitOfWorkError(code='validation_failed')` before any DB role switch. |
 | T-05-05-04 | T (Tampering) | post-commit Inngest event | accept | Inngest event delivery failure post-commit cannot un-create the plant. Failure surfaces via `Sentry.captureException(... { surface: "catalog.create-plant.notify" })`, identical to the established `signup.ts:160-165` pattern. The `plant.created` event is informational for Phase 6 (no Phase 5 consumer); a missing event does not user-trap or compromise data integrity. |
-| T-05-05-05 | R (Repudiation) | duplicate plant create on retry | accept (in this plan) | Idempotency-Key support is planned in 05-08 (route layer) per Phase 2 D-37; the use-case itself is invoke-once-per-call. A double-call from the route would create two plants, but the route in 05-08 wraps with `withIdempotency`. This plan's tests do not exercise idempotency — that is verified in 05-08's integration suite. |
+| T-05-05-05 | R (Repudiation) | duplicate plant create on retry | accept (in this plan) | Idempotency-Key support is planned in 05-08 (route layer) per Phase 2 D-37; the use-case accepts `deps.tx` from the `withIdempotency` wrapper in 05-08 and does NOT commit internally. A double-call from the route is prevented by the idempotency wrapper. This plan's tests do not exercise idempotency end-to-end — that is verified in 05-08's integration suite. |
 </threat_model>
 
 <verification>
@@ -575,39 +699,43 @@ Phase-level checks (run after Task 3 GREEN):
 
 ```bash
 pnpm test:unit -- create-plant.unit                  # 8 unit tests pass
-pnpm test:run -- create-plant.integration            # 6 integration tests pass
-pnpm typecheck                                        # CreatePlantInput discriminated-union types compile
-grep -n "afterCommit" src/contexts/catalog/application/create-plant.ts   # MUST return zero matches
-grep -n "tx\\.afterCommit" src/contexts/catalog/application/create-plant.ts  # MUST return zero matches
+pnpm test:run -- create-plant.integration            # 7 integration tests pass
+pnpm typecheck                                        # CreatePlantInput discriminated-union types compile; TransactionalDb import resolves
+grep -cE "^[^#]*tx\.afterCommit" src/contexts/catalog/application/create-plant.ts  # MUST be 0 (no afterCommit hook — use postCommit-callback pattern)
+grep -cE "^[^#]*postCommit" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1 (postCommit callback present)
+grep -cE "^[^#]*deps\.tx" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1 (outer tx branch present)
 grep -cE "^[^#]*deleteSinglePlantPhotoBestEffort" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1 (compensating delete present)
 grep -cE "^[^#]*withUnitOfWork" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1
 grep -cE "^[^#]*plant_added" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1 (D-28 event name)
-grep -cE "^[^#]*plant\\.created" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1 (Inngest event)
+grep -cE "^[^#]*plant\.created" src/contexts/catalog/application/create-plant.ts  # MUST be ≥1 (Inngest event)
 ```
 
 Per VALIDATION.md "Plant create (Integration)" stratum: this plan ships the integration test that proves "Multipart POST atomically creates Plant + PhotoEntry; rollback triggers compensating delete; PostHog NOT fired on rollback." (The "Multipart POST" half is exercised by 05-08's route-layer integration test.)
 </verification>
 
 <success_criteria>
-- `src/contexts/catalog/application/create-plant.ts` exists, exports `createPlant`, `CreatePlantInput`, `CreatePlantResult`.
-- 14 tests (8 unit + 6 integration) all GREEN under `pnpm test:run`.
-- T-05-05-01: integration test I3 explicitly asserts zero PostHog + zero Inngest invocations on UoW rollback. The leak-on-rollback threat is closed by the post-commit ordering guarantee, with empirical evidence in the test suite.
+- `src/contexts/catalog/application/create-plant.ts` exists, exports `createPlant`, `CreatePlantInput`, `CreatePlantDeps`, `CreatePlantResult`, `PostCommitCallback`.
+- 15 tests (8 unit + 7 integration) all GREEN under `pnpm test:run`.
+- T-05-05-01: integration test I3 explicitly asserts zero PostHog + zero Inngest invocations on own-UoW rollback (mechanism: rejection propagates before the telemetry block). Integration test I7 asserts `postCommit` is returned from the use-case but not auto-invoked; telemetry fires only when the caller explicitly awaits `result.postCommit()`. The leak-on-rollback threat is closed by the postCommit-callback return pattern, with empirical evidence in both test cases.
 - T-05-05-02: tests U4/U5/I4 prove GPS + oversize rejection BEFORE any storage write.
 - T-05-05-03: JSDoc on `CreatePlantInput.userId` documents caller-only origin; UoW UUID validation prevents string-spoof attacks.
 - D-28 PostHog `plant_added` event fires post-commit with EXACTLY the privacy-clean property keys: `{source, has_nickname, has_location, has_acquisition_date, has_notes, photo_count}` (asserted by U8 + I1).
 - `plant.created` Inngest event emitted post-commit with `{userId, plantId, source}` payload.
+- `deps.tx` contract: when outer tx provided, createPlant uses it without committing and returns `postCommit`; the route handler (05-08) MUST await `postCommit` after the outer commit succeeds and MUST NOT call it on rollback (proven by I7; wired by 05-08's `withIdempotency` wrapper per D-37).
 - CAT-01 contributor: the `source: 'identification'` branch type-checks and integration-test I5 confirms it functions; final close happens in Phase 6 when the route + Identification.plant_id wiring lands.
 - CAT-02, CAT-03: manual create with name + photo required (D-04) is fully closed by this plan + 05-08 route + 05-17 UI; the use-case half is done here.
 - Three commits pushed: `test(05-05): add failing unit tests`, `test(05-05): add failing integration tests`, `feat(05-05): implement createPlant use-case`.
-- No `afterCommit` references in the implementation (advisor caught: this hook does not exist in this codebase).
+- `tx.afterCommit` does NOT appear in `create-plant.ts` — postCommit-callback return pattern is used instead.
+- `postCommit` and `deps.tx` are present in `create-plant.ts`.
 </success_criteria>
 
 <output>
 After completion, create `.planning/phases/05-catalog-meu-jardim/05-05-SUMMARY.md` capturing:
 - File paths created/modified
-- Test counts (8 unit + 6 integration GREEN)
+- Test counts (8 unit + 7 integration GREEN)
 - Threat dispositions confirmed (T-05-05-01/02/03 mitigated; T-05-05-04/05 accepted with rationale)
 - D-28 property-key contract verified
 - CAT-01 contributor status (Phase 6 closes)
+- deps.tx contract confirmed: outer-tx path returns postCommit callback; route handler 05-08 wires it per D-37; caller MUST NOT invoke postCommit on rollback
 - Any deviations from plan with reasoning
 </output>

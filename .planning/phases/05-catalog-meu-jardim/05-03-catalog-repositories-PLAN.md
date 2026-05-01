@@ -31,8 +31,8 @@ must_haves:
     - "plants.getCascadeCounts(db, plantId) returns { photo_entry_count, reminder_count } from photo_entries and reminders joined to that plantId — feeds D-07 delete-confirm sheet copy template."
     - "plants.create / update / delete only operate on rows owned by userId. Repo-level WHERE user_id = $1 is in the SQL even though RLS is also active (defense in depth, T-02-12)."
     - "photo_entries.bumpCoverFor(tx, plantId, userId) reads the oldest non-deleted PhotoEntry for that plant and writes plants.cover_photo_url in the SAME transaction (D-03 cover auto-promote). Filters plants UPDATE by user_id (defense in depth)."
-    - "pending_storage_deletions.fetchPendingBatch(db, limit) returns up to `limit` rows with status='pending' AND scheduled_at <= NOW(), ordered by scheduled_at ASC, locked via FOR UPDATE SKIP LOCKED — concurrent reconciler invocations do NOT process the same row twice."
-    - "pending_storage_deletions state-machine transitions (create → markInProgress → markCompleted | recordError → markFailed) update exactly the row's status / attempts / last_error / completed_at fields, never another row."
+    - "pending_storage_deletions.fetchPendingBatch(db, limit) returns up to `limit` rows with status='pending' AND scheduled_at <= NOW(), ordered by scheduled_at ASC, locked via FOR UPDATE SKIP LOCKED — concurrent reconciler invocations do NOT process the same row twice. When called with `opts.staleInProgressMinutes` (default 30 for reconciler use), also returns 'in_progress' rows whose `started_at` is older than the threshold (stale-recovery path for the reconciler cron). When opts is omitted (Inngest happy-path call), only 'pending' rows are returned."
+    - "pending_storage_deletions state-machine transitions: create → markInProgress (sets started_at, increments attempts) → markCompleted (terminal success) | recordError (sets last_error; returns row to 'pending' when attempts < 5, transitions to 'failed' when attempts = 5) → markFailed (terminal, direct call only). Each transition updates exactly the target row's fields (status, attempts, started_at, last_error, completed_at), never another row."
     - "fetchPendingBatch is service-role-only. Calling it under SET LOCAL ROLE authenticated returns zero rows even when matching pending rows exist (proves the discipline that protects T-05-03-02 — reconciler must NEVER run inside withUnitOfWork)."
     - "location_suggestions.upsert(db, userId, label) inserts a new row on first use and increments usage_count + touches last_used_at on subsequent calls for the same (userId, label_normalized) — drives D-09 reusable suggestions."
     - "location_suggestions.listForUser(db, userId, limit=20) returns rows for that userId ordered by usage_count DESC, last_used_at DESC, limited to `limit`. Cross-user rows never appear."
@@ -46,7 +46,7 @@ must_haves:
       provides: "Extended functional repository: list({plantId}), delete, bumpCoverFor(tx, plantId, userId), alongside the existing create shipped in Phase 2 / Plan 02-08."
       exports: ["create", "list", "delete", "bumpCoverFor", "PhotoEntryRow", "PhotoEntryInsert"]
     - path: "src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts"
-      provides: "NEW functional repository for the storage-cleanup state machine. fetchPendingBatch is service-role-only (DbClient parameter type, NOT TransactionalDb). Other helpers accept either."
+      provides: "NEW functional repository for the storage-cleanup state machine. fetchPendingBatch(db, limit, opts?) is service-role-only (DbClient parameter type, NOT TransactionalDb); opts.staleInProgressMinutes enables stale in_progress row recovery for the reconciler cron. markInProgress sets started_at = NOW(). recordError returns row to pending (attempts < 5) or failed (attempts >= 5). Other helpers accept either DbClient or TransactionalDb."
       exports: ["create", "markInProgress", "markCompleted", "recordError", "markFailed", "fetchPendingBatch", "PendingStorageDeletionRow", "PendingStorageDeletionInsert"]
     - path: "src/contexts/catalog/infrastructure/db/location-suggestions.ts"
       provides: "NEW functional repository: upsert (ON CONFLICT increment usage_count + touch last_used_at) and listForUser (top-N by usage_count DESC, last_used_at DESC)."
@@ -84,7 +84,7 @@ must_haves:
       pattern: "set\\(\\{ coverPhotoUrl"
     - from: "src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts fetchPendingBatch()"
       to: "live Postgres with FOR UPDATE SKIP LOCKED"
-      via: "drizzle .for('update', {skipLocked: true}) on a SELECT filtered by status='pending' AND scheduled_at <= NOW() ORDER BY scheduled_at ASC LIMIT $1"
+      via: "drizzle .for('update', {skipLocked: true}) on a SELECT filtered by (status='pending') OR (status='in_progress' AND started_at < NOW() - interval when opts provided) AND scheduled_at <= NOW() ORDER BY scheduled_at ASC LIMIT $1"
       pattern: "for\\(.update., \\{ skipLocked: true \\}\\)"
     - from: "src/contexts/catalog/infrastructure/db/location-suggestions.ts upsert()"
       to: "src/contexts/catalog/domain/locations.ts normalizeLocationLabel"
@@ -227,6 +227,7 @@ export const pendingStorageDeletions = pgTable("pending_storage_deletions", {
   lastError: text("last_error"),
   scheduledAt: timestamp("scheduled_at", ...).notNull().defaultNow(),
   createdAt: timestamp("created_at", ...).notNull().defaultNow(),
+  startedAt: timestamp("started_at", ...),                 // added by Plan 05-02 migration — set during markInProgress
   completedAt: timestamp("completed_at", ...),
 }, /* psd_status_scheduled_at_idx, psd_user_id_idx */);
 
@@ -643,11 +644,13 @@ export enum ErrorCode {
 
     `describe("pending_storage_deletions repository")` (integration, runs under `pnpm test:integration`):
     - `it("create() inserts a row with status='pending', attempts=0, scheduled_at defaulting to now()", ...)`.
-    - `it("markInProgress(id) transitions status to 'in_progress' and increments attempts by 1", ...)`.
+    - `it("markInProgress(id) transitions status to 'in_progress', increments attempts by 1, and sets started_at = now()", ...)` — assert returned row has `status === 'in_progress'`, `attempts === 1` (assuming first call), and `startedAt` is a non-null Date value close to now.
     - `it("markCompleted(id) transitions status to 'completed' and sets completed_at", ...)`.
-    - `it("recordError(id, message) sets last_error AND keeps status as the prior in_progress (caller decides whether to mark failed)", ...)`.
+    - `it("recordError(id, message) sets last_error and transitions status to 'pending' when attempts < 5 (attempts 1–4)", ...)` — call `markInProgress` (attempts becomes 1), then `recordError(id, "network timeout")`. Assert: returned row has `status === 'pending'`, `lastError === 'network timeout'`.
+    - `it("recordError(id, message) transitions status to 'failed' when attempts = 5 (final attempt)", ...)` — call `markInProgress` four more times to bring attempts to 5 (or directly update attempts=5 in DB setup), then call `recordError`. Assert: returned row has `status === 'failed'`.
     - `it("markFailed(id) transitions status to 'failed' (terminal)", ...)`.
-    - `it("fetchPendingBatch(db, limit=50) returns up to limit rows with status='pending' AND scheduled_at <= now(), ordered by scheduled_at ASC", ...)` — seed 60 pending rows + 10 in_progress + 5 completed; assert returned length === 50, all pending, all scheduled_at <= now().
+    - `it("fetchPendingBatch(db, limit=50) — no opts — returns up to limit rows with status='pending' AND scheduled_at <= now(), does NOT include in_progress rows", ...)` — seed 60 pending rows + 10 in_progress + 5 completed; assert returned length === 50, all have `status === 'pending'`, none are `'in_progress'`, all scheduled_at <= now().
+    - `it("fetchPendingBatch(db, limit=50, { staleInProgressMinutes: 30 }) returns pending rows AND in_progress rows whose started_at is older than 30 minutes", ...)` — seed 5 fresh pending rows + 2 in_progress rows with `started_at = NOW() - INTERVAL '45 minutes'` + 3 in_progress rows with `started_at = NOW() - INTERVAL '10 minutes'` (not yet stale). Assert: returned rows include the 5 pending AND the 2 stale in_progress rows (total 7); the 3 fresh in_progress rows are excluded.
     - `it("fetchPendingBatch skips rows with future scheduled_at", ...)` — seed 5 pending rows scheduled 1h in the future; assert excluded.
     - `it("fetchPendingBatch — concurrent invocations do NOT process the same row twice (FOR UPDATE SKIP LOCKED)", ...)` — open two postgres-js connections, BEGIN on both, run fetchPendingBatch(50) on connection 1 (don't COMMIT yet), run fetchPendingBatch(50) on connection 2. Assert: returned ID sets are disjoint. COMMIT both. (This is the only behavioral test that PROVES the SKIP LOCKED clause is in the SQL.)
     - `it("fetchPendingBatch under SET LOCAL ROLE authenticated returns ZERO rows even when pending rows exist (T-05-03-02 — service-role discipline)", ...)` — seed 5 pending rows owned by userA via `db` (BYPASSRLS). Open SECOND postgres-js connection, BEGIN, `SET LOCAL ROLE authenticated`, bind `request.jwt.claim.sub` to userA.id. Run the equivalent SELECT (or call the repo function with that connection's tx — easier: replicate the SQL with the `for('update', {skipLocked: true})` shape). Assert returned rows.length === 0. The RLS owner-only policy denies all rows because the policy compiles at parse time but `auth.uid()` resolves to userA, while the row's user_id is userA — wait, that should MATCH. Re-read CONTEXT D-23: RLS is owner-only `auth.uid() = user_id`. Under userA's authenticated session, the rows DO match. Re-read RESEARCH Pitfall 4: "running as authenticated WITHOUT a JWT would deny access" — the discipline is that the reconciler runs WITH NO JWT context (no `SET request.jwt.claim.sub`), so `auth.uid()` is NULL and the `auth.uid() = user_id` predicate fails for every row. Adjust the test: open a SECOND postgres-js connection, BEGIN, `SET LOCAL ROLE authenticated` BUT do NOT bind `request.jwt.claim.sub`. Assert returned rows.length === 0. THIS proves the discipline: a misuse that ran the reconciler under `withUnitOfWork(userId, ...)` would actually return rows (because the binding IS present); but a misuse that strips the userId and just switches role denies all. The behavioral assertion that codifies the rule: "without an explicit `request.jwt.claim.sub` binding, the authenticated role sees zero pending rows." Add a comment in the test explaining why.
@@ -732,6 +735,7 @@ export enum ErrorCode {
         .set({
           status: "in_progress",
           attempts: sql`${pendingStorageDeletions.attempts} + 1`,
+          startedAt: sql`now()`,
         })
         .where(eq(pendingStorageDeletions.id, id))
         .returning();
@@ -755,9 +759,14 @@ export enum ErrorCode {
       id: string,
       message: string,
     ): Promise<PendingStorageDeletionRow | null> {
+      // Transition: return to 'pending' if attempts < 5 (retry-able), else 'failed' (terminal).
+      // `markInProgress` already incremented attempts, so we compare the current value.
       const [row] = await db
         .update(pendingStorageDeletions)
-        .set({ lastError: message })
+        .set({
+          status: sql`CASE WHEN ${pendingStorageDeletions.attempts} >= 5 THEN 'failed'::pending_deletion_status ELSE 'pending'::pending_deletion_status END`,
+          lastError: message,
+        })
         .where(eq(pendingStorageDeletions.id, id))
         .returning();
       return row ?? null;
@@ -789,9 +798,17 @@ export enum ErrorCode {
      * rows returned. Future code-review must reject any caller that
      * imports this function and wraps it in withUnitOfWork.
      *
-     * SQL contract:
+     * SQL contract (no opts — Inngest happy-path):
      *   SELECT * FROM pending_storage_deletions
      *   WHERE status = 'pending' AND scheduled_at <= now()
+     *   ORDER BY scheduled_at ASC
+     *   LIMIT $1
+     *   FOR UPDATE SKIP LOCKED
+     *
+     * SQL contract (with opts.staleInProgressMinutes — reconciler cron):
+     *   SELECT * FROM pending_storage_deletions
+     *   WHERE (status = 'pending' OR (status = 'in_progress' AND started_at < NOW() - INTERVAL '30 minutes'))
+     *     AND scheduled_at <= now()
      *   ORDER BY scheduled_at ASC
      *   LIMIT $1
      *   FOR UPDATE SKIP LOCKED
@@ -802,13 +819,20 @@ export enum ErrorCode {
     export async function fetchPendingBatch(
       db: DbClient,                                  // strict — TransactionalDb NOT accepted
       limit: number,
+      opts?: { staleInProgressMinutes?: number },
     ): Promise<PendingStorageDeletionRow[]> {
+      const staleMinutes = opts?.staleInProgressMinutes;
+
+      const statusCondition = staleMinutes !== undefined
+        ? sql`(${pendingStorageDeletions.status} = 'pending' OR (${pendingStorageDeletions.status} = 'in_progress' AND ${pendingStorageDeletions.startedAt} < now() - make_interval(mins => ${staleMinutes})))`
+        : eq(pendingStorageDeletions.status, "pending");
+
       return db
         .select()
         .from(pendingStorageDeletions)
         .where(
           and(
-            eq(pendingStorageDeletions.status, "pending"),
+            statusCondition,
             lte(pendingStorageDeletions.scheduledAt, sql`now()`),
           ),
         )
@@ -818,7 +842,7 @@ export enum ErrorCode {
     }
     ```
 
-    **Verify the Drizzle `for('update', { skipLocked: true })` API exists in 0.45.x:** if `pnpm exec tsc --noEmit` complains, check Drizzle docs for the correct method name (it may be `.for("update").skipLocked()` chained, or `.for({ strength: "update", skipLocked: true })`). Adjust the call site to whatever 0.45.x supports while preserving the SQL semantics. The CONCURRENT-fetch test from RED is the empirical truth — if it passes, the SQL is right regardless of how Drizzle expresses it.
+    **Verify the Drizzle `for('update', { skipLocked: true })` API exists in 0.45.x:** if `pnpm exec tsc --noEmit` complains, check Drizzle docs for the correct method name (it may be `.for("update").skipLocked()` chained, or `.for({ strength: "update", skipLocked: true })`). Adjust the call site to whatever 0.45.x supports while preserving the SQL semantics. The CONCURRENT-fetch test from RED is the empirical truth — if it passes, the SQL is right regardless of how Drizzle expresses it. **Verify the `make_interval(mins => ${staleMinutes})` Postgres function is available in the target Supabase Postgres version:** if not, use `(${staleMinutes} || ' minutes')::interval` instead — both produce equivalent SQL and are safe against injection because `staleMinutes` is a TypeScript `number`.
 
     Create `src/contexts/catalog/infrastructure/db/location-suggestions.ts`:
 
@@ -908,7 +932,10 @@ export enum ErrorCode {
 
   <done>
     - `src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts` exists with the 6 exports (`create`, `markInProgress`, `markCompleted`, `recordError`, `markFailed`, `fetchPendingBatch`).
-    - `fetchPendingBatch`'s parameter type is exactly `DbClient` (no union), enforced by TypeScript and documented in the JSDoc.
+    - `fetchPendingBatch`'s first parameter type is exactly `DbClient` (no union), enforced by TypeScript and documented in the JSDoc. Third parameter `opts?: { staleInProgressMinutes?: number }` is optional.
+    - `fetchPendingBatch` with no opts only returns `pending` rows (Inngest happy-path). With `{ staleInProgressMinutes: 30 }` also returns `in_progress` rows whose `started_at` is older than 30 minutes (reconciler stale-recovery path).
+    - `markInProgress` sets `started_at = NOW()` in the same UPDATE as the status and attempts increment.
+    - `recordError` returns the row to `status = 'pending'` when `attempts < 5`; transitions to `'failed'` only when `attempts >= 5`.
     - The CONCURRENT-fetch test passes — two simultaneous fetchPendingBatch invocations on different connections return disjoint row ID sets.
     - The "authenticated role with no JWT sub binding" test passes — fetchPendingBatch returns 0 rows under that posture, codifying the service-role discipline.
     - `src/contexts/catalog/infrastructure/db/location-suggestions.ts` exists with `upsert` and `listForUser` exports. Upsert ON CONFLICT increments usage_count and touches last_used_at; first-writer-wins on label_display.
@@ -957,10 +984,18 @@ test -f src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts
 test -f src/contexts/catalog/infrastructure/db/location-suggestions.ts
 test -f src/contexts/catalog/domain/locations.ts
 
-# Service-role discipline guard: fetchPendingBatch's signature uses DbClient, NOT the union
+# Service-role discipline guard: fetchPendingBatch's signature uses DbClient as first param, NOT the union
 grep -v '^#' src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts \
   | grep -E "function fetchPendingBatch\(\s*db: DbClient" | grep -c "DbClient" \
   # Expect: 1
+# Stale-recovery opts signature present
+grep -v '^#' src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts \
+  | grep -c "staleInProgressMinutes" \
+  # Expect: >= 1
+# markInProgress sets startedAt
+grep -v '^#' src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts \
+  | grep -A 6 "markInProgress" | grep -c "startedAt" \
+  # Expect: >= 1
 
 # T-05-03-04 sentinel: bumpCoverFor's plants UPDATE WHERE includes user_id
 grep -v '^#' src/contexts/catalog/infrastructure/db/photo-entries.ts \

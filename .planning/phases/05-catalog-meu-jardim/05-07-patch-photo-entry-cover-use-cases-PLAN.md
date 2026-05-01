@@ -29,32 +29,36 @@ tags: ["catalog", "use-case", "tdd", "patch", "photo-entry", "cover-promote", "c
 must_haves:
   truths:
     - "PATCH update-plant accepts a single dirty field, applies LWW (server `updated_at` always wins per D-06), and emits `plant_edited` PostHog AFTER the UoW resolves (rollback never leaks telemetry)."
+    - "`updatePlant`, `createPhotoEntry`, and `deletePhotoEntry` accept an optional `deps: { tx?: TransactionalDb }` parameter. When `tx` is provided (caller-owned transaction), the use-case uses it, does NOT commit independently, and returns a `postCommit?: () => Promise<void>` callback on the `ok: true` arm — the caller MUST await this callback AFTER the outer commit succeeds. When `tx` is omitted, the use-case opens its own `withUnitOfWork`, runs telemetry inline after the await resolves, and returns without a `postCommit` callback. `src/shared/db/unit-of-work.ts` exports only `withUnitOfWork(userId, fn)` and `TransactionalDb` — there is NO `tx.afterCommit` or `onCommit` registry in that module."
     - "When the dirty PATCH field is `location`, the same UoW upserts `location_suggestions(user_id, label_normalized)` with `usage_count` incremented and `last_used_at` bumped (D-09)."
     - "Cross-user PATCH against a plant the caller does not own returns `not_found` (NOT `forbidden`) — matches `upload-photo.ts:131` precedent and avoids existence disclosure."
     - "get-plant returns `{ plant, _meta: { photo_entry_count, reminder_count } }` so the D-07 delete-confirm sheet renders fresh cascade counts."
     - "list-plants supports all five sort_ids `(name_asc | name_desc | date_new | date_old | location)`, applies `WHERE user_id = $1` regardless of cursor contents, returns opaque `nextCursor`, and includes `total_count` ONLY when `includeCount === true` AND `cursor === null` (first page)."
     - "list-plants ordering is deterministic for `acquisition_date` ASC and DESC: NULLs sort LAST in both directions; `plant.id` is the stable tiebreak — RESEARCH Open Q1 sentinel-cursor pattern."
     - "list-photo-entries returns reverse-chronological PhotoEntries; each entry's `thumbnailUrl` is replaced with a freshly minted 24h-TTL signed URL via `signCatalogPhotoUrl({ url, ttl: 24*3600 })` (D-20)."
-    - "create-photo-entry follows D-15 multipart flow: MIME/size/GPS validation (reused from upload-photo helpers), `validateStoragePathOwnership` BEFORE storage write, sharp thumbnail, two storage writes, then `withUnitOfWork` insert with compensating-delete on TX failure (T-05-04-01 mitigation)."
+    - "create-photo-entry follows D-15 multipart flow: MIME/size/GPS validation (reused from upload-photo helpers), `validateStorageObjectKey({ userId, plantId, key })` BEFORE storage write, sharp thumbnail, two storage writes, then `withUnitOfWork` insert with compensating-delete on TX failure (T-05-04-01 mitigation)."
     - "delete-photo-entry deletes the PhotoEntry row inside a UoW; if the deleted row was the cover (oldest by created_at), `photoEntries.bumpCoverFor(plantId)` runs in the SAME TX so cover-photo-url atomically advances to the next-oldest entry (D-03)."
-    - "delete-photo-entry inserts ONE `pending_storage_deletions` row per bucket scoped to the SINGLE photo path `{userId}/{plantId}/{photoId}.{ext}` AFTER `validateStoragePathOwnership` accepts the key (T-05-04-01 second call site)."
+    - "delete-photo-entry inserts ONE `pending_storage_deletions` row per bucket scoped to the SINGLE photo path `{userId}/{plantId}/{photoId}.{ext}` AFTER `validateStorageObjectKey({ userId, plantId, key })` accepts the key (T-05-04-01 second call site)."
     - "list-locations returns the merge of (a) `locationSuggestions.listForUser(userId, 20)` ordered by `usage_count DESC, last_used_at DESC` and (b) the i18n defaults loaded from `src/messages/pt-BR.json` `catalog.locations.defaults`, de-duped by normalized label (NFKC + lower-case + trim)."
+    - "i18n namespace owner is 05-10 — only 05-10 introduces the new top-level catalog namespace scaffold; this plan extends leaf keys only (`catalog.locations.defaults`)."
     - "`signCatalogPhotoUrl` is a pure helper that takes a stored bucket-prefixed URL string (`{bucket}/{key}` shape, the value persisted in `photo_entries.thumbnail_url`/`photo_url`) plus a TTL in seconds and returns a signed URL — adapter is the only side effect; no DB I/O."
+    - "`list-plants` batch-signs cover storage keys in parallel via `Promise.all` after fetching plant rows, returning `coverSignedUrl` (signed, 24h TTL) in each item. `get-plant` signs the single cover URL. Performance note: first-page catalog signs up to 50 covers in parallel; for buckets with rate limits, consider switching to thumbnail-only signing or storage-side public-thumbnail buckets in a future phase."
+    - "Route handlers (05-09) MUST await the use-case's `postCommit` callback AFTER `withIdempotency` returns and ONLY when the outer commit succeeded. If `withIdempotency` rolls back, `postCommit` MUST NOT be called. The callback is present on the `ok: true` arm only when `deps.tx` was provided; when the use-case managed its own UoW the `postCommit` field is absent."
   artifacts:
     - path: "src/contexts/catalog/application/update-plant.ts"
-      provides: "PATCH single-field use-case with optimistic LWW + post-commit PostHog `plant_edited` + same-TX `location_suggestions` upsert when dirty field is `location`"
+      provides: "PATCH single-field use-case with optimistic LWW + post-commit PostHog `plant_edited` + same-TX `location_suggestions` upsert when dirty field is `location`; accepts optional `deps.tx` for caller-owned transaction (HIGH-3)"
       exports: ["updatePlant", "UpdatePlantInput", "UpdatePlantResult"]
     - path: "src/contexts/catalog/application/get-plant.ts"
-      provides: "Plant detail read returning plant + `_meta: { photo_entry_count, reminder_count }` for D-07 delete-confirm cascade-counts surface"
+      provides: "Plant detail read returning plant + `coverSignedUrl` (24h-TTL, MEDIUM-3) + `_meta: { photo_entry_count, reminder_count }` for D-07 delete-confirm cascade-counts surface"
       exports: ["getPlant", "GetPlantInput", "GetPlantResult"]
     - path: "src/contexts/catalog/application/list-plants.ts"
-      provides: "Cursor pagination across the 5 sort modes with NULLS LAST for `acquisition_date`; `?include_count=1` first-page total"
+      provides: "Cursor pagination across the 5 sort modes with NULLS LAST for `acquisition_date`; `?include_count=1` first-page total; batch-signs cover URLs in parallel via `signCatalogPhotoUrl` (MEDIUM-3)"
       exports: ["listPlants", "ListPlantsInput", "ListPlantsResult"]
     - path: "src/contexts/catalog/application/list-photo-entries.ts"
       provides: "Reverse-chronological PhotoEntry list with 24h-TTL signed thumbnail URLs (D-20)"
       exports: ["listPhotoEntries", "ListPhotoEntriesInput", "ListPhotoEntriesResult"]
     - path: "src/contexts/catalog/application/create-photo-entry.ts"
-      provides: "Multipart photo-journal add (D-15) reusing upload-photo compensating-delete pattern; `validateStoragePathOwnership` gate before storage write"
+      provides: "Multipart photo-journal add (D-15) reusing upload-photo compensating-delete pattern; `validateStorageObjectKey` gate before storage write"
       exports: ["createPhotoEntry", "CreatePhotoEntryInput", "CreatePhotoEntryResult"]
     - path: "src/contexts/catalog/application/delete-photo-entry.ts"
       provides: "PhotoEntry delete with same-TX cover auto-promote (D-03) and per-photo `pending_storage_deletions` row insert (T-05-04-01 mitigation)"
@@ -75,8 +79,8 @@ must_haves:
       pattern: "locationSuggestions\\.upsert\\("
     - from: "src/contexts/catalog/application/update-plant.ts"
       to: "src/shared/telemetry/posthog-server.ts (getPostHog)"
-      via: "POST-COMMIT capture: `await withUnitOfWork(...)` resolves THEN `getPostHog()?.capture({event: 'plant_edited', properties: {field}})`. NO `tx.afterCommit` API exists in Drizzle — use sequential await."
-      pattern: "getPostHog\\(\\)\\?\\.capture"
+      via: "POST-COMMIT capture (own-UoW path): `await withUnitOfWork(...)` resolves THEN `getPostHog()?.capture({event: 'plant_edited', properties: {field}})`. Caller-owned-TX path: use-case returns `postCommit` callback; caller awaits it after outer commit. No `tx.afterCommit` API exists in this codebase."
+      pattern: "postCommit|getPostHog\\(\\)\\?\\.capture"
     - from: "src/contexts/catalog/application/list-plants.ts"
       to: "src/shared/api/cursor.ts"
       via: "encodeCursor / decodeCursor + extended `{sort_id, last_value, last_id}` payload from 05-02 (RESEARCH Open Q1 NULLS LAST sentinel)"
@@ -86,13 +90,13 @@ must_haves:
       via: "Map each row's `thumbnail_url` (stored as `{bucket}/{key}`) through signCatalogPhotoUrl with `ttlSeconds = 24*3600`"
       pattern: "signCatalogPhotoUrl\\("
     - from: "src/contexts/catalog/application/create-photo-entry.ts"
-      to: "src/contexts/catalog/domain/storage-paths.ts (validateStoragePathOwnership — from 05-04)"
-      via: "MANDATORY pre-check: validate the canonical D-26 key BEFORE the storage adapter writes (T-05-04-01 first call site)"
-      pattern: "validateStoragePathOwnership\\("
+      to: "src/contexts/catalog/domain/storage-paths.ts (validateStorageObjectKey — from 05-04)"
+      via: "MANDATORY pre-check: validate the single canonical D-26 object key BEFORE the storage adapter writes (T-05-04-01 first call site)"
+      pattern: "validateStorageObjectKey\\("
     - from: "src/contexts/catalog/application/delete-photo-entry.ts"
-      to: "src/contexts/catalog/domain/storage-paths.ts (validateStoragePathOwnership — from 05-04)"
-      via: "MANDATORY pre-check BEFORE inserting `pending_storage_deletions` rows (T-05-04-01 second call site flagged in 05-04 SUMMARY)"
-      pattern: "validateStoragePathOwnership\\("
+      to: "src/contexts/catalog/domain/storage-paths.ts (validateStorageObjectKey — from 05-04)"
+      via: "MANDATORY pre-check: validate each single canonical object key BEFORE inserting `pending_storage_deletions` rows (T-05-04-01 second call site flagged in 05-04 SUMMARY)"
+      pattern: "validateStorageObjectKey\\("
     - from: "src/contexts/catalog/application/delete-photo-entry.ts"
       to: "src/contexts/catalog/infrastructure/db/photo-entries.ts (bumpCoverFor — from 05-03)"
       via: "Inside the SAME UoW: if deleted row was the cover (or for safety, always re-evaluate), call bumpCoverFor(plantId) to atomically advance Plant.cover_photo_url (D-03)"
@@ -241,7 +245,7 @@ export async function create(
 // `prefix` carries the SCOPE — for a single photo delete, this MUST be the full canonical
 // key `{userId}/{plantId}/{photoId}.{ext}` (NOT just `{userId}/{plantId}/`). The cleanup
 // worker calls storageAdapter.deletePrefix(prefix); for the single-object case the prefix
-// matches exactly one key. T-05-04-01 mitigation: gate this insert on validateStoragePathOwnership.
+// matches exactly one key. T-05-04-01 mitigation: gate this insert on validateStorageObjectKey.
 ```
 
 From `src/shared/api/cursor.ts` (existing + 05-02 extension for sorted cursor):
@@ -265,11 +269,13 @@ From `src/shared/db/unit-of-work.ts:88-103`:
 ```ts
 export async function withUnitOfWork<T>(userId: string, fn: (tx: TransactionalDb) => Promise<T>): Promise<T>;
 // Binds `request.jwt.claim.sub = userId` for transaction lifetime — RLS engages.
-// IMPORTANT: There is NO `tx.afterCommit(...)` API in Drizzle. The "after commit"
-// pattern is sequential:
+// IMPORTANT: There is NO `tx.afterCommit(...)` API in this module.
+// Own-UoW path: sequential await IS the post-commit pattern:
 //   const result = await withUnitOfWork(userId, async (tx) => { ... });
 //   getPostHog()?.capture({...}); // runs ONLY if UoW resolved (no rollback leak)
-// If withUnitOfWork throws/rejects, the capture line is never reached.
+// Caller-owned-TX path: return a postCommit callback instead:
+//   if (deps.tx) { const r = await runInTx(deps.tx); return { ...r, postCommit: async () => { /* telemetry */ } }; }
+// The caller awaits postCommit ONLY after its own outer commit succeeds.
 ```
 
 From `src/contexts/catalog/domain/schemas.ts` (extended in 05-04):
@@ -280,10 +286,13 @@ export type UpdatePlantInput = z.infer<typeof updatePlantInputSchema>;
 // + `.refine(v => Object.keys(v).length > 0, ...)` (rejects empty payload)
 ```
 
-From `src/contexts/catalog/domain/storage-paths.ts` (NEW in 05-04):
+From `src/contexts/catalog/domain/storage-paths.ts` (NEW in 05-04 — split helpers):
 ```ts
 export type StoragePathValidationResult = { ok: true } | { ok: false; reason: StoragePathValidationReason };
-export function validateStoragePathOwnership(input: { userId: string; plantId: string; key: string }): StoragePathValidationResult;
+// For validating a SINGLE full object key (e.g. `{userId}/{plantId}/{photoId}.jpg`):
+export function validateStorageObjectKey(input: { userId: string; plantId: string; key: string }): StoragePathValidationResult;
+// For validating a deletion prefix scope (e.g. `{userId}/{plantId}/` used by plant delete):
+export function validateStorageDeletionPrefix(input: { userId: string; plantId: string; prefix: string }): StoragePathValidationResult;
 ```
 
 From `src/shared/telemetry/posthog-server.ts:6-16`:
@@ -367,7 +376,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 | THREAT         | T-05-07-02 cross-user PATCH existence disclosure                                      | Returns `not_found` (precedent: upload-photo.ts:131)         | COVERED  |
 | THREAT         | T-05-07-03 PostHog rollback leakage                                                   | Sequential-await post-commit pattern                         | COVERED  |
 | THREAT         | T-05-07-04 cursor manipulation bypassing ownership                                    | `WHERE user_id = $1` filter in repo regardless of cursor     | COVERED  |
-| THREAT         | T-05-04-01 prefix-mis-scope (create-photo-entry + delete-photo-entry call sites)      | validateStoragePathOwnership at both sites (per 05-04 SUMMARY) | COVERED |
+| THREAT         | T-05-04-01 prefix-mis-scope (create-photo-entry + delete-photo-entry call sites)      | validateStorageObjectKey at both single-key call sites (per 05-04 SUMMARY split helpers) | COVERED |
 </source_audit>
 
 <tasks>
@@ -393,6 +402,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
     - Test 7 (POSTHOG POST-COMMIT — D-29): Mock `getPostHog()` to return a stub. Successful PATCH fires exactly ONE `capture({ event: "plant_edited", properties: { field: "name" } })` after the UoW commits. The `field` property uses the inferred dirty key.
     - Test 8 (POSTHOG ROLLBACK — T-05-07-03): Force the UoW to throw mid-transaction (e.g., the integration test seeds a plant whose update would violate a CHECK constraint, OR mocks `plantsRepo.update` to throw). Assert the PostHog stub's `capture` is NEVER called.
     - Test 9 (RLS DEFENSE-IN-DEPTH): Repository `WHERE user_id = $1` returns null for cross-user PATCH; no row is mutated.
+    - Test 10 (HIGH-3 OUTER TX): When `updatePlant(args, { tx: externalTx })` is called with an external transaction, the use-case does NOT call `withUnitOfWork` (no internal commit). The `ok: true` result includes a `postCommit` callback. The PostHog spy is NOT called until `result.postCommit?.()` is explicitly awaited. When the outer transaction is rolled back and `result.postCommit` is NOT awaited, the PostHog spy remains unfired and no DB changes persist.
 
     **Cycle 1B — `get-plant.ts`:**
     - Test 1: For an owned plant with N photo entries and M reminders, `getPlant({ userId, plantId })` returns `{ ok: true, plant, _meta: { photoEntryCount: N, reminderCount: M } }`.
@@ -415,19 +425,28 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
        import { db as defaultDb } from "@shared/db/client";
        import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
        import type { PlantRow } from "@contexts/catalog/infrastructure/db/plants";
+       import { signCatalogPhotoUrl } from "@contexts/catalog/infrastructure/photo-storage";
+       import { signCatalogPhotoUrl } from "@contexts/catalog/infrastructure/photo-storage";
 
        export interface GetPlantInput { userId: string; plantId: string }
        export type GetPlantResult =
-         | { ok: true; plant: PlantRow; _meta: { photoEntryCount: number; reminderCount: number } }
+         | { ok: true; plant: PlantRow; coverSignedUrl: string | null; _meta: { photoEntryCount: number; reminderCount: number } }
          | { ok: false; code: typeof ErrorCode.NotFound | typeof ErrorCode.ValidationFailed; reason: string };
 
        export async function getPlant(input: GetPlantInput): Promise<GetPlantResult> {
          const plant = await plantsRepo.findByIdForUser(defaultDb, input.userId, input.plantId);
          if (!plant) return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
          const counts = await plantsRepo.getCascadeCounts(defaultDb, input.plantId);
+         // MEDIUM-3: sign single cover URL for the detail view.
+         let coverSignedUrl: string | null = null;
+         if (plant.coverPhotoUrl) {
+           const signed = await signCatalogPhotoUrl({ storedUrl: plant.coverPhotoUrl, ttlSeconds: 24 * 3600 });
+           coverSignedUrl = signed.ok ? signed.signedUrl : null;
+         }
          return {
            ok: true,
            plant,
+           coverSignedUrl,
            _meta: { photoEntryCount: counts.photoEntryCount, reminderCount: counts.reminderCount },
          };
        }
@@ -445,8 +464,9 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
        import type { PlantRow } from "@contexts/catalog/infrastructure/db/plants";
 
        export interface UpdatePlantArgs { userId: string; plantId: string; patch: unknown }
+       export type PostCommitCallback = () => Promise<void>;
        export type UpdatePlantResult =
-         | { ok: true; plant: PlantRow }
+         | { ok: true; plant: PlantRow; postCommit?: PostCommitCallback }
          | { ok: false; code: typeof ErrorCode.NotFound | typeof ErrorCode.ValidationFailed; reason: string };
 
        const EDITED_FIELDS = ["name", "nickname", "location", "acquisitionDate", "notes"] as const;
@@ -465,7 +485,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
          acquisitionDate: "acquisition_date", notes: "notes",
        };
 
-       export async function updatePlant(args: UpdatePlantArgs): Promise<UpdatePlantResult> {
+       export async function updatePlant(args: UpdatePlantArgs, deps: { tx?: TransactionalDb } = {}): Promise<UpdatePlantResult> {
          const parseResult = updatePlantInputSchema.safeParse(args.patch);
          if (!parseResult.success) {
            return { ok: false, code: ErrorCode.ValidationFailed, reason: parseResult.error.message };
@@ -477,20 +497,40 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
          if (!owned) return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
 
          // UoW: update plant + (if dirty field is location) upsert suggestion in same TX.
-         const updated = await withUnitOfWork(args.userId, async (tx) => {
+         // HIGH-3: use external tx if provided; otherwise open own UoW.
+         const runInTx = async (tx: TransactionalDb) => {
            const row = await plantsRepo.update(tx, args.userId, args.plantId, patch);
            if (!row) return null; // RLS denied — surface as not_found
            if (typeof patch.location === "string" && patch.location.trim().length > 0) {
              await locationSuggestionsRepo.upsert(tx, args.userId, patch.location);
            }
            return row;
-         });
-
-         if (!updated) return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
-
-         // POST-COMMIT telemetry. NO `tx.afterCommit` API exists in Drizzle — sequential await.
-         // If withUnitOfWork rejected, this line never runs (T-05-07-03).
+         };
          const dirty = inferDirtyField(patch);
+
+         // Caller-owned-TX path: use caller's tx, do NOT commit, return postCommit callback.
+         if (deps.tx) {
+           const row = await runInTx(deps.tx);
+           if (!row) return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
+           return {
+             ok: true,
+             plant: row,
+             postCommit: dirty !== null
+               ? async () => {
+                   getPostHog()?.capture({
+                     distinctId: args.userId,
+                     event: "plant_edited",
+                     properties: { field: FIELD_TO_POSTHOG[dirty] },
+                   });
+                 }
+               : undefined,
+           };
+         }
+
+         // Own-UoW path: commit happens inside withUnitOfWork; telemetry runs inline here
+         // only if the commit succeeded (T-05-07-03 — UoW rejection short-circuits this line).
+         const updated = await withUnitOfWork(args.userId, runInTx);
+         if (!updated) return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
          if (dirty !== null) {
            getPostHog()?.capture({
              distinctId: args.userId,
@@ -498,7 +538,6 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
              properties: { field: FIELD_TO_POSTHOG[dirty] },
            });
          }
-
          return { ok: true, plant: updated };
        }
        ```
@@ -511,18 +550,18 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 
     **Anti-pattern guard:** Run after implementation:
     ```
-    grep -c "tx\.afterCommit\|afterCommit" src/contexts/catalog/application/update-plant.ts
+    node -e "const fs=require('fs'); const t=fs.readFileSync('src/contexts/catalog/application/update-plant.ts','utf8'); const bad=/(tx\.afterCommit|\bafterCommit\b)/.test(t); const good=/\bpostCommit\b/.test(t); if(bad){console.error('Forbidden: afterCommit reference');process.exit(1)} if(!good){console.error('Missing: postCommit not found');process.exit(1)} console.log('ok');"
     ```
-    Result MUST be `0`. The "after commit" pattern is sequential await of `withUnitOfWork(...)`, NOT a non-existent Drizzle API.
+    `afterCommit` MUST be absent; `postCommit` MUST appear at least once.
   </action>
   <verify>
     <automated>pnpm test:run -- catalog-update-plant.integration</automated>
     <automated>pnpm test:run -- catalog-get-plant.integration</automated>
-    <automated>node -e "const fs=require('fs'); const txt=fs.readFileSync('src/contexts/catalog/application/update-plant.ts','utf8'); if(/tx\.afterCommit|\bafterCommit\b/.test(txt)){console.error('Forbidden: tx.afterCommit reference');process.exit(1)} console.log('ok');"</automated>
+    <automated>node -e "const fs=require('fs'); const t=fs.readFileSync('src/contexts/catalog/application/update-plant.ts','utf8'); if(/(tx\.afterCommit|\bafterCommit\b)/.test(t)){console.error('Forbidden: afterCommit reference');process.exit(1)} if(!/\bpostCommit\b/.test(t)){console.error('Missing: postCommit not found in update-plant.ts');process.exit(1)} console.log('ok');"</automated>
     <automated>node -e "const fs=require('fs'); ['update-plant.ts','get-plant.ts'].forEach(f=>{const t=fs.readFileSync('src/contexts/catalog/application/'+f,'utf8'); if(/from \"drizzle-orm\"/.test(t)){console.error('D-19 violation in',f);process.exit(1)}}); console.log('ok');"</automated>
   </verify>
   <done>
-    All 9+4 listed test cases pass under `pnpm test:run`. `update-plant.ts` and `get-plant.ts` export the named symbols. PostHog capture demonstrably skipped on UoW rollback. Cross-user PATCH returns `not_found` (existence-disclosure mitigation verified). location_suggestions upsert verified via direct SELECT in test 6. No Drizzle imports in either file (D-19). No `tx.afterCommit` reference anywhere.
+    All 10+4 listed test cases pass under `pnpm test:run`. `update-plant.ts` exports `PostCommitCallback`, `UpdatePlantArgs`, `UpdatePlantResult`, `updatePlant`. PostHog capture demonstrably skipped on UoW rollback. Test 10 asserts postCommit callback returned for deps.tx path; PostHog spy not called until callback is explicitly awaited; rollback keeps spy unfired. Cross-user PATCH returns `not_found` (existence-disclosure mitigation verified). location_suggestions upsert verified via direct SELECT in test 6. No Drizzle imports in either file (D-19). No `afterCommit` reference anywhere; `postCommit` present in update-plant.ts.
   </done>
 </task>
 
@@ -552,6 +591,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
     - Test 11 (T-05-07-04 — CURSOR MANIPULATION): seed two users U1 + U2, each with 10 plants. Decode U1's `nextCursor` and re-call `listPlants` for U2 with that cursor. The result MUST contain ONLY U2's plants (the WHERE `user_id = $1` filter is applied regardless of cursor contents). Cross-user data leak is impossible.
     - Test 12 (CURSOR TAMPER): pass an invalid base64 string as cursor — returns `{ ok: false, code: ErrorCode.ValidationFailed }`.
     - Test 13 (`includeCount: false`): first-page response omits `totalCount`. (`totalCount` only present when explicitly requested.)
+    - Test 14 (MEDIUM-3 CONCURRENCY): Spy on `storage.signUrl` (or `signCatalogPhotoUrl`). Seed 5 plants, each with a cover_photo_url. Call `listPlants`. Assert that the spy was called 5 times AND all calls were initiated before any resolved (i.e., the adapter's `createSignedUrl` mock records call-start timestamps in parallel, not sequentially). Alternatively: mock `signCatalogPhotoUrl` to record invocation order and assert all 5 calls happen within the same microtask batch.
 
     **Cycle 2B — `list-locations.ts`:**
     - Test 1: User with zero `location_suggestions` rows — returns the 8 i18n defaults `[Sala, Varanda, Quarto, Banheiro, Cozinha, Escritório, Jardim, Outro]` (case-preserved from JSON).
@@ -590,7 +630,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
          userId: string; sort: SortId; cursor: string | null; limit: number; includeCount: boolean;
        }
        export type ListPlantsResult =
-         | { ok: true; items: PlantRow[]; nextCursor: string | null; totalCount?: number }
+         | { ok: true; items: (PlantRow & { coverSignedUrl: string | null })[]; nextCursor: string | null; totalCount?: number }
          | { ok: false; code: typeof ErrorCode.ValidationFailed; reason: string };
 
        export async function listPlants(input: ListPlantsInput): Promise<ListPlantsResult> {
@@ -612,12 +652,23 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 
          const nextCursor = nextRaw === null ? null : encodeSortCursor(nextRaw);
 
+         // MEDIUM-3: batch-sign cover storage keys in parallel (up to 50 per page).
+         // Avoids sequential signing calls; for buckets with rate limits, consider
+         // thumbnail-only signing or storage-side public-thumbnail buckets in a future phase.
+         const signedItems = await Promise.all(
+           rows.map(async (row) => {
+             if (!row.coverPhotoUrl) return { ...row, coverSignedUrl: null };
+             const signed = await signCatalogPhotoUrl({ storedUrl: row.coverPhotoUrl, ttlSeconds: 24 * 3600 });
+             return { ...row, coverSignedUrl: signed.ok ? signed.signedUrl : null };
+           })
+         );
+
          // total_count gated on includeCount AND first page (cursor === null) per D-12.
          if (input.includeCount && input.cursor === null) {
            const totalCount = await plantsRepo.countForUser(defaultDb, input.userId);
-           return { ok: true, items: rows, nextCursor, totalCount };
+           return { ok: true, items: signedItems, nextCursor, totalCount };
          }
-         return { ok: true, items: rows, nextCursor };
+         return { ok: true, items: signedItems, nextCursor };
        }
        ```
 
@@ -710,9 +761,10 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
     - Test 2: Cross-user plant — returns `{ ok: false, code: ErrorCode.NotFound }`. No bucket writes occur (in-memory adapter `Map` size unchanged).
     - Test 3: Note > 500 chars — returns `{ ok: false, code: ErrorCode.ValidationFailed }` (rejected by `createPhotoEntryInputSchema` from 05-04).
     - Test 4: Buffer with GPS EXIF — returns `{ ok: false, code: ErrorCode.ValidationFailed }`. No DB row, no bucket writes.
-    - Test 5 (T-05-04-01): The use-case calls `validateStoragePathOwnership({ userId, plantId, key })` BEFORE `uploadOriginalPlantPhoto` runs. Verified via spy/mock asserting call order. If validateStoragePathOwnership returns `{ ok: false }` (impossible with internally-built keys, but defensive), no bucket write occurs.
+    - Test 5 (T-05-04-01): The use-case calls `validateStorageObjectKey({ userId, plantId, key })` BEFORE `uploadOriginalPlantPhoto` runs. Verified via spy/mock asserting call order. If `validateStorageObjectKey` returns `{ ok: false }` (impossible with internally-built keys, but defensive), no bucket write occurs.
     - Test 6 (compensating delete): Force `withUnitOfWork` to throw (e.g., mock `photoEntriesRepo.create` to reject with a constraint error). The bucket bytes uploaded in step 6 of upload-photo are deleted via `deleteSinglePlantPhotoBestEffort` (verified via in-memory adapter — both `plant-photos` and `plant-thumbnails` Maps lose the orphaned key). The original error rethrows.
     - Test 7 (REUSE): Verify that `create-photo-entry.ts` calls `uploadPhoto(...)` from `upload-photo.ts` rather than re-implementing steps 1–7. (Spy on the `uploadPhoto` export; assert it was called once.)
+    - Test 8 (HIGH-3 OUTER TX): When `createPhotoEntry(input, { tx: externalTx })` is called, the use-case does NOT open its own `withUnitOfWork`. The `ok: true` result's `postCommit` field is `undefined` (no telemetry event for create-photo-entry). Rolling back the outer transaction reverts the photo entry insert; since `postCommit` is undefined, no callback is invoked.
 
     **Cycle 3C — `delete-photo-entry.ts` + cover auto-promote:**
     - Test 1: Owned PhotoEntry deletion returns `{ ok: true }`. Row no longer in DB.
@@ -720,10 +772,11 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
     - Test 3 (D-03 — COVER AUTO-PROMOTE): Plant P with 3 photo entries A (oldest, current cover), B, C. Initial: `Plant.cover_photo_url === A.photo_url`. Delete A. After commit: `Plant.cover_photo_url === B.photo_url` (next-oldest by `created_at ASC`). Atomicity: `bumpCoverFor` ran inside the SAME UoW as the DELETE.
     - Test 4 (D-03 — DELETE NON-COVER): Delete C (the newest). After commit: `Plant.cover_photo_url === A.photo_url` (unchanged). `bumpCoverFor` is still called defensively but is a no-op.
     - Test 5 (D-03 — DELETE LAST PHOTO): Delete the final photo entry. After commit: `Plant.cover_photo_url IS NULL` (no photos remain).
-    - Test 6 (T-05-04-01 — second call site): The use-case calls `validateStoragePathOwnership` BEFORE inserting `pending_storage_deletions`. Verified via spy. A bad key never produces a deletion row.
+    - Test 6 (T-05-04-01 — second call site): The use-case calls `validateStorageObjectKey` on each extracted object key BEFORE inserting `pending_storage_deletions`. Verified via spy. A bad key never produces a deletion row.
     - Test 7 (PENDING_STORAGE_DELETIONS scope): After deletion, `pending_storage_deletions` contains EXACTLY TWO new rows (one per bucket: `plant-photos` and `plant-thumbnails`). Each row's `prefix` is the FULL canonical photo key `{userId}/{plantId}/{photoId}.{ext}` — NOT a parent prefix that would over-match. Verified via direct SELECT.
     - Test 8 (TX ATOMICITY): Mock `pendingStorageDeletionsRepo.create` to throw on the second call. The PhotoEntry deletion AND the cover bump are rolled back together (DB is unchanged from the pre-delete state). No partial state.
     - Test 9 (NO INNGEST EVENT): Unlike delete-plant (05-06), delete-photo-entry does NOT emit `plant.deleted`. Cleanup happens via the `pending_storage_deletions` reconciler (D-22/D-24). Verify via Inngest spy / send mock.
+    - Test 10 (HIGH-3 OUTER TX): When `deletePhotoEntry(input, { tx: externalTx })` is called, the use-case does NOT open its own `withUnitOfWork`. The `ok: true` result's `postCommit` field is `undefined` (no telemetry event for delete-photo-entry). Rolling back the outer transaction reverts the photo entry delete, cover bump, and `pending_storage_deletions` insert atomically; since `postCommit` is undefined, no callback is invoked.
   </behavior>
   <action>
     1. **Cycle 3-PRE first — `signCatalogPhotoUrl` unit:**
@@ -812,8 +865,8 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
        import { ErrorCode } from "@shared/config/errors";
        import { uploadPhoto, type UploadPhotoResult } from "@contexts/catalog/application/upload-photo";
        import { createPhotoEntryInputSchema } from "@contexts/catalog/domain/schemas";
-       import { validateStoragePathOwnership } from "@contexts/catalog/domain/storage-paths";
-       // NOTE: validateStoragePathOwnership defends against constructed path mis-scope.
+       import { validateStorageObjectKey } from "@contexts/catalog/domain/storage-paths";
+       // NOTE: validateStorageObjectKey defends against constructed path mis-scope.
        // upload-photo internally builds the canonical D-26 path; we re-validate here
        // as a belt-and-braces gate (T-05-04-01 first call site) so a future change
        // that allows callers to pass photoId cannot bypass ownership.
@@ -823,11 +876,12 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
        export interface CreatePhotoEntryInput {
          userId: string; plantId: string; buffer: Buffer; contentType: string; note: string | null;
        }
+       export type PostCommitCallback = () => Promise<void>;
        export type CreatePhotoEntryResult =
-         | { ok: true; photoEntry: PhotoEntryRow }
+         | { ok: true; photoEntry: PhotoEntryRow; postCommit?: PostCommitCallback }
          | { ok: false; code: typeof ErrorCode.ValidationFailed | typeof ErrorCode.NotFound | typeof ErrorCode.Unauthenticated; reason: string };
 
-       export async function createPhotoEntry(input: CreatePhotoEntryInput): Promise<CreatePhotoEntryResult> {
+       export async function createPhotoEntry(input: CreatePhotoEntryInput, deps: { tx?: TransactionalDb } = {}): Promise<CreatePhotoEntryResult> {
          // Validate the (note + content-type + byte-length) shape via 05-04 schema.
          const schemaResult = createPhotoEntryInputSchema.safeParse({
            contentType: input.contentType, byteLength: input.buffer.byteLength, note: input.note,
@@ -842,7 +896,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
          const photoId = randomUUID();
          const ext = input.contentType === "image/png" ? "png" : input.contentType === "image/webp" ? "webp" : "jpg";
          const key = `${input.userId}/${input.plantId}/${photoId}.${ext}`;
-         const ownership = validateStoragePathOwnership({ userId: input.userId, plantId: input.plantId, key });
+         const ownership = validateStorageObjectKey({ userId: input.userId, plantId: input.plantId, key });
          if (!ownership.ok) {
            return { ok: false, code: ErrorCode.ValidationFailed, reason: `storage path ownership: ${ownership.reason}` };
          }
@@ -856,7 +910,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
        }
        ```
 
-       Integration test setup must spy on `uploadPhoto` to assert delegation (Test 7) and on `validateStoragePathOwnership` to assert call order (Test 5). Write RED → GREEN. Commit `feat(05-07): create-photo-entry delegating to upload-photo`.
+       Integration test setup must spy on `uploadPhoto` to assert delegation (Test 7) and on `validateStorageObjectKey` to assert call order (Test 5). Write RED → GREEN. Commit `feat(05-07): create-photo-entry delegating to upload-photo`.
 
     4. **Cycle 3C — delete-photo-entry.ts (most threat-relevant invariant — D-03 atomicity):**
 
@@ -868,14 +922,15 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
        import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
        import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
        import * as pendingStorageDeletionsRepo from "@contexts/catalog/infrastructure/db/pending-storage-deletions";
-       import { validateStoragePathOwnership } from "@contexts/catalog/domain/storage-paths";
+       import { validateStorageObjectKey } from "@contexts/catalog/domain/storage-paths";
        import {
          PLANT_PHOTOS_BUCKET, PLANT_THUMBNAILS_BUCKET,
        } from "@contexts/catalog/infrastructure/photo-storage";
 
        export interface DeletePhotoEntryInput { userId: string; plantId: string; photoEntryId: string }
+       export type PostCommitCallback = () => Promise<void>;
        export type DeletePhotoEntryResult =
-         | { ok: true }
+         | { ok: true; postCommit?: PostCommitCallback }
          | { ok: false; code: typeof ErrorCode.NotFound | typeof ErrorCode.ValidationFailed; reason: string };
 
        /**
@@ -888,12 +943,13 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
          return storedUrl.slice(slash + 1);
        }
 
-       export async function deletePhotoEntry(input: DeletePhotoEntryInput): Promise<DeletePhotoEntryResult> {
+       export async function deletePhotoEntry(input: DeletePhotoEntryInput, deps: { tx?: TransactionalDb } = {}): Promise<DeletePhotoEntryResult> {
          // Ownership check OUTSIDE UoW.
          const owned = await plantsRepo.findByIdForUser(defaultDb, input.userId, input.plantId);
          if (!owned) return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
 
-         await withUnitOfWork(input.userId, async (tx) => {
+         // HIGH-3: use external tx if provided; otherwise open own UoW.
+         const runDeleteInTx = async (tx: TransactionalDb) => {
            const deleted = await photoEntriesRepo.deleteById(tx, input.photoEntryId);
            if (!deleted) {
              // Use Drizzle's tx.rollback to surface as not_found at the caller.
@@ -905,10 +961,10 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
            const photoKey = extractObjectKey(deleted.photoUrl);
            const thumbKey = extractObjectKey(deleted.thumbnailUrl);
            if (!photoKey || !thumbKey) throw new Error("validation_failed: malformed stored url");
-           const ownPhoto = validateStoragePathOwnership({
+           const ownPhoto = validateStorageObjectKey({
              userId: input.userId, plantId: input.plantId, key: photoKey,
            });
-           const ownThumb = validateStoragePathOwnership({
+           const ownThumb = validateStorageObjectKey({
              userId: input.userId, plantId: input.plantId, key: thumbKey,
            });
            if (!ownPhoto.ok || !ownThumb.ok) throw new Error("validation_failed: storage ownership");
@@ -925,7 +981,11 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 
            // D-03: ALWAYS bump cover after a delete (defensive idempotence; no-op if not cover).
            await photoEntriesRepo.bumpCoverFor(tx, input.plantId);
-         }).catch((err: unknown) => {
+         };
+         await (deps.tx
+           ? runDeleteInTx(deps.tx)
+           : withUnitOfWork(input.userId, runDeleteInTx)
+         ).catch((err: unknown) => {
            const msg = err instanceof Error ? err.message : "";
            if (msg === "not_found") return; // signal up
            throw err;
@@ -946,8 +1006,8 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 
     5. **Anti-pattern guard (post-implementation):**
        ```
-       grep -c "validateStoragePathOwnership" src/contexts/catalog/application/create-photo-entry.ts
-       grep -c "validateStoragePathOwnership" src/contexts/catalog/application/delete-photo-entry.ts
+       grep -c "validateStorageObjectKey" src/contexts/catalog/application/create-photo-entry.ts
+       grep -c "validateStorageObjectKey" src/contexts/catalog/application/delete-photo-entry.ts
        ```
        Both MUST be `≥1` (the helper is called at least once in each file — T-05-04-01 mitigation).
   </action>
@@ -956,11 +1016,11 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
     <automated>pnpm test:run -- catalog-list-photo-entries.integration</automated>
     <automated>pnpm test:run -- catalog-create-photo-entry.integration</automated>
     <automated>pnpm test:run -- catalog-delete-photo-entry.integration</automated>
-    <automated>node -e "const fs=require('fs'); const c=fs.readFileSync('src/contexts/catalog/application/create-photo-entry.ts','utf8'); const d=fs.readFileSync('src/contexts/catalog/application/delete-photo-entry.ts','utf8'); if(!/validateStoragePathOwnership/.test(c)){console.error('T-05-04-01: create-photo-entry missing validateStoragePathOwnership call');process.exit(1)} if(!/validateStoragePathOwnership/.test(d)){console.error('T-05-04-01: delete-photo-entry missing validateStoragePathOwnership call');process.exit(1)} console.log('ok');"</automated>
+    <automated>node -e "const fs=require('fs'); const c=fs.readFileSync('src/contexts/catalog/application/create-photo-entry.ts','utf8'); const d=fs.readFileSync('src/contexts/catalog/application/delete-photo-entry.ts','utf8'); if(!/validateStorageObjectKey/.test(c)){console.error('T-05-04-01: create-photo-entry missing validateStorageObjectKey call');process.exit(1)} if(!/validateStorageObjectKey/.test(d)){console.error('T-05-04-01: delete-photo-entry missing validateStorageObjectKey call');process.exit(1)} console.log('ok');"</automated>
     <automated>node -e "const fs=require('fs'); ['list-photo-entries.ts','create-photo-entry.ts','delete-photo-entry.ts'].forEach(f=>{const t=fs.readFileSync('src/contexts/catalog/application/'+f,'utf8'); if(/from \"drizzle-orm\"/.test(t)){console.error('D-19 violation in',f);process.exit(1)}}); console.log('ok');"</automated>
   </verify>
   <done>
-    All Cycle 3-PRE / 3A / 3B / 3C test cases pass. `signCatalogPhotoUrl` is exported and unit-tested. `validateStoragePathOwnership` called in BOTH create-photo-entry.ts and delete-photo-entry.ts (T-05-04-01 mitigation verified). D-03 cover auto-promote happens in the same UoW as delete. `pending_storage_deletions` rows are scoped to single canonical photo keys (no prefix widening). No Inngest event emitted on photo-entry delete (cleanup is reconciler-driven). All three application files are Drizzle-import-free.
+    All Cycle 3-PRE / 3A / 3B / 3C test cases pass. `signCatalogPhotoUrl` is exported and unit-tested. `validateStorageObjectKey` called in BOTH create-photo-entry.ts and delete-photo-entry.ts (T-05-04-01 mitigation verified). D-03 cover auto-promote happens in the same UoW as delete. `pending_storage_deletions` rows are scoped to single canonical photo keys (no prefix widening). No Inngest event emitted on photo-entry delete (cleanup is reconciler-driven). All three application files are Drizzle-import-free.
   </done>
 </task>
 
@@ -973,7 +1033,7 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 |--------------------------------|--------------------------------------------------------------------------------------------------------------|
 | client → API (PATCH/POST/DELETE) | Untrusted JSON / multipart input; parsed via `updatePlantInputSchema` and `createPhotoEntryInputSchema` (05-04). |
 | client → API (GET cursor)        | Untrusted opaque base64 cursor; decoded via `decodeSortCursor` (05-02); WHERE user_id filter applied regardless. |
-| application → storage adapter    | `validateStoragePathOwnership` is the gate at create-photo-entry AND delete-photo-entry (T-05-04-01).         |
+| application → storage adapter    | `validateStorageObjectKey` is the gate at create-photo-entry AND delete-photo-entry for single full object key checks (T-05-04-01).         |
 | application → telemetry          | PostHog capture sequenced AFTER `withUnitOfWork` resolves (T-05-07-03 prevents rollback leakage).             |
 | application → external storage   | Signed URLs minted per request, 24h TTL ceiling, never persisted to DB row (T-05-07-01).                      |
 
@@ -983,9 +1043,9 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 |--------------|----------|-----------------------------------------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | T-05-07-01   | I        | list-photo-entries signed thumb URLs                             | mitigate    | TTL bound at 24h via constant `SIGN_TTL_SECONDS = 24*3600` in `list-photo-entries.ts`. URL minted per-request via adapter; never written to DB. Serwist runtime cache (D-19, plan 05-18) bounds client-side cache to ≤7d, but signed URL itself dies at 24h regardless of cache layer.       |
 | T-05-07-02   | I        | update-plant / get-plant / list-photo-entries / create-photo-entry / delete-photo-entry cross-user reads | mitigate    | All five use-cases return `ErrorCode.NotFound` (NOT `forbidden`) when the caller does not own the plant. Matches existing precedent at `upload-photo.ts:131`. Closed error registry (`src/shared/config/errors.ts`) confirms both codes exist; choosing NotFound prevents existence disclosure. Integration tests (Task 1 Test 2, Task 3 Test 2 / Cycle 3C Test 2) assert this explicitly. |
-| T-05-07-03   | R, I     | update-plant `plant_edited` PostHog capture                       | mitigate    | Capture sequenced AFTER `await withUnitOfWork(...)`. Drizzle has no `tx.afterCommit` API — sequential await IS the post-commit pattern. UoW rejection short-circuits; capture line never runs. Test 8 explicitly mocks UoW failure and asserts `ph.capture` is never called. Anti-pattern grep guard rejects `tx.afterCommit` references in source.                                          |
+| T-05-07-03   | R, I     | update-plant `plant_edited` PostHog capture                       | mitigate    | Own-UoW path: capture sequenced AFTER `await withUnitOfWork(...)` resolves; UoW rejection short-circuits before the capture line (rollback never leaks telemetry). Caller-owned-TX path: postCommit-callback return pattern — caller awaits callback only after outer commit succeeds; no `tx.afterCommit` API exists in `unit-of-work.ts`. Anti-pattern grep guard: `afterCommit` → 0 matches; `postCommit` → ≥1 match in update-plant.ts. Test 8 (UoW failure) and Test 10 (outer-tx rollback) both assert PostHog spy unfired.                                          |
 | T-05-07-04   | E        | list-plants cursor manipulation bypassing ownership               | mitigate    | The repository `plants.list({ userId, ... })` applies `WHERE user_id = $1` regardless of cursor contents. Cursor only narrows the result set within the user's already-scoped data. Test 11 (Cycle 2A) seeds two users and replays U1's cursor against U2's call — confirms zero cross-user leakage.                                                                                              |
-| T-05-04-01   | E, I     | create-photo-entry / delete-photo-entry storage scope             | mitigate    | `validateStoragePathOwnership` called at BOTH call sites BEFORE any storage write or `pending_storage_deletions` row insert. Per 05-04 SUMMARY, this plan is the wiring plan that closes the load-bearing call sites. Anti-pattern grep guard verifies presence in both files. delete-photo-entry uses the FULL canonical key as `prefix` (single-object scope; never widens to `{userId}/{plantId}/`). |
+| T-05-04-01   | E, I     | create-photo-entry / delete-photo-entry storage scope             | mitigate    | `validateStorageObjectKey` called at BOTH call sites BEFORE any storage write or `pending_storage_deletions` row insert (single full object key; NOT the prefix-scope helper `validateStorageDeletionPrefix`). Per 05-04 SUMMARY, this plan is the wiring plan that closes the load-bearing call sites. Anti-pattern grep guard verifies presence in both files. delete-photo-entry uses the FULL canonical key as `prefix` (single-object scope; never widens to `{userId}/{plantId}/`). |
 | T-05-07-05   | T        | update-plant `.strict()` schema bypass via prototype pollution    | mitigate    | `updatePlantInputSchema` (from 05-04) terminates with `.strict()`. Test 4 sends `{ unknownKey: "x" }` and asserts `ValidationFailed`. Combined with Phase 4 + Phase 1 input-handling posture, prototype pollution is denied at the schema layer.                                                                                                                                                  |
 
 `block_on_high: true`. Every threat in the table has a `mitigate` disposition. T-05-07-01 / T-05-07-02 / T-05-07-03 / T-05-07-04 / T-05-04-01 (twin call sites) / T-05-07-05 — all closed within this plan via specific tested invariants.
@@ -1002,8 +1062,8 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 - `pnpm test:run -- catalog-sign-photo-url` → green (6 unit cases).
 - `pnpm test:run` (full unit + integration) → green (no collateral breakage).
 - `pnpm tsc --noEmit` → green.
-- Grep guards (Task 1, 2, 3 verify blocks): zero forbidden patterns (`tx.afterCommit`, `from "drizzle-orm"` in `application/*.ts`).
-- `validateStoragePathOwnership` present in BOTH create-photo-entry.ts and delete-photo-entry.ts (T-05-04-01 wiring closed).
+- Grep guards (Task 1, 2, 3 verify blocks): zero forbidden patterns (`afterCommit` in `application/*.ts`, `from "drizzle-orm"` in `application/*.ts`); `postCommit` present in `update-plant.ts`.
+- `validateStorageObjectKey` present in BOTH create-photo-entry.ts and delete-photo-entry.ts (T-05-04-01 wiring closed; `validateStorageDeletionPrefix` is NOT used here — that helper is for prefix-scope plant delete in 05-06).
 - `src/messages/pt-BR.json` `catalog.locations.defaults` is an 8-element string array.
 </verification>
 
@@ -1018,9 +1078,9 @@ The file path used by use-cases at `src/contexts/catalog/application/*` resolves
 - D-12 invariant: `total_count` returned only when `includeCount && cursor === null`. Verified via Cycle 2A Tests 2 / 3 / 13.
 - D-20 invariant: list-photo-entries thumbnails signed at exactly `24*3600` seconds. Verified via Cycle 3A Test 3 (URL grep `expires=86400`).
 - D-29 invariant: `plant_edited` PostHog event uses `field: "acquisition_date"` (snake_case schema name), NEVER `ack_date`. Verified via Cycle 1A Test 7.
-- T-05-04-01 closed: `validateStoragePathOwnership` is called in create-photo-entry AND delete-photo-entry. Verified via grep guard + spy tests.
+- T-05-04-01 closed: `validateStorageObjectKey` is called in create-photo-entry AND delete-photo-entry for single full object key validation. Verified via grep guard + spy tests. `validateStorageDeletionPrefix` is NOT used here (reserved for prefix-scope deletion in 05-06).
 - T-05-07-02 closed: cross-user reads return `not_found`. Verified across all 5 cross-user test cases.
-- T-05-07-03 closed: PostHog capture skipped on UoW rollback. Verified via Cycle 1A Test 8 (force UoW failure, assert capture never called).
+- T-05-07-03 closed: Own-UoW path — PostHog capture skipped on UoW rollback (Cycle 1A Test 8). Caller-owned-TX path — postCommit callback not invoked until caller explicitly awaits it; outer rollback keeps PostHog spy unfired (Cycle 1A Test 10). `afterCommit` → 0 matches in update-plant.ts; `postCommit` → ≥1 match (grep guards in Task 1 verify block).
 - T-05-07-04 closed: cursor manipulation cannot bypass `WHERE user_id = $1`. Verified via Cycle 2A Test 11 (cross-user cursor replay).
 - VALIDATION.md Per-Task Verification Map populated for Task 1 / 2 / 3 (the planner updates this map after the SUMMARY ships — see <output>).
 </success_criteria>
@@ -1032,12 +1092,12 @@ After completion, create `.planning/phases/05-catalog-meu-jardim/05-07-patch-pho
 - **TDD cycles:** 8 RED commits, 8 GREEN commits (one per cycle: 1A, 1B, 2A, 2B, 3-PRE, 3A, 3B, 3C — author may group same-task RED commits if they fit within Conventional Commit discipline).
 - **Unblocks:** 05-08 (route handlers — read+create endpoints consume listPlants/getPlant/listPhotoEntries/listLocations/createPhotoEntry), 05-09 (route handlers — mutate+delete endpoints consume updatePlant/deletePhotoEntry), 05-15/05-16/05-17 (UI plans).
 - **D-03 invariant verified:** Cover auto-promote in same UoW. Document Cycle 3C Tests 3/4/5/8 outcomes.
-- **T-05-04-01 wiring closed:** validateStoragePathOwnership at both call sites. The 05-04 SUMMARY's "Open follow-ups" reminder is now resolved.
+- **T-05-04-01 wiring closed:** validateStorageObjectKey at both single-key call sites (create-photo-entry and delete-photo-entry). The 05-04 SUMMARY's "Open follow-ups" reminder is now resolved. Note: `validateStorageDeletionPrefix` is the sibling helper for prefix-scope validation and is used by 05-06 (plant delete), NOT by this plan.
 - **VALIDATION.md update:** Add three rows to the Per-Task Verification Map (Task 1, Task 2, Task 3) with the test commands listed in `<verify>`. Note `nyquist_compliant: true` cannot flip until ALL Phase 5 plans complete this map; this SUMMARY only adds rows for 05-07.
 - **Open follow-ups for downstream plans:**
   - 05-08 (`POST /api/v1/plants/:id/photo-entries`): the route handler must reject GPS-bearing uploads via `rejectGpsMetadata` BEFORE delegating to `createPhotoEntry` (defense in depth — `uploadPhoto` already does this internally; documented for handler-side audit logs).
   - 05-09 (`DELETE /api/v1/photo-entries/:id`): handler must call `deletePhotoEntry` and translate the discriminated-union result to errorResponse codes per PRD §5 closed registry.
   - 05-15 (`<CatalogGrid>`): consumes `listPlants` cursor pagination — useInfiniteQuery `getNextPageParam = (page) => page.nextCursor`. The `total_count` is rendered in `<CatalogHeader>` only on the first page query.
   - 05-17 (`<AddPhotoSheet>`): consumes `createPhotoEntry`; client-side EXIF strip per PROJECT constraints; multipart shape matches D-15.
-- **Anti-pattern audit:** No `tx.afterCommit` references; no Drizzle imports in application/; no scope reduction (every D-XX invariant tested).
+- **Anti-pattern audit:** No `afterCommit` references in application/; `postCommit` present in update-plant.ts, typed on ok:true arm of CreatePhotoEntryResult and DeletePhotoEntryResult (undefined for those two use-cases, which have no post-commit telemetry); no Drizzle imports in application/; no scope reduction (every D-XX invariant tested).
 </output>

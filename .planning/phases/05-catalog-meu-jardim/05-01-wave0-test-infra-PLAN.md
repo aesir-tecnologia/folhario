@@ -21,7 +21,7 @@ must_haves:
     - "fake-indexeddb is installed as a dev dep and registered in vitest unit-dom setup"
     - "Catalog integration tests can opt in to a hermetic in-memory StorageAdapter without touching tests that exercise real Supabase Storage"
     - "Catalog Playwright specs can start at a verified, trial-Subscription, ConsentLog-x2 user without driving the signup/login UI"
-    - "A read-only fixture variant exists that flips the useSubscription stub via env var (target wired in 05-11)"
+    - "A read-only fixture variant exists that sets cookie __test_subscription_read_only=1 via page.context().addCookies(); the cookie is honored by the useSubscription stub (05-11) ONLY when ENABLE_TEST_ROUTES=1 is set in the dev-server env (set in playwright.config.ts webServer.env)"
   artifacts:
     - path: "tests/unit/setup-idb.ts"
       provides: "fake-indexeddb auto-registration + per-test IDBFactory reset"
@@ -39,7 +39,7 @@ must_haves:
       provides: "Playwright test fixture seeding a verified user + ConsentLog x2 + trialing Subscription + injected Supabase SSR cookies"
       exports: ["test", "expect"]
     - path: "tests/e2e/fixtures/read-only.ts"
-      provides: "Playwright test fixture extending authedUser; flips SUBSCRIPTION_READ_ONLY for the spec via env"
+      provides: "Playwright test fixture extending authedUser; sets cookie __test_subscription_read_only=1 via page.context().addCookies() (honored by 05-11 stub only when ENABLE_TEST_ROUTES=1)"
       exports: ["test", "expect"]
     - path: "package.json"
       provides: "fake-indexeddb dev dependency"
@@ -189,13 +189,13 @@ From playwright.config.ts (env vars already set on the webServer):
 ```typescript
 // IDENTIFICATION_PROVIDER_MODE: "stub"
 // AUTH_JWKS_OVERRIDE_URL, AUTH_AUDIENCE_OVERRIDE, AUTH_ISSUER_OVERRIDE — Bearer-only path
-// ENABLE_TEST_ROUTES: "1"
+// ENABLE_TEST_ROUTES: "1"  — REQUIRED; gates the read-only cookie path in the useSubscription stub
 // INNGEST_DEV: "1"
-// SUBSCRIPTION_READ_ONLY: NOT YET SET — read-only.ts does NOT modify webServer.env at runtime
-//   (Playwright cannot mutate webServer env per-spec). Instead, the read-only fixture sets a
-//   page-level cookie (e.g. "folhario-read-only=1") that the useSubscription stub (created in
-//   05-11) reads via cookies(). 05-11 is the plan that wires the env var fallback. This plan
-//   ships only the FIXTURE; the consumer is wired in 05-11.
+// SUBSCRIPTION_READ_ONLY: NOT SET and NOT USED — the per-spec read-only state is communicated
+//   via cookie __test_subscription_read_only=1, NOT via process.env mutation. Playwright cannot
+//   mutate webServer.env per-spec once the dev server is running; the cookie approach is the
+//   only per-test mechanism. The stub (05-11) reads the cookie via Next.js cookies() ONLY when
+//   ENABLE_TEST_ROUTES=1; in production that env var is unset so the cookie is ignored entirely.
 ```
 </interfaces>
 </context>
@@ -338,7 +338,7 @@ From playwright.config.ts (env vars already set on the webServer):
 
        Specs consuming the fixture import `{ test, expect }` from this file instead of `@playwright/test`. The `context` parameter is the Playwright BrowserContext per spec; `addCookies` runs against it.
 
-    2. Create `tests/e2e/fixtures/read-only.ts` per D-21. This fixture extends `authedUser` (NOT a separate seed — the same authed user is in read-only mode) and adds a page-level cookie `folhario-read-only=1` that the `useSubscription` stub (created in plan 05-11) will read at request time. **Important: this plan does NOT modify the webServer.env at runtime — Playwright cannot mutate `webServer.env` per-spec.** Instead, the fixture sets a cookie that 05-11's stub will consult via Next's `cookies()`. The env-var fallback (`SUBSCRIPTION_READ_ONLY=1`) for non-Playwright contexts is also wired in 05-11.
+    2. Create `tests/e2e/fixtures/read-only.ts` per D-21. This fixture extends `authedUser` (NOT a separate seed — the same authed user is in read-only mode) and sets cookie `__test_subscription_read_only=1` via `await page.context().addCookies(...)`. The `useSubscription` stub (plan 05-11) reads this cookie via Next's `cookies()` server-side, but ONLY when `process.env.ENABLE_TEST_ROUTES === '1'` — that env var is already set in `playwright.config.ts` `webServer.env` and is absent in production, so the cookie is ignored entirely outside of E2E runs. **Important: this plan does NOT modify the webServer.env at runtime — Playwright cannot mutate `webServer.env` per-spec.** The cookie is the only per-spec mechanism available.
 
        Shape:
 
@@ -347,7 +347,7 @@ From playwright.config.ts (env vars already set on the webServer):
        export const test = authedTest.extend({
          readOnly: [async ({ context }, use) => {
            await context.addCookies([{
-             name: "folhario-read-only",
+             name: "__test_subscription_read_only",
              value: "1",
              domain: "localhost",
              path: "/",
@@ -363,15 +363,15 @@ From playwright.config.ts (env vars already set on the webServer):
 
        The `auto: true` Playwright option ensures the cookie is set for every test that imports from this file without requiring the test to explicitly destructure `readOnly`. Specs that want read-only behavior import from `./read-only`; specs that want active-subscription behavior import from `./authed-user`.
 
-    Do NOT modify `playwright.config.ts` `webServer.env` (Playwright cannot apply per-spec env-var changes mid-run; the existing approach is page-level cookies). Do NOT introduce any second auth pattern — reuse Supabase Auth via `signInWithPassword` and the existing `seedUser` primitive. Do NOT call the test JWKS pattern (`AUTH_JWKS_OVERRIDE_URL`) — that path is Bearer-only and won't mint SSR cookies.
+    Do NOT modify `playwright.config.ts` `webServer.env` (Playwright cannot apply per-spec env-var changes mid-run; the cookie approach is the only per-test mechanism). Do NOT introduce any second auth pattern — reuse Supabase Auth via `signInWithPassword` and the existing `seedUser` primitive. Do NOT call the test JWKS pattern (`AUTH_JWKS_OVERRIDE_URL`) — that path is Bearer-only and won't mint SSR cookies.
 
     **Service-role secret hygiene (threat T-05-01 mitigation — see `<threat_model>` below):** the fixture imports `seedUser` which reads `process.env.SUPABASE_SERVICE_ROLE_KEY`. Add a header-comment block to `authed-user.ts` stating: "TEST-ONLY. This file MUST NOT be imported from `src/`. The service-role key is read indirectly via `seedUser`; production builds never load `tests/`." Add a `tests/unit/banned-patterns-snapshot.test.ts`-style assertion entry IF and only if the existing test already enforces `tests/` non-imports from `src/` (verify via grep at write time — read the file briefly; if no such assertion exists, do NOT add one in this plan, just keep the comment).
   </action>
   <verify>
-    <automated>test -f tests/e2e/fixtures/authed-user.ts &amp;&amp; test -f tests/e2e/fixtures/read-only.ts &amp;&amp; grep -F "supabase.co" tests/e2e/fixtures/authed-user.ts &amp;&amp; grep -F "trialing" tests/e2e/fixtures/authed-user.ts &amp;&amp; grep -E "sb-[^.]*-auth-token" tests/e2e/fixtures/authed-user.ts &amp;&amp; grep -F "folhario-read-only" tests/e2e/fixtures/read-only.ts &amp;&amp; grep -F "test.extend" tests/e2e/fixtures/read-only.ts &amp;&amp; pnpm exec tsc --noEmit 2>&amp;1 | tail -5</automated>
+    <automated>test -f tests/e2e/fixtures/authed-user.ts &amp;&amp; test -f tests/e2e/fixtures/read-only.ts &amp;&amp; grep -F "supabase.co" tests/e2e/fixtures/authed-user.ts &amp;&amp; grep -F "trialing" tests/e2e/fixtures/authed-user.ts &amp;&amp; grep -E "sb-[^.]*-auth-token" tests/e2e/fixtures/authed-user.ts &amp;&amp; grep -F "__test_subscription_read_only" tests/e2e/fixtures/read-only.ts &amp;&amp; grep -F "test.extend" tests/e2e/fixtures/read-only.ts &amp;&amp; pnpm exec tsc --noEmit 2>&amp;1 | tail -5</automated>
   </verify>
   <done>
-    `tests/e2e/fixtures/authed-user.ts` exports `{ test, expect }` extending `@playwright/test` with an `authedUser` fixture; the file contains the cloud-Supabase guard literal `supabase.co`, the `trialing` subscription status literal, and the `sb-` cookie name pattern. `tests/e2e/fixtures/read-only.ts` extends authedUser and sets the `folhario-read-only` cookie. `pnpm exec tsc --noEmit` passes. The fixtures do not import anything from `src/`. No changes to `playwright.config.ts`. Existing E2E specs continue to typecheck. (E2E green-run is not asserted here — the consumer specs are 05-15..05-18; this plan ships the fixtures as structural artifacts that those plans then exercise.)
+    `tests/e2e/fixtures/authed-user.ts` exports `{ test, expect }` extending `@playwright/test` with an `authedUser` fixture; the file contains the cloud-Supabase guard literal `supabase.co`, the `trialing` subscription status literal, and the `sb-` cookie name pattern. `tests/e2e/fixtures/read-only.ts` extends authedUser and sets the `__test_subscription_read_only` cookie via `context.addCookies`. `pnpm exec tsc --noEmit` passes. The fixtures do not import anything from `src/`. No changes to `playwright.config.ts`. Existing E2E specs continue to typecheck. (E2E green-run is not asserted here — the consumer specs are 05-15..05-18; this plan ships the fixtures as structural artifacts that those plans then exercise.)
   </done>
 </task>
 
@@ -394,7 +394,7 @@ This plan ships only test infrastructure; the surface is narrow. Block-on-high p
 | T-05-01 | I (Information Disclosure) | `tests/e2e/fixtures/authed-user.ts` reads `SUPABASE_SERVICE_ROLE_KEY` indirectly via `seedUser`. If the file were ever bundled into a production build, the service-role secret would leak. | mitigate | (a) File path is under `tests/` which Next does not include in `src/`-rooted builds; (b) Comment header on `authed-user.ts` literally states "TEST-ONLY. MUST NOT be imported from src/."; (c) Verify-time grep gate on the verify command does not assert non-import (deferred to a future banned-patterns test if not already enforced). |
 | T-05-02 | T (Tampering) | Cloud Supabase database mutated by a misconfigured CI run | mitigate | Both fixtures throw on startup if `DATABASE_POOL_URL` matches `/supabase\.co/`, mirroring the existing pattern from `setup-supabase-truncate.ts:14-18`. |
 | T-05-03 | I | The opt-in `InMemoryStorageAdapter` could accidentally be swapped globally and hide a real-Storage regression | mitigate | The adapter is shipped as a fixture + per-file opt-in helper. `tests/integration/global-setup.ts` is NOT modified (Phase 1 plan 01-04 lock). The two real-Storage integration tests (`storage-adapter.*`, `storage-buckets.*`) continue to run against the real adapter. |
-| T-05-04 | E (Elevation) | The `readOnly` fixture sets a non-httpOnly cookie | accept | The cookie is local-host only, exists only during E2E runs (Playwright wipes contexts between tests), and the consumer (05-11 stub) will treat its presence as a UI state hint, not an auth signal. The auth check is unaffected. No production code path consumes this cookie name. |
+| T-05-04 | E (Elevation) | The `readOnly` fixture sets a non-httpOnly cookie | accept | The cookie is local-host only, exists only during E2E runs (Playwright wipes contexts between tests), and the consumer (05-11 stub) will treat its presence as a UI state hint only when ENABLE_TEST_ROUTES=1 (absent in production). The auth check is unaffected. No production code path consumes this cookie name. |
 </threat_model>
 
 <verification>
@@ -427,7 +427,7 @@ This plan ships only test infrastructure; the surface is narrow. Block-on-high p
 - [ ] `tests/integration/fixtures/use-in-memory-storage-adapter.ts` exports an opt-in helper that calls `__setStorageAdapterForTests(adapter)` in `beforeAll` and `__setStorageAdapterForTests(null)` in `afterAll`.
 - [ ] No global integration-test setup file is modified (Phase 1 plan 01-04 lock preserved); existing real-Storage integration tests continue to compile.
 - [ ] `tests/e2e/fixtures/authed-user.ts` exports `{ test, expect }` with an `authedUser` fixture that seeds a verified `public.users` row, two `consent_logs` rows (T&C + Privacy), one `subscriptions` row (`status='trialing'`, `provider='stripe'`, 14-day window), and injects Supabase SSR session cookies via `context.addCookies`.
-- [ ] `tests/e2e/fixtures/read-only.ts` extends `authed-user.ts` and sets a `folhario-read-only=1` cookie (the consumer stub is wired in plan 05-11).
+- [ ] `tests/e2e/fixtures/read-only.ts` extends `authed-user.ts` and sets cookie `__test_subscription_read_only=1` via `context.addCookies` (honored by 05-11 stub only when `ENABLE_TEST_ROUTES=1`; the consumer stub is wired in plan 05-11).
 - [ ] Both Playwright fixtures throw on startup if `DATABASE_POOL_URL` matches `supabase.co`.
 - [ ] `pnpm exec tsc --noEmit` passes after all changes.
 - [ ] No file under `src/` imports anything from `tests/`.

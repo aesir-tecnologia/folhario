@@ -154,6 +154,32 @@ None — all gates passed on first run.
 - Plans 05-16 and 05-17 unblocked
 - Manual VoiceOver/TalkBack checkpoint (Task 3) must be completed before Phase 5 sign-off on UI-08 (manual-only gate per VALIDATION.md)
 
+## Self-Check: PASSED
+
+All created files verified on disk:
+- FOUND: src/shared/ui/bottom-sheet.tsx
+- FOUND: src/shared/ui/modal-sheet.tsx
+- FOUND: src/app/(test)/bottom-sheet/page.tsx
+- FOUND: src/app/(test)/bottom-sheet/harness.tsx
+- FOUND: tests/unit/bottom-sheet.test.tsx
+- FOUND: tests/e2e/axe-bottom-sheet.spec.ts
+
+All commits verified in git log:
+- FOUND: 5f861f0 (RED — failing tests)
+- FOUND: 0f211d9 (GREEN — BottomSheet primitive)
+- FOUND: 0ea6f54 (Task 2 — harness + E2E spec)
+- FOUND: a1e7732 (SUMMARY)
+
+All grep gates pass:
+- BottomSheet exported: 1
+- interactiveDragHandle in modal-sheet.tsx: 3 (non-comment lines)
+- bottom-sheet imports from @shared/ui/modal-sheet: 1
+- aria-hidden="true" preserved in modal-sheet.tsx: 1
+- ENABLE_TEST_ROUTES in test page: 2
+- data-testid="bottomsheet-invoker" in harness: 1
+- role="alertdialog" in E2E spec: 9
+- AxeBuilder in E2E spec: 2
+
 ---
 *Phase: 05-catalog-meu-jardim*
 *Completed: 2026-04-30*

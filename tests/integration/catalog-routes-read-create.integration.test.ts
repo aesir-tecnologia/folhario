@@ -271,7 +271,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     }): Promise<Request> {
       const jpeg = opts.jpeg ?? validJpegBuffer;
       const boundary = `boundary${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([jpeg], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(jpeg)], "photo.jpg", { type: "image/jpeg" });
       const formFields: Record<string, string | File> = {
         name: "Suculenta",
         photo: photoFile,
@@ -285,7 +285,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       return new Request("http://localhost:3000/api/v1/plants", {
         method: "POST",
         headers,
-        body,
+        body: new Uint8Array(body),
       });
     }
 
@@ -344,12 +344,12 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
 
       // Missing name
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([validJpegBuffer], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", { type: "image/jpeg" });
       const { body: body1, contentType: ct1 } = await buildMultipartBody({ photo: photoFile }, boundary);
       const req1 = new Request("http://localhost:3000/api/v1/plants", {
         method: "POST",
         headers: { "content-type": ct1, "idempotency-key": randomUUID() },
-        body: body1,
+        body: new Uint8Array(body1),
       });
       const res1 = await POST(req1);
       expect(res1.status).toBe(400);
@@ -362,7 +362,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       const req2 = new Request("http://localhost:3000/api/v1/plants", {
         method: "POST",
         headers: { "content-type": ct2, "idempotency-key": randomUUID() },
-        body: body2,
+        body: new Uint8Array(body2),
       });
       const res2 = await POST(req2);
       expect(res2.status).toBe(400);
@@ -416,7 +416,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       const idempotencyKey = randomUUID();
 
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([validJpegBuffer], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", { type: "image/jpeg" });
       const { body, contentType } = await buildMultipartBody(
         { name: "Replay Plant", photo: photoFile },
         boundary,
@@ -426,7 +426,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
         new Request("http://localhost:3000/api/v1/plants", {
           method: "POST",
           headers: { "content-type": contentType, "idempotency-key": idempotencyKey },
-          body: Buffer.from(body),
+          body: new Uint8Array(body),
         });
 
       // First call
@@ -548,7 +548,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     }): Promise<[Request, { params: Promise<{ plantId: string }> }]> {
       const jpeg = opts.jpeg ?? validJpegBuffer;
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([jpeg], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(jpeg)], "photo.jpg", { type: "image/jpeg" });
       const fields: Record<string, string | File> = { photo: photoFile };
       if (opts.note) fields.note = opts.note;
       const { body, contentType } = await buildMultipartBody(fields, boundary);
@@ -558,7 +558,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       }
       const req = new Request(
         `http://localhost:3000/api/v1/plants/${opts.plantId}/photo-entries`,
-        { method: "POST", headers, body },
+        { method: "POST", headers, body: new Uint8Array(body) },
       );
       const params = Promise.resolve({ plantId: opts.plantId });
       return [req, { params }];
@@ -659,14 +659,14 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       );
       const idempotencyKey = randomUUID();
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([validJpegBuffer], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", { type: "image/jpeg" });
       const { body, contentType } = await buildMultipartBody({ photo: photoFile }, boundary);
 
       const makeReq = () =>
         new Request(`http://localhost:3000/api/v1/plants/${ownedPlantId}/photo-entries`, {
           method: "POST",
           headers: { "content-type": contentType, "idempotency-key": idempotencyKey },
-          body: Buffer.from(body),
+          body: new Uint8Array(body),
         });
       const makeCtx = () => ({ params: Promise.resolve({ plantId: ownedPlantId }) });
 

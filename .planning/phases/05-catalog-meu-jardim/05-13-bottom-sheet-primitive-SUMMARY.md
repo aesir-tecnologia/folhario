@@ -65,7 +65,7 @@ completed: 2026-04-30
 - **Duration:** ~15 min
 - **Started:** 2026-04-30T23:06:03-03:00
 - **Completed:** 2026-04-30T23:21:01-03:00
-- **Tasks:** 2 automated + 1 blocking manual checkpoint (pending)
+- **Tasks:** 2 automated + 1 blocking manual checkpoint (approved 2026-05-01)
 - **Files modified:** 6
 
 ## Accomplishments
@@ -116,18 +116,31 @@ _Task 1 followed TDD discipline: RED commit (failing tests) before GREEN commit 
 
 None — plan executed exactly as written. All 9 unit-dom tests pass; typecheck clean across the workspace.
 
-## VoiceOver + TalkBack Manual Gate (Task 3 — PENDING)
+## VoiceOver + TalkBack Manual Gate (Task 3 — APPROVED)
 
 Task 3 is a `[BLOCKING]` `checkpoint:human-verify` gate. Automated Playwright cannot reliably assert real screen-reader rotor verbalizations.
 
-**Status: PENDING EXTERNAL VERIFICATION**
+**Status: APPROVED — 2026-05-01**
 
-VALIDATION.md `## Manual-Only Verifications` row "BottomSheet VoiceOver / TalkBack announcement" applies to UI-04 + UI-08. This gate is satisfied when the founder verifies:
+VALIDATION.md `## Manual-Only Verifications` row "BottomSheet VoiceOver / TalkBack announcement" (UI-04, UI-08) is satisfied.
 
-- iOS Safari + VoiceOver: sheet opens with alert cue, initial focus on Cancelar, drag handle reachable as "Fechar, button", focus stays trapped, return-focus to invoker on all dismissal paths
-- Android Chrome + TalkBack: same contract
+### Manual a11y Verification
 
-The `/bottom-sheet` test route is ready for this verification. Start `pnpm dev` and navigate to `http://<LAN-IP>:3000/bottom-sheet` on a real device.
+**Date:** 2026-05-01
+**Verified by:** Founder (marco.machado@gmail.com)
+
+**iOS Safari + VoiceOver:** PASS
+**Android Chrome + TalkBack:** PASS
+
+All 5 checks confirmed on both platforms:
+
+1. **Alert cue announced** — sheet open triggers alert announcement (`role="alertdialog"`)
+2. **Cancelar initial focus** — VoiceOver/TalkBack cursor lands on Cancelar on sheet open (autoFocus contract)
+3. **Drag handle as "Fechar, button"** — interactive drag handle announced with correct label and role
+4. **Focus trap maintained** — rotor/swipe navigation stays inside sheet while open
+5. **Return-focus on all dismissal paths** — invoker button receives focus after Esc, Cancelar tap, Excluir tap, and drag-handle Enter
+
+The `/bottom-sheet` test harness route was used for verification via `pnpm dev` on real devices.
 
 ## Downstream Consumers Unblocked
 
@@ -152,7 +165,7 @@ None — all gates passed on first run.
 
 - `<BottomSheet>` primitive ready for Wave 4 consumption
 - Plans 05-16 and 05-17 unblocked
-- Manual VoiceOver/TalkBack checkpoint (Task 3) must be completed before Phase 5 sign-off on UI-08 (manual-only gate per VALIDATION.md)
+- Manual VoiceOver/TalkBack checkpoint (Task 3) APPROVED 2026-05-01 — UI-08 manual gate satisfied per VALIDATION.md
 
 ## Self-Check: PASSED
 

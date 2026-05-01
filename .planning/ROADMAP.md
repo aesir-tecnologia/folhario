@@ -184,9 +184,9 @@ Plans:
 - [x] 05-05-plant-create-use-cases-PLAN.md - Plant create use cases (manual + from-identification) + PostHog plant_added (Open Q6)
 - [x] 05-06-plant-delete-inngest-cleanup-PLAN.md - Plant delete + Inngest catalog/cleanup-storage + reconciler cron (Open Q2)
 - [x] 05-07-patch-photo-entry-cover-use-cases-PLAN.md - PATCH/PhotoEntry/cover use cases + listPlants/listPhotoEntries
-- [ ] 05-08-route-handlers-read-create-PLAN.md - Route handlers (5 read + create endpoints)
-- [ ] 05-09-route-handlers-mutate-delete-PLAN.md - Route handlers (6 mutate + delete endpoints)
-- [ ] 05-10-tq-provider-idb-persister-i18n-PLAN.md - TanStack Query provider + IDB persister + i18n catalog namespace (Open Q3 resolution)
+- [x] 05-08-route-handlers-read-create-PLAN.md - Route handlers (5 read + create endpoints)
+- [x] 05-09-route-handlers-mutate-delete-PLAN.md - Route handlers (6 mutate + delete endpoints)
+- [x] 05-10-tq-provider-idb-persister-i18n-PLAN.md - TanStack Query provider + IDB persister + i18n catalog namespace (Open Q3 resolution)
 - [x] 05-11-use-subscription-stub-PLAN.md - useSubscription() stub + read-only mode test harness
 - [x] 05-12-combobox-primitive-PLAN.md - Combobox primitive per WAI-ARIA APG 1.2 (Open Q4 resolution)
 - [x] 05-13-bottom-sheet-primitive-PLAN.md - BottomSheet primitive [BLOCKING axe + VoiceOver/TalkBack gate] (Open Q5 resolution)

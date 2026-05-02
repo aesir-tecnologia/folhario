@@ -28,7 +28,10 @@ vi.mock("motion/react", () => ({
 import { compressPlantPhoto } from "@shared/images/client-compress";
 import { toast } from "sonner";
 
-import { PhotoJournal, type PhotoJournalProps } from "../../src/app/(app)/catalog/[plantId]/journal/photo-journal";
+import {
+  PhotoJournal,
+  type PhotoJournalProps,
+} from "../../src/app/(app)/catalog/[plantId]/journal/photo-journal";
 
 const PLANT = { id: "plant-123", name: "Hera", nickname: null };
 
@@ -108,7 +111,8 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => "blob:fake-url");
   URL.revokeObjectURL = vi.fn();
   crypto.randomUUID = vi.fn(
-    () => "a1b2c3d4-e5f6-7890-abcd-ef1234567890" as `${string}-${string}-${string}-${string}-${string}`,
+    () =>
+      "a1b2c3d4-e5f6-7890-abcd-ef1234567890" as `${string}-${string}-${string}-${string}-${string}`,
   );
 });
 
@@ -148,7 +152,9 @@ describe("PhotoJournal", () => {
 
     const imgs = screen.getAllByRole("img");
     const imgB = imgs.find(
-      (img) => img.getAttribute("src")?.includes("b.jpg") || img.getAttribute("src")?.includes("b-thumb.jpg"),
+      (img) =>
+        img.getAttribute("src")?.includes("b.jpg") ||
+        img.getAttribute("src")?.includes("b-thumb.jpg"),
     );
     expect(imgB).toBeInTheDocument();
 
@@ -209,14 +215,16 @@ describe("PhotoJournal", () => {
     });
 
     await waitFor(() => {
-      const postCall = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
-        (c) => (c[1] as RequestInit)?.method === "POST",
-      );
+      const postCall = vi
+        .mocked(global.fetch as ReturnType<typeof vi.fn>)
+        .mock.calls.find((c) => (c[1] as RequestInit)?.method === "POST");
       expect(postCall).toBeTruthy();
     });
 
     await waitFor(() => {
-      const cachedData = qc.getQueryData(["catalog", "photo-entries", PLANT.id]) as { items: { id: string }[] } | undefined;
+      const cachedData = qc.getQueryData(["catalog", "photo-entries", PLANT.id]) as
+        | { items: { id: string }[] }
+        | undefined;
       const items = cachedData?.items ?? [];
       const hasReal = items.some((e) => e.id === "real-id");
       const hasTemp = items.some((e) => e.id.startsWith("temp-"));
@@ -260,7 +268,9 @@ describe("PhotoJournal", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
 
-    const cachedData = qc.getQueryData(["catalog", "photo-entries", PLANT.id]) as { items: { id: string }[] } | undefined;
+    const cachedData = qc.getQueryData(["catalog", "photo-entries", PLANT.id]) as
+      | { items: { id: string }[] }
+      | undefined;
     expect(cachedData?.items).toHaveLength(1);
     expect(cachedData?.items[0]?.id).toBe(ENTRY_A.id);
   });
@@ -320,7 +330,7 @@ describe("PhotoJournal", () => {
     expect(headers["Idempotency-Key"]).toMatch(/^[0-9a-f-]{36}$/i);
   });
 
-  it("Test 8 — Idempotency-Key: fresh key on new submit after terminal error", async () => {
+  it("Test 8 — Idempotency-Key: same key reused on 5xx retry (D-37 idempotency)", async () => {
     let callCount = 0;
     crypto.randomUUID = vi.fn(() => {
       callCount++;
@@ -367,11 +377,14 @@ describe("PhotoJournal", () => {
 
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
 
-    const postCalls = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
-      (c) => (c[1] as RequestInit)?.method === "POST",
-    );
+    const postCalls = vi
+      .mocked(global.fetch as ReturnType<typeof vi.fn>)
+      .mock.calls.filter((c) => (c[1] as RequestInit)?.method === "POST");
     expect(postCalls.length).toBeGreaterThanOrEqual(1);
-    const headers1 = (postCalls[0]![1] as RequestInit | undefined)?.headers as Record<string, string>;
+    const headers1 = (postCalls[0]![1] as RequestInit | undefined)?.headers as Record<
+      string,
+      string
+    >;
     const key1 = headers1["Idempotency-Key"]!;
     expect(key1).toContain("key-1");
 
@@ -395,18 +408,22 @@ describe("PhotoJournal", () => {
     });
 
     await waitFor(() => {
-      const postCalls2 = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c) => (c[1] as RequestInit)?.method === "POST",
-      );
+      const postCalls2 = vi
+        .mocked(global.fetch as ReturnType<typeof vi.fn>)
+        .mock.calls.filter((c) => (c[1] as RequestInit)?.method === "POST");
       expect(postCalls2.length).toBeGreaterThanOrEqual(1);
     });
 
-    const postCalls2 = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.filter(
-      (c) => (c[1] as RequestInit)?.method === "POST",
-    );
-    const headers2 = (postCalls2[0]![1] as RequestInit | undefined)?.headers as Record<string, string>;
+    const postCalls2 = vi
+      .mocked(global.fetch as ReturnType<typeof vi.fn>)
+      .mock.calls.filter((c) => (c[1] as RequestInit)?.method === "POST");
+    const headers2 = (postCalls2[0]![1] as RequestInit | undefined)?.headers as Record<
+      string,
+      string
+    >;
     const key2 = headers2["Idempotency-Key"]!;
 
-    expect(key2).not.toBe(key1);
+    // CR-05 / D-37: on 5xx failure the key is retained so retry is idempotent server-side.
+    expect(key2).toBe(key1);
   });
 });

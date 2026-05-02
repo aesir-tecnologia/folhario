@@ -59,21 +59,36 @@ export async function cleanupStorageHandler({
       if (!transitioned) return;
 
       try {
-        validateStorageDeletionPrefix({
-          userId: row.userId,
-          plantId: data.plantId,
-          prefix: row.prefix,
-        });
+        if (row.kind === "object") {
+          const plantId = parsePlantPhotoKey(row.prefix, row.userId);
+          if (!plantId) {
+            throw new Error(`malformed object key: ${row.prefix}`);
+          }
+          validateStorageObjectKey({ userId: row.userId, plantId, key: row.prefix });
+        } else {
+          validateStorageDeletionPrefix({
+            userId: row.userId,
+            plantId: data.plantId,
+            prefix: row.prefix,
+          });
+        }
       } catch (err) {
         await pendingDeletionsRepo.recordError(db, rowId, `path validation failed: ${String(err)}`);
         throw err;
       }
 
       try {
-        await getStorageAdapter().deletePrefix({
-          bucket: row.bucket,
-          prefix: row.prefix,
-        });
+        if (row.kind === "object") {
+          await getStorageAdapter().deleteObject({
+            bucket: row.bucket,
+            objectKey: row.prefix,
+          });
+        } else {
+          await getStorageAdapter().deletePrefix({
+            bucket: row.bucket,
+            prefix: row.prefix,
+          });
+        }
       } catch (err) {
         await pendingDeletionsRepo.recordError(db, rowId, String(err));
         throw new RetryAfterError("storage delete failed", "5m");

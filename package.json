@@ -18,6 +18,7 @@
     "test:integration": "pnpm exec vitest --run --project=integration",
     "test:run": "pnpm test:unit && pnpm test:integration",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test security-headers pwa-smoke legal-links horizontal-scroll-guard",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",

@@ -143,7 +143,12 @@ jobs:
           # → serverEnv requires RESEND_API_KEY. Same placeholder as the
           # Build step (no Resend call ever fires in smoke tests).
           RESEND_API_KEY: ci-build-placeholder
-        run: pnpm test:e2e
+        # CI runs against vanilla postgres:17-alpine without a Supabase Auth
+        # stack. Restrict the smoke run to specs that exercise the rendered
+        # app (security headers, PWA manifest/SW, axe a11y on placeholder
+        # routes, horizontal-scroll guard) — anything that would call
+        # supabase.auth.* lives behind `pnpm db:start` and runs locally.
+        run: pnpm test:e2e:smoke
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

@@ -59,6 +59,7 @@ interface PlantProfileProps {
 
 export function PlantProfile({ plantId }: PlantProfileProps) {
   const t = useTranslations("catalog.profile");
+  const ta11y = useTranslations("catalog.profile.a11y");
   const router = useRouter();
   const { readOnly } = useSubscription();
   const queryClient = useQueryClient();
@@ -158,8 +159,14 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       <div className="flex items-center justify-between px-4 py-3">
         <button
           type="button"
-          aria-label="Voltar"
-          onClick={() => router.back()}
+          aria-label={ta11y("back")}
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length <= 1) {
+              router.push("/catalog");
+            } else {
+              router.back();
+            }
+          }}
           className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full hover:bg-hairline"
         >
           <ChevronLeft strokeWidth={1.5} size={24} />
@@ -199,14 +206,14 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       {plant.cover_signed_url && (
         <button
           type="button"
-          aria-label={`Foto de ${displayName}`}
+          aria-label={ta11y("coverPhotoOf", { name: displayName })}
           onClick={() => openLightbox(0)}
           className="w-full"
         >
           <div className="relative aspect-[4/5] w-full overflow-hidden">
             <Image
               src={plant.cover_signed_url}
-              alt={`Foto de ${displayName}`}
+              alt={ta11y("coverPhotoOf", { name: displayName })}
               fill
               className="object-cover"
               sizes="100vw"
@@ -223,13 +230,13 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             <button
               key={pe.id}
               type="button"
-              aria-label={`Foto ${idx + 2} de ${displayName}`}
+              aria-label={ta11y("photoIndexOf", { index: idx + 2, name: displayName })}
               onClick={() => openLightbox(idx + 1)}
               className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded-lg"
             >
               <Image
                 src={pe.thumbnail_url}
-                alt={pe.note ?? `Foto ${idx + 2}`}
+                alt={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 2 })}
                 fill
                 className="object-cover"
                 sizes="64px"
@@ -348,13 +355,13 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
               <button
                 key={pe.id}
                 type="button"
-                aria-label={pe.note ?? `Foto ${idx + 1}`}
+                aria-label={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 1 })}
                 onClick={() => openLightbox(idx + 1)}
                 className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-lg"
               >
                 <Image
                   src={pe.thumbnail_url}
-                  alt={pe.note ?? `Foto ${idx + 1}`}
+                  alt={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 1 })}
                   fill
                   className="object-cover"
                   sizes="80px"
@@ -394,7 +401,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
           plantName={displayName ?? ""}
-          closeLabel="Fechar"
+          closeLabel={ta11y("lightboxClose")}
         />
       )}
 

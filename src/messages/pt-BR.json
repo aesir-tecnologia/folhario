@@ -35,8 +35,7 @@
         "nameAsc": "Nome (A → Z)",
         "nameDesc": "Nome (Z → A)",
         "location": "Por local"
-      },
-      "announcement": "Catálogo reordenado por {label}"
+      }
     },
     "empty": {
       "title": "Sua estante ainda está esperando a primeira planta.",
@@ -106,6 +105,13 @@
       },
       "savingLabel": "Salvando…",
       "saveFailure": "Não conseguimos salvar agora — tentar de novo?",
+      "a11y": {
+        "back": "Voltar",
+        "coverPhotoOf": "Foto de {name}",
+        "lightboxClose": "Fechar",
+        "photoIndexOf": "Foto {index} de {name}",
+        "photoFallbackAlt": "Foto {index}"
+      },
       "sections": {
         "reminders": "LEMBRETES ATIVOS",
         "journal": "DIÁRIO DE FOTOS",
@@ -140,6 +146,11 @@
     },
     "journal": {
       "titleFormat": "{name} — Diário",
+      "lightboxClose": "Fechar",
+      "a11y": {
+        "photoIndex": "Foto {index} de {total}",
+        "photoFallbackAlt": "Foto do diário"
+      },
       "add": {
         "cta": "+ Foto",
         "title": "Nova foto",
@@ -149,7 +160,10 @@
         "submit": "Adicionar",
         "submitting": "Enviando…",
         "failure": "Não conseguimos enviar. Tente novamente.",
-        "cancel": "Cancelar"
+        "cancel": "Cancelar",
+        "errors": {
+          "photoRequired": "Adicione uma foto"
+        }
       },
       "empty": {
         "title": "Comece o diário desta planta.",

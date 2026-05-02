@@ -13,6 +13,7 @@ export interface JournalAddSheetLabels {
   cta: string;
   title: string;
   photoPlaceholder: string;
+  photoRequired: string;
   noteLabel: string;
   notePlaceholder: string;
   submit: string;
@@ -76,7 +77,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
 
   async function handleSubmit() {
     if (!selectedFile) {
-      setPhotoError("Adicione uma foto");
+      setPhotoError(labels.photoRequired);
       return;
     }
 

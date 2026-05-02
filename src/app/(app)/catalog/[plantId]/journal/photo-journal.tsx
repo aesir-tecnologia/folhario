@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 
 import { Lightbox } from "@shared/ui/lightbox";
 import { EmptyState } from "@shared/ui/empty-state";
@@ -42,6 +43,7 @@ export interface PhotoJournalProps {
 }
 
 export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnlyProp, labels }: PhotoJournalProps) {
+  const ta11y = useTranslations("catalog.journal.a11y");
   const { readOnly: subscriptionReadOnly } = useSubscription();
   const readOnly = readOnlyProp || subscriptionReadOnly;
 
@@ -105,11 +107,11 @@ export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnl
                   setLightboxIndex(idx);
                   setLightboxOpen(true);
                 }}
-                aria-label={`Foto ${idx + 1} de ${entries.length}`}
+                aria-label={ta11y("photoIndex", { index: idx + 1, total: entries.length })}
               >
                 <img
                   src={entry.thumbnail_url || entry.photo_url}
-                  alt={entry.note ?? `Foto do diário`}
+                  alt={entry.note ?? ta11y("photoFallbackAlt")}
                   className="h-full w-full object-cover"
                 />
               </button>

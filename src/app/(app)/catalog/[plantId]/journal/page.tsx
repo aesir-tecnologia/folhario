@@ -44,6 +44,7 @@ export default async function JournalPage({
       cta: tAdd("cta"),
       title: tAdd("title"),
       photoPlaceholder: tAdd("photoPlaceholder"),
+      photoRequired: tAdd("errors.photoRequired"),
       noteLabel: tAdd("noteLabel"),
       notePlaceholder: tAdd("notePlaceholder"),
       submit: tAdd("submit"),
@@ -56,7 +57,7 @@ export default async function JournalPage({
       hint: tEmpty("hint"),
       cta: tEmpty("cta"),
     },
-    lightboxClose: "Fechar",
+    lightboxClose: t("lightboxClose"),
   };
 
   const readOnly = process.env.SUBSCRIPTION_READ_ONLY === "1";

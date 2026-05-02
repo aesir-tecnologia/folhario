@@ -24,10 +24,18 @@ test.describe.configure({ retries: 0 });
 const MINIMAL_JPEG_B64 =
   "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=";
 
-async function seedPlant(page: Page, name: string): Promise<string> {
+// The proxy at src/proxy.ts:90-110 is a bearer-only fast-fail gate on
+// /api/v1/* — cookies are NOT consulted at the proxy layer. Seed via
+// page.request.post must carry the user's access_token as a Bearer
+// header. The route handler's cookie fallback only runs after the
+// proxy passes the request through, which requires the bearer.
+async function seedPlant(page: Page, accessToken: string, name: string): Promise<string> {
   const imageBuffer = Buffer.from(MINIMAL_JPEG_B64, "base64");
   const resp = await page.request.post("/api/v1/plants", {
-    headers: { "Idempotency-Key": `seed-uat2-${name}-${Date.now()}` },
+    headers: {
+      "Idempotency-Key": `seed-uat2-${name}-${Date.now()}`,
+      authorization: `Bearer ${accessToken}`,
+    },
     multipart: {
       name,
       photo: { name: "plant.jpg", mimeType: "image/jpeg", buffer: imageBuffer },
@@ -42,10 +50,18 @@ async function seedPlant(page: Page, name: string): Promise<string> {
   return id;
 }
 
-async function seedPhotoEntry(page: Page, plantId: string, label: string): Promise<void> {
+async function seedPhotoEntry(
+  page: Page,
+  accessToken: string,
+  plantId: string,
+  label: string,
+): Promise<void> {
   const imageBuffer = Buffer.from(MINIMAL_JPEG_B64, "base64");
   const resp = await page.request.post(`/api/v1/plants/${plantId}/photo-entries`, {
-    headers: { "Idempotency-Key": `seed-entry-${label}-${Date.now()}-${Math.random()}` },
+    headers: {
+      "Idempotency-Key": `seed-entry-${label}-${Date.now()}-${Math.random()}`,
+      authorization: `Bearer ${accessToken}`,
+    },
     multipart: {
       photo: { name: `${label}.jpg`, mimeType: "image/jpeg", buffer: imageBuffer },
       note: label,
@@ -98,8 +114,7 @@ test("UAT-4 — Location picker shows 8 defaults, supports free-text 'Adicionar'
   page,
   authedUser,
 }) => {
-  void authedUser;
-  const plantId = await seedPlant(page, "LocationTest");
+  const plantId = await seedPlant(page, authedUser.accessToken, "LocationTest");
   await page.goto(`/catalog/${plantId}`);
 
   await page.waitForSelector('[data-testid="inline-edit-location"]');
@@ -151,13 +166,12 @@ test("UAT-7 / NEW-CR-01 — Lightbox includes cover exactly once and newest entr
   page,
   authedUser,
 }) => {
-  void authedUser;
-  const plantId = await seedPlant(page, "PhotoComposition");
+  const plantId = await seedPlant(page, authedUser.accessToken, "PhotoComposition");
 
   // Add two journal entries — they become newer than the cover.
   // listPhotoEntries returns newest-first; cover is matched to the OLDEST entry by photo_url.
-  await seedPhotoEntry(page, plantId, "second");
-  await seedPhotoEntry(page, plantId, "third-newest");
+  await seedPhotoEntry(page, authedUser.accessToken, plantId, "second");
+  await seedPhotoEntry(page, authedUser.accessToken, plantId, "third-newest");
 
   await page.goto(`/catalog/${plantId}`);
 
@@ -197,8 +211,7 @@ test("UAT-8 / NEW-CR-05 — Photo-journal POST retries with the SAME Idempotency
   page,
   authedUser,
 }) => {
-  void authedUser;
-  const plantId = await seedPlant(page, "IdempotencyRetry");
+  const plantId = await seedPlant(page, authedUser.accessToken, "IdempotencyRetry");
   await page.goto(`/catalog/${plantId}/journal`);
   await page.waitForSelector('[data-testid="photo-journal"]');
 

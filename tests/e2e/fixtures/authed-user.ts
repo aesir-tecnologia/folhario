@@ -16,7 +16,7 @@ if (dbUrl && /supabase\.co/.test(dbUrl)) {
   );
 }
 
-export type AuthedUser = { id: string; email: string };
+export type AuthedUser = { id: string; email: string; accessToken: string };
 
 export const test = base.extend<{ authedUser: AuthedUser }>({
   authedUser: async ({ context }, use) => {
@@ -71,9 +71,16 @@ export const test = base.extend<{ authedUser: AuthedUser }>({
       },
     );
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error) {
       throw new Error(`authedUser fixture: signInWithPassword failed: ${error.message}`);
+    }
+    const accessToken = signInData?.session?.access_token;
+    if (!accessToken) {
+      throw new Error("authedUser fixture: signInWithPassword returned no access_token");
     }
 
     await context.addCookies(
@@ -88,7 +95,7 @@ export const test = base.extend<{ authedUser: AuthedUser }>({
       })),
     );
 
-    await use({ id: userId, email });
+    await use({ id: userId, email, accessToken });
 
     const cleanupSql = postgres(process.env.DATABASE_POOL_URL!, {
       prepare: false,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent, cleanup } from "@testing-library/react";
+import { render, waitFor, fireEvent, cleanup } from "@testing-library/react";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => {
@@ -21,9 +21,7 @@ beforeEach(() => {
 });
 
 async function importSheet() {
-  const mod = await import(
-    "../../src/app/(app)/catalog/[plantId]/delete-confirm-sheet"
-  );
+  const mod = await import("../../src/app/(app)/catalog/[plantId]/delete-confirm-sheet");
   return mod.DeleteConfirmSheet;
 }
 
@@ -140,11 +138,14 @@ describe("DeleteConfirmSheet", () => {
       />,
     );
 
-    await waitFor(() => {
-      const cancel = document.querySelector('[data-testid="delete-confirm-cancel"]');
-      expect(cancel).not.toBeNull();
-      expect(document.activeElement).toBe(cancel);
-    }, { timeout: 2000 });
+    await waitFor(
+      () => {
+        const cancel = document.querySelector('[data-testid="delete-confirm-cancel"]');
+        expect(cancel).not.toBeNull();
+        expect(document.activeElement).toBe(cancel);
+      },
+      { timeout: 2000 },
+    );
   });
 
   it("Test 7 (Cancelar onClick closes sheet): clicking Cancelar calls onOpenChange(false) once", async () => {
@@ -237,7 +238,9 @@ describe("DeleteConfirmSheet", () => {
     );
 
     await waitFor(() => {
-      const confirm = document.querySelector('[data-testid="delete-confirm-confirm"]') as HTMLButtonElement | null;
+      const confirm = document.querySelector(
+        '[data-testid="delete-confirm-confirm"]',
+      ) as HTMLButtonElement | null;
       expect(confirm).not.toBeNull();
       expect(confirm!.disabled).toBe(true);
       expect(confirm!.textContent).toContain("deleting");

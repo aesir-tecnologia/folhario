@@ -12,6 +12,7 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import postgres from "postgres";
 
 import { seedUser } from "./fixtures/seed-user";
@@ -41,89 +42,92 @@ if (dbUrl && /supabase\.co/.test(dbUrl)) {
 
 const cleanupSql = dbUrl ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 }) : null;
 
-describe.skipIf(!dbUrl)("Phase 4 plan 04-13 — resendVerification (UAT gap 2 mirror)", () => {
-  let resendModule: typeof import("@contexts/iam/application/resend-verification");
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
+  "Phase 4 plan 04-13 — resendVerification (UAT gap 2 mirror)",
+  () => {
+    let resendModule: typeof import("@contexts/iam/application/resend-verification");
 
-  beforeAll(async () => {
-    // Lazy import so installInngestMock + sentry mock win before resend
-    // imports inngest/sentry.
-    resendModule = await import("@contexts/iam/application/resend-verification");
-  });
-
-  beforeEach(() => {
-    resetInngestMock();
-    captureExceptionMock.mockClear();
-  });
-
-  afterAll(async () => {
-    if (cleanupSql) await cleanupSql.end({ timeout: 5 });
-  });
-
-  const requestUrl = new URL("http://localhost:3000/api/v1/iam/resend-verification");
-
-  it("happy path: mints token + emits verification Inngest event", async () => {
-    const email = `resend-${randomUUID()}@test.local`;
-    const { id: userId } = await seedUser({
-      email,
-      password: "SuperSecret123!",
-      emailVerifiedAt: null,
+    beforeAll(async () => {
+      // Lazy import so installInngestMock + sentry mock win before resend
+      // imports inngest/sentry.
+      resendModule = await import("@contexts/iam/application/resend-verification");
     });
 
-    const result = await resendModule.resendVerification({ userId, email, requestUrl });
-
-    expect(result.tokenId).toMatch(/^[0-9a-f-]{36}$/);
-
-    const tokenRows = await cleanupSql!<{ id: string }[]>`
-      SELECT id FROM public.email_verification_tokens
-       WHERE user_id = ${userId} AND consumed_at IS NULL`;
-    expect(tokenRows).toHaveLength(1);
-    expect(tokenRows[0]!.id).toBe(result.tokenId);
-
-    expect(inngestSendMock).toHaveBeenCalledTimes(1);
-    const call = inngestSendMock.mock.calls[0]![0] as {
-      id: string;
-      name: string;
-      data: { template: string };
-    };
-    expect(call.id).toBe(`email-verification/${result.tokenId}`);
-    expect(call.name).toBe("notifications/email.requested");
-    expect(call.data.template).toBe("verification");
-
-    expect(captureExceptionMock).not.toHaveBeenCalled();
-  });
-
-  it("inngest.send rejection: still returns tokenId + Sentry.captureException invoked", async () => {
-    const email = `resend-fail-${randomUUID()}@test.local`;
-    const { id: userId } = await seedUser({
-      email,
-      password: "SuperSecret123!",
-      emailVerifiedAt: null,
+    beforeEach(() => {
+      resetInngestMock();
+      captureExceptionMock.mockClear();
     });
 
-    inngestSendMock.mockRejectedValueOnce(new Error("inngest cloud delivery failed"));
+    afterAll(async () => {
+      if (cleanupSql) await cleanupSql.end({ timeout: 5 });
+    });
 
-    // Must NOT throw.
-    const result = await resendModule.resendVerification({ userId, email, requestUrl });
+    const requestUrl = new URL("http://localhost:3000/api/v1/iam/resend-verification");
 
-    expect(result.tokenId).toMatch(/^[0-9a-f-]{36}$/);
+    it("happy path: mints token + emits verification Inngest event", async () => {
+      const email = `resend-${randomUUID()}@test.local`;
+      const { id: userId } = await seedUser({
+        email,
+        password: "SuperSecret123!",
+        emailVerifiedAt: null,
+      });
 
-    // Token row was still persisted by mintVerificationToken before dispatch.
-    const tokenRows = await cleanupSql!<{ id: string }[]>`
+      const result = await resendModule.resendVerification({ userId, email, requestUrl });
+
+      expect(result.tokenId).toMatch(/^[0-9a-f-]{36}$/);
+
+      const tokenRows = await cleanupSql!<{ id: string }[]>`
       SELECT id FROM public.email_verification_tokens
        WHERE user_id = ${userId} AND consumed_at IS NULL`;
-    expect(tokenRows).toHaveLength(1);
-    expect(tokenRows[0]!.id).toBe(result.tokenId);
+      expect(tokenRows).toHaveLength(1);
+      expect(tokenRows[0]!.id).toBe(result.tokenId);
 
-    expect(inngestSendMock).toHaveBeenCalledTimes(1);
+      expect(inngestSendMock).toHaveBeenCalledTimes(1);
+      const call = inngestSendMock.mock.calls[0]![0] as {
+        id: string;
+        name: string;
+        data: { template: string };
+      };
+      expect(call.id).toBe(`email-verification/${result.tokenId}`);
+      expect(call.name).toBe("notifications/email.requested");
+      expect(call.data.template).toBe("verification");
 
-    expect(captureExceptionMock).toHaveBeenCalledTimes(1);
-    const [capturedErr, capturedCtx] = captureExceptionMock.mock.calls[0]! as [
-      Error,
-      { tags?: Record<string, string>; extra?: Record<string, unknown> },
-    ];
-    expect(capturedErr).toBeInstanceOf(Error);
-    expect((capturedErr as Error).message).toMatch(/inngest cloud delivery failed/);
-    expect(capturedCtx.tags?.surface).toBe("iam.resendVerification.notify");
-    expect(capturedCtx.extra?.tokenId).toBe(result.tokenId);
-  });
-});
+      expect(captureExceptionMock).not.toHaveBeenCalled();
+    });
+
+    it("inngest.send rejection: still returns tokenId + Sentry.captureException invoked", async () => {
+      const email = `resend-fail-${randomUUID()}@test.local`;
+      const { id: userId } = await seedUser({
+        email,
+        password: "SuperSecret123!",
+        emailVerifiedAt: null,
+      });
+
+      inngestSendMock.mockRejectedValueOnce(new Error("inngest cloud delivery failed"));
+
+      // Must NOT throw.
+      const result = await resendModule.resendVerification({ userId, email, requestUrl });
+
+      expect(result.tokenId).toMatch(/^[0-9a-f-]{36}$/);
+
+      // Token row was still persisted by mintVerificationToken before dispatch.
+      const tokenRows = await cleanupSql!<{ id: string }[]>`
+      SELECT id FROM public.email_verification_tokens
+       WHERE user_id = ${userId} AND consumed_at IS NULL`;
+      expect(tokenRows).toHaveLength(1);
+      expect(tokenRows[0]!.id).toBe(result.tokenId);
+
+      expect(inngestSendMock).toHaveBeenCalledTimes(1);
+
+      expect(captureExceptionMock).toHaveBeenCalledTimes(1);
+      const [capturedErr, capturedCtx] = captureExceptionMock.mock.calls[0]! as [
+        Error,
+        { tags?: Record<string, string>; extra?: Record<string, unknown> },
+      ];
+      expect(capturedErr).toBeInstanceOf(Error);
+      expect((capturedErr as Error).message).toMatch(/inngest cloud delivery failed/);
+      expect(capturedCtx.tags?.surface).toBe("iam.resendVerification.notify");
+      expect(capturedCtx.extra?.tokenId).toBe(result.tokenId);
+    });
+  },
+);

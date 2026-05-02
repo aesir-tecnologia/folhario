@@ -95,16 +95,23 @@ export function BottomNav(): ReactNode {
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed bottom-0 left-0 right-0 mx-auto max-w-[480px] bg-ivory border-t border-hairline"
+      className="
+        fixed inset-x-0 bottom-0 mx-auto max-w-[480px] border-t border-hairline
+        bg-ivory
+      "
       style={{ paddingBottom: "var(--spacing-safe-bottom)" }}
     >
       {/* Active indicator bar — 3px Canopy, slides on tab change */}
       <span
         aria-hidden="true"
-        className="absolute top-0 h-[3px] w-1/4 bg-canopy transition-transform duration-[240ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none"
+        className="
+          absolute top-0 h-[3px] w-1/4 bg-canopy transition-transform
+          duration-240 ease-[cubic-bezier(.2,.8,.2,1)]
+          motion-reduce:transition-none
+        "
         style={{ transform: `translateX(${safeIndex * 100}%)` }}
       />
-      <ul className="grid grid-cols-4 min-h-[56px]">
+      <ul className="grid min-h-[56px] grid-cols-4">
         {ITEMS.map((item, idx) => {
           const Icon = item.icon;
           const isActive = idx === safeIndex;
@@ -113,9 +120,10 @@ export function BottomNav(): ReactNode {
               <Link
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex flex-col items-center justify-center gap-1 text-xs ${
-                  isActive ? "text-canopy font-semibold" : "text-slate"
-                }`}
+                className={`
+                  flex flex-col items-center justify-center gap-1 text-xs
+                  ${isActive ? "font-semibold text-canopy" : "text-slate"}
+                `}
               >
                 <Icon strokeWidth={1.5} size={28} aria-hidden="true" />
                 <span>{t(item.labelKey)}</span>

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { db } from "@shared/db/client";
 import * as locRepo from "@contexts/catalog/infrastructure/db/location-suggestions";
 
@@ -35,10 +36,9 @@ function jwtSub(jwt: string): string {
   return payload.sub;
 }
 
-describe.skipIf(!dbUrl)("location_suggestions repository", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("location_suggestions repository", () => {
   let userAId: string;
   let userBId: string;
-  let userAJwtSub: string;
   let userBJwtSub: string;
 
   const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
@@ -77,8 +77,12 @@ describe.skipIf(!dbUrl)("location_suggestions repository", () => {
     }
     userBId = createdB.user.id;
 
-    const [rowA] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userAId}`;
-    const [rowB] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userBId}`;
+    const [rowA] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userAId}`;
+    const [rowB] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userBId}`;
     if (!rowA || !rowB) {
       throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
     }
@@ -90,7 +94,6 @@ describe.skipIf(!dbUrl)("location_suggestions repository", () => {
     if (signInA.error || !signInA.data.session?.access_token) {
       throw new Error(`signInWithPassword A failed: ${signInA.error?.message}`);
     }
-    userAJwtSub = jwtSub(signInA.data.session.access_token);
 
     const signInB = await adminClient.auth.signInWithPassword({
       email: `loc-repo-userB-${runId}@test.local`,
@@ -152,7 +155,9 @@ describe.skipIf(!dbUrl)("location_suggestions repository", () => {
     await locRepo.upsert(db, { userId: userAId, label: "Varanda" });
     await locRepo.upsert(db, { userId: userAId, label: "varánda" });
 
-    const rows = await adminSql<{ label_normalized: string; label_display: string; usage_count: number }[]>`
+    const rows = await adminSql<
+      { label_normalized: string; label_display: string; usage_count: number }[]
+    >`
       SELECT label_normalized, label_display, usage_count
       FROM public.location_suggestions
       WHERE user_id = ${userAId}

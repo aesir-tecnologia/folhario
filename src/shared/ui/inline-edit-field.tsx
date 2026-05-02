@@ -2,6 +2,9 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+// savingLabel prop default — matches catalog.profile.savingLabel in pt-BR.json.
+const DEFAULT_SAVING_LABEL = "Salvando…";
+
 export type InlineEditFieldVariant = "text" | "textarea" | "date";
 
 export interface InlineEditFieldRenderEditorArgs {
@@ -24,6 +27,7 @@ export interface InlineEditFieldProps {
   required?: boolean;
   requiredErrorCopy?: string;
   revertAnnouncementCopy?: string;
+  savingLabel?: string;
   minRows?: number;
   maxRows?: number;
   renderEditor?: (args: InlineEditFieldRenderEditorArgs) => ReactNode;
@@ -41,6 +45,7 @@ export function InlineEditField({
   required = false,
   requiredErrorCopy,
   revertAnnouncementCopy,
+  savingLabel = DEFAULT_SAVING_LABEL,
   minRows = 3,
   maxRows = 8,
   renderEditor,
@@ -53,9 +58,10 @@ export function InlineEditField({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [revertCopy, setRevertCopy] = useState<string | null>(null);
 
-  // Pre-edit snapshot: saves the persisted value before editing begins so Esc reverts correctly.
-  const preEditValueRef = useRef<string>("");
+  const [preEditValue, setPreEditValue] = useState<string>("");
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  // Prevents spurious PATCH when blur fires after Enter/Esc has already committed/cancelled.
+  const committingRef = useRef(false);
 
   // Auto-select input text when entering editing state (built-in variants only).
   useEffect(() => {
@@ -68,7 +74,7 @@ export function InlineEditField({
 
   function enterEditing() {
     if (readOnly) return;
-    preEditValueRef.current = currentDisplayValue;
+    setPreEditValue(currentDisplayValue);
     setDraft(currentDisplayValue);
     setValidationError(null);
     setRevertCopy(null);
@@ -93,7 +99,7 @@ export function InlineEditField({
     } catch {
       // Revert to pre-edit value — display is controlled by caller via `value` prop,
       // but we show the pre-edit snapshot until the parent state updates.
-      setDraft(preEditValueRef.current);
+      setDraft(preEditValue);
       setMode("error-revert");
       if (revertAnnouncementCopy) {
         setRevertCopy(revertAnnouncementCopy);
@@ -102,7 +108,7 @@ export function InlineEditField({
   }
 
   function cancel() {
-    setDraft(preEditValueRef.current);
+    setDraft(preEditValue);
     setValidationError(null);
     setRevertCopy(null);
     setMode("read");
@@ -118,8 +124,10 @@ export function InlineEditField({
   function handleTextKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
+      committingRef.current = true;
       void commit();
     } else if (e.key === "Escape") {
+      committingRef.current = true;
       cancel();
     }
   }
@@ -127,17 +135,27 @@ export function InlineEditField({
   function handleTextareaKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
+      committingRef.current = true;
       void commit();
     } else if (e.key === "Escape") {
+      committingRef.current = true;
       cancel();
     }
     // Plain Enter in textarea → browser default (inserts newline).
   }
 
+  function handleBlurCommit() {
+    if (committingRef.current) {
+      committingRef.current = false;
+      return;
+    }
+    void commit();
+  }
+
   const isSaving = mode === "saving";
   const isEditing = mode === "editing" || mode === "saving";
 
-  const displayValue = mode === "error-revert" ? preEditValueRef.current : currentDisplayValue;
+  const displayValue = mode === "error-revert" ? preEditValue : currentDisplayValue;
 
   // Read-only: plain div, no role/tabIndex, cursor default — D-21 read-only.
   if (readOnly) {
@@ -147,7 +165,7 @@ export function InlineEditField({
         {displayValue ? (
           <span className="text-forest">{displayValue}</span>
         ) : (
-          <span className="italic text-slate">{placeholder}</span>
+          <span className="text-slate italic">{placeholder}</span>
         )}
       </div>
     );
@@ -172,13 +190,13 @@ export function InlineEditField({
           onKeyDown={handleReadKeyDown}
           className="
             cursor-text text-left text-forest
-            hover:outline hover:outline-2 hover:outline-offset-4 hover:outline-hairline
+            hover:outline-2 hover:outline-offset-4 hover:outline-hairline
           "
         >
           {displayValue ? (
             <span>{displayValue}</span>
           ) : (
-            <span className="italic text-slate">{placeholder}</span>
+            <span className="text-slate italic">{placeholder}</span>
           )}
         </button>
       )}
@@ -195,13 +213,13 @@ export function InlineEditField({
             onKeyDown={handleReadKeyDown}
             className="
               cursor-text text-left text-forest
-              hover:outline hover:outline-2 hover:outline-offset-4 hover:outline-hairline
+              hover:outline-2 hover:outline-offset-4 hover:outline-hairline
             "
           >
             {displayValue ? (
               <span>{displayValue}</span>
             ) : (
-              <span className="italic text-slate">{placeholder}</span>
+              <span className="text-slate italic">{placeholder}</span>
             )}
           </button>
           {revertCopy && (
@@ -230,7 +248,7 @@ export function InlineEditField({
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => void commit()}
+              onBlur={handleBlurCommit}
               onKeyDown={handleTextareaKeyDown}
               aria-label={label}
               aria-invalid={validationError !== null}
@@ -239,7 +257,7 @@ export function InlineEditField({
               disabled={isSaving}
               className={`
                 w-full rounded-md border-[1.5px] bg-ivory px-3 py-2 text-forest
-                focus:outline-none focus:ring-[3px] focus:ring-canopy/40
+                focus:ring-[3px] focus:ring-canopy/40 focus:outline-none
                 ${validationError ? "border-rust" : "border-canopy"}
               `}
               style={{ minHeight: `${minRows * 1.5}rem`, maxHeight: `${maxRows * 1.5}rem` }}
@@ -250,9 +268,12 @@ export function InlineEditField({
               type="date"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => void commit()}
+              onBlur={handleBlurCommit}
               onKeyDown={(e) => {
-                if (e.key === "Escape") cancel();
+                if (e.key === "Escape") {
+                  committingRef.current = true;
+                  cancel();
+                }
               }}
               aria-label={label}
               aria-invalid={validationError !== null}
@@ -260,7 +281,7 @@ export function InlineEditField({
               disabled={isSaving}
               className={`
                 w-full rounded-md border-[1.5px] bg-ivory px-3 py-2 text-forest
-                focus:outline-none focus:ring-[3px] focus:ring-canopy/40
+                focus:ring-[3px] focus:ring-canopy/40 focus:outline-none
                 ${validationError ? "border-rust" : "border-canopy"}
               `}
             />
@@ -270,7 +291,7 @@ export function InlineEditField({
               type="text"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => void commit()}
+              onBlur={handleBlurCommit}
               onKeyDown={handleTextKeyDown}
               aria-label={label}
               aria-invalid={validationError !== null}
@@ -279,24 +300,18 @@ export function InlineEditField({
               autoFocus
               className={`
                 w-full rounded-md border-[1.5px] bg-ivory px-3 py-2 text-forest
-                focus:outline-none focus:ring-[3px] focus:ring-canopy/40
+                focus:ring-[3px] focus:ring-canopy/40 focus:outline-none
                 ${validationError ? "border-rust" : "border-canopy"}
               `}
             />
           )}
 
-          {/* Saving label — "Salvando…" text, NOT a spinner. UI-SPEC §12 line 575. */}
-          {isSaving && (
-            <span className="text-sm text-slate">Salvando…</span>
-          )}
+          {/* Saving label — NOT a spinner. UI-SPEC §12 line 575. */}
+          {isSaving && <span className="text-sm text-slate">{savingLabel}</span>}
 
           {/* Required-empty validation error */}
           {validationError && (
-            <p
-              role="alert"
-              id={helperId}
-              className="text-sm text-rust"
-            >
+            <p role="alert" id={helperId} className="text-sm text-rust">
               {validationError}
             </p>
           )}

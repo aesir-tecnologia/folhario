@@ -45,7 +45,7 @@ export function DeleteConfirmSheet(props: DeleteConfirmSheetProps) {
       title={t("title", { nameOrNickname: props.plantNameOrNickname })}
       closeLabel={t("cancel")}
     >
-      <p className="text-base leading-6 text-slate">
+      <p className="text-base/6 text-slate">
         {t(bodyKey, bodyValues as Record<string, string | number | Date>)}
       </p>
       <div className="mt-6 flex flex-col gap-3">
@@ -56,10 +56,9 @@ export function DeleteConfirmSheet(props: DeleteConfirmSheetProps) {
           data-testid="delete-confirm-cancel"
           onClick={() => props.onOpenChange(false)}
           className="
-            flex min-h-[44px] w-full items-center justify-center
-            rounded-xl border-2 border-canopy
-            bg-transparent px-4 py-2.5
-            font-semibold text-canopy
+            flex min-h-[44px] w-full items-center justify-center rounded-xl
+            border-2 border-canopy bg-transparent px-4 py-2.5 font-semibold
+            text-canopy
             hover:bg-canopy/10
           "
         >
@@ -73,9 +72,8 @@ export function DeleteConfirmSheet(props: DeleteConfirmSheetProps) {
             void props.onConfirm();
           }}
           className="
-            flex min-h-[44px] w-full items-center justify-center
-            rounded-xl bg-rust px-4 py-2.5
-            font-semibold text-ivory
+            flex min-h-[44px] w-full items-center justify-center rounded-xl
+            bg-rust px-4 py-2.5 font-semibold text-ivory
             hover:bg-rust/90
             disabled:opacity-60
           "

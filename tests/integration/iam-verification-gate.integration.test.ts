@@ -18,6 +18,7 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import postgres from "postgres";
 
 import { ErrorCode } from "@shared/config/errors";
@@ -51,80 +52,79 @@ function buildFakeAdapter(user: UserRow | null): AuthAdapter {
   };
 }
 
-describe.skipIf(!dbUrl)("Phase 4 AUTH-02 — verification gate (allowlist + 403)", () => {
-  beforeAll(async () => {
-    await seedCurrentPolicyVersions();
-  });
-
-  beforeEach(() => {
-    __setCurrentUserAdapterForTests(null);
-  });
-
-  afterAll(async () => {
-    __setCurrentUserAdapterForTests(null);
-    if (cleanupSql) await cleanupSql.end({ timeout: 5 });
-  });
-
-  it("UNVERIFIED_ALLOWED_PATHS allows resend-verification + me; default-denies app endpoints", () => {
-    expect(isUnverifiedAllowed("/api/v1/iam/resend-verification")).toBe(true);
-    expect(isUnverifiedAllowed("/api/v1/iam/me")).toBe(true);
-    expect(isUnverifiedAllowed("/auth/verify")).toBe(true);
-    expect(isUnverifiedAllowed("/legal/terms")).toBe(true);
-    expect(isUnverifiedAllowed("/legal/privacy")).toBe(true);
-    // Default-deny on a hypothetical gated endpoint
-    expect(isUnverifiedAllowed("/api/v1/identifications")).toBe(false);
-    expect(isUnverifiedAllowed("/api/v1/plants")).toBe(false);
-  });
-
-  it("requireVerifiedUser returns email_unverified 403 for an unverified user", async () => {
-    const email = `gate-unverified-${randomUUID()}@test.local`;
-    const { id } = await seedUser({
-      email,
-      password: "SuperSecret123!",
-      emailVerifiedAt: null,
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
+  "Phase 4 AUTH-02 — verification gate (allowlist + 403)",
+  () => {
+    beforeAll(async () => {
+      await seedCurrentPolicyVersions();
     });
 
-    // Resolve the seeded UserRow from the DB so the fake adapter returns the same shape.
-    const { findById } = await import("@contexts/iam/infrastructure/db/users");
-    const { db } = await import("@shared/db/client");
-    const userRow = await findById(db, id);
-    expect(userRow).not.toBeNull();
-    if (!userRow) return;
-    expect(userRow.emailVerifiedAt).toBeNull();
-
-    __setCurrentUserAdapterForTests(buildFakeAdapter(userRow));
-
-    const result = await requireVerifiedUser(
-      new Request("http://localhost:3000/api/v1/iam/me"),
-    );
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.code).toBe(ErrorCode.EmailUnverified);
-    expect(result.reason).toBe("email_unverified");
-  });
-
-  it("requireVerifiedUser returns ok:true for a verified user", async () => {
-    const email = `gate-verified-${randomUUID()}@test.local`;
-    const { id } = await seedUser({
-      email,
-      password: "SuperSecret123!",
-      emailVerifiedAt: new Date().toISOString(),
+    beforeEach(() => {
+      __setCurrentUserAdapterForTests(null);
     });
 
-    const { findById } = await import("@contexts/iam/infrastructure/db/users");
-    const { db } = await import("@shared/db/client");
-    const userRow = await findById(db, id);
-    expect(userRow).not.toBeNull();
-    if (!userRow) return;
-    expect(userRow.emailVerifiedAt).not.toBeNull();
+    afterAll(async () => {
+      __setCurrentUserAdapterForTests(null);
+      if (cleanupSql) await cleanupSql.end({ timeout: 5 });
+    });
 
-    __setCurrentUserAdapterForTests(buildFakeAdapter(userRow));
+    it("UNVERIFIED_ALLOWED_PATHS allows resend-verification + me; default-denies app endpoints", () => {
+      expect(isUnverifiedAllowed("/api/v1/iam/resend-verification")).toBe(true);
+      expect(isUnverifiedAllowed("/api/v1/iam/me")).toBe(true);
+      expect(isUnverifiedAllowed("/auth/verify")).toBe(true);
+      expect(isUnverifiedAllowed("/legal/terms")).toBe(true);
+      expect(isUnverifiedAllowed("/legal/privacy")).toBe(true);
+      // Default-deny on a hypothetical gated endpoint
+      expect(isUnverifiedAllowed("/api/v1/identifications")).toBe(false);
+      expect(isUnverifiedAllowed("/api/v1/plants")).toBe(false);
+    });
 
-    const result = await requireVerifiedUser(
-      new Request("http://localhost:3000/api/v1/iam/me"),
-    );
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.user.id).toBe(id);
-  });
-});
+    it("requireVerifiedUser returns email_unverified 403 for an unverified user", async () => {
+      const email = `gate-unverified-${randomUUID()}@test.local`;
+      const { id } = await seedUser({
+        email,
+        password: "SuperSecret123!",
+        emailVerifiedAt: null,
+      });
+
+      // Resolve the seeded UserRow from the DB so the fake adapter returns the same shape.
+      const { findById } = await import("@contexts/iam/infrastructure/db/users");
+      const { db } = await import("@shared/db/client");
+      const userRow = await findById(db, id);
+      expect(userRow).not.toBeNull();
+      if (!userRow) return;
+      expect(userRow.emailVerifiedAt).toBeNull();
+
+      __setCurrentUserAdapterForTests(buildFakeAdapter(userRow));
+
+      const result = await requireVerifiedUser(new Request("http://localhost:3000/api/v1/iam/me"));
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe(ErrorCode.EmailUnverified);
+      expect(result.reason).toBe("email_unverified");
+    });
+
+    it("requireVerifiedUser returns ok:true for a verified user", async () => {
+      const email = `gate-verified-${randomUUID()}@test.local`;
+      const { id } = await seedUser({
+        email,
+        password: "SuperSecret123!",
+        emailVerifiedAt: new Date().toISOString(),
+      });
+
+      const { findById } = await import("@contexts/iam/infrastructure/db/users");
+      const { db } = await import("@shared/db/client");
+      const userRow = await findById(db, id);
+      expect(userRow).not.toBeNull();
+      if (!userRow) return;
+      expect(userRow.emailVerifiedAt).not.toBeNull();
+
+      __setCurrentUserAdapterForTests(buildFakeAdapter(userRow));
+
+      const result = await requireVerifiedUser(new Request("http://localhost:3000/api/v1/iam/me"));
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.user.id).toBe(id);
+    });
+  },
+);

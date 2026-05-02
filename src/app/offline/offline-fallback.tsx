@@ -17,7 +17,7 @@ export function OfflineFallback({
   cta: string;
 }) {
   return (
-    <main className="min-h-[100dvh] flex items-center justify-center bg-paper">
+    <main className="flex min-h-dvh items-center justify-center bg-paper">
       <EmptyState
         headline={title}
         hint={hint}

@@ -14,6 +14,7 @@
 //   for vi.mock hoisting reasons noted above).
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import postgres from "postgres";
 import { randomUUID } from "node:crypto";
 
@@ -28,9 +29,7 @@ if (dbUrl && /supabase\.co/.test(dbUrl)) {
   );
 }
 
-const cleanupSql = dbUrl
-  ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 })
-  : null;
+const cleanupSql = dbUrl ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 }) : null;
 
 // vi.hoisted: shared mock between vi.mock factory + assertions.
 const mocks = vi.hoisted(() => ({
@@ -46,7 +45,7 @@ vi.mock("@shared/inngest/client", () => ({
   },
 }));
 
-describe.skipIf(!dbUrl)(
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
   "Phase 4 AUTH-11 + AUTH-12 — password reset flow (route → iam/password-reset-requested Inngest function → notifications/email.requested)",
   () => {
     // Idempotent seed in beforeAll (NOT beforeEach) — concurrent test files
@@ -67,9 +66,7 @@ describe.skipIf(!dbUrl)(
     });
 
     it("reset-request route always returns 200 + emits iam/password-reset-requested with minute-bucket id (D-11 thin wrapper, Codex HIGH #8)", async () => {
-      const mod = await import(
-        "../../src/app/api/v1/iam/password/reset-request/route"
-      );
+      const mod = await import("../../src/app/api/v1/iam/password/reset-request/route");
       const res = await mod.POST(
         new Request("http://localhost:3000/api/v1/iam/password/reset-request", {
           method: "POST",
@@ -83,17 +80,11 @@ describe.skipIf(!dbUrl)(
       expect(res.status).toBe(200);
 
       // Outer event is iam/password-reset-requested — what the Inngest function listens for.
-      const outerEvent = mocks.sentEvents.find(
-        (e) => e.name === "iam/password-reset-requested",
-      );
+      const outerEvent = mocks.sentEvents.find((e) => e.name === "iam/password-reset-requested");
       expect(outerEvent).toBeTruthy();
-      expect((outerEvent!.data as { email: string }).email).toBe(
-        "nobody@example.com",
-      );
+      expect((outerEvent!.data as { email: string }).email).toBe("nobody@example.com");
       // Codex HIGH #8: outer event id includes email + minute bucket
-      expect(outerEvent!.id).toMatch(
-        /^password-reset-request\/nobody@example\.com\/\d+$/,
-      );
+      expect(outerEvent!.id).toMatch(/^password-reset-request\/nobody@example\.com\/\d+$/);
     });
 
     it("requestPasswordReset use-case (invoked from inside Inngest function) with existing user mints token + emits notifications/email.requested with token-id dedup (Codex HIGH #8)", async () => {
@@ -103,29 +94,25 @@ describe.skipIf(!dbUrl)(
         password: "Sup3rSecret!",
         emailVerifiedAt: new Date().toISOString(),
       });
-      const { requestPasswordReset } = await import(
-        "../../src/contexts/iam/application/request-password-reset"
-      );
+      const { requestPasswordReset } =
+        await import("../../src/contexts/iam/application/request-password-reset");
       await requestPasswordReset({
         email,
         requestUrl: "http://localhost:3000/api/v1/iam/password/reset-request",
       });
 
-      const innerEvent = mocks.sentEvents.find(
-        (e) => e.name === "notifications/email.requested",
-      );
+      const innerEvent = mocks.sentEvents.find((e) => e.name === "notifications/email.requested");
       expect(innerEvent).toBeTruthy();
-      expect((innerEvent!.data as { template: string }).template).toBe(
-        "password-reset",
-      );
+      expect((innerEvent!.data as { template: string }).template).toBe("password-reset");
       // Codex HIGH #8: inner event id is `password-reset/{tokenId}` (token-unique).
       expect(innerEvent!.id).toMatch(/^password-reset\//);
 
       // Token row created.
       const sql = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
       try {
-        const rows =
-          await sql<{ id: string }[]>`SELECT id FROM password_reset_tokens WHERE user_id = ${seeded.id}`;
+        const rows = await sql<
+          { id: string }[]
+        >`SELECT id FROM password_reset_tokens WHERE user_id = ${seeded.id}`;
         expect(rows.length).toBe(1);
       } finally {
         await sql.end({ timeout: 5 });
@@ -133,16 +120,13 @@ describe.skipIf(!dbUrl)(
     });
 
     it("requestPasswordReset use-case with non-existent user emits NO email (anti-enumeration)", async () => {
-      const { requestPasswordReset } = await import(
-        "../../src/contexts/iam/application/request-password-reset"
-      );
+      const { requestPasswordReset } =
+        await import("../../src/contexts/iam/application/request-password-reset");
       await requestPasswordReset({
         email: `pr-nobody-${randomUUID()}@test.local`,
         requestUrl: "http://localhost:3000/api/v1/iam/password/reset-request",
       });
-      const inner = mocks.sentEvents.filter(
-        (e) => e.name === "notifications/email.requested",
-      );
+      const inner = mocks.sentEvents.filter((e) => e.name === "notifications/email.requested");
       expect(inner).toHaveLength(0);
     });
 
@@ -165,23 +149,21 @@ describe.skipIf(!dbUrl)(
         await sqlSetup.end({ timeout: 5 });
       }
 
-      const { requestPasswordReset } = await import(
-        "../../src/contexts/iam/application/request-password-reset"
-      );
+      const { requestPasswordReset } =
+        await import("../../src/contexts/iam/application/request-password-reset");
       await requestPasswordReset({
         email,
         requestUrl: "http://localhost:3000/api/v1/iam/password/reset-request",
       });
 
-      const inner = mocks.sentEvents.filter(
-        (e) => e.name === "notifications/email.requested",
-      );
+      const inner = mocks.sentEvents.filter((e) => e.name === "notifications/email.requested");
       expect(inner).toHaveLength(0);
 
       const sql = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
       try {
-        const rows =
-          await sql<{ id: string }[]>`SELECT id FROM password_reset_tokens WHERE user_id = ${seeded.id}`;
+        const rows = await sql<
+          { id: string }[]
+        >`SELECT id FROM password_reset_tokens WHERE user_id = ${seeded.id}`;
         expect(rows.length).toBe(0);
       } finally {
         await sql.end({ timeout: 5 });
@@ -195,17 +177,14 @@ describe.skipIf(!dbUrl)(
         password: "Sup3rSecret!",
         emailVerifiedAt: new Date().toISOString(),
       });
-      const { mintResetToken } = await import(
-        "../../src/contexts/iam/infrastructure/db/reset-tokens"
-      );
+      const { mintResetToken } =
+        await import("../../src/contexts/iam/infrastructure/db/reset-tokens");
       const { rawToken } = await mintResetToken({
         userId: seeded.id,
         sentToEmail: email,
       });
 
-      const mod = await import(
-        "../../src/app/api/v1/iam/password/reset/route"
-      );
+      const mod = await import("../../src/app/api/v1/iam/password/reset/route");
       const res = await mod.POST(
         new Request("http://localhost:3000/api/v1/iam/password/reset", {
           method: "POST",
@@ -223,17 +202,14 @@ describe.skipIf(!dbUrl)(
         password: "Sup3rSecret!",
         emailVerifiedAt: new Date().toISOString(),
       });
-      const { mintResetToken } = await import(
-        "../../src/contexts/iam/infrastructure/db/reset-tokens"
-      );
+      const { mintResetToken } =
+        await import("../../src/contexts/iam/infrastructure/db/reset-tokens");
       const { rawToken } = await mintResetToken({
         userId: seeded.id,
         sentToEmail: email,
       });
 
-      const mod = await import(
-        "../../src/app/api/v1/iam/password/reset/route"
-      );
+      const mod = await import("../../src/app/api/v1/iam/password/reset/route");
       const first = await mod.POST(
         new Request("http://localhost:3000/api/v1/iam/password/reset", {
           method: "POST",
@@ -259,9 +235,7 @@ describe.skipIf(!dbUrl)(
     });
 
     it("consume with malformed body → 400 validation_failed", async () => {
-      const mod = await import(
-        "../../src/app/api/v1/iam/password/reset/route"
-      );
+      const mod = await import("../../src/app/api/v1/iam/password/reset/route");
       const res = await mod.POST(
         new Request("http://localhost:3000/api/v1/iam/password/reset", {
           method: "POST",
@@ -284,17 +258,15 @@ describe.skipIf(!dbUrl)(
         password: "Sup3rSecret!",
         emailVerifiedAt: new Date().toISOString(),
       });
-      const { mintResetToken } = await import(
-        "../../src/contexts/iam/infrastructure/db/reset-tokens"
-      );
+      const { mintResetToken } =
+        await import("../../src/contexts/iam/infrastructure/db/reset-tokens");
       const { rawToken } = await mintResetToken({
         userId: seeded.id,
         sentToEmail: email,
       });
 
-      const { consumePasswordReset } = await import(
-        "../../src/contexts/iam/application/consume-password-reset"
-      );
+      const { consumePasswordReset } =
+        await import("../../src/contexts/iam/application/consume-password-reset");
       const result = await consumePasswordReset({
         token: rawToken,
         password: "NewPassword123!",

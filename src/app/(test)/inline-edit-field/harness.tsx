@@ -10,13 +10,13 @@ export function InlineEditFieldTestHarness() {
   const [acquiredDate, setAcquiredDate] = useState("2025-01-15");
 
   return (
-    <main className="min-h-[100dvh] bg-paper p-6">
+    <main className="min-h-dvh bg-paper p-6">
       <h1 className="mb-6 font-serif text-2xl text-forest">InlineEditField test harness</h1>
 
-      <div className="flex flex-col gap-8 max-w-md">
+      <div className="flex max-w-md flex-col gap-8">
         {/* Section A: text variant, always succeeds */}
         <section data-testid="inline-text-success">
-          <h2 className="mb-2 font-semibold text-forest text-sm">Texto (sucesso)</h2>
+          <h2 className="mb-2 text-sm font-semibold text-forest">Texto (sucesso)</h2>
           <InlineEditField
             label="Nome"
             value={name}
@@ -28,7 +28,7 @@ export function InlineEditFieldTestHarness() {
 
         {/* Section B: textarea variant, always succeeds */}
         <section data-testid="inline-textarea-success">
-          <h2 className="mb-2 font-semibold text-forest text-sm">Texto longo (sucesso)</h2>
+          <h2 className="mb-2 text-sm font-semibold text-forest">Texto longo (sucesso)</h2>
           <InlineEditField
             label="Anotações"
             value={notes}
@@ -40,7 +40,7 @@ export function InlineEditFieldTestHarness() {
 
         {/* Section C: date variant, always succeeds */}
         <section data-testid="inline-date-success">
-          <h2 className="mb-2 font-semibold text-forest text-sm">Data (sucesso)</h2>
+          <h2 className="mb-2 text-sm font-semibold text-forest">Data (sucesso)</h2>
           <InlineEditField
             label="Data de aquisição"
             value={acquiredDate}
@@ -52,7 +52,7 @@ export function InlineEditFieldTestHarness() {
 
         {/* Section D: text variant, always fails — used by E2E case 21 */}
         <section data-testid="inline-text-failure">
-          <h2 className="mb-2 font-semibold text-forest text-sm">Texto (falha)</h2>
+          <h2 className="mb-2 text-sm font-semibold text-forest">Texto (falha)</h2>
           <InlineEditField
             label="Campo com falha"
             value="Valor inicial"
@@ -65,7 +65,7 @@ export function InlineEditFieldTestHarness() {
 
         {/* Section E: read-only field */}
         <section data-testid="inline-text-readonly">
-          <h2 className="mb-2 font-semibold text-forest text-sm">Somente leitura</h2>
+          <h2 className="mb-2 text-sm font-semibold text-forest">Somente leitura</h2>
           <InlineEditField
             label="Campo somente leitura"
             value="Não editável"

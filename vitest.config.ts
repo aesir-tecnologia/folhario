@@ -11,7 +11,6 @@ export default defineConfig({
           name: { label: "unit", color: "cyan" },
           include: ["tests/unit/**/*.test.ts", "src/**/*.test.ts"],
           environment: "node",
-          isolate: false,
           setupFiles: ["tests/unit/setup-env.ts"],
         },
       },
@@ -24,7 +23,6 @@ export default defineConfig({
           // excluded — those are picked up by the unit (node) project above.
           include: ["tests/unit/**/*.test.tsx", "src/**/*.unit.test.tsx"],
           environment: "jsdom",
-          isolate: false,
           setupFiles: ["tests/unit/setup-env.ts", "tests/unit/setup-idb.ts"],
         },
       },

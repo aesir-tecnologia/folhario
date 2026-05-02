@@ -35,14 +35,16 @@ export function LightboxTestHarness() {
   }, []);
 
   return (
-    <main className="min-h-[100dvh] bg-paper p-6">
+    <main className="min-h-dvh bg-paper p-6">
       <h1 className="mb-6 font-serif text-2xl text-forest">Lightbox test harness</h1>
       <button
         ref={invokerRef}
         type="button"
         data-testid="lightbox-invoker"
         onClick={() => setState({ open: true, index: 0 })}
-        className="rounded-lg bg-canopy px-6 font-semibold text-ivory min-h-[48px]"
+        className="
+          min-h-[48px] rounded-lg bg-canopy px-6 font-semibold text-ivory
+        "
       >
         Abrir Lightbox
       </button>

@@ -70,16 +70,10 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
 
   let deletePlant: typeof import("@contexts/catalog/application/delete-plant").deletePlant;
   let setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
-  let pendingDeletionsRepo: typeof import("@contexts/catalog/infrastructure/db/pending-storage-deletions");
-
   beforeAll(async () => {
     ({ deletePlant } = await import("@contexts/catalog/application/delete-plant"));
-    ({ __setStorageAdapterForTests: setStorageAdapterForTests } = await import(
-      "@contexts/catalog/infrastructure/photo-storage"
-    ));
-    pendingDeletionsRepo = await import(
-      "@contexts/catalog/infrastructure/db/pending-storage-deletions"
-    );
+    ({ __setStorageAdapterForTests: setStorageAdapterForTests } =
+      await import("@contexts/catalog/infrastructure/photo-storage"));
 
     const userRow = await driver`
       INSERT INTO users (email, name, timezone, trial_source)
@@ -390,7 +384,8 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
       const remaining = await driver`SELECT id FROM plants WHERE id = ${otherPlantId}`;
       expect(remaining).toHaveLength(1);
 
-      const psdRows = await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
+      const psdRows =
+        await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
       expect(psdRows).toHaveLength(0);
 
       expect(inngestSendMock).not.toHaveBeenCalled();
@@ -412,7 +407,8 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
       expect(result.code).toBe("not_found");
     }
 
-    const psdRows = await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
+    const psdRows =
+      await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
     expect(psdRows).toHaveLength(0);
 
     expect(inngestSendMock).not.toHaveBeenCalled();
@@ -433,9 +429,7 @@ describe.skipIf(!dbUrl)("Phase-05-06 deletePlant use-case integration", () => {
     `;
     const plantId = plantRow[0]!.id as string;
 
-    const psdModule = await import(
-      "@contexts/catalog/infrastructure/db/pending-storage-deletions"
-    );
+    const psdModule = await import("@contexts/catalog/infrastructure/db/pending-storage-deletions");
     let callCount = 0;
     const createSpy = vi.spyOn(psdModule, "create").mockImplementation(async (db, input) => {
       callCount++;

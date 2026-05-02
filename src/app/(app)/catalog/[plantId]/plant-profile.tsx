@@ -13,45 +13,22 @@ import { InlineEditField } from "@shared/ui/inline-edit-field";
 import { LocationCombobox } from "@shared/ui/location-combobox";
 import { Lightbox } from "@shared/ui/lightbox";
 import { useSubscription } from "@contexts/billing/application/use-subscription";
-import { plantsKeys, locationsKeys } from "@contexts/catalog/queries";
+import {
+  plantsKeys,
+  locationsKeys,
+  type PlantDetail,
+  type PlantDetailResponse,
+  type PlantPhotoEntry,
+  type PhotoEntriesResponse,
+  type LocationsResponse,
+} from "@contexts/catalog/queries";
 
-import { usePatchPlantField, useDeletePlant, type PatchableField } from "./use-plant-profile-mutations";
+import {
+  usePatchPlantField,
+  useDeletePlant,
+  type PatchableField,
+} from "./use-plant-profile-mutations";
 import { DeleteConfirmSheet } from "./delete-confirm-sheet";
-
-type PlantSnakeCase = {
-  id: string;
-  name: string;
-  nickname: string | null;
-  location: string | null;
-  acquisition_date: string | null;
-  notes: string | null;
-  cover_signed_url: string | null;
-  cover_photo_url: string | null;
-};
-
-type PhotoEntrySnakeCase = {
-  id: string;
-  plant_id: string;
-  photo_url: string;
-  thumbnail_url: string;
-  photo_signed_url?: string | null;
-  thumbnail_signed_url?: string | null;
-  note: string | null;
-  created_at: string;
-};
-
-type PlantDetailCache = {
-  plant: PlantSnakeCase;
-  _meta: { photo_entry_count: number; reminder_count: number };
-};
-
-type PhotoEntriesCache = {
-  items: PhotoEntrySnakeCase[];
-};
-
-type LocationsCache = {
-  locations: string[];
-};
 
 interface PlantProfileProps {
   plantId: string;
@@ -59,6 +36,7 @@ interface PlantProfileProps {
 
 export function PlantProfile({ plantId }: PlantProfileProps) {
   const t = useTranslations("catalog.profile");
+  const ta11y = useTranslations("catalog.profile.a11y");
   const router = useRouter();
   const { readOnly } = useSubscription();
   const queryClient = useQueryClient();
@@ -67,18 +45,18 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const plantQuery = useQuery(plantsKeys.detail(plantId) as ReturnType<typeof plantsKeys.detail> & { select?: (d: unknown) => PlantDetailCache });
-  const photoEntriesQuery = useQuery(plantsKeys.photoEntries(plantId) as ReturnType<typeof plantsKeys.photoEntries> & { select?: (d: unknown) => PhotoEntriesCache });
-  const locationsQuery = useQuery(locationsKeys.all() as ReturnType<typeof locationsKeys.all> & { select?: (d: unknown) => LocationsCache });
+  const plantQuery = useQuery(plantsKeys.detail(plantId));
+  const photoEntriesQuery = useQuery(plantsKeys.photoEntries(plantId));
+  const locationsQuery = useQuery(locationsKeys.all());
 
-  const detailData = plantQuery.data as PlantDetailCache | undefined;
-  const plant = detailData?.plant;
+  const detailData: PlantDetailResponse | undefined = plantQuery.data;
+  const plant: PlantDetail | undefined = detailData?.plant;
   const meta = detailData?._meta;
 
-  const photoEntriesData = photoEntriesQuery.data as PhotoEntriesCache | undefined;
-  const photoEntries: PhotoEntrySnakeCase[] = photoEntriesData?.items ?? [];
+  const photoEntriesData: PhotoEntriesResponse | undefined = photoEntriesQuery.data;
+  const photoEntries: PlantPhotoEntry[] = photoEntriesData?.items ?? [];
 
-  const locationsData = locationsQuery.data as LocationsCache | undefined;
+  const locationsData: LocationsResponse | undefined = locationsQuery.data;
   const locationSuggestions: string[] = locationsData?.locations ?? [];
 
   const patchMutation = usePatchPlantField(plantId, { queryClient });
@@ -106,18 +84,26 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
     }
   }
 
+  const savingLabel = t("savingLabel");
+
   const handleSave = (field: PatchableField) => async (value: string) => {
     await patchMutation.mutateAsync({ field, value });
   };
 
+  // listPhotoEntries returns newest-first; the cover is the oldest entry (D-03).
+  // Find the cover entry by matching raw photo_url, then exclude it from the
+  // additional-photos arrays to prevent the cover appearing twice.
+  const coverEntry = photoEntries.find((pe) => pe.photo_url === plant?.cover_photo_url);
+  const nonCoverEntries = photoEntries.filter((pe) => pe.id !== coverEntry?.id);
+
   const allPhotos = plant?.cover_signed_url
     ? [
         {
-          id: "cover",
+          id: coverEntry?.id ?? "cover",
           src: plant.cover_signed_url,
           caption: plant.nickname ?? plant.name ?? undefined,
         },
-        ...photoEntries.slice(1).map((pe) => ({
+        ...nonCoverEntries.map((pe) => ({
           id: pe.id,
           src: pe.photo_signed_url ?? pe.photo_url,
           caption: pe.note ?? undefined,
@@ -137,14 +123,14 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
   if (!plant) {
     return (
       <div className="flex flex-col gap-4 p-4">
-        <div className="h-8 w-full animate-pulse rounded bg-hairline" />
-        <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-hairline" />
+        <div className="h-8 w-full animate-pulse rounded-sm bg-hairline" />
+        <div className="aspect-4/5 w-full animate-pulse rounded-2xl bg-hairline" />
       </div>
     );
   }
 
   const displayName = plant.nickname ?? plant.name;
-  const hasMultiplePhotos = photoEntries.length > 1;
+  const hasMultiplePhotos = nonCoverEntries.length > 0;
 
   return (
     <div className="flex flex-col">
@@ -152,9 +138,19 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       <div className="flex items-center justify-between px-4 py-3">
         <button
           type="button"
-          aria-label="Voltar"
-          onClick={() => router.back()}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full hover:bg-hairline"
+          aria-label={ta11y("back")}
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length <= 1) {
+              router.push("/catalog");
+            } else {
+              router.back();
+            }
+          }}
+          className="
+            flex min-h-[44px] min-w-[44px] items-center justify-center
+            rounded-full
+            hover:bg-hairline
+          "
         >
           <ChevronLeft strokeWidth={1.5} size={24} />
         </button>
@@ -166,7 +162,11 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
                 type="button"
                 aria-label={t("overflow.delete")}
                 data-testid="plant-overflow-trigger"
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full hover:bg-hairline"
+                className="
+                  flex min-h-[44px] min-w-[44px] items-center justify-center
+                  rounded-full
+                  hover:bg-hairline
+                "
               >
                 <MoreVertical strokeWidth={1.5} size={24} />
               </button>
@@ -179,7 +179,11 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
                 <DropdownMenu.Item
                   data-testid="plant-overflow-delete"
                   onSelect={() => setDeleteOpen(true)}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-rust hover:bg-rust/10"
+                  className="
+                    flex cursor-pointer items-center gap-2 rounded-lg px-3
+                    py-2.5 text-sm text-rust
+                    hover:bg-rust/10
+                  "
                 >
                   {t("overflow.delete")}
                 </DropdownMenu.Item>
@@ -193,14 +197,14 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       {plant.cover_signed_url && (
         <button
           type="button"
-          aria-label={`Foto de ${displayName}`}
+          aria-label={ta11y("coverPhotoOf", { name: displayName })}
           onClick={() => openLightbox(0)}
           className="w-full"
         >
-          <div className="relative aspect-[4/5] w-full overflow-hidden">
+          <div className="relative aspect-4/5 w-full overflow-hidden">
             <Image
               src={plant.cover_signed_url}
-              alt={`Foto de ${displayName}`}
+              alt={ta11y("coverPhotoOf", { name: displayName })}
               fill
               className="object-cover"
               sizes="100vw"
@@ -210,20 +214,20 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
         </button>
       )}
 
-      {/* Thumbnail strip */}
+      {/* Thumbnail strip — up to 3 non-cover photos, newest first */}
       {hasMultiplePhotos && (
         <div className="flex gap-2 overflow-x-auto px-4 py-3">
-          {photoEntries.slice(1, 4).map((pe, idx) => (
+          {nonCoverEntries.slice(0, 3).map((pe, idx) => (
             <button
               key={pe.id}
               type="button"
-              aria-label={`Foto ${idx + 2} de ${displayName}`}
+              aria-label={ta11y("photoIndexOf", { index: idx + 2, name: displayName })}
               onClick={() => openLightbox(idx + 1)}
-              className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded-lg"
+              className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg"
             >
               <Image
                 src={pe.thumbnail_url}
-                alt={pe.note ?? `Foto ${idx + 2}`}
+                alt={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 2 })}
                 fill
                 className="object-cover"
                 sizes="64px"
@@ -234,7 +238,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       )}
 
       {/* Section 2 — Inline edit fields */}
-      <div className="flex flex-col gap-4 px-4 py-4">
+      <div className="flex flex-col gap-4 p-4">
         <div data-testid="inline-edit-name">
           <InlineEditField
             label={t("fields.name.label")}
@@ -243,6 +247,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             variant="text"
             required
             requiredErrorCopy={t("fields.name.requiredError")}
+            savingLabel={savingLabel}
             onSave={handleSave("name")}
             readOnly={readOnly}
           />
@@ -254,6 +259,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             value={plant.nickname}
             placeholder={t("fields.nickname.placeholder")}
             variant="text"
+            savingLabel={savingLabel}
             onSave={handleSave("nickname")}
             readOnly={readOnly}
           />
@@ -265,6 +271,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             value={plant.location}
             placeholder={t("fields.location.placeholder")}
             variant="text"
+            savingLabel={savingLabel}
             onSave={handleSave("location")}
             readOnly={readOnly}
             renderEditor={(slot) => (
@@ -289,6 +296,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             value={plant.acquisition_date}
             placeholder={t("fields.acquisitionDate.placeholder")}
             variant="date"
+            savingLabel={savingLabel}
             onSave={handleSave("acquisitionDate")}
             readOnly={readOnly}
           />
@@ -302,6 +310,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             variant="textarea"
             minRows={4}
             maxRows={10}
+            savingLabel={savingLabel}
             onSave={handleSave("notes")}
             readOnly={readOnly}
           />
@@ -309,7 +318,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       </div>
 
       {/* Section 3 — Active reminders placeholder (Phase 8) */}
-      <section className="px-4 py-4">
+      <section className="p-4">
         <h2 className="mb-2 text-xs font-semibold tracking-widest text-slate">
           {t("sections.reminders")}
         </h2>
@@ -323,7 +332,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       </section>
 
       {/* Section 4 — Photo journal preview strip */}
-      <section className="px-4 py-4">
+      <section className="p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold tracking-widest text-slate">
             {t("sections.journal")}
@@ -338,17 +347,19 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
 
         {hasMultiplePhotos ? (
           <div className="flex gap-2 overflow-x-auto">
-            {photoEntries.slice(0, 4).map((pe, idx) => (
+            {nonCoverEntries.slice(0, 4).map((pe, idx) => (
               <button
                 key={pe.id}
                 type="button"
-                aria-label={pe.note ?? `Foto ${idx + 1}`}
-                onClick={() => openLightbox(idx)}
-                className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-lg"
+                aria-label={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 1 })}
+                onClick={() => openLightbox(idx + 1)}
+                className="
+                  relative h-24 w-20 shrink-0 overflow-hidden rounded-lg
+                "
               >
                 <Image
                   src={pe.thumbnail_url}
-                  alt={pe.note ?? `Foto ${idx + 1}`}
+                  alt={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 1 })}
                   fill
                   className="object-cover"
                   sizes="80px"
@@ -372,7 +383,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       </section>
 
       {/* Section 5 — ID history placeholder (Phase 6 wires real link; UI-08) */}
-      <section className="px-4 py-4">
+      <section className="p-4">
         <h2 className="mb-2 text-xs font-semibold tracking-widest text-slate">
           {t("sections.history")}
         </h2>
@@ -388,7 +399,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
           plantName={displayName ?? ""}
-          closeLabel="Fechar"
+          closeLabel={ta11y("lightboxClose")}
         />
       )}
 

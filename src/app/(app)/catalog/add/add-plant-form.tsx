@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
+import Image from "next/image";
+
 import { TextInput } from "@shared/ui/text-input";
 import { LocationCombobox } from "@shared/ui/location-combobox";
 import { ReadOnlyBanner } from "@shared/ui/read-only-banner";
@@ -48,7 +50,11 @@ export interface AddPlantFormProps {
 
 type FormErrors = Partial<Record<"name" | "photo" | "acquisitionDate", string>>;
 
-export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSuggestions }: AddPlantFormProps) {
+export function AddPlantForm({
+  readOnly: readOnlyProp,
+  labels,
+  initialLocationSuggestions,
+}: AddPlantFormProps) {
   const router = useRouter();
   const { readOnly: subscriptionReadOnly } = useSubscription();
   const readOnly = readOnlyProp || subscriptionReadOnly;
@@ -140,7 +146,8 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
       formData.append("photo", compressedFile);
       if (nicknameValue.trim()) formData.append("nickname", nicknameValue.trim());
       if (locationValue.trim()) formData.append("location", locationValue.trim());
-      if (acquisitionDateValue.trim()) formData.append("acquisition_date", acquisitionDateValue.trim());
+      if (acquisitionDateValue.trim())
+        formData.append("acquisition_date", acquisitionDateValue.trim());
       if (notesValue.trim()) formData.append("notes", notesValue.trim());
 
       const response = await fetch("/api/v1/plants", {
@@ -159,8 +166,11 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
         return;
       }
 
-      const errBody = await response.json().catch(() => null) as {
-        error?: { code?: string; details?: { issues?: Array<{ path: string[]; message: string }> } };
+      const errBody = (await response.json().catch(() => null)) as {
+        error?: {
+          code?: string;
+          details?: { issues?: Array<{ path: string[]; message: string }> };
+        };
       } | null;
 
       const fieldErrors: FormErrors = {};
@@ -241,7 +251,9 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
               )}
               {errors.acquisitionDate && (
                 <li>
-                  <a href={`#${acquisitionDateId}`} className="text-rust underline">
+                  <a href={`#${acquisitionDateId}`} className="
+                    text-rust underline
+                  ">
                     {labels.fieldNames.acquisitionDate}
                   </a>
                 </li>
@@ -253,14 +265,21 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
         <div className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-forest">{labels.photoLabel}</span>
           <div
-            className={`relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-2xl border-[1.5px] border-dashed ${errors.photo ? "border-rust" : "border-hairline"} bg-ivory`}
+            className={`
+              relative aspect-4/5 w-full cursor-pointer overflow-hidden
+              rounded-2xl border-[1.5px] border-dashed
+              ${errors.photo ? `border-rust` : `border-hairline`}
+              bg-ivory
+            `}
             onClick={readOnly ? undefined : openFilePicker}
           >
             {previewUrl ? (
-              <img
+              <Image
+                fill
+                unoptimized
                 src={previewUrl}
                 alt={labels.photoPlaceholder}
-                className="h-full w-full object-cover"
+                className="object-cover"
               />
             ) : (
               <div
@@ -268,12 +287,14 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
                 tabIndex={readOnly ? -1 : 0}
                 role="button"
                 aria-label={labels.photoLabel}
-                aria-invalid={Boolean(errors.photo)}
                 aria-describedby={errors.photo ? photoErrorId : undefined}
                 onKeyDown={(e) => {
                   if (!readOnly && (e.key === "Enter" || e.key === " ")) openFilePicker();
                 }}
-                className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate"
+                className="
+                  flex size-full flex-col items-center justify-center gap-2
+                  text-slate
+                "
               >
                 <AlertCircle strokeWidth={1.5} size={32} aria-hidden="true" />
                 <span className="text-sm">{labels.photoPlaceholder}</span>
@@ -282,7 +303,9 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
           </div>
 
           {errors.photo && (
-            <p id={photoErrorId} role="alert" className="flex items-center gap-1 text-sm text-rust">
+            <p id={photoErrorId} role="alert" className="
+              flex items-center gap-1 text-sm text-rust
+            ">
               <AlertCircle strokeWidth={1.5} size={16} aria-hidden="true" />
               {errors.photo}
             </p>
@@ -350,7 +373,9 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
         />
 
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${formId}-notes`} className="text-sm font-semibold text-forest">
+          <label htmlFor={`${formId}-notes`} className="
+            text-sm font-semibold text-forest
+          ">
             {labels.notes}
           </label>
           <textarea
@@ -359,16 +384,29 @@ export function AddPlantForm({ readOnly: readOnlyProp, labels, initialLocationSu
             value={notesValue}
             onChange={(e) => setNotesValue(e.target.value)}
             disabled={readOnly}
-            className="min-h-[96px] max-h-[240px] resize-y rounded-lg border-[1.5px] border-hairline bg-ivory px-4 py-3 text-base text-forest focus:border-canopy focus:outline-none"
+            className="
+              max-h-[240px] min-h-[96px] resize-y rounded-lg border-[1.5px]
+              border-hairline bg-ivory px-4 py-3 text-base text-forest
+              focus:border-canopy focus:outline-none
+            "
           />
         </div>
 
         {!readOnly && (
-          <div className="fixed bottom-0 left-0 right-0 mx-auto max-w-tablet px-4 pb-safe-area-inset-bottom bg-ivory/95 pt-3">
+          <div
+            className="
+              fixed inset-x-0 bottom-0 mx-auto max-w-[480px] bg-ivory/95 px-4
+              pt-3 pb-safe-bottom
+            "
+          >
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-lg bg-canopy px-4 py-3 text-base font-semibold text-ivory min-h-[48px] disabled:opacity-70"
+              className="
+                min-h-[48px] w-full rounded-lg bg-canopy px-4 py-3 text-base
+                font-semibold text-ivory
+                disabled:opacity-70
+              "
             >
               {submitting ? labels.submitLoading : labels.submit}
             </button>

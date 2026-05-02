@@ -81,19 +81,11 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
     step: ReturnType<typeof makeFakeStep>;
   }) => Promise<unknown>;
   let setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
-  let pendingDeletionsRepo: typeof import("@contexts/catalog/infrastructure/db/pending-storage-deletions");
-
   beforeAll(async () => {
-    ({ __setStorageAdapterForTests: setStorageAdapterForTests } = await import(
-      "@contexts/catalog/infrastructure/photo-storage"
-    ));
-    pendingDeletionsRepo = await import(
-      "@contexts/catalog/infrastructure/db/pending-storage-deletions"
-    );
+    ({ __setStorageAdapterForTests: setStorageAdapterForTests } =
+      await import("@contexts/catalog/infrastructure/photo-storage"));
 
-    const { cleanupStorageHandler: handler } = await import(
-      "@contexts/catalog/inngest/functions"
-    );
+    const { cleanupStorageHandler: handler } = await import("@contexts/catalog/inngest/functions");
     cleanupStorageHandler = handler;
 
     const userRow = await driver`
@@ -130,7 +122,14 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
       VALUES (${userId}, ${bucket}, ${prefix})
       RETURNING id, user_id, bucket, prefix, status, attempts
     `;
-    return row as { id: string; user_id: string; bucket: string; prefix: string; status: string; attempts: number };
+    return row as {
+      id: string;
+      user_id: string;
+      bucket: string;
+      prefix: string;
+      status: string;
+      attempts: number;
+    };
   }
 
   // =====================================================================
@@ -190,8 +189,10 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
     );
     expect(buckets.sort()).toEqual(["plant-photos", "plant-thumbnails"].sort());
 
-    const photoUpdated = await driver`SELECT status FROM pending_storage_deletions WHERE id = ${photoRow.id}`;
-    const thumbUpdated = await driver`SELECT status FROM pending_storage_deletions WHERE id = ${thumbRow.id}`;
+    const photoUpdated =
+      await driver`SELECT status FROM pending_storage_deletions WHERE id = ${photoRow.id}`;
+    const thumbUpdated =
+      await driver`SELECT status FROM pending_storage_deletions WHERE id = ${thumbRow.id}`;
     expect(photoUpdated[0]!.status).toBe("completed");
     expect(thumbUpdated[0]!.status).toBe("completed");
   });
@@ -252,7 +253,8 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
 
     expect(fake.deletePrefix).not.toHaveBeenCalled();
 
-    const updated = await driver`SELECT status, completed_at FROM pending_storage_deletions WHERE id = ${row.id}`;
+    const updated =
+      await driver`SELECT status, completed_at FROM pending_storage_deletions WHERE id = ${row.id}`;
     expect(updated[0]!.status).toBe("completed");
     expect(String(updated[0]!.completed_at)).toBe(String(completedAtFirst));
   });
@@ -337,7 +339,8 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
 
     expect(fake.deletePrefix).toHaveBeenCalledTimes(1);
 
-    const updated = await driver`SELECT status, attempts FROM pending_storage_deletions WHERE id = ${row.id}`;
+    const updated =
+      await driver`SELECT status, attempts FROM pending_storage_deletions WHERE id = ${row.id}`;
     expect(updated[0]!.status).toBe("completed");
     expect(updated[0]!.attempts).toBe(1);
   });
@@ -349,10 +352,7 @@ describe.skipIf(!dbUrl)("Phase-05-06 cleanupStorage Inngest handler", () => {
   it("config invariant: cleanupStorage has id='catalog/cleanup-storage', retries=4, trigger=plant.deleted", async () => {
     const fs = await import("fs");
     const path = await import("path");
-    const functionsPath = path.resolve(
-      process.cwd(),
-      "src/contexts/catalog/inngest/functions.ts",
-    );
+    const functionsPath = path.resolve(process.cwd(), "src/contexts/catalog/inngest/functions.ts");
     const src = fs.readFileSync(functionsPath, "utf-8");
     expect(src).toContain('id: "catalog/cleanup-storage"');
     expect(src).toContain("retries: 4");

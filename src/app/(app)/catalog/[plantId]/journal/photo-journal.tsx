@@ -2,26 +2,22 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+
+import Image from "next/image";
 
 import { Lightbox } from "@shared/ui/lightbox";
 import { EmptyState } from "@shared/ui/empty-state";
-import { plantsKeys } from "@contexts/catalog/queries";
+import {
+  plantsKeys,
+  type PlantPhotoEntry,
+  type PhotoEntriesResponse,
+} from "@contexts/catalog/queries";
 import { useSubscription } from "@contexts/billing/application/use-subscription";
 
 import { JournalAddSheet, type JournalAddSheetLabels } from "./journal-add-sheet";
 
-export type PhotoEntry = {
-  id: string;
-  plant_id: string;
-  photo_url: string;
-  thumbnail_url: string;
-  photo_signed_url?: string | null;
-  thumbnail_signed_url?: string | null;
-  note: string | null;
-  created_at: string;
-};
-
-type PhotoEntriesCache = { items: PhotoEntry[] };
+export type PhotoEntry = PlantPhotoEntry;
 
 export interface PhotoJournalLabels {
   titleFormat: string;
@@ -41,7 +37,13 @@ export interface PhotoJournalProps {
   labels: PhotoJournalLabels;
 }
 
-export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnlyProp, labels }: PhotoJournalProps) {
+export function PhotoJournal({
+  plant,
+  entries: initialEntries,
+  readOnly: readOnlyProp,
+  labels,
+}: PhotoJournalProps) {
+  const ta11y = useTranslations("catalog.journal.a11y");
   const { readOnly: subscriptionReadOnly } = useSubscription();
   const readOnly = readOnlyProp || subscriptionReadOnly;
 
@@ -50,13 +52,12 @@ export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnl
   const [addSheetOpen, setAddSheetOpen] = useState(false);
 
   const queryDef = plantsKeys.photoEntries(plant.id);
-  const query = useQuery({
+  const query = useQuery<PhotoEntriesResponse>({
     ...queryDef,
-    initialData: { items: initialEntries } as unknown,
+    initialData: { items: initialEntries },
   });
 
-  const cachedData = query.data as PhotoEntriesCache | undefined;
-  const rawEntries: PhotoEntry[] = cachedData?.items ?? initialEntries;
+  const rawEntries: PhotoEntry[] = query.data?.items ?? initialEntries;
 
   const entries = [...rawEntries].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -80,7 +81,10 @@ export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnl
           <button
             type="button"
             onClick={() => setAddSheetOpen(true)}
-            className="flex min-h-[44px] items-center rounded-lg bg-canopy px-4 text-sm font-semibold text-ivory"
+            className="
+              flex min-h-[44px] items-center rounded-lg bg-canopy px-4 text-sm
+              font-semibold text-ivory
+            "
           >
             {labels.add.cta}
           </button>
@@ -100,25 +104,27 @@ export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnl
             <li key={entry.id} className="flex flex-col gap-1">
               <button
                 type="button"
-                className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl"
+                className="
+                  relative aspect-4/5 w-full overflow-hidden rounded-2xl
+                "
                 onClick={() => {
                   setLightboxIndex(idx);
                   setLightboxOpen(true);
                 }}
-                aria-label={`Foto ${idx + 1} de ${entries.length}`}
+                aria-label={ta11y("photoIndex", { index: idx + 1, total: entries.length })}
               >
-                <img
+                <Image
+                  fill
+                  unoptimized
                   src={entry.thumbnail_url || entry.photo_url}
-                  alt={entry.note ?? `Foto do diário`}
-                  className="h-full w-full object-cover"
+                  alt={entry.note ?? ta11y("photoFallbackAlt")}
+                  className="object-cover"
                 />
               </button>
               <p className="text-sm text-slate">
                 {new Intl.DateTimeFormat("pt-BR").format(new Date(entry.created_at))}
               </p>
-              {entry.note && (
-                <p className="text-base text-forest">{entry.note}</p>
-              )}
+              {entry.note && <p className="text-base text-forest">{entry.note}</p>}
             </li>
           ))}
         </ul>

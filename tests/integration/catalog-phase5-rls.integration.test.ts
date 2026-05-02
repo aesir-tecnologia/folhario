@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 /**
  * Phase-05 Plan 02: owner-only RLS proof for pending_storage_deletions and
  * location_suggestions tables introduced in Phase 5.
@@ -34,7 +35,7 @@ if (supabaseUrl && /supabase\.co/.test(supabaseUrl)) {
   );
 }
 
-describe.skipIf(!dbUrl)("Phase-05 Plan 02 — RLS owner-only proof", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("Phase-05 Plan 02 — RLS owner-only proof", () => {
   let userAId: string;
   let userBId: string;
   let userAEmail: string;

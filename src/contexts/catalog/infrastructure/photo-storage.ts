@@ -158,7 +158,7 @@ export async function deleteAllPlantMediaForUser(userId: string): Promise<void> 
   await adapter.deletePrefix({ bucket: PLANT_THUMBNAILS_BUCKET, prefix });
 }
 
-const KNOWN_BUCKETS = new Set([PLANT_PHOTOS_BUCKET, PLANT_THUMBNAILS_BUCKET] as const);
+export const KNOWN_BUCKETS = new Set([PLANT_PHOTOS_BUCKET, PLANT_THUMBNAILS_BUCKET] as const);
 
 export type SignCatalogPhotoUrlResult =
   | { ok: true; signedUrl: string }

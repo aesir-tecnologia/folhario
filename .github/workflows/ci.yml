@@ -109,6 +109,11 @@ jobs:
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN_CI }}
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.POSTHOG_KEY_CI }}
           NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
+          # Next.js sets NODE_ENV=production during `next build`, which makes
+          # serverEnv require RESEND_API_KEY. This is the CI build artefact,
+          # not a deploy — placeholder satisfies the schema and never reaches
+          # a real Resend call.
+          RESEND_API_KEY: ci-build-placeholder
         run: pnpm build
 
       - name: Cache Playwright browsers
@@ -134,7 +139,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: anon
           SENTRY_RELEASE: ${{ github.sha }}
-        run: pnpm test:e2e
+          # Playwright spins up `next start`, which sets NODE_ENV=production
+          # → serverEnv requires RESEND_API_KEY. Same placeholder as the
+          # Build step (no Resend call ever fires in smoke tests).
+          RESEND_API_KEY: ci-build-placeholder
+        # CI runs against vanilla postgres:17-alpine without a Supabase Auth
+        # stack. Restrict the smoke run to specs that exercise the rendered
+        # app (security headers, PWA manifest/SW, axe a11y on placeholder
+        # routes, horizontal-scroll guard) — anything that would call
+        # supabase.auth.* lives behind `pnpm db:start` and runs locally.
+        run: pnpm test:e2e:smoke
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

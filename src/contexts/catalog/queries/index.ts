@@ -23,6 +23,42 @@ export type ListPlantsResponse = {
   total_count?: number;
 };
 
+/** Canonical snake_case plant shape returned by GET /api/v1/plants/:id */
+export type PlantDetail = {
+  id: string;
+  name: string;
+  nickname: string | null;
+  location: string | null;
+  acquisition_date: string | null;
+  notes: string | null;
+  cover_signed_url: string | null;
+  cover_photo_url: string | null;
+};
+
+/** Canonical response shape for GET /api/v1/plants/:id */
+export type PlantDetailResponse = {
+  plant: PlantDetail;
+  _meta: { photo_entry_count: number; reminder_count: number };
+};
+
+/** Canonical snake_case photo entry shape returned by the photo-entries API */
+export type PlantPhotoEntry = {
+  id: string;
+  plant_id: string;
+  photo_url: string;
+  thumbnail_url: string;
+  photo_signed_url?: string | null;
+  thumbnail_signed_url?: string | null;
+  note: string | null;
+  created_at: string;
+};
+
+/** Canonical response shape for GET /api/v1/plants/:id/photo-entries */
+export type PhotoEntriesResponse = { items: PlantPhotoEntry[] };
+
+/** Canonical response shape for GET /api/v1/locations */
+export type LocationsResponse = { locations: string[] };
+
 async function fetchPlantsList(params: PlantsListParams): Promise<ListPlantsResponse> {
   const sp = new URLSearchParams();
   sp.set("sort", params.sort);
@@ -33,22 +69,22 @@ async function fetchPlantsList(params: PlantsListParams): Promise<ListPlantsResp
   return r.json() as Promise<ListPlantsResponse>;
 }
 
-async function fetchPlantDetail(plantId: string): Promise<unknown> {
+async function fetchPlantDetail(plantId: string): Promise<PlantDetailResponse> {
   const r = await fetch(`/api/v1/plants/${plantId}`);
   if (!r.ok) throw new Error(`plant detail failed: ${r.status}`);
-  return r.json();
+  return r.json() as Promise<PlantDetailResponse>;
 }
 
-async function fetchPhotoEntries(plantId: string): Promise<unknown> {
+async function fetchPhotoEntries(plantId: string): Promise<PhotoEntriesResponse> {
   const r = await fetch(`/api/v1/plants/${plantId}/photo-entries`);
   if (!r.ok) throw new Error(`photo entries failed: ${r.status}`);
-  return r.json();
+  return r.json() as Promise<PhotoEntriesResponse>;
 }
 
-async function fetchLocations(): Promise<unknown> {
+async function fetchLocations(): Promise<LocationsResponse> {
   const r = await fetch("/api/v1/locations");
   if (!r.ok) throw new Error(`locations failed: ${r.status}`);
-  return r.json();
+  return r.json() as Promise<LocationsResponse>;
 }
 
 export const plantsKeys = {
@@ -62,13 +98,13 @@ export const plantsKeys = {
   detail: (plantId: string) =>
     ({
       queryKey: ["catalog", "plant", plantId] as const,
-      queryFn: (() => fetchPlantDetail(plantId)) as QueryFunction<unknown>,
+      queryFn: (() => fetchPlantDetail(plantId)) as QueryFunction<PlantDetailResponse>,
       staleTime: 60_000,
     }) as const,
   photoEntries: (plantId: string) =>
     ({
       queryKey: ["catalog", "photo-entries", plantId] as const,
-      queryFn: (() => fetchPhotoEntries(plantId)) as QueryFunction<unknown>,
+      queryFn: (() => fetchPhotoEntries(plantId)) as QueryFunction<PhotoEntriesResponse>,
       staleTime: 60_000,
     }) as const,
 };
@@ -77,7 +113,7 @@ export const locationsKeys = {
   all: () =>
     ({
       queryKey: ["catalog", "locations"] as const,
-      queryFn: (() => fetchLocations()) as QueryFunction<unknown>,
+      queryFn: (() => fetchLocations()) as QueryFunction<LocationsResponse>,
       staleTime: 5 * 60_000,
     }) as const,
 };

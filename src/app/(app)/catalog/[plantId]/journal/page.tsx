@@ -10,11 +10,7 @@ import { ErrorCode } from "@shared/config/errors";
 
 import { PhotoJournal } from "./photo-journal";
 
-export default async function JournalPage({
-  params,
-}: {
-  params: Promise<{ plantId: string }>;
-}) {
+export default async function JournalPage({ params }: { params: Promise<{ plantId: string }> }) {
   const { plantId } = await params;
 
   const auth = await getCurrentUserFromSessionReadOnly();
@@ -44,6 +40,7 @@ export default async function JournalPage({
       cta: tAdd("cta"),
       title: tAdd("title"),
       photoPlaceholder: tAdd("photoPlaceholder"),
+      photoRequired: tAdd("errors.photoRequired"),
       noteLabel: tAdd("noteLabel"),
       notePlaceholder: tAdd("notePlaceholder"),
       submit: tAdd("submit"),
@@ -56,7 +53,7 @@ export default async function JournalPage({
       hint: tEmpty("hint"),
       cta: tEmpty("cta"),
     },
-    lightboxClose: "Fechar",
+    lightboxClose: t("lightboxClose"),
   };
 
   const readOnly = process.env.SUBSCRIPTION_READ_ONLY === "1";
@@ -75,7 +72,7 @@ export default async function JournalPage({
   });
 
   return (
-    <div className="mx-auto max-w-tablet">
+    <div className="mx-auto max-w-[480px]">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <PhotoJournal
           plant={plantForClient}

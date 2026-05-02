@@ -24,6 +24,7 @@ const labels = {
   cta: "+ Foto",
   title: "Adicionar ao diário",
   photoPlaceholder: "Toque para adicionar foto",
+  photoRequired: "Adicione uma foto",
   noteLabel: "Nota",
   notePlaceholder: "(opcional)",
   submit: "Salvar",
@@ -53,7 +54,8 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => "blob:fake-url");
   URL.revokeObjectURL = vi.fn();
   crypto.randomUUID = vi.fn(
-    () => "a1b2c3d4-e5f6-7890-abcd-ef1234567890" as `${string}-${string}-${string}-${string}-${string}`,
+    () =>
+      "a1b2c3d4-e5f6-7890-abcd-ef1234567890" as `${string}-${string}-${string}-${string}-${string}`,
   );
 });
 
@@ -82,12 +84,7 @@ describe("JournalAddSheet — WR-05 response shape", () => {
     qc.setQueryData(QUERY_KEY, { items: [] });
 
     render(
-      <JournalAddSheet
-        open={true}
-        onOpenChange={vi.fn()}
-        plantId={PLANT_ID}
-        labels={labels}
-      />,
+      <JournalAddSheet open={true} onOpenChange={vi.fn()} plantId={PLANT_ID} labels={labels} />,
       { wrapper: wrap(qc) },
     );
 
@@ -104,9 +101,9 @@ describe("JournalAddSheet — WR-05 response shape", () => {
     });
 
     await waitFor(() => {
-      const postCall = vi.mocked(global.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
-        (c) => (c[1] as RequestInit)?.method === "POST",
-      );
+      const postCall = vi
+        .mocked(global.fetch as ReturnType<typeof vi.fn>)
+        .mock.calls.find((c) => (c[1] as RequestInit)?.method === "POST");
       expect(postCall).toBeTruthy();
     });
 

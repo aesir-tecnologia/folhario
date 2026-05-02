@@ -13,12 +13,14 @@ export function ModalSheetTestHarness() {
     invokerRef.current?.focus();
   }, []);
   return (
-    <main className="min-h-[100dvh] bg-paper p-6">
+    <main className="min-h-dvh bg-paper p-6">
       <button
         ref={invokerRef}
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-canopy text-ivory rounded-lg px-6 min-h-[48px] font-semibold"
+        className="
+          min-h-[48px] rounded-lg bg-canopy px-6 font-semibold text-ivory
+        "
         data-testid="modal-invoker"
       >
         Open ModalSheet
@@ -37,16 +39,13 @@ export function ModalSheetTestHarness() {
           <input
             type="text"
             placeholder="First focusable"
-            className="border border-hairline rounded-lg p-3"
+            className="rounded-lg border border-hairline p-3"
             data-testid="modal-input"
           />
-          <input
-            type="checkbox"
-            data-testid="modal-checkbox"
-          />
+          <input type="checkbox" data-testid="modal-checkbox" />
           <button
             type="button"
-            className="bg-canopy text-ivory rounded-lg px-6 min-h-[48px]"
+            className="min-h-[48px] rounded-lg bg-canopy px-6 text-ivory"
             data-testid="modal-button"
           >
             Inner action

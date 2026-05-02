@@ -4,11 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { db } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
-import { plants, photoEntries } from "@contexts/catalog/infrastructure/db/schema";
 import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
-import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
 
 process.env.NEXT_PUBLIC_SUPABASE_URL ??= "http://127.0.0.1:54321";
 
@@ -28,21 +27,9 @@ if (supabaseUrl && /supabase\.co/.test(supabaseUrl)) {
   );
 }
 
-function jwtSub(jwt: string): string {
-  const parts = jwt.split(".");
-  if (parts.length !== 3) throw new Error("Malformed JWT");
-  const payload = JSON.parse(Buffer.from(parts[1]!, "base64url").toString("utf8")) as {
-    sub?: string;
-  };
-  if (!payload.sub) throw new Error("JWT missing sub");
-  return payload.sub;
-}
-
-describe.skipIf(!dbUrl)("photo_entries repository", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("photo_entries repository", () => {
   let userAId: string;
   let userBId: string;
-  let userAJwtSub: string;
-  let userBJwtSub: string;
 
   const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -84,8 +71,12 @@ describe.skipIf(!dbUrl)("photo_entries repository", () => {
     }
     userBId = createdB.user.id;
 
-    const [rowA] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userAId}`;
-    const [rowB] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userBId}`;
+    const [rowA] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userAId}`;
+    const [rowB] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userBId}`;
     if (!rowA || !rowB) {
       throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
     }
@@ -97,7 +88,6 @@ describe.skipIf(!dbUrl)("photo_entries repository", () => {
     if (signInA.error || !signInA.data.session?.access_token) {
       throw new Error(`signInWithPassword A failed: ${signInA.error?.message}`);
     }
-    userAJwtSub = jwtSub(signInA.data.session.access_token);
 
     const signInB = await adminClient.auth.signInWithPassword({
       email: `photo-entries-userB-${runId}@test.local`,
@@ -106,7 +96,6 @@ describe.skipIf(!dbUrl)("photo_entries repository", () => {
     if (signInB.error || !signInB.data.session?.access_token) {
       throw new Error(`signInWithPassword B failed: ${signInB.error?.message}`);
     }
-    userBJwtSub = jwtSub(signInB.data.session.access_token);
   }, 30_000);
 
   afterAll(async () => {

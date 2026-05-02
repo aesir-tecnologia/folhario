@@ -47,7 +47,10 @@ export function CaptureButton({
       type="button"
       aria-label={ariaLabel}
       onClick={onClick}
-      className="flex items-center justify-center rounded-full bg-canopy text-ivory w-[72px] h-[72px] min-h-[72px]"
+      className="
+        flex size-[72px] min-h-[72px] items-center justify-center rounded-full
+        bg-canopy text-ivory
+      "
       {...animateProps}
     >
       {children ?? <CameraIcon strokeWidth={1.5} size={28} />}

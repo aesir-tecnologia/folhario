@@ -1,14 +1,7 @@
 // T-05-14-01 — XSS regression: user-typed values must render as text nodes, never as parsed HTML.
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { useState } from "react";
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-  waitFor,
-  act,
-} from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { InlineEditField } from "@shared/ui/inline-edit-field";
@@ -152,7 +145,7 @@ describe("InlineEditField", () => {
           onSave,
           revertAnnouncementCopy: "Não conseguimos salvar agora — tentar de novo?",
         })}
-      />
+      />,
     );
     const btn = screen.getByRole("button");
     await act(async () => {
@@ -198,7 +191,7 @@ describe("InlineEditField", () => {
           requiredErrorCopy: "Não pode ficar vazio.",
           onSave,
         })}
-      />
+      />,
     );
     const btn = screen.getByRole("button");
     await act(async () => {
@@ -219,8 +212,8 @@ describe("InlineEditField", () => {
   it("readOnly=true renders read state with no tap affordance — click does NOT enter editing", async () => {
     render(<InlineEditField {...makeProps({ readOnly: true })} />);
     expect(screen.queryByRole("button")).toBeNull();
-    const readDiv = document.querySelector("[data-testid='inline-edit-read']") ??
-      document.querySelector("div");
+    const readDiv =
+      document.querySelector("[data-testid='inline-edit-read']") ?? document.querySelector("div");
     if (readDiv) {
       fireEvent.click(readDiv);
     }
@@ -230,11 +223,7 @@ describe("InlineEditField", () => {
   it("textarea variant — Enter inserts newline, Cmd+Enter commits", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(
-      <InlineEditField
-        {...makeProps({ variant: "textarea", value: "linha 1", onSave })}
-      />
-    );
+    render(<InlineEditField {...makeProps({ variant: "textarea", value: "linha 1", onSave })} />);
     const btn = screen.getByRole("button");
     await user.click(btn);
     const textarea = screen.getByRole("textbox");
@@ -256,9 +245,7 @@ describe("InlineEditField", () => {
 
   it("date variant — blur commits value", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
-    render(
-      <InlineEditField {...makeProps({ variant: "date", value: "2025-04-29", onSave })} />
-    );
+    render(<InlineEditField {...makeProps({ variant: "date", value: "2025-04-29", onSave })} />);
     const btn = screen.getByRole("button");
     await act(async () => {
       fireEvent.click(btn);
@@ -277,16 +264,16 @@ describe("InlineEditField", () => {
   it("renderEditor slot replaces default editor in editing state", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     let capturedCommit: (() => void) | null = null;
-    let capturedCancel: (() => void) | null = null;
+    let _capturedCancel: (() => void) | null = null;
     render(
       <InlineEditField
         {...makeProps({ onSave })}
         renderEditor={(args) => {
           capturedCommit = args.commit;
-          capturedCancel = args.cancel;
+          _capturedCancel = args.cancel;
           return <div data-testid="custom-slot">{args.value}</div>;
         }}
-      />
+      />,
     );
     const btn = screen.getByRole("button");
     await act(async () => {
@@ -314,7 +301,7 @@ describe("InlineEditField", () => {
           capturedCancel = args.cancel;
           return <div data-testid="custom-slot">{args.value}</div>;
         }}
-      />
+      />,
     );
     const btn = screen.getByRole("button");
     await act(async () => {

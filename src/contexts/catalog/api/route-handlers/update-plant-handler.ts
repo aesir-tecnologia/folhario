@@ -9,7 +9,10 @@ import { parseJsonBody } from "@shared/api/request";
 import { updatePlantInputSchema } from "@contexts/catalog/domain/schemas";
 import { updatePlant } from "@contexts/catalog/application/update-plant";
 import { toPlantSnakeCase } from "@contexts/catalog/api/snake-case";
-import { errorStatusFor, resolveReadOnlyFromRequest } from "@contexts/catalog/api/route-handlers/_shared";
+import {
+  errorStatusFor,
+  resolveReadOnlyFromRequest,
+} from "@contexts/catalog/api/route-handlers/_shared";
 
 /**
  * PATCH /api/v1/plants/[plantId] handler (Phase 5 Plan 09).
@@ -26,9 +29,9 @@ import { errorStatusFor, resolveReadOnlyFromRequest } from "@contexts/catalog/ap
  */
 export async function patchPlantHandler(
   request: Request,
-  context: { params: Promise<{ plantId: string }> } | { params: { plantId: string } },
+  context: { params: Promise<{ plantId: string }> },
 ): Promise<Response> {
-  const params = "then" in context.params ? await context.params : context.params;
+  const params = await context.params;
   const { plantId } = params;
 
   // Step 1: Auth gate.
@@ -61,23 +64,20 @@ export async function patchPlantHandler(
   // Step 6: withIdempotency wraps use-case. Same UoW tx (CR-01).
   let postCommitFn: (() => Promise<void>) | undefined;
 
-  const result = await withIdempotency(
-    { userId, key: idempotencyKey, requestHash },
-    async (tx) => {
-      const inner = await updatePlant({ userId, plantId, patch: parsed.value }, { tx });
-      if (!inner.ok) {
-        return {
-          status: errorStatusFor(inner.code),
-          body: { error: { code: inner.code, message: inner.reason } },
-        };
-      }
-      postCommitFn = inner.postCommit;
+  const result = await withIdempotency({ userId, key: idempotencyKey, requestHash }, async (tx) => {
+    const inner = await updatePlant({ userId, plantId, patch: parsed.value }, { tx });
+    if (!inner.ok) {
       return {
-        status: 200,
-        body: { plant: toPlantSnakeCase(inner.plant) },
+        status: errorStatusFor(inner.code),
+        body: { error: { code: inner.code, message: inner.reason } },
       };
-    },
-  );
+    }
+    postCommitFn = inner.postCommit;
+    return {
+      status: 200,
+      body: { plant: toPlantSnakeCase(inner.plant) },
+    };
+  });
 
   // Step 6b: postCommit — awaited AFTER withIdempotency commits.
   // On replay, postCommitFn is undefined (no-op optional-chain).

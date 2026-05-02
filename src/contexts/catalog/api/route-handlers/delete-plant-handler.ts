@@ -6,7 +6,10 @@ import { ErrorCode, errorResponse } from "@shared/config/errors";
 import { requireVerifiedUser } from "@shared/api/auth";
 import { withIdempotency } from "@shared/api/idempotency";
 import { deletePlant } from "@contexts/catalog/application/delete-plant";
-import { errorStatusFor, resolveReadOnlyFromRequest } from "@contexts/catalog/api/route-handlers/_shared";
+import {
+  errorStatusFor,
+  resolveReadOnlyFromRequest,
+} from "@contexts/catalog/api/route-handlers/_shared";
 
 /**
  * DELETE /api/v1/plants/[plantId] handler (Phase 5 Plan 09 / CAT-09 / D-22).
@@ -26,10 +29,9 @@ import { errorStatusFor, resolveReadOnlyFromRequest } from "@contexts/catalog/ap
  */
 export async function deletePlantHandler(
   request: Request,
-  context: { params: Promise<{ plantId: string }> } | { params: { plantId: string } },
+  context: { params: Promise<{ plantId: string }> },
 ): Promise<Response> {
-  const params = "then" in context.params ? await context.params : context.params;
-  const { plantId } = params;
+  const { plantId } = await context.params;
 
   // Step 1: Auth gate.
   const auth = await requireVerifiedUser(request);
@@ -56,20 +58,17 @@ export async function deletePlantHandler(
   // Step 4: withIdempotency wraps use-case. Same UoW tx (CR-01).
   let postCommitFn: (() => Promise<void>) | undefined;
 
-  const result = await withIdempotency(
-    { userId, key: idempotencyKey, requestHash },
-    async (tx) => {
-      const inner = await deletePlant({ userId, plantId }, { tx });
-      if (!inner.ok) {
-        return {
-          status: errorStatusFor(inner.code),
-          body: { error: { code: inner.code, message: inner.reason } },
-        };
-      }
-      postCommitFn = inner.postCommit;
-      return { status: 204, body: null };
-    },
-  );
+  const result = await withIdempotency({ userId, key: idempotencyKey, requestHash }, async (tx) => {
+    const inner = await deletePlant({ userId, plantId }, { tx });
+    if (!inner.ok) {
+      return {
+        status: errorStatusFor(inner.code),
+        body: { error: { code: inner.code, message: inner.reason } },
+      };
+    }
+    postCommitFn = inner.postCommit;
+    return { status: 204, body: null };
+  });
 
   // Step 5: postCommit — Inngest event + PostHog AFTER withIdempotency commits.
   // On replay, postCommitFn is undefined (no-op). On rollback, never reached.
@@ -80,11 +79,8 @@ export async function deletePlantHandler(
     Sentry.captureException(e);
   }
 
-  return new Response(
-    result.body !== null ? JSON.stringify(result.body) : null,
-    {
-      status: result.status,
-      headers: result.body !== null ? { "content-type": "application/json" } : {},
-    },
-  );
+  return new Response(result.body !== null ? JSON.stringify(result.body) : null, {
+    status: result.status,
+    headers: result.body !== null ? { "content-type": "application/json" } : {},
+  });
 }

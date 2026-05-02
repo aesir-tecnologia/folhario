@@ -6,7 +6,10 @@ import { ErrorCode, errorResponse } from "@shared/config/errors";
 import { requireVerifiedUser } from "@shared/api/auth";
 import { withIdempotency } from "@shared/api/idempotency";
 import { deletePhotoEntry } from "@contexts/catalog/application/delete-photo-entry";
-import { errorStatusFor, resolveReadOnlyFromRequest } from "@contexts/catalog/api/route-handlers/_shared";
+import {
+  errorStatusFor,
+  resolveReadOnlyFromRequest,
+} from "@contexts/catalog/api/route-handlers/_shared";
 
 /**
  * DELETE /api/v1/photo-entries/[photoEntryId] handler (Phase 5 Plan 09 / CAT-06 / D-03).
@@ -27,10 +30,9 @@ import { errorStatusFor, resolveReadOnlyFromRequest } from "@contexts/catalog/ap
  */
 export async function deletePhotoEntryHandler(
   request: Request,
-  context: { params: Promise<{ photoEntryId: string }> } | { params: { photoEntryId: string } },
+  context: { params: Promise<{ photoEntryId: string }> },
 ): Promise<Response> {
-  const params = "then" in context.params ? await context.params : context.params;
-  const { photoEntryId } = params;
+  const { photoEntryId } = await context.params;
 
   // Step 1: Auth gate.
   const auth = await requireVerifiedUser(request);
@@ -57,20 +59,17 @@ export async function deletePhotoEntryHandler(
   // Step 4: withIdempotency wraps use-case. Same UoW tx (CR-01).
   let postCommitFn: (() => Promise<void>) | undefined;
 
-  const result = await withIdempotency(
-    { userId, key: idempotencyKey, requestHash },
-    async (tx) => {
-      const inner = await deletePhotoEntry({ userId, photoEntryId }, { tx });
-      if (!inner.ok) {
-        return {
-          status: errorStatusFor(inner.code),
-          body: { error: { code: inner.code, message: inner.reason } },
-        };
-      }
-      postCommitFn = inner.postCommit;
-      return { status: 204, body: null };
-    },
-  );
+  const result = await withIdempotency({ userId, key: idempotencyKey, requestHash }, async (tx) => {
+    const inner = await deletePhotoEntry({ userId, photoEntryId }, { tx });
+    if (!inner.ok) {
+      return {
+        status: errorStatusFor(inner.code),
+        body: { error: { code: inner.code, message: inner.reason } },
+      };
+    }
+    postCommitFn = inner.postCommit;
+    return { status: 204, body: null };
+  });
 
   // Step 5: postCommit — no telemetry for photo-entry delete; postCommitFn is always
   // undefined here. Optional-chain is a no-op. Kept for forward-compatibility
@@ -81,11 +80,8 @@ export async function deletePhotoEntryHandler(
     Sentry.captureException(e);
   }
 
-  return new Response(
-    result.body !== null ? JSON.stringify(result.body) : null,
-    {
-      status: result.status,
-      headers: result.body !== null ? { "content-type": "application/json" } : {},
-    },
-  );
+  return new Response(result.body !== null ? JSON.stringify(result.body) : null, {
+    status: result.status,
+    headers: result.body !== null ? { "content-type": "application/json" } : {},
+  });
 }

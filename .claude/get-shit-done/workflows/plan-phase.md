@@ -215,7 +215,7 @@ _Context gathered: [date] via PRD Express Path_
 5. Commit:
 
 ```bash
-gsd-sdk query commit "docs(${padded_phase}): generate context from PRD" "${phase_dir}/${padded_phase}-CONTEXT.md"
+gsd-sdk query commit "docs(${padded_phase}): generate context from PRD" --files "${phase_dir}/${padded_phase}-CONTEXT.md"
 ```
 
 6. Set `context_content` to the generated CONTEXT.md content and continue to step 5 (Handle Research).
@@ -418,6 +418,8 @@ Task(
   description="Research Phase {phase}"
 )
 ```
+
+> **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 ### Handle Researcher Return
 
@@ -729,6 +731,8 @@ Task(
 )
 ```
 
+> **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
+
 **Handle return:**
 
 - **`## PATTERN MAPPING COMPLETE`:** Update `PATTERNS_PATH` to the created file path, continue to step 8.
@@ -867,6 +871,8 @@ Task(
 )
 ```
 
+> **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
+
 **If `CHUNKED_MODE` is `true`:** Skip the Task() call above — proceed to step 8.5 instead.
 
 ## 8.5. Chunked Planning Mode
@@ -922,6 +928,8 @@ Task(
 )
 ```
 
+> **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
+
 Handle return:
 
 - **`## OUTLINE COMPLETE`:** Read `PLAN-OUTLINE.md`, extract plan list. Continue to 8.5.2.
@@ -967,11 +975,13 @@ For each plan entry extracted from `PLAN-OUTLINE.md`:
    )
    ```
 
+   > **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
+
 4. **Verify disk:** Check `${PHASE_DIR}/{plan_id}-PLAN.md` exists. If missing: offer 1) Retry, 2) Stop.
 
 5. **Commit per-plan:**
    ```bash
-   gsd-sdk query commit "docs(${PADDED_PHASE}): plan ${plan_id} (chunked)" "${PHASE_DIR}/${plan_id}-PLAN.md"
+   gsd-sdk query commit "docs(${PADDED_PHASE}): plan ${plan_id} (chunked)" --files "${PHASE_DIR}/${plan_id}-PLAN.md"
    ```
 
 After all N plans are written and committed, treat this as `## PLANNING COMPLETE` and continue
@@ -1045,7 +1055,7 @@ rest become a follow-up phase
 
 Use AskUserQuestion with these 3 options.
 
-**If "Split":** Use `/gsd-insert-phase` to create the sub-phases, then replan each.
+**If "Split":** Use `/gsd-phase --insert` to create the sub-phases, then replan each.
 **If "Proceed":** Return to planner with instruction to attempt all items at full fidelity, accepting more plans/tasks.
 **If "Prioritize":** Use AskUserQuestion (multiSelect) to let user pick which items are "now" vs "later". Create CONTEXT.md for each sub-phase with the selected items.
 
@@ -1075,7 +1085,7 @@ Options:
 Use AskUserQuestion for each gap (or batch if multiple gaps).
 
 **If "Add plan":** Return to planner (step 8) with instruction to add plans covering the missing items, preserving existing plans.
-**If "Split":** Use `/gsd-insert-phase` for overflow items, then replan.
+**If "Split":** Use `/gsd-phase --insert` for overflow items, then replan.
 **If "Defer":** Record in CONTEXT.md `## Deferred Ideas` with developer's confirmation. Proceed to step 10.
 
 ## 10. Spawn gsd-plan-checker Agent
@@ -1129,6 +1139,8 @@ Task(
   description="Verify Phase {phase} plans"
 )
 ```
+
+> **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
 
 ## 11. Handle Checker Return
 
@@ -1245,6 +1257,8 @@ Task(
 )
 ```
 
+> **ORCHESTRATOR RULE — CODEX RUNTIME**: After calling Task() above, stop working on this task immediately. Do not read more files, edit code, or run tests related to this task while the subagent is active. Wait for the subagent to return its result. This prevents duplicate work, conflicting edits, and wasted context. Only resume when the subagent result is available.
+
 After planner returns -> spawn checker again (step 10), increment iteration_count.
 
 **If iteration_count >= 3:**
@@ -1323,7 +1337,7 @@ cp "${PLAN_FILE}" "${PLAN_FILE%.md}.pre-bounce.md"
 6. **Commit surviving bounced plans:** If at least one plan survived both the frontmatter validation and the checker re-run, commit the changes:
 
 ```bash
-gsd-sdk query commit "refactor(${padded_phase}): bounce plans through external refinement" "${PHASE_DIR}/*-PLAN.md"
+gsd-sdk query commit "refactor(${padded_phase}): bounce plans through external refinement" --files "${PHASE_DIR}/*-PLAN.md"
 ```
 
 Display summary:
@@ -1506,11 +1520,11 @@ one place before execution begins.
 ```bash
 POST_PLANNING_GAPS=$(gsd-sdk query config-get workflow.post_planning_gaps --default true 2>/dev/null || echo true)
 if [ "$POST_PLANNING_GAPS" = "true" ]; then
-  gsd-tools gap-analysis --phase-dir "${PHASE_DIR}"
+  node "/Users/machado/Projects/folhario/.claude/get-shit-done/bin/gsd-tools.cjs" gap-analysis --phase-dir "${PHASE_DIR}"
 fi
 ```
 
-(`gsd-tools gap-analysis` reads `.planning/REQUIREMENTS.md`, `${PHASE_DIR}/CONTEXT.md`,
+(`gsd-tools.cjs gap-analysis` reads `.planning/REQUIREMENTS.md`, `${PHASE_DIR}/CONTEXT.md`,
 and `${PHASE_DIR}/*-PLAN.md`, then prints a markdown table with one row per
 REQ-ID and D-ID. Word-boundary matching prevents `REQ-1` from being mistaken for
 `REQ-10`.)

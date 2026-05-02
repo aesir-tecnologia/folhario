@@ -157,7 +157,7 @@ gsd-tools path: /Users/machado/Projects/folhario/.claude/get-shit-done/bin/gsd-t
    Run from the project root:
 ```
 
-graphify . --update
+graphify update .
 
 ```
 This builds the knowledge graph with SHA256 incremental caching.

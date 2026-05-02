@@ -1,6 +1,6 @@
 ---
 name: gsd:ai-integration-phase
-description: Generate AI design contract (AI-SPEC.md) for phases that involve building AI systems — framework selection, implementation guidance from official docs, and evaluation strategy
+description: Generate an AI-SPEC.md design contract for phases that involve building AI systems.
 argument-hint: "[phase number]"
 allowed-tools:
   - Read
@@ -14,6 +14,7 @@ allowed-tools:
   - AskUserQuestion
   - mcp__context7__*
 ---
+
 <objective>
 Create an AI design contract (AI-SPEC.md) for a phase involving AI system development.
 Orchestrates gsd-framework-selector → gsd-ai-researcher → gsd-domain-researcher → gsd-eval-planner.

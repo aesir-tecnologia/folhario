@@ -1,6 +1,6 @@
 ---
 name: gsd:discuss-phase
-description: Gather phase context through adaptive questioning before planning. Use --all to skip area selection and discuss all gray areas interactively. Use --auto to skip interactive questions (Claude picks recommended defaults). Use --chain for interactive discuss followed by automatic plan+execute. Use --power for bulk question generation into a file-based UI (answer at your own pace).
+description: Gather phase context through adaptive questioning before planning.
 argument-hint: "<phase> [--all] [--auto] [--chain] [--batch] [--analyze] [--text] [--power]"
 allowed-tools:
   - Read
@@ -18,6 +18,7 @@ allowed-tools:
 Extract implementation decisions that downstream agents need — researcher and planner will use CONTEXT.md to know what to investigate and what choices are locked.
 
 **How it works:**
+
 1. Load prior context (PROJECT.md, REQUIREMENTS.md, STATE.md, prior CONTEXT.md files)
 2. Scout codebase for reusable assets and patterns
 3. Analyze phase — skip gray areas already decided in prior phases
@@ -29,10 +30,8 @@ Extract implementation decisions that downstream agents need — researcher and 
 </objective>
 
 <execution_context>
-@/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase.md
-@/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase-assumptions.md
-@/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase-power.md
-@/Users/machado/Projects/folhario/.claude/get-shit-done/templates/context.md
+Workflow files are loaded on-demand in the <process> section below — not upfront.
+Do not pre-load any workflow files before reading the mode routing instructions.
 </execution_context>
 
 <runtime_note>
@@ -51,14 +50,19 @@ Context files are resolved in-workflow using `init phase-op` and roadmap/state t
 DISCUSS_MODE=$(gsd-sdk query config-get workflow.discuss_mode 2>/dev/null || echo "discuss")
 ```
 
-If `DISCUSS_MODE` is `"assumptions"`: Read and execute @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase-assumptions.md end-to-end.
+If `DISCUSS_MODE` is `"assumptions"`:
+Read and execute `/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase-assumptions.md` end-to-end.
 
-If `DISCUSS_MODE` is `"discuss"` (or unset, or any other value): Read and execute @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase.md end-to-end.
+If `DISCUSS_MODE` is `"discuss"` (or unset, or any other value):
+Read and execute `/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/discuss-phase.md` end-to-end.
 
-**MANDATORY:** The execution_context files listed above ARE the instructions. Read the workflow file BEFORE taking any action. The objective and success_criteria sections in this command file are summaries — the workflow file contains the complete step-by-step process with all required behaviors, config checks, and interaction patterns. Do not improvise from the summary.
+**MANDATORY:** Read the appropriate workflow file BEFORE taking any action. The objective and success_criteria sections in this command file are summaries — the workflow file contains the complete step-by-step process with all required behaviors, config checks, and interaction patterns. Do not improvise from the summary.
+
+**Lazy loading:** `templates/context.md` is loaded inside the `write_context` step of the active workflow. `discuss-phase-power.md` is loaded inside `discuss-phase.md` when `--power` is detected. Do not load either here.
 </process>
 
 <success_criteria>
+
 - Prior context loaded and applied (no re-asking decided questions)
 - Gray areas identified through intelligent analysis
 - User chose which areas to discuss
@@ -66,4 +70,4 @@ If `DISCUSS_MODE` is `"discuss"` (or unset, or any other value): Read and execut
 - Scope creep redirected to deferred ideas
 - CONTEXT.md captures decisions, not vague vision
 - User knows next steps
-</success_criteria>
+  </success_criteria>

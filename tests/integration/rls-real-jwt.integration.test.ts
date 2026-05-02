@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 /**
  * Phase-02 Plan 05.5 (HIGH-1 follow-up from `02-REVIEWS.md`): real-JWT RLS
  * cross-user denial proof.
@@ -106,292 +107,289 @@ if (supabaseUrl && /supabase\.co/.test(supabaseUrl)) {
   );
 }
 
-describe.skipIf(!dbUrl)("Phase-02-05.5 real-JWT RLS cross-user denial", () => {
-  // Test fixtures — populated in beforeAll, used by individual test blocks.
-  let userAId: string;
-  let userBId: string;
-  let userAEmail: string;
-  let userBEmail: string;
-  let userAJwtSub: string;
-  let userBJwtSub: string;
-  let plantId: string;
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
+  "Phase-02-05.5 real-JWT RLS cross-user denial",
+  () => {
+    // Test fixtures — populated in beforeAll, used by individual test blocks.
+    let userAId: string;
+    let userBId: string;
+    let userAEmail: string;
+    let userBEmail: string;
+    let userAJwtSub: string;
+    let userBJwtSub: string;
+    let plantId: string;
 
-  // Service-role admin client used for `auth.admin.createUser` /
-  // `auth.admin.deleteUser`. NOT the same connection path as the read tests
-  // below — this only manages auth.users state.
-  const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+    // Service-role admin client used for `auth.admin.createUser` /
+    // `auth.admin.deleteUser`. NOT the same connection path as the read tests
+    // below — this only manages auth.users state.
+    const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
-  // Postgres-js singleton for setup-time DDL/DML queries that run as
-  // `postgres` superuser (insertion via UoW path goes through Drizzle).
-  // Capped at max=1 so we never hold more than one connection during setup.
-  const adminSql = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
+    // Postgres-js singleton for setup-time DDL/DML queries that run as
+    // `postgres` superuser (insertion via UoW path goes through Drizzle).
+    // Capped at max=1 so we never hold more than one connection during setup.
+    const adminSql = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
 
-  // Decode a Supabase-issued JWT and return the `sub` claim verbatim. We do
-  // not verify the signature here — Supabase issued the token two lines
-  // earlier in the same test, and the chain of custody we are proving is
-  // "real Supabase → JWT.sub → GUC → auth.uid() → policy denies." If the
-  // payload is malformed, JSON.parse will throw and surface the failure.
-  function jwtSub(jwt: string): string {
-    const parts = jwt.split(".");
-    if (parts.length !== 3) {
-      throw new Error(
-        "withUnitOfWork test setup: malformed JWT (expected 3 dot-separated parts).",
-      );
-    }
-    const payload = JSON.parse(
-      Buffer.from(parts[1]!, "base64url").toString("utf8"),
-    ) as { sub?: string };
-    if (!payload.sub) {
-      throw new Error(
-        "withUnitOfWork test setup: JWT payload missing `sub` claim.",
-      );
-    }
-    return payload.sub;
-  }
-
-  beforeAll(async () => {
-    // Refuse to run silently if the Supabase service-role key is missing.
-    // Loud failure with explicit remediation — this test MUST NOT be
-    // skipped just because env vars are unset (HIGH-1 failure mode).
-    if (!serviceRoleKey) {
-      throw new Error(
-        "SUPABASE_SERVICE_ROLE_KEY missing from environment. " +
-          "Run 'pnpm db:sync-env' after 'pnpm db:start'. " +
-          "This test MUST NOT be skipped just because the key is unset.",
-      );
-    }
-    if (!anonKey) {
-      throw new Error(
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY missing from environment. " +
-          "Run 'pnpm db:sync-env' after 'pnpm db:start'. " +
-          "This test MUST NOT be skipped.",
-      );
+    // Decode a Supabase-issued JWT and return the `sub` claim verbatim. We do
+    // not verify the signature here — Supabase issued the token two lines
+    // earlier in the same test, and the chain of custody we are proving is
+    // "real Supabase → JWT.sub → GUC → auth.uid() → policy denies." If the
+    // payload is malformed, JSON.parse will throw and surface the failure.
+    function jwtSub(jwt: string): string {
+      const parts = jwt.split(".");
+      if (parts.length !== 3) {
+        throw new Error(
+          "withUnitOfWork test setup: malformed JWT (expected 3 dot-separated parts).",
+        );
+      }
+      const payload = JSON.parse(Buffer.from(parts[1]!, "base64url").toString("utf8")) as {
+        sub?: string;
+      };
+      if (!payload.sub) {
+        throw new Error("withUnitOfWork test setup: JWT payload missing `sub` claim.");
+      }
+      return payload.sub;
     }
 
-    const runId = randomUUID().slice(0, 8);
-    userAEmail = `rls-userA-${runId}@test.local`;
-    userBEmail = `rls-userB-${runId}@test.local`;
-    const password = `pw-${randomUUID()}`;
+    beforeAll(async () => {
+      // Refuse to run silently if the Supabase service-role key is missing.
+      // Loud failure with explicit remediation — this test MUST NOT be
+      // skipped just because env vars are unset (HIGH-1 failure mode).
+      if (!serviceRoleKey) {
+        throw new Error(
+          "SUPABASE_SERVICE_ROLE_KEY missing from environment. " +
+            "Run 'pnpm db:sync-env' after 'pnpm db:start'. " +
+            "This test MUST NOT be skipped just because the key is unset.",
+        );
+      }
+      if (!anonKey) {
+        throw new Error(
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY missing from environment. " +
+            "Run 'pnpm db:sync-env' after 'pnpm db:start'. " +
+            "This test MUST NOT be skipped.",
+        );
+      }
 
-    // ---- Step 1: create both users via Supabase Auth admin API. ----
-    const { data: createdA, error: createAErr } =
-      await adminClient.auth.admin.createUser({
+      const runId = randomUUID().slice(0, 8);
+      userAEmail = `rls-userA-${runId}@test.local`;
+      userBEmail = `rls-userB-${runId}@test.local`;
+      const password = `pw-${randomUUID()}`;
+
+      // ---- Step 1: create both users via Supabase Auth admin API. ----
+      const { data: createdA, error: createAErr } = await adminClient.auth.admin.createUser({
         email: userAEmail,
         password,
         email_confirm: true,
       });
-    if (createAErr || !createdA?.user) {
-      throw new Error(
-        "Supabase Auth admin API is not reachable. Start local Supabase: " +
-          "supabase stop && supabase start. " +
-          "This test MUST NOT be skipped. " +
-          `Error: ${createAErr?.message ?? "no user returned"}`,
-      );
-    }
-    userAId = createdA.user.id;
+      if (createAErr || !createdA?.user) {
+        throw new Error(
+          "Supabase Auth admin API is not reachable. Start local Supabase: " +
+            "supabase stop && supabase start. " +
+            "This test MUST NOT be skipped. " +
+            `Error: ${createAErr?.message ?? "no user returned"}`,
+        );
+      }
+      userAId = createdA.user.id;
 
-    const { data: createdB, error: createBErr } =
-      await adminClient.auth.admin.createUser({
+      const { data: createdB, error: createBErr } = await adminClient.auth.admin.createUser({
         email: userBEmail,
         password,
         email_confirm: true,
       });
-    if (createBErr || !createdB?.user) {
-      throw new Error(
-        "Supabase Auth admin API is not reachable. Start local Supabase: " +
-          "supabase stop && supabase start. " +
-          "This test MUST NOT be skipped. " +
-          `Error: ${createBErr?.message ?? "no user returned"}`,
-      );
-    }
-    userBId = createdB.user.id;
+      if (createBErr || !createdB?.user) {
+        throw new Error(
+          "Supabase Auth admin API is not reachable. Start local Supabase: " +
+            "supabase stop && supabase start. " +
+            "This test MUST NOT be skipped. " +
+            `Error: ${createBErr?.message ?? "no user returned"}`,
+        );
+      }
+      userBId = createdB.user.id;
 
-    // ---- Step 2: verify the auth.users -> public.users sync trigger fired. ----
-    // Plan 03 installs the trigger; if it didn't fire, the plant insert below
-    // would fail with FK violation. Surface the missing-migration case loudly
-    // with the exact remediation command rather than letting the FK error mask
-    // the real cause.
-    const userARows = await adminSql<{ id: string }[]>`
+      // ---- Step 2: verify the auth.users -> public.users sync trigger fired. ----
+      // Plan 03 installs the trigger; if it didn't fire, the plant insert below
+      // would fail with FK violation. Surface the missing-migration case loudly
+      // with the exact remediation command rather than letting the FK error mask
+      // the real cause.
+      const userARows = await adminSql<{ id: string }[]>`
       SELECT id FROM public.users WHERE id = ${userAId}
     `;
-    const userBRows = await adminSql<{ id: string }[]>`
+      const userBRows = await adminSql<{ id: string }[]>`
       SELECT id FROM public.users WHERE id = ${userBId}
     `;
-    if (userARows.length === 0 || userBRows.length === 0) {
-      throw new Error(
-        "auth.users -> public.users sync trigger did not fire. " +
-          "Apply the migration: pnpm db:migrate. " +
-          "If the migration is applied but the trigger is missing, the local " +
-          "Supabase auth schema may be out of sync — run 'supabase db reset' " +
-          "and reapply migrations. " +
-          "This test MUST NOT be skipped just because the trigger is missing.",
-      );
-    }
+      if (userARows.length === 0 || userBRows.length === 0) {
+        throw new Error(
+          "auth.users -> public.users sync trigger did not fire. " +
+            "Apply the migration: pnpm db:migrate. " +
+            "If the migration is applied but the trigger is missing, the local " +
+            "Supabase auth schema may be out of sync — run 'supabase db reset' " +
+            "and reapply migrations. " +
+            "This test MUST NOT be skipped just because the trigger is missing.",
+        );
+      }
 
-    // ---- Step 3: sign in BOTH users via Supabase Auth (real JWT minting). ----
-    // We use signInWithPassword for both users so the must_haves "user A and
-    // user B baseline + denial" path can bind the GUC to JWT-extracted sub
-    // claims. This is the load-bearing chain: if signInWithPassword's `sub`
-    // ever diverged from createUser's user.id, the test would fail loudly.
-    const signInA = await adminClient.auth.signInWithPassword({
-      email: userAEmail,
-      password,
-    });
-    if (signInA.error || !signInA.data.session?.access_token) {
-      throw new Error(
-        "signInWithPassword failed for user A: " +
-          (signInA.error?.message ?? "no session returned") +
-          ". This test MUST NOT be skipped.",
-      );
-    }
-    userAJwtSub = jwtSub(signInA.data.session.access_token);
-    if (userAJwtSub !== userAId) {
-      throw new Error(
-        `JWT sub mismatch: signInWithPassword issued sub=${userAJwtSub} ` +
-          `but admin.createUser returned id=${userAId}. The chain of custody ` +
-          `is broken — abort.`,
-      );
-    }
-
-    const signInB = await adminClient.auth.signInWithPassword({
-      email: userBEmail,
-      password,
-    });
-    if (signInB.error || !signInB.data.session?.access_token) {
-      throw new Error(
-        "signInWithPassword failed for user B: " +
-          (signInB.error?.message ?? "no session returned") +
-          ". This test MUST NOT be skipped.",
-      );
-    }
-    userBJwtSub = jwtSub(signInB.data.session.access_token);
-    if (userBJwtSub !== userBId) {
-      throw new Error(
-        `JWT sub mismatch: signInWithPassword issued sub=${userBJwtSub} ` +
-          `but admin.createUser returned id=${userBId}.`,
-      );
-    }
-
-    // ---- Step 4: insert userA's plant via the application's UoW path. ----
-    // Lazy-import after env is configured so withUnitOfWork's transitive
-    // serverEnv evaluation sees DATABASE_POOL_URL.
-    const { withUnitOfWork } = await import("@shared/db/unit-of-work");
-    const { plants } = await import(
-      "@contexts/catalog/infrastructure/db/schema"
-    );
-
-    plantId = randomUUID();
-    await withUnitOfWork(userAId, async (tx) => {
-      await tx.insert(plants).values({
-        id: plantId,
-        userId: userAId,
-        name: "RLS test plant (user A)",
+      // ---- Step 3: sign in BOTH users via Supabase Auth (real JWT minting). ----
+      // We use signInWithPassword for both users so the must_haves "user A and
+      // user B baseline + denial" path can bind the GUC to JWT-extracted sub
+      // claims. This is the load-bearing chain: if signInWithPassword's `sub`
+      // ever diverged from createUser's user.id, the test would fail loudly.
+      const signInA = await adminClient.auth.signInWithPassword({
+        email: userAEmail,
+        password,
       });
+      if (signInA.error || !signInA.data.session?.access_token) {
+        throw new Error(
+          "signInWithPassword failed for user A: " +
+            (signInA.error?.message ?? "no session returned") +
+            ". This test MUST NOT be skipped.",
+        );
+      }
+      userAJwtSub = jwtSub(signInA.data.session.access_token);
+      if (userAJwtSub !== userAId) {
+        throw new Error(
+          `JWT sub mismatch: signInWithPassword issued sub=${userAJwtSub} ` +
+            `but admin.createUser returned id=${userAId}. The chain of custody ` +
+            `is broken — abort.`,
+        );
+      }
+
+      const signInB = await adminClient.auth.signInWithPassword({
+        email: userBEmail,
+        password,
+      });
+      if (signInB.error || !signInB.data.session?.access_token) {
+        throw new Error(
+          "signInWithPassword failed for user B: " +
+            (signInB.error?.message ?? "no session returned") +
+            ". This test MUST NOT be skipped.",
+        );
+      }
+      userBJwtSub = jwtSub(signInB.data.session.access_token);
+      if (userBJwtSub !== userBId) {
+        throw new Error(
+          `JWT sub mismatch: signInWithPassword issued sub=${userBJwtSub} ` +
+            `but admin.createUser returned id=${userBId}.`,
+        );
+      }
+
+      // ---- Step 4: insert userA's plant via the application's UoW path. ----
+      // Lazy-import after env is configured so withUnitOfWork's transitive
+      // serverEnv evaluation sees DATABASE_POOL_URL.
+      const { withUnitOfWork } = await import("@shared/db/unit-of-work");
+      const { plants } = await import("@contexts/catalog/infrastructure/db/schema");
+
+      plantId = randomUUID();
+      await withUnitOfWork(userAId, async (tx) => {
+        await tx.insert(plants).values({
+          id: plantId,
+          userId: userAId,
+          name: "RLS test plant (user A)",
+        });
+      });
+    }, 30_000);
+
+    afterAll(async () => {
+      try {
+        // The plant row cascades when its owning public.users row is deleted
+        // (Phase 02 Plan 02 set plants.user_id ON DELETE CASCADE).
+        // Delete public.users rows explicitly because there is no FK from
+        // public.users -> auth.users; auth.admin.deleteUser does not cascade.
+        if (userAId) {
+          await adminSql`DELETE FROM public.users WHERE id = ${userAId}`;
+        }
+        if (userBId) {
+          await adminSql`DELETE FROM public.users WHERE id = ${userBId}`;
+        }
+        if (userAId) {
+          await adminClient.auth.admin.deleteUser(userAId);
+        }
+        if (userBId) {
+          await adminClient.auth.admin.deleteUser(userBId);
+        }
+      } finally {
+        await adminSql.end({ timeout: 5 });
+      }
     });
-  }, 30_000);
 
-  afterAll(async () => {
-    try {
-      // The plant row cascades when its owning public.users row is deleted
-      // (Phase 02 Plan 02 set plants.user_id ON DELETE CASCADE).
-      // Delete public.users rows explicitly because there is no FK from
-      // public.users -> auth.users; auth.admin.deleteUser does not cascade.
-      if (userAId) {
-        await adminSql`DELETE FROM public.users WHERE id = ${userAId}`;
-      }
-      if (userBId) {
-        await adminSql`DELETE FROM public.users WHERE id = ${userBId}`;
-      }
-      if (userAId) {
-        await adminClient.auth.admin.deleteUser(userAId);
-      }
-      if (userBId) {
-        await adminClient.auth.admin.deleteUser(userBId);
-      }
-    } finally {
-      await adminSql.end({ timeout: 5 });
-    }
-  });
+    test("BASELINE: user A reads their own plant through the RLS-protected query path", async () => {
+      // Open a dedicated postgres-js connection so we can switch role and bind
+      // the GUC without touching the singleton client. Capped at max=1.
+      const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
+      try {
+        const rows = await driver.begin(async (tx) => {
+          // SET LOCAL ROLE authenticated is mandatory: the postgres-js
+          // connection authenticates as the `postgres` superuser, which has
+          // BYPASSRLS. Without this switch, RLS does not engage and any
+          // SELECT returns the row regardless of GUC — the test would be a
+          // false-pass. PostgREST does the equivalent on every request.
+          await tx.unsafe(`SET LOCAL ROLE authenticated`);
+          await tx`SELECT set_config('request.jwt.claim.sub', ${userAJwtSub}, true)`;
 
-  test("BASELINE: user A reads their own plant through the RLS-protected query path", async () => {
-    // Open a dedicated postgres-js connection so we can switch role and bind
-    // the GUC without touching the singleton client. Capped at max=1.
-    const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
-    try {
-      const rows = await driver.begin(async (tx) => {
-        // SET LOCAL ROLE authenticated is mandatory: the postgres-js
-        // connection authenticates as the `postgres` superuser, which has
-        // BYPASSRLS. Without this switch, RLS does not engage and any
-        // SELECT returns the row regardless of GUC — the test would be a
-        // false-pass. PostgREST does the equivalent on every request.
-        await tx.unsafe(`SET LOCAL ROLE authenticated`);
-        await tx`SELECT set_config('request.jwt.claim.sub', ${userAJwtSub}, true)`;
-
-        // No explicit user_id filter — let RLS decide. With user A's JWT-sub
-        // bound, the owner policy should permit this read.
-        return tx<{ id: string; user_id: string }[]>`
+          // No explicit user_id filter — let RLS decide. With user A's JWT-sub
+          // bound, the owner policy should permit this read.
+          return tx<{ id: string; user_id: string }[]>`
           SELECT id, user_id FROM public.plants WHERE id = ${plantId}
         `;
-      });
+        });
 
-      if (rows.length !== 1) {
-        throw new Error(
-          "Baseline read failed: user A cannot read their own row. RLS may be " +
-            "denying all reads — check policy and auth.uid() wiring. " +
-            `Returned ${rows.length} row(s); expected exactly 1. ` +
-            `Plant id ${plantId} owned by user A (${userAId}).`,
-        );
+        if (rows.length !== 1) {
+          throw new Error(
+            "Baseline read failed: user A cannot read their own row. RLS may be " +
+              "denying all reads — check policy and auth.uid() wiring. " +
+              `Returned ${rows.length} row(s); expected exactly 1. ` +
+              `Plant id ${plantId} owned by user A (${userAId}).`,
+          );
+        }
+        expect(rows[0]!.id).toBe(plantId);
+        expect(rows[0]!.user_id).toBe(userAId);
+      } finally {
+        await driver.end({ timeout: 5 });
       }
-      expect(rows[0]!.id).toBe(plantId);
-      expect(rows[0]!.user_id).toBe(userAId);
-    } finally {
-      await driver.end({ timeout: 5 });
-    }
-  }, 30_000);
+    }, 30_000);
 
-  test("DENIAL: user B cannot read user A's plant through the RLS-protected query path", async () => {
-    const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
-    try {
-      const rows = await driver.begin(async (tx) => {
-        await tx.unsafe(`SET LOCAL ROLE authenticated`);
-        await tx`SELECT set_config('request.jwt.claim.sub', ${userBJwtSub}, true)`;
-        return tx<{ id: string }[]>`
+    test("DENIAL: user B cannot read user A's plant through the RLS-protected query path", async () => {
+      const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
+      try {
+        const rows = await driver.begin(async (tx) => {
+          await tx.unsafe(`SET LOCAL ROLE authenticated`);
+          await tx`SELECT set_config('request.jwt.claim.sub', ${userBJwtSub}, true)`;
+          return tx<{ id: string }[]>`
           SELECT id FROM public.plants WHERE id = ${plantId}
         `;
-      });
+        });
 
-      if (rows.length !== 0) {
-        throw new Error(
-          `CRITICAL: RLS did not deny cross-user read. plant id ${plantId} ` +
-            `owned by user A (${userAId}) was visible to user B (${userBId}). ` +
-            `Owner policies are not effective. Returned ${rows.length} row(s).`,
-        );
+        if (rows.length !== 0) {
+          throw new Error(
+            `CRITICAL: RLS did not deny cross-user read. plant id ${plantId} ` +
+              `owned by user A (${userAId}) was visible to user B (${userBId}). ` +
+              `Owner policies are not effective. Returned ${rows.length} row(s).`,
+          );
+        }
+        expect(rows).toHaveLength(0);
+      } finally {
+        await driver.end({ timeout: 5 });
       }
-      expect(rows).toHaveLength(0);
-    } finally {
-      await driver.end({ timeout: 5 });
-    }
-  }, 30_000);
+    }, 30_000);
 
-  test("auth.uid() resolves to the JWT-bound sub inside the authenticated-role transaction", async () => {
-    // Independent verification that auth.uid() is what the policies
-    // consult — guards against a future regression where the policy is
-    // unchanged but auth.uid() starts returning null/wrong value.
-    const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
-    try {
-      const observed = await driver.begin(async (tx) => {
-        await tx.unsafe(`SET LOCAL ROLE authenticated`);
-        await tx`SELECT set_config('request.jwt.claim.sub', ${userBJwtSub}, true)`;
-        const rows = await tx<{ uid: string | null }[]>`
+    test("auth.uid() resolves to the JWT-bound sub inside the authenticated-role transaction", async () => {
+      // Independent verification that auth.uid() is what the policies
+      // consult — guards against a future regression where the policy is
+      // unchanged but auth.uid() starts returning null/wrong value.
+      const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
+      try {
+        const observed = await driver.begin(async (tx) => {
+          await tx.unsafe(`SET LOCAL ROLE authenticated`);
+          await tx`SELECT set_config('request.jwt.claim.sub', ${userBJwtSub}, true)`;
+          const rows = await tx<{ uid: string | null }[]>`
           SELECT auth.uid()::text AS uid
         `;
-        return rows[0]?.uid ?? null;
-      });
-      expect(observed).toBe(userBJwtSub);
-    } finally {
-      await driver.end({ timeout: 5 });
-    }
-  }, 30_000);
-});
+          return rows[0]?.uid ?? null;
+        });
+        expect(observed).toBe(userBJwtSub);
+      } finally {
+        await driver.end({ timeout: 5 });
+      }
+    }, 30_000);
+  },
+);

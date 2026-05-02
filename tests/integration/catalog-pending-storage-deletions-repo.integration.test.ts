@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { db } from "@shared/db/client";
 import * as psdRepo from "@contexts/catalog/infrastructure/db/pending-storage-deletions";
 
@@ -35,7 +36,7 @@ function jwtSub(jwt: string): string {
   return payload.sub;
 }
 
-describe.skipIf(!dbUrl)("pending_storage_deletions repository", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("pending_storage_deletions repository", () => {
   let userAId: string;
   let userBId: string;
   let userBJwtSub: string;

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { db } from "@shared/db/client";
 import * as locRepo from "@contexts/catalog/infrastructure/db/location-suggestions";
 
@@ -35,7 +36,7 @@ function jwtSub(jwt: string): string {
   return payload.sub;
 }
 
-describe.skipIf(!dbUrl)("location_suggestions repository", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("location_suggestions repository", () => {
   let userAId: string;
   let userBId: string;
   let userBJwtSub: string;

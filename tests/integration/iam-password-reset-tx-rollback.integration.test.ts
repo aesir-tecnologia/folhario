@@ -4,6 +4,7 @@
 // the adapter; mixing them would cross-contaminate via vi.mock hoisting.
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import postgres from "postgres";
 import { randomUUID } from "node:crypto";
 
@@ -18,9 +19,7 @@ if (dbUrl && /supabase\.co/.test(dbUrl)) {
   );
 }
 
-const cleanupSql = dbUrl
-  ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 })
-  : null;
+const cleanupSql = dbUrl ? postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 5 }) : null;
 
 // vi.hoisted: shared mock fn between vi.mock factory and per-test calls.
 const adapterMocks = vi.hoisted(() => ({
@@ -33,7 +32,7 @@ vi.mock("@contexts/iam/infrastructure/auth/auth-adapter", () => ({
   },
 }));
 
-describe.skipIf(!dbUrl)(
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
   "Phase 4 Codex HIGH #2 — consumePasswordReset tx rolls back when adminUpdatePassword fails",
   () => {
     // beforeAll seed (NOT beforeEach) so concurrent suites don't race-wipe
@@ -59,9 +58,8 @@ describe.skipIf(!dbUrl)(
         emailVerifiedAt: new Date().toISOString(),
       });
 
-      const { mintResetToken } = await import(
-        "../../src/contexts/iam/infrastructure/db/reset-tokens"
-      );
+      const { mintResetToken } =
+        await import("../../src/contexts/iam/infrastructure/db/reset-tokens");
       const { rawToken } = await mintResetToken({
         userId: seeded.id,
         sentToEmail: email,
@@ -72,9 +70,7 @@ describe.skipIf(!dbUrl)(
         reason: "test-injected-failure",
       });
 
-      const mod = await import(
-        "../../src/app/api/v1/iam/password/reset/route"
-      );
+      const mod = await import("../../src/app/api/v1/iam/password/reset/route");
       const res = await mod.POST(
         new Request("http://localhost:3000/api/v1/iam/password/reset", {
           method: "POST",

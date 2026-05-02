@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { db } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
 import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
@@ -37,7 +38,7 @@ function jwtSub(jwt: string): string {
   return payload.sub;
 }
 
-describe.skipIf(!dbUrl)("plants repository", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("plants repository", () => {
   let userAId: string;
   let userBId: string;
   let userBJwtSub: string;

@@ -10,6 +10,7 @@
 // (throttle bump + JSON parse + zod parse + send).
 
 import { describe, it, expect, vi } from "vitest";
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { randomUUID } from "node:crypto";
 
 import { seedUser } from "./fixtures/seed-user";
@@ -22,7 +23,7 @@ vi.mock("@shared/inngest/client", () => ({
   },
 }));
 
-describe.skipIf(!dbUrl)(
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
   "Phase 4 D-11 + AUTH-11 — POST /api/v1/iam/password/reset-request is constant-time (anti-enumeration)",
   () => {
     // No beforeEach truncate — concurrent integration suites share the same
@@ -38,9 +39,7 @@ describe.skipIf(!dbUrl)(
         emailVerifiedAt: new Date().toISOString(),
       });
 
-      const mod = await import(
-        "../../src/app/api/v1/iam/password/reset-request/route"
-      );
+      const mod = await import("../../src/app/api/v1/iam/password/reset-request/route");
       const times: number[] = [];
 
       // Warm-up — first invocation pays JIT/import cost.
@@ -59,18 +58,15 @@ describe.skipIf(!dbUrl)(
         const email = i % 2 === 0 ? existingEmail : `nobody-${i}@example.com`;
         const start = performance.now();
         await mod.POST(
-          new Request(
-            "http://localhost:3000/api/v1/iam/password/reset-request",
-            {
-              method: "POST",
-              body: JSON.stringify({ email }),
-              // Distinct IPs so the throttle bucket doesn't lock us out across the loop.
-              headers: {
-                "content-type": "application/json",
-                "x-forwarded-for": `10.20.${i}.${i}`,
-              },
+          new Request("http://localhost:3000/api/v1/iam/password/reset-request", {
+            method: "POST",
+            body: JSON.stringify({ email }),
+            // Distinct IPs so the throttle bucket doesn't lock us out across the loop.
+            headers: {
+              "content-type": "application/json",
+              "x-forwarded-for": `10.20.${i}.${i}`,
             },
-          ),
+          }),
         );
         times.push(performance.now() - start);
       }

@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 import { db } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
 import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
@@ -26,7 +27,7 @@ if (supabaseUrl && /supabase\.co/.test(supabaseUrl)) {
   );
 }
 
-describe.skipIf(!dbUrl)("photo_entries repository", () => {
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)("photo_entries repository", () => {
   let userAId: string;
   let userBId: string;
 

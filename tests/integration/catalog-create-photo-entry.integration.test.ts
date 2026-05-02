@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { supabaseAuthAvailable } from "./fixtures/supabase-availability";
 /**
  * Phase 05 Plan 07 — create-photo-entry use-case integration tests (Task 3B RED).
  *
@@ -37,160 +38,165 @@ const MINIMAL_JPEG = Buffer.from(
   "hex",
 );
 
-describe.skipIf(!dbUrl)("Phase-05-07 createPhotoEntry use-case integration", () => {
-  const adminSql = postgres(dbUrl!, { prepare: false, max: 2, idle_timeout: 5 });
-  const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  let userId: string;
-  let otherUserId: string;
-
-  let createPhotoEntry: typeof import("@contexts/catalog/application/create-photo-entry").createPhotoEntry;
-  let __setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
-  let InMemoryStorageAdapter: typeof import("../integration/fixtures/in-memory-storage-adapter").InMemoryStorageAdapter;
-
-  beforeAll(async () => {
-    ({ createPhotoEntry } = await import("@contexts/catalog/application/create-photo-entry"));
-    ({ __setStorageAdapterForTests } =
-      await import("@contexts/catalog/infrastructure/photo-storage"));
-    ({ InMemoryStorageAdapter } = await import("./fixtures/in-memory-storage-adapter"));
-
-    if (!serviceRoleKey) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY missing. Run 'pnpm db:sync-env'.");
-    }
-
-    const runId = randomUUID().slice(0, 8);
-
-    const { data: userA, error: errA } = await adminClient.auth.admin.createUser({
-      email: `create-photo-userA-${runId}@test.local`,
-      password: `pw-${randomUUID()}`,
-      email_confirm: true,
+describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
+  "Phase-05-07 createPhotoEntry use-case integration",
+  () => {
+    const adminSql = postgres(dbUrl!, { prepare: false, max: 2, idle_timeout: 5 });
+    const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
-    if (errA || !userA.user) throw new Error(`createUser A: ${errA?.message}`);
-    userId = userA.user.id;
 
-    const { data: userB, error: errB } = await adminClient.auth.admin.createUser({
-      email: `create-photo-userB-${runId}@test.local`,
-      password: `pw-${randomUUID()}`,
-      email_confirm: true,
+    let userId: string;
+    let otherUserId: string;
+
+    let createPhotoEntry: typeof import("@contexts/catalog/application/create-photo-entry").createPhotoEntry;
+    let __setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
+    let InMemoryStorageAdapter: typeof import("../integration/fixtures/in-memory-storage-adapter").InMemoryStorageAdapter;
+
+    beforeAll(async () => {
+      ({ createPhotoEntry } = await import("@contexts/catalog/application/create-photo-entry"));
+      ({ __setStorageAdapterForTests } =
+        await import("@contexts/catalog/infrastructure/photo-storage"));
+      ({ InMemoryStorageAdapter } = await import("./fixtures/in-memory-storage-adapter"));
+
+      if (!serviceRoleKey) {
+        throw new Error("SUPABASE_SERVICE_ROLE_KEY missing. Run 'pnpm db:sync-env'.");
+      }
+
+      const runId = randomUUID().slice(0, 8);
+
+      const { data: userA, error: errA } = await adminClient.auth.admin.createUser({
+        email: `create-photo-userA-${runId}@test.local`,
+        password: `pw-${randomUUID()}`,
+        email_confirm: true,
+      });
+      if (errA || !userA.user) throw new Error(`createUser A: ${errA?.message}`);
+      userId = userA.user.id;
+
+      const { data: userB, error: errB } = await adminClient.auth.admin.createUser({
+        email: `create-photo-userB-${runId}@test.local`,
+        password: `pw-${randomUUID()}`,
+        email_confirm: true,
+      });
+      if (errB || !userB.user) throw new Error(`createUser B: ${errB?.message}`);
+      otherUserId = userB.user.id;
+
+      const [rowA] = await adminSql<
+        { id: string }[]
+      >`SELECT id FROM public.users WHERE id = ${userId}`;
+      const [rowB] = await adminSql<
+        { id: string }[]
+      >`SELECT id FROM public.users WHERE id = ${otherUserId}`;
+      if (!rowA || !rowB) {
+        throw new Error(
+          "auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.",
+        );
+      }
+    }, 30_000);
+
+    afterAll(async () => {
+      __setStorageAdapterForTests(null);
+      try {
+        if (userId) {
+          await adminSql`DELETE FROM public.photo_entries WHERE plant_id IN (SELECT id FROM public.plants WHERE user_id = ${userId})`;
+          await adminSql`DELETE FROM public.plants WHERE user_id = ${userId}`;
+          await adminSql`DELETE FROM public.users WHERE id = ${userId}`;
+          await adminClient.auth.admin.deleteUser(userId);
+        }
+        if (otherUserId) {
+          await adminSql`DELETE FROM public.plants WHERE user_id = ${otherUserId}`;
+          await adminSql`DELETE FROM public.users WHERE id = ${otherUserId}`;
+          await adminClient.auth.admin.deleteUser(otherUserId);
+        }
+      } finally {
+        await adminSql.end({ timeout: 5 });
+      }
     });
-    if (errB || !userB.user) throw new Error(`createUser B: ${errB?.message}`);
-    otherUserId = userB.user.id;
 
-    const [rowA] = await adminSql<
-      { id: string }[]
-    >`SELECT id FROM public.users WHERE id = ${userId}`;
-    const [rowB] = await adminSql<
-      { id: string }[]
-    >`SELECT id FROM public.users WHERE id = ${otherUserId}`;
-    if (!rowA || !rowB) {
-      throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
-    }
-  }, 30_000);
-
-  afterAll(async () => {
-    __setStorageAdapterForTests(null);
-    try {
-      if (userId) {
-        await adminSql`DELETE FROM public.photo_entries WHERE plant_id IN (SELECT id FROM public.plants WHERE user_id = ${userId})`;
-        await adminSql`DELETE FROM public.plants WHERE user_id = ${userId}`;
-        await adminSql`DELETE FROM public.users WHERE id = ${userId}`;
-        await adminClient.auth.admin.deleteUser(userId);
-      }
-      if (otherUserId) {
-        await adminSql`DELETE FROM public.plants WHERE user_id = ${otherUserId}`;
-        await adminSql`DELETE FROM public.users WHERE id = ${otherUserId}`;
-        await adminClient.auth.admin.deleteUser(otherUserId);
-      }
-    } finally {
-      await adminSql.end({ timeout: 5 });
-    }
-  });
-
-  async function seedPlant(uid: string): Promise<string> {
-    const [row] = await adminSql<{ id: string }[]>`
+    async function seedPlant(uid: string): Promise<string> {
+      const [row] = await adminSql<{ id: string }[]>`
       INSERT INTO public.plants (user_id, name)
       VALUES (${uid}, ${"Test Plant"})
       RETURNING id
     `;
-    if (!row) throw new Error("seedPlant: no row");
-    return row.id;
-  }
+      if (!row) throw new Error("seedPlant: no row");
+      return row.id;
+    }
 
-  it("Test 1: owned plant + valid JPEG → { ok: true, photoEntry } with note", async () => {
-    const plantId = await seedPlant(userId);
-    const adapter = new InMemoryStorageAdapter();
-    __setStorageAdapterForTests(adapter);
+    it("Test 1: owned plant + valid JPEG → { ok: true, photoEntry } with note", async () => {
+      const plantId = await seedPlant(userId);
+      const adapter = new InMemoryStorageAdapter();
+      __setStorageAdapterForTests(adapter);
 
-    const result = await createPhotoEntry({
-      userId,
-      plantId,
-      buffer: MINIMAL_JPEG,
-      contentType: "image/jpeg",
-      note: "Cresceu!",
+      const result = await createPhotoEntry({
+        userId,
+        plantId,
+        buffer: MINIMAL_JPEG,
+        contentType: "image/jpeg",
+        note: "Cresceu!",
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) throw new Error(`expected ok: ${result.reason}`);
+      expect(result.photoEntry.plantId).toBe(plantId);
+      expect(result.photoEntry.note).toBe("Cresceu!");
     });
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) throw new Error(`expected ok: ${result.reason}`);
-    expect(result.photoEntry.plantId).toBe(plantId);
-    expect(result.photoEntry.note).toBe("Cresceu!");
-  });
+    it("Test 2: cross-user plant → { ok: false, code: not_found }", async () => {
+      const plantId = await seedPlant(otherUserId);
+      const adapter = new InMemoryStorageAdapter();
+      __setStorageAdapterForTests(adapter);
 
-  it("Test 2: cross-user plant → { ok: false, code: not_found }", async () => {
-    const plantId = await seedPlant(otherUserId);
-    const adapter = new InMemoryStorageAdapter();
-    __setStorageAdapterForTests(adapter);
+      const result = await createPhotoEntry({
+        userId,
+        plantId,
+        buffer: MINIMAL_JPEG,
+        contentType: "image/jpeg",
+        note: null,
+      });
 
-    const result = await createPhotoEntry({
-      userId,
-      plantId,
-      buffer: MINIMAL_JPEG,
-      contentType: "image/jpeg",
-      note: null,
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("expected not ok");
+      expect(result.code).toBe("not_found");
     });
 
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("expected not ok");
-    expect(result.code).toBe("not_found");
-  });
+    it("Test 3: note > 500 chars → { ok: false, code: validation_failed }", async () => {
+      const plantId = await seedPlant(userId);
+      const adapter = new InMemoryStorageAdapter();
+      __setStorageAdapterForTests(adapter);
 
-  it("Test 3: note > 500 chars → { ok: false, code: validation_failed }", async () => {
-    const plantId = await seedPlant(userId);
-    const adapter = new InMemoryStorageAdapter();
-    __setStorageAdapterForTests(adapter);
+      const result = await createPhotoEntry({
+        userId,
+        plantId,
+        buffer: MINIMAL_JPEG,
+        contentType: "image/jpeg",
+        note: "x".repeat(501),
+      });
 
-    const result = await createPhotoEntry({
-      userId,
-      plantId,
-      buffer: MINIMAL_JPEG,
-      contentType: "image/jpeg",
-      note: "x".repeat(501),
+      expect(result.ok).toBe(false);
+      if (result.ok) throw new Error("expected not ok");
+      expect(result.code).toBe("validation_failed");
     });
 
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("expected not ok");
-    expect(result.code).toBe("validation_failed");
-  });
+    it("Test 7: REUSE — createPhotoEntry delegates to uploadPhoto", async () => {
+      const plantId = await seedPlant(userId);
+      const adapter = new InMemoryStorageAdapter();
+      __setStorageAdapterForTests(adapter);
 
-  it("Test 7: REUSE — createPhotoEntry delegates to uploadPhoto", async () => {
-    const plantId = await seedPlant(userId);
-    const adapter = new InMemoryStorageAdapter();
-    __setStorageAdapterForTests(adapter);
+      // Spy on uploadPhoto to verify delegation
+      const uploadPhotoModule = await import("@contexts/catalog/application/upload-photo");
+      const uploadSpy = vi.spyOn(uploadPhotoModule, "uploadPhoto");
 
-    // Spy on uploadPhoto to verify delegation
-    const uploadPhotoModule = await import("@contexts/catalog/application/upload-photo");
-    const uploadSpy = vi.spyOn(uploadPhotoModule, "uploadPhoto");
+      const _result = await createPhotoEntry({
+        userId,
+        plantId,
+        buffer: MINIMAL_JPEG,
+        contentType: "image/jpeg",
+        note: null,
+      });
 
-    const _result = await createPhotoEntry({
-      userId,
-      plantId,
-      buffer: MINIMAL_JPEG,
-      contentType: "image/jpeg",
-      note: null,
+      expect(uploadSpy).toHaveBeenCalledOnce();
+      uploadSpy.mockRestore();
     });
-
-    expect(uploadSpy).toHaveBeenCalledOnce();
-    uploadSpy.mockRestore();
-  });
-});
+  },
+);

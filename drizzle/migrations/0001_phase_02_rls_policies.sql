@@ -21,6 +21,20 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Plain-Postgres CI doesn't ship Supabase's pre-configured GRANTs. Without
+-- them, `withUnitOfWork` (which `SET LOCAL ROLE authenticated`s every
+-- transaction) gets `permission denied for table X` even though RLS would
+-- have allowed the row. Production Supabase already grants these — the
+-- statements below are idempotent and a no-op there. RLS remains the
+-- authorisation gate; GRANTs only let the role attempt the query.
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
+
 -- ============================================================
 -- Section 3: Conditional minimal auth.uid() helper for plain-Postgres CI
 -- ============================================================

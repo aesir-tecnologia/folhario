@@ -15,6 +15,7 @@ import * as pendingDeletionsRepo from "@contexts/catalog/infrastructure/db/pendi
 import {
   validateStorageDeletionPrefix,
   validateStorageObjectKey,
+  parsePlantPhotoKey,
 } from "@contexts/catalog/domain/storage-paths";
 import { getStorageAdapter } from "@contexts/catalog/infrastructure/photo-storage";
 import type { PlantDeletedPayload } from "@contexts/catalog/domain/events";
@@ -116,18 +117,6 @@ function extractPlantIdFromPrefix(prefix: string): string {
   return parts[1]!;
 }
 
-function extractPlantIdFromObjectKey(key: string, userId: string): string {
-  const prefix = `${userId}/`;
-  if (!key.startsWith(prefix)) {
-    throw new Error(`malformed object key (no userId prefix): ${key}`);
-  }
-  const rest = key.slice(prefix.length);
-  const slash = rest.indexOf("/");
-  if (slash <= 0) {
-    throw new Error(`malformed object key (no plantId segment): ${key}`);
-  }
-  return rest.slice(0, slash);
-}
 
 /**
  * Handler for the cleanupStorageReconciler Inngest cron function.
@@ -166,7 +155,10 @@ export async function cleanupStorageReconcilerHandler({
 
       try {
         if (row.kind === "object") {
-          const plantId = extractPlantIdFromObjectKey(row.prefix, row.userId);
+          const plantId = parsePlantPhotoKey(row.prefix, row.userId);
+          if (!plantId) {
+            throw new Error(`malformed object key: ${row.prefix}`);
+          }
           validateStorageObjectKey({
             userId: row.userId,
             plantId,

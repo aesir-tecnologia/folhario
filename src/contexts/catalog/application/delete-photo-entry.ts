@@ -8,7 +8,10 @@ import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
 import * as photoEntriesRepo from "@contexts/catalog/infrastructure/db/photo-entries";
 import * as pendingStorageDeletionsRepo from "@contexts/catalog/infrastructure/db/pending-storage-deletions";
 import { photoEntries } from "@contexts/catalog/infrastructure/db/schema";
-import { validateStorageObjectKey } from "@contexts/catalog/domain/storage-paths";
+import {
+  validateStorageObjectKey,
+  parsePlantPhotoKey,
+} from "@contexts/catalog/domain/storage-paths";
 import {
   PLANT_PHOTOS_BUCKET,
   PLANT_THUMBNAILS_BUCKET,
@@ -41,25 +44,6 @@ function extractObjectKey(storedUrl: string): { bucket: string; key: string } | 
   return { bucket, key: storedUrl.slice(slash + 1) };
 }
 
-/**
- * Extract the plantId from a bucket-relative key with the shape
- * `{userId}/{plantId}/{photoId}.{ext}`.
- * Returns the plantId segment or null if the key does not match the pattern.
- *
- * T-05-04-01: when a photo entry is validated via validateStorageObjectKey,
- * we use the plantId embedded in the stored URL (the original upload plant)
- * rather than `input.plantId`. This handles the edge case where a photo entry
- * has been administratively re-linked to a different plant while preserving
- * the ownership check on `userId`.
- */
-function extractPlantIdFromKey(key: string, userId: string): string | null {
-  const prefix = `${userId}/`;
-  if (!key.startsWith(prefix)) return null;
-  const rest = key.slice(prefix.length);
-  const nextSlash = rest.indexOf("/");
-  if (nextSlash <= 0) return null;
-  return rest.slice(0, nextSlash);
-}
 
 /**
  * Delete a photo entry with same-TX cover auto-promote (D-03) and
@@ -136,8 +120,8 @@ export async function deletePhotoEntry(
       return { kind: "validation_failed", reason: "unexpected bucket for thumbnail url" };
     }
 
-    const photoPlantId = extractPlantIdFromKey(photoParsed.key, input.userId);
-    const thumbPlantId = extractPlantIdFromKey(thumbParsed.key, input.userId);
+    const photoPlantId = parsePlantPhotoKey(photoParsed.key, input.userId);
+    const thumbPlantId = parsePlantPhotoKey(thumbParsed.key, input.userId);
     if (!photoPlantId || !thumbPlantId) {
       return { kind: "validation_failed", reason: "malformed stored url: cannot extract plantId" };
     }

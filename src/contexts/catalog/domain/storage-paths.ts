@@ -48,6 +48,23 @@ export function validateStorageObjectKey({
 }
 
 /**
+ * Parse the plantId from a D-26 canonical object key `{userId}/{plantId}/{photoId}.{ext}`.
+ * Returns the plantId segment, or null if the key does not match the expected shape.
+ *
+ * Canonical single source-of-truth used by delete-photo-entry.ts (replaces
+ * extractPlantIdFromKey) and inngest/functions.ts (replaces extractPlantIdFromObjectKey).
+ * Returns null on failure instead of throwing so callers choose their own error strategy.
+ */
+export function parsePlantPhotoKey(key: string, userId: string): string | null {
+  const prefix = `${userId}/`;
+  if (!key.startsWith(prefix)) return null;
+  const rest = key.slice(prefix.length);
+  const slash = rest.indexOf("/");
+  if (slash <= 0) return null;
+  return rest.slice(0, slash);
+}
+
+/**
  * Validates a prefix path used for bulk storage deletion (e.g. plant cleanup).
  * Asserts prefix === `${userId}/${plantId}/` exactly.
  * Throws `StoragePathValidationError` on any mismatch, including cross-user-prefix attacks.

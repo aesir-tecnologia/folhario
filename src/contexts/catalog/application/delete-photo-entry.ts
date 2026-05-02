@@ -12,6 +12,7 @@ import { validateStorageObjectKey } from "@contexts/catalog/domain/storage-paths
 import {
   PLANT_PHOTOS_BUCKET,
   PLANT_THUMBNAILS_BUCKET,
+  KNOWN_BUCKETS,
 } from "@contexts/catalog/infrastructure/photo-storage";
 
 export interface DeletePhotoEntryInput {
@@ -28,13 +29,16 @@ export type DeletePhotoEntryResult =
   | { ok: false; code: typeof ErrorCode.NotFound | typeof ErrorCode.ValidationFailed; reason: string };
 
 /**
- * Parse the stored `{bucket}/{key}` URL and return the bucket-relative key.
- * Mirrors signCatalogPhotoUrl's parser but returns the raw key for ownership validation.
+ * Parse the stored `{bucket}/{key}` URL, validate the bucket against KNOWN_BUCKETS,
+ * and return the parsed components. Returns null for malformed or unknown-bucket URLs,
+ * preventing garbage from reaching pending_storage_deletions.
  */
-function extractObjectKey(storedUrl: string): string | null {
+function extractObjectKey(storedUrl: string): { bucket: string; key: string } | null {
   const slash = storedUrl.indexOf("/");
   if (slash <= 0 || slash >= storedUrl.length - 1) return null;
-  return storedUrl.slice(slash + 1);
+  const bucket = storedUrl.slice(0, slash);
+  if (!(KNOWN_BUCKETS as Set<string>).has(bucket)) return null;
+  return { bucket, key: storedUrl.slice(slash + 1) };
 }
 
 /**
@@ -110,7 +114,7 @@ export async function deletePhotoEntry(
     return { ok: false, code: ErrorCode.NotFound, reason: "plant not found" };
   }
 
-  type TxResult = { kind: "ok" } | { kind: "not_found" };
+  type TxResult = { kind: "ok" } | { kind: "not_found" } | { kind: "validation_failed"; reason: string };
 
   const runInTx = async (tx: TransactionalDb): Promise<TxResult> => {
     const deleted = await photoEntriesRepo.deletePhotoEntry(tx, {
@@ -120,38 +124,44 @@ export async function deletePhotoEntry(
       return { kind: "not_found" };
     }
 
-    const photoKey = extractObjectKey(deleted.photoUrl);
-    const thumbKey = extractObjectKey(deleted.thumbnailUrl);
-    if (!photoKey || !thumbKey) {
-      throw new Error("malformed stored url in photo entry");
+    const photoParsed = extractObjectKey(deleted.photoUrl);
+    const thumbParsed = extractObjectKey(deleted.thumbnailUrl);
+    if (!photoParsed || !thumbParsed) {
+      return { kind: "validation_failed", reason: "malformed stored url in photo entry" };
+    }
+    if (photoParsed.bucket !== PLANT_PHOTOS_BUCKET) {
+      return { kind: "validation_failed", reason: "unexpected bucket for photo url" };
+    }
+    if (thumbParsed.bucket !== PLANT_THUMBNAILS_BUCKET) {
+      return { kind: "validation_failed", reason: "unexpected bucket for thumbnail url" };
     }
 
-    const photoPlantId = extractPlantIdFromKey(photoKey, input.userId);
-    const thumbPlantId = extractPlantIdFromKey(thumbKey, input.userId);
+    const photoPlantId = extractPlantIdFromKey(photoParsed.key, input.userId);
+    const thumbPlantId = extractPlantIdFromKey(thumbParsed.key, input.userId);
     if (!photoPlantId || !thumbPlantId) {
-      throw new Error("malformed stored url: cannot extract plantId");
+      return { kind: "validation_failed", reason: "malformed stored url: cannot extract plantId" };
     }
     validateStorageObjectKey({
       userId: input.userId,
       plantId: photoPlantId,
-      key: photoKey,
+      key: photoParsed.key,
     });
     validateStorageObjectKey({
       userId: input.userId,
       plantId: thumbPlantId,
-      key: thumbKey,
+      key: thumbParsed.key,
     });
 
     await pendingStorageDeletionsRepo.create(tx, {
       userId: input.userId,
       bucket: PLANT_PHOTOS_BUCKET,
-      prefix: photoKey,
+      prefix: photoParsed.key,
       kind: "object",
     });
     await pendingStorageDeletionsRepo.create(tx, {
       userId: input.userId,
       bucket: PLANT_THUMBNAILS_BUCKET,
-      prefix: thumbKey,
+      prefix: thumbParsed.key,
       kind: "object",
     });
 
@@ -172,6 +182,14 @@ export async function deletePhotoEntry(
       ok: false,
       code: ErrorCode.NotFound,
       reason: "photo entry not found",
+    };
+  }
+
+  if (txResult.kind === "validation_failed") {
+    return {
+      ok: false,
+      code: ErrorCode.ValidationFailed,
+      reason: txResult.reason,
     };
   }
 

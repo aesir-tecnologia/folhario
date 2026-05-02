@@ -16,6 +16,16 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      // Supabase Storage signed URLs for plant covers + photo entries.
+      // Local dev/CI runs Supabase at 127.0.0.1:54321 (per supabase/config.toml);
+      // hosted environments use *.supabase.co.
+      { protocol: "http", hostname: "127.0.0.1", port: "54321", pathname: "/storage/v1/**" },
+      { protocol: "http", hostname: "localhost", port: "54321", pathname: "/storage/v1/**" },
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/**" },
+    ],
+  },
   async headers() {
     return [
       {

@@ -1,0 +1,1 @@
+ALTER TABLE "pending_storage_deletions" ADD CONSTRAINT "pending_storage_deletions_kind_shape_chk" CHECK (("pending_storage_deletions"."kind" = 'prefix' AND "pending_storage_deletions"."prefix" LIKE '%/') OR ("pending_storage_deletions"."kind" = 'object' AND "pending_storage_deletions"."prefix" NOT LIKE '%/'));

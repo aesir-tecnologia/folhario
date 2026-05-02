@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   date,
   index,
   integer,
@@ -94,10 +96,7 @@ export const pendingDeletionStatus = pgEnum("pending_deletion_status", [
   "failed",
 ]);
 
-export const pendingDeletionKind = pgEnum("pending_deletion_kind", [
-  "prefix",
-  "object",
-]);
+export const pendingDeletionKind = pgEnum("pending_deletion_kind", ["prefix", "object"]);
 
 export const pendingStorageDeletions = pgTable(
   "pending_storage_deletions",
@@ -132,6 +131,12 @@ export const pendingStorageDeletions = pgTable(
   (table) => [
     index("psd_status_scheduled_at_idx").on(table.status, table.scheduledAt),
     index("psd_user_id_idx").on(table.userId),
+    // WR-05: shape invariant — 'prefix' rows end with '/', 'object' rows do not.
+    // The reconciler trusts kind absolutely; mismatch causes wrong storage op.
+    check(
+      "pending_storage_deletions_kind_shape_chk",
+      sql`(${table.kind} = 'prefix' AND ${table.prefix} LIKE '%/') OR (${table.kind} = 'object' AND ${table.prefix} NOT LIKE '%/')`,
+    ),
   ],
 );
 

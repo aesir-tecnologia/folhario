@@ -35,7 +35,8 @@ export function usePatchPlantField(
     onErrorToast?: (key: string) => void;
   },
 ) {
-  const qc = opts?.queryClient ?? useQueryClient();
+  const defaultQc = useQueryClient();
+  const qc = opts?.queryClient ?? defaultQc;
   const t = useTranslations("catalog.profile");
   const subscription = useSubscription();
   const idempotencyKeyRef = useRef<string | null>(null);
@@ -101,7 +102,8 @@ export function useDeletePlant(
     onErrorToast?: (key: string) => void;
   },
 ) {
-  const qc = opts?.queryClient ?? useQueryClient();
+  const defaultQc = useQueryClient();
+  const qc = opts?.queryClient ?? defaultQc;
   const t = useTranslations("catalog.profile.delete");
   const subscription = useSubscription();
   const idempotencyKeyRef = useRef<string | null>(null);

@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 /**
  * Toggle — UI primitive (PRD §17).
  *
@@ -16,7 +18,8 @@ export interface ToggleProps {
 }
 
 export function Toggle({ label, checked, onChange, id }: ToggleProps) {
-  const toggleId = id ?? `toggle-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const reactId = useId();
+  const toggleId = id ?? reactId;
   const trackClass = checked ? "bg-canopy" : "bg-hairline";
   const knobX = checked ? "translate-x-[20px]" : "translate-x-0";
 

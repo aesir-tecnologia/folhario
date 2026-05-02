@@ -89,6 +89,11 @@ export async function deletePhotoEntry(
     resolvedPlantId = entryRow.plantId;
   }
 
+  // Pre-flight ownership check is best-effort — the actual safety lies in
+  // (a) the TX-internal photoEntries.delete WHERE id matching, and
+  // (b) the FK CASCADE that already removed the row if the plant was deleted.
+  // A concurrent plant deletion → this delete returns 'not_found'; the user
+  // sees a stale-cache error and the next refetch resolves it.
   const owned = await plantsRepo.findByIdForUser(
     defaultDb,
     input.userId,

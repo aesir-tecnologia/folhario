@@ -59,6 +59,7 @@ const defaultLabels = {
     cta: "+ Foto",
     title: "Nova foto",
     photoPlaceholder: "Toque para adicionar foto",
+    photoRequired: "Adicione uma foto",
     noteLabel: "Anotação (opcional)",
     notePlaceholder: "Como ela está hoje?",
     submit: "Adicionar",

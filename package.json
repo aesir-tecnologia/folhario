@@ -23,7 +23,7 @@
     "db:reset": "supabase db reset",
     "db:sync-env": "bash scripts/sync-supabase-env.sh",
     "db:generate": "node --env-file-if-exists=.env.local node_modules/drizzle-kit/bin.cjs generate",
-    "db:migrate": "node --env-file-if-exists=.env.local node_modules/drizzle-kit/bin.cjs migrate",
+    "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "db:setup": "pnpm db:migrate && pnpm db:seed && pnpm db:check-rls && pnpm db:check-seeds",
     "db:check-rls": "tsx --env-file-if-exists=.env.local scripts/check-rls.ts",

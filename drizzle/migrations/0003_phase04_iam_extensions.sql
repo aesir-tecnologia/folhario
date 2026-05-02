@@ -1,3 +1,14 @@
+-- Conditional `service_role` role for plain-Postgres CI (mirrors the
+-- `authenticated` guard in 0001). Production runs on Supabase, which ships
+-- with `service_role` BYPASSRLS pre-created. Without this guard, vanilla
+-- `postgres:17-alpine` (used by GitHub Actions) errors with
+-- `role "service_role" does not exist` when the policies below execute.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOINHERIT BYPASSRLS;
+  END IF;
+END $$;
+--> statement-breakpoint
 CREATE TABLE "auth_throttle" (
 	"ip" varchar(45) NOT NULL,
 	"endpoint" varchar(64) NOT NULL,

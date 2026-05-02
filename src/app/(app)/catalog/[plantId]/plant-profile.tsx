@@ -110,14 +110,20 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
     await patchMutation.mutateAsync({ field, value });
   };
 
+  // listPhotoEntries returns newest-first; the cover is the oldest entry (D-03).
+  // Find the cover entry by matching raw photo_url, then exclude it from the
+  // additional-photos arrays to prevent the cover appearing twice.
+  const coverEntry = photoEntries.find((pe) => pe.photo_url === plant?.cover_photo_url);
+  const nonCoverEntries = photoEntries.filter((pe) => pe.id !== coverEntry?.id);
+
   const allPhotos = plant?.cover_signed_url
     ? [
         {
-          id: "cover",
+          id: coverEntry?.id ?? "cover",
           src: plant.cover_signed_url,
           caption: plant.nickname ?? plant.name ?? undefined,
         },
-        ...photoEntries.slice(1).map((pe) => ({
+        ...nonCoverEntries.map((pe) => ({
           id: pe.id,
           src: pe.photo_signed_url ?? pe.photo_url,
           caption: pe.note ?? undefined,
@@ -144,7 +150,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
   }
 
   const displayName = plant.nickname ?? plant.name;
-  const hasMultiplePhotos = photoEntries.length > 1;
+  const hasMultiplePhotos = nonCoverEntries.length > 0;
 
   return (
     <div className="flex flex-col">
@@ -210,10 +216,10 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
         </button>
       )}
 
-      {/* Thumbnail strip */}
+      {/* Thumbnail strip — up to 3 non-cover photos, newest first */}
       {hasMultiplePhotos && (
         <div className="flex gap-2 overflow-x-auto px-4 py-3">
-          {photoEntries.slice(1, 4).map((pe, idx) => (
+          {nonCoverEntries.slice(0, 3).map((pe, idx) => (
             <button
               key={pe.id}
               type="button"
@@ -338,12 +344,12 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
 
         {hasMultiplePhotos ? (
           <div className="flex gap-2 overflow-x-auto">
-            {photoEntries.slice(0, 4).map((pe, idx) => (
+            {nonCoverEntries.slice(0, 4).map((pe, idx) => (
               <button
                 key={pe.id}
                 type="button"
                 aria-label={pe.note ?? `Foto ${idx + 1}`}
-                onClick={() => openLightbox(idx)}
+                onClick={() => openLightbox(idx + 1)}
                 className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-lg"
               >
                 <Image

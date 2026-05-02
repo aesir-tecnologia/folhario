@@ -73,6 +73,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
     setNoteValue("");
     setPhotoError(null);
     idempotencyKeyRef.current = null;
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleSubmit() {
@@ -85,17 +86,21 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
       idempotencyKeyRef.current = crypto.randomUUID();
     }
 
+    const currentKey = idempotencyKeyRef.current;
     setSubmitting(true);
 
     const queryKey = plantsKeys.photoEntries(plantId).queryKey;
     const previous = queryClient.getQueryData<PhotoEntriesCache>(queryKey);
 
     const tempId = `temp-${crypto.randomUUID()}`;
+    // Track blob URLs so they can be revoked after the temp entry is replaced or rolled back.
+    const tempPhotoUrl = URL.createObjectURL(selectedFile);
+    const tempThumbUrl = URL.createObjectURL(selectedFile);
     const tempEntry: PhotoEntry = {
       id: tempId,
       plant_id: plantId,
-      photo_url: URL.createObjectURL(selectedFile),
-      thumbnail_url: URL.createObjectURL(selectedFile),
+      photo_url: tempPhotoUrl,
+      thumbnail_url: tempThumbUrl,
       note: noteValue.trim() || null,
       created_at: new Date().toISOString(),
     };
@@ -104,10 +109,8 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
       items: [tempEntry, ...(old?.items ?? [])],
     }));
 
-    const currentKey = idempotencyKeyRef.current;
-    idempotencyKeyRef.current = null;
-    onOpenChange(false);
-
+    // Keep the sheet open during the network call so photo bytes are retained (D-15).
+    // Only close on success; on failure stay open for retry.
     try {
       const compressedFile = await compressPlantPhoto(selectedFile);
 
@@ -129,20 +132,30 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
         queryClient.setQueryData<PhotoEntriesCache>(queryKey, (old) => ({
           items: (old?.items ?? []).map((e) => (e.id === tempId ? body.photo_entry : e)),
         }));
+        URL.revokeObjectURL(tempPhotoUrl);
+        URL.revokeObjectURL(tempThumbUrl);
         await queryClient.invalidateQueries({ queryKey });
         resetState();
+        onOpenChange(false);
         return;
       }
 
+      // Non-OK response: roll back optimistic update, keep key for retry.
+      // 409 conflict (hash mismatch) means body changed on same key — generate new key.
       queryClient.setQueryData<PhotoEntriesCache>(queryKey, previous);
+      URL.revokeObjectURL(tempPhotoUrl);
+      URL.revokeObjectURL(tempThumbUrl);
       toast.error(labels.failure);
-      idempotencyKeyRef.current = crypto.randomUUID();
-      onOpenChange(true);
+      if (response.status === 409) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
+      // else: keep currentKey so retry sends the same idempotency key (D-37).
     } catch {
+      // Network / timeout error: roll back, keep key to allow idempotent retry (D-37).
       queryClient.setQueryData<PhotoEntriesCache>(queryKey, previous);
+      URL.revokeObjectURL(tempPhotoUrl);
+      URL.revokeObjectURL(tempThumbUrl);
       toast.error(labels.failure);
-      idempotencyKeyRef.current = crypto.randomUUID();
-      onOpenChange(true);
     } finally {
       setSubmitting(false);
     }

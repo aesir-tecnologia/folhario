@@ -6,23 +6,16 @@ import { useTranslations } from "next-intl";
 
 import { Lightbox } from "@shared/ui/lightbox";
 import { EmptyState } from "@shared/ui/empty-state";
-import { plantsKeys } from "@contexts/catalog/queries";
+import {
+  plantsKeys,
+  type PlantPhotoEntry,
+  type PhotoEntriesResponse,
+} from "@contexts/catalog/queries";
 import { useSubscription } from "@contexts/billing/application/use-subscription";
 
 import { JournalAddSheet, type JournalAddSheetLabels } from "./journal-add-sheet";
 
-export type PhotoEntry = {
-  id: string;
-  plant_id: string;
-  photo_url: string;
-  thumbnail_url: string;
-  photo_signed_url?: string | null;
-  thumbnail_signed_url?: string | null;
-  note: string | null;
-  created_at: string;
-};
-
-type PhotoEntriesCache = { items: PhotoEntry[] };
+export type PhotoEntry = PlantPhotoEntry;
 
 export interface PhotoJournalLabels {
   titleFormat: string;
@@ -52,13 +45,12 @@ export function PhotoJournal({ plant, entries: initialEntries, readOnly: readOnl
   const [addSheetOpen, setAddSheetOpen] = useState(false);
 
   const queryDef = plantsKeys.photoEntries(plant.id);
-  const query = useQuery({
+  const query = useQuery<PhotoEntriesResponse>({
     ...queryDef,
-    initialData: { items: initialEntries } as unknown,
+    initialData: { items: initialEntries },
   });
 
-  const cachedData = query.data as PhotoEntriesCache | undefined;
-  const rawEntries: PhotoEntry[] = cachedData?.items ?? initialEntries;
+  const rawEntries: PhotoEntry[] = query.data?.items ?? initialEntries;
 
   const entries = [...rawEntries].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),

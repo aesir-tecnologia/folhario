@@ -13,45 +13,18 @@ import { InlineEditField } from "@shared/ui/inline-edit-field";
 import { LocationCombobox } from "@shared/ui/location-combobox";
 import { Lightbox } from "@shared/ui/lightbox";
 import { useSubscription } from "@contexts/billing/application/use-subscription";
-import { plantsKeys, locationsKeys } from "@contexts/catalog/queries";
+import {
+  plantsKeys,
+  locationsKeys,
+  type PlantDetail,
+  type PlantDetailResponse,
+  type PlantPhotoEntry,
+  type PhotoEntriesResponse,
+  type LocationsResponse,
+} from "@contexts/catalog/queries";
 
 import { usePatchPlantField, useDeletePlant, type PatchableField } from "./use-plant-profile-mutations";
 import { DeleteConfirmSheet } from "./delete-confirm-sheet";
-
-type PlantSnakeCase = {
-  id: string;
-  name: string;
-  nickname: string | null;
-  location: string | null;
-  acquisition_date: string | null;
-  notes: string | null;
-  cover_signed_url: string | null;
-  cover_photo_url: string | null;
-};
-
-type PhotoEntrySnakeCase = {
-  id: string;
-  plant_id: string;
-  photo_url: string;
-  thumbnail_url: string;
-  photo_signed_url?: string | null;
-  thumbnail_signed_url?: string | null;
-  note: string | null;
-  created_at: string;
-};
-
-type PlantDetailCache = {
-  plant: PlantSnakeCase;
-  _meta: { photo_entry_count: number; reminder_count: number };
-};
-
-type PhotoEntriesCache = {
-  items: PhotoEntrySnakeCase[];
-};
-
-type LocationsCache = {
-  locations: string[];
-};
 
 interface PlantProfileProps {
   plantId: string;
@@ -68,18 +41,18 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const plantQuery = useQuery(plantsKeys.detail(plantId) as ReturnType<typeof plantsKeys.detail> & { select?: (d: unknown) => PlantDetailCache });
-  const photoEntriesQuery = useQuery(plantsKeys.photoEntries(plantId) as ReturnType<typeof plantsKeys.photoEntries> & { select?: (d: unknown) => PhotoEntriesCache });
-  const locationsQuery = useQuery(locationsKeys.all() as ReturnType<typeof locationsKeys.all> & { select?: (d: unknown) => LocationsCache });
+  const plantQuery = useQuery(plantsKeys.detail(plantId));
+  const photoEntriesQuery = useQuery(plantsKeys.photoEntries(plantId));
+  const locationsQuery = useQuery(locationsKeys.all());
 
-  const detailData = plantQuery.data as PlantDetailCache | undefined;
-  const plant = detailData?.plant;
+  const detailData: PlantDetailResponse | undefined = plantQuery.data;
+  const plant: PlantDetail | undefined = detailData?.plant;
   const meta = detailData?._meta;
 
-  const photoEntriesData = photoEntriesQuery.data as PhotoEntriesCache | undefined;
-  const photoEntries: PhotoEntrySnakeCase[] = photoEntriesData?.items ?? [];
+  const photoEntriesData: PhotoEntriesResponse | undefined = photoEntriesQuery.data;
+  const photoEntries: PlantPhotoEntry[] = photoEntriesData?.items ?? [];
 
-  const locationsData = locationsQuery.data as LocationsCache | undefined;
+  const locationsData: LocationsResponse | undefined = locationsQuery.data;
   const locationSuggestions: string[] = locationsData?.locations ?? [];
 
   const patchMutation = usePatchPlantField(plantId, { queryClient });

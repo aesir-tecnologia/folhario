@@ -7,7 +7,11 @@ import { AlertCircle } from "lucide-react";
 
 import { BottomSheet } from "@shared/ui/bottom-sheet";
 import { compressPlantPhoto } from "@shared/images/client-compress";
-import { plantsKeys } from "@contexts/catalog/queries";
+import {
+  plantsKeys,
+  type PlantPhotoEntry,
+  type PhotoEntriesResponse,
+} from "@contexts/catalog/queries";
 
 export interface JournalAddSheetLabels {
   cta: string;
@@ -29,16 +33,7 @@ export interface JournalAddSheetProps {
   labels: JournalAddSheetLabels;
 }
 
-type PhotoEntry = {
-  id: string;
-  plant_id: string;
-  photo_url: string;
-  thumbnail_url: string;
-  note: string | null;
-  created_at: string;
-};
-
-type PhotoEntriesCache = { items: PhotoEntry[] };
+type PhotoEntry = PlantPhotoEntry;
 
 export function JournalAddSheet({ open, onOpenChange, plantId, labels }: JournalAddSheetProps) {
   const formId = useId();
@@ -90,7 +85,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
     setSubmitting(true);
 
     const queryKey = plantsKeys.photoEntries(plantId).queryKey;
-    const previous = queryClient.getQueryData<PhotoEntriesCache>(queryKey);
+    const previous = queryClient.getQueryData<PhotoEntriesResponse>(queryKey);
 
     const tempId = `temp-${crypto.randomUUID()}`;
     // Track blob URLs so they can be revoked after the temp entry is replaced or rolled back.
@@ -105,7 +100,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
       created_at: new Date().toISOString(),
     };
 
-    queryClient.setQueryData<PhotoEntriesCache>(queryKey, (old) => ({
+    queryClient.setQueryData<PhotoEntriesResponse>(queryKey, (old) => ({
       items: [tempEntry, ...(old?.items ?? [])],
     }));
 
@@ -129,7 +124,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
 
       if (response.ok) {
         const body = (await response.json()) as { photo_entry: PhotoEntry };
-        queryClient.setQueryData<PhotoEntriesCache>(queryKey, (old) => ({
+        queryClient.setQueryData<PhotoEntriesResponse>(queryKey, (old) => ({
           items: (old?.items ?? []).map((e) => (e.id === tempId ? body.photo_entry : e)),
         }));
         URL.revokeObjectURL(tempPhotoUrl);
@@ -142,7 +137,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
 
       // Non-OK response: roll back optimistic update, keep key for retry.
       // 409 conflict (hash mismatch) means body changed on same key — generate new key.
-      queryClient.setQueryData<PhotoEntriesCache>(queryKey, previous);
+      queryClient.setQueryData<PhotoEntriesResponse>(queryKey, previous);
       URL.revokeObjectURL(tempPhotoUrl);
       URL.revokeObjectURL(tempThumbUrl);
       toast.error(labels.failure);
@@ -152,7 +147,7 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
       // else: keep currentKey so retry sends the same idempotency key (D-37).
     } catch {
       // Network / timeout error: roll back, keep key to allow idempotent retry (D-37).
-      queryClient.setQueryData<PhotoEntriesCache>(queryKey, previous);
+      queryClient.setQueryData<PhotoEntriesResponse>(queryKey, previous);
       URL.revokeObjectURL(tempPhotoUrl);
       URL.revokeObjectURL(tempThumbUrl);
       toast.error(labels.failure);

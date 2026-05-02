@@ -139,6 +139,10 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
           NEXT_PUBLIC_SUPABASE_ANON_KEY: anon
           SENTRY_RELEASE: ${{ github.sha }}
+          # Playwright spins up `next start`, which sets NODE_ENV=production
+          # → serverEnv requires RESEND_API_KEY. Same placeholder as the
+          # Build step (no Resend call ever fires in smoke tests).
+          RESEND_API_KEY: ci-build-placeholder
         run: pnpm test:e2e
 
       - name: Upload Playwright report

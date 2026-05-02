@@ -45,6 +45,7 @@ export function Combobox({
   const [filteredOptions, setFilteredOptions] = useState<ComboboxOption[]>(options);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -53,6 +54,22 @@ export function Combobox({
       }
     };
   }, []);
+
+  // WR-08: outside click closes the listbox (APG combobox guidance).
+  // Listens at the document level only while open to avoid leaking a
+  // listener when the listbox is collapsed.
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (containerRef.current && containerRef.current.contains(target)) return;
+      setOpen(false);
+      setHighlightIndex(null);
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [open]);
 
   const GHOST_VALUE_PREFIX = "__ghost__";
 
@@ -193,7 +210,7 @@ export function Combobox({
   const displayValue = open ? query : value;
 
   return (
-    <div className="relative flex flex-col gap-1">
+    <div ref={containerRef} className="relative flex flex-col gap-1">
       <span id={labelId} className="text-sm font-semibold text-forest">
         {label}
       </span>

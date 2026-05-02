@@ -2,7 +2,7 @@
 // + offline catalog + offline /identify + cross-user SW cache leak prevention.
 //
 // TEST-ONLY. MUST NOT be imported from src/.
-/* eslint-disable react-hooks/rules-of-hooks */
+
 import { type Page, type BrowserContext } from "@playwright/test";
 import { test, expect } from "./fixtures/authed-user";
 import AxeBuilder from "@axe-core/playwright";
@@ -76,9 +76,7 @@ test("OFF-08 — cached catalog browsable offline; OfflineBanner visible; ReadOn
 
   await expect(page.getByText(plantName)).toBeVisible();
 
-  await expect(
-    page.getByRole("status").filter({ hasText: /Você está offline/i }),
-  ).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Você está offline/i })).toBeVisible();
 
   await expect(
     page.getByRole("status").filter({ hasText: /Sua assinatura expirou/i }),
@@ -109,9 +107,7 @@ test("OFF-08 — /identify offline shows blocked message + OfflineBanner", async
     page.getByRole("status").filter({ hasText: /Identificação requer conexão/i }),
   ).toBeVisible();
 
-  await expect(
-    page.getByRole("status").filter({ hasText: /Você está offline/i }),
-  ).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Você está offline/i })).toBeVisible();
 
   await context.setOffline(false);
 });
@@ -121,23 +117,20 @@ test("OFF-08 — /identify offline shows blocked message + OfflineBanner", async
 // ============================================================================
 
 for (const combo of COMBOS) {
-  test(
-    `axe / [home empty, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`,
-    async ({ page, authedUser }) => {
-      void authedUser;
-      await page.emulateMedia(combo);
-      await page.goto("/");
-      await page.waitForSelector('[data-testid="home-empty"]');
-      const results = await new AxeBuilder({ page }).analyze();
-      const blocking = results.violations.filter(
-        (v) => v.impact === "critical" || v.impact === "serious",
-      );
-      expect(
-        blocking,
-        `serious + critical: ${blocking.map((v) => v.id).join(", ")}`,
-      ).toEqual([]);
-    },
-  );
+  test(`axe / [home empty, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({
+    page,
+    authedUser,
+  }) => {
+    void authedUser;
+    await page.emulateMedia(combo);
+    await page.goto("/");
+    await page.waitForSelector('[data-testid="home-empty"]');
+    const results = await new AxeBuilder({ page }).analyze();
+    const blocking = results.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious",
+    );
+    expect(blocking, `serious + critical: ${blocking.map((v) => v.id).join(", ")}`).toEqual([]);
+  });
 }
 
 // ============================================================================
@@ -145,24 +138,21 @@ for (const combo of COMBOS) {
 // ============================================================================
 
 for (const combo of COMBOS) {
-  test(
-    `axe / [home bridge, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`,
-    async ({ page, authedUser }) => {
-      void authedUser;
-      await seedPlantViaApi(page, { name: `BridgeAxe-${Date.now()}` });
-      await page.emulateMedia(combo);
-      await page.goto("/");
-      await page.waitForSelector('[data-testid="home-bridge"]');
-      const results = await new AxeBuilder({ page }).analyze();
-      const blocking = results.violations.filter(
-        (v) => v.impact === "critical" || v.impact === "serious",
-      );
-      expect(
-        blocking,
-        `serious + critical: ${blocking.map((v) => v.id).join(", ")}`,
-      ).toEqual([]);
-    },
-  );
+  test(`axe / [home bridge, ${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({
+    page,
+    authedUser,
+  }) => {
+    void authedUser;
+    await seedPlantViaApi(page, { name: `BridgeAxe-${Date.now()}` });
+    await page.emulateMedia(combo);
+    await page.goto("/");
+    await page.waitForSelector('[data-testid="home-bridge"]');
+    const results = await new AxeBuilder({ page }).analyze();
+    const blocking = results.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious",
+    );
+    expect(blocking, `serious + critical: ${blocking.map((v) => v.id).join(", ")}`).toEqual([]);
+  });
 }
 
 // ============================================================================
@@ -170,37 +160,33 @@ for (const combo of COMBOS) {
 // ============================================================================
 
 for (const combo of COMBOS) {
-  test(
-    `axe /catalog offline-banner [${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`,
-    async ({ page, context, authedUser }) => {
-      void authedUser;
-      await seedPlantViaApi(page, { name: `AxeOfflinePlant-${Date.now()}` });
+  test(`axe /catalog offline-banner [${combo.colorScheme} / ${combo.reducedMotion}] — 0 serious + critical`, async ({
+    page,
+    context,
+    authedUser,
+  }) => {
+    void authedUser;
+    await seedPlantViaApi(page, { name: `AxeOfflinePlant-${Date.now()}` });
 
-      await page.goto("/catalog");
-      await page.waitForLoadState("networkidle");
+    await page.goto("/catalog");
+    await page.waitForLoadState("networkidle");
 
-      await context.setOffline(true);
-      await page.reload();
-      await page.waitForTimeout(500);
+    await context.setOffline(true);
+    await page.reload();
+    await page.waitForTimeout(500);
 
-      await expect(
-        page.getByRole("status").filter({ hasText: /Você está offline/i }),
-      ).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: /Você está offline/i })).toBeVisible();
 
-      await page.emulateMedia(combo);
+    await page.emulateMedia(combo);
 
-      const results = await new AxeBuilder({ page }).analyze();
-      const blocking = results.violations.filter(
-        (v) => v.impact === "critical" || v.impact === "serious",
-      );
-      expect(
-        blocking,
-        `serious + critical: ${blocking.map((v) => v.id).join(", ")}`,
-      ).toEqual([]);
+    const results = await new AxeBuilder({ page }).analyze();
+    const blocking = results.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious",
+    );
+    expect(blocking, `serious + critical: ${blocking.map((v) => v.id).join(", ")}`).toEqual([]);
 
-      await context.setOffline(false);
-    },
-  );
+    await context.setOffline(false);
+  });
 }
 
 // ============================================================================
@@ -217,12 +203,10 @@ test("SW cache purged on logout — user B cannot see user A data (T-05-18-04)",
 }) => {
   const { createServerClient } = await import("@supabase/ssr");
   const { seedUser } = await import("../integration/fixtures/seed-user");
-  const { seedCurrentPolicyVersions } = await import(
-    "../integration/fixtures/seed-policy-version"
-  );
+  const { seedCurrentPolicyVersions } = await import("../integration/fixtures/seed-policy-version");
   const { default: postgres } = await import("postgres");
 
-  const imageBuffer = Buffer.from(MINIMAL_JPEG_B64, "base64");
+  const _imageBuffer = Buffer.from(MINIMAL_JPEG_B64, "base64");
 
   async function createAuthContext(
     email: string,
@@ -344,14 +328,17 @@ test("SW cache purged on logout — user B cannot see user A data (T-05-18-04)",
     await pageA.goto("/catalog");
     await pageA.waitForLoadState("networkidle");
 
-    await pageA.getByRole("link", { name: /Sair/i }).click().catch(async () => {
-      await pageA.goto("/api/v1/iam/logout", { waitUntil: "commit" }).catch(() => {});
-      await pageA.request.post("/api/v1/iam/logout", {
-        headers: { "Content-Type": "application/json" },
-        data: "{}",
+    await pageA
+      .getByRole("link", { name: /Sair/i })
+      .click()
+      .catch(async () => {
+        await pageA.goto("/api/v1/iam/logout", { waitUntil: "commit" }).catch(() => {});
+        await pageA.request.post("/api/v1/iam/logout", {
+          headers: { "Content-Type": "application/json" },
+          data: "{}",
+        });
+        await pageA.goto("/auth/login");
       });
-      await pageA.goto("/auth/login");
-    });
 
     await pageA.waitForURL(/auth\/login/, { timeout: 5000 }).catch(() => {});
 

@@ -68,10 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     const targetY = restoreScroll(pathname);
     const currentY = window.scrollY;
-    const maxY = Math.max(
-      0,
-      document.documentElement.scrollHeight - window.innerHeight,
-    );
+    const maxY = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     const clampedTarget = Math.min(targetY, maxY);
 
     if (currentY === clampedTarget) {
@@ -135,11 +132,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="mx-auto max-w-[480px] min-h-[100dvh] bg-paper">
+    <div className="mx-auto min-h-dvh max-w-[480px] bg-paper">
       {/* Skip-to-main link — UI-22 first focusable element */}
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] bg-canopy text-ivory px-4 py-2 rounded-lg"
+        className="
+          sr-only rounded-lg bg-canopy px-4 py-2 text-ivory
+          focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-100
+        "
       >
         {skipLinkText}
       </a>
@@ -159,10 +159,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <BottomNav />
       <AppUpdateToast />
-      <Toaster
-        position="bottom-center"
-        toastOptions={{ style: { zIndex: 60 } }}
-      />
+      <Toaster position="bottom-center" toastOptions={{ style: { zIndex: 60 } }} />
     </div>
   );
 }

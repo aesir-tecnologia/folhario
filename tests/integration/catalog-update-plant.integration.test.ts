@@ -51,12 +51,10 @@ describe.skipIf(!dbUrl)("Phase-05-07 updatePlant use-case integration", () => {
   let otherUserId: string;
 
   let updatePlant: typeof import("@contexts/catalog/application/update-plant").updatePlant;
-  let withUnitOfWork: typeof import("@shared/db/unit-of-work").withUnitOfWork;
   let db: typeof import("@shared/db/client").db;
 
   beforeAll(async () => {
     ({ updatePlant } = await import("@contexts/catalog/application/update-plant"));
-    ({ withUnitOfWork } = await import("@shared/db/unit-of-work"));
     ({ db } = await import("@shared/db/client"));
 
     if (!serviceRoleKey) {
@@ -82,8 +80,12 @@ describe.skipIf(!dbUrl)("Phase-05-07 updatePlant use-case integration", () => {
     otherUserId = userB.user.id;
 
     // Verify public.users rows exist (trigger-based sync)
-    const [rowA] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userId}`;
-    const [rowB] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${otherUserId}`;
+    const [rowA] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userId}`;
+    const [rowB] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${otherUserId}`;
     if (!rowA || !rowB) {
       throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
     }
@@ -107,7 +109,7 @@ describe.skipIf(!dbUrl)("Phase-05-07 updatePlant use-case integration", () => {
     }
   });
 
-  async function seedPlant(ownerId: string, overrides: Record<string, unknown> = {}) {
+  async function seedPlant(ownerId: string, _overrides: Record<string, unknown> = {}) {
     const [row] = await adminSql<{ id: string }[]>`
       INSERT INTO public.plants (user_id, name)
       VALUES (${ownerId}, ${"Test Plant"})
@@ -204,10 +206,10 @@ describe.skipIf(!dbUrl)("Phase-05-07 updatePlant use-case integration", () => {
 
     // Mock withUnitOfWork to throw AFTER the ownership check passes
     const uowModule = await import("@shared/db/unit-of-work");
-    const originalUoW = uowModule.withUnitOfWork;
-    const spy = vi.spyOn(uowModule, "withUnitOfWork").mockRejectedValueOnce(
-      new Error("simulated UoW failure"),
-    );
+    const _originalUoW = uowModule.withUnitOfWork;
+    const spy = vi
+      .spyOn(uowModule, "withUnitOfWork")
+      .mockRejectedValueOnce(new Error("simulated UoW failure"));
 
     try {
       await expect(
@@ -244,7 +246,9 @@ describe.skipIf(!dbUrl)("Phase-05-07 updatePlant use-case integration", () => {
 
     // Call with external tx: we manually open a transaction and roll it back
     let postCommitFn: (() => Promise<void>) | undefined;
-    let resultFromTx: { ok: boolean; plant?: { name: string }; postCommit?: () => Promise<void> } | undefined;
+    let resultFromTx:
+      | { ok: boolean; plant?: { name: string }; postCommit?: () => Promise<void> }
+      | undefined;
 
     try {
       await db.transaction(async (tx) => {

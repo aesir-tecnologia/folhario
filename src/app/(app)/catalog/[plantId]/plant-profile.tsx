@@ -23,7 +23,11 @@ import {
   type LocationsResponse,
 } from "@contexts/catalog/queries";
 
-import { usePatchPlantField, useDeletePlant, type PatchableField } from "./use-plant-profile-mutations";
+import {
+  usePatchPlantField,
+  useDeletePlant,
+  type PatchableField,
+} from "./use-plant-profile-mutations";
 import { DeleteConfirmSheet } from "./delete-confirm-sheet";
 
 interface PlantProfileProps {
@@ -119,8 +123,8 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
   if (!plant) {
     return (
       <div className="flex flex-col gap-4 p-4">
-        <div className="h-8 w-full animate-pulse rounded bg-hairline" />
-        <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-hairline" />
+        <div className="h-8 w-full animate-pulse rounded-sm bg-hairline" />
+        <div className="aspect-4/5 w-full animate-pulse rounded-2xl bg-hairline" />
       </div>
     );
   }
@@ -142,7 +146,11 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
               router.back();
             }
           }}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full hover:bg-hairline"
+          className="
+            flex min-h-[44px] min-w-[44px] items-center justify-center
+            rounded-full
+            hover:bg-hairline
+          "
         >
           <ChevronLeft strokeWidth={1.5} size={24} />
         </button>
@@ -154,7 +162,11 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
                 type="button"
                 aria-label={t("overflow.delete")}
                 data-testid="plant-overflow-trigger"
-                className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full hover:bg-hairline"
+                className="
+                  flex min-h-[44px] min-w-[44px] items-center justify-center
+                  rounded-full
+                  hover:bg-hairline
+                "
               >
                 <MoreVertical strokeWidth={1.5} size={24} />
               </button>
@@ -167,7 +179,11 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
                 <DropdownMenu.Item
                   data-testid="plant-overflow-delete"
                   onSelect={() => setDeleteOpen(true)}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-rust hover:bg-rust/10"
+                  className="
+                    flex cursor-pointer items-center gap-2 rounded-lg px-3
+                    py-2.5 text-sm text-rust
+                    hover:bg-rust/10
+                  "
                 >
                   {t("overflow.delete")}
                 </DropdownMenu.Item>
@@ -185,7 +201,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
           onClick={() => openLightbox(0)}
           className="w-full"
         >
-          <div className="relative aspect-[4/5] w-full overflow-hidden">
+          <div className="relative aspect-4/5 w-full overflow-hidden">
             <Image
               src={plant.cover_signed_url}
               alt={ta11y("coverPhotoOf", { name: displayName })}
@@ -207,7 +223,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
               type="button"
               aria-label={ta11y("photoIndexOf", { index: idx + 2, name: displayName })}
               onClick={() => openLightbox(idx + 1)}
-              className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded-lg"
+              className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg"
             >
               <Image
                 src={pe.thumbnail_url}
@@ -222,7 +238,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       )}
 
       {/* Section 2 — Inline edit fields */}
-      <div className="flex flex-col gap-4 px-4 py-4">
+      <div className="flex flex-col gap-4 p-4">
         <div data-testid="inline-edit-name">
           <InlineEditField
             label={t("fields.name.label")}
@@ -302,7 +318,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       </div>
 
       {/* Section 3 — Active reminders placeholder (Phase 8) */}
-      <section className="px-4 py-4">
+      <section className="p-4">
         <h2 className="mb-2 text-xs font-semibold tracking-widest text-slate">
           {t("sections.reminders")}
         </h2>
@@ -316,7 +332,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       </section>
 
       {/* Section 4 — Photo journal preview strip */}
-      <section className="px-4 py-4">
+      <section className="p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold tracking-widest text-slate">
             {t("sections.journal")}
@@ -337,7 +353,9 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
                 type="button"
                 aria-label={pe.note ?? ta11y("photoFallbackAlt", { index: idx + 1 })}
                 onClick={() => openLightbox(idx + 1)}
-                className="relative h-24 w-20 flex-shrink-0 overflow-hidden rounded-lg"
+                className="
+                  relative h-24 w-20 shrink-0 overflow-hidden rounded-lg
+                "
               >
                 <Image
                   src={pe.thumbnail_url}
@@ -365,7 +383,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
       </section>
 
       {/* Section 5 — ID history placeholder (Phase 6 wires real link; UI-08) */}
-      <section className="px-4 py-4">
+      <section className="p-4">
         <h2 className="mb-2 text-xs font-semibold tracking-widest text-slate">
           {t("sections.history")}
         </h2>

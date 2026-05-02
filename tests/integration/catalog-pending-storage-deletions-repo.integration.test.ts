@@ -38,7 +38,6 @@ function jwtSub(jwt: string): string {
 describe.skipIf(!dbUrl)("pending_storage_deletions repository", () => {
   let userAId: string;
   let userBId: string;
-  let userAJwtSub: string;
   let userBJwtSub: string;
 
   const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
@@ -77,8 +76,12 @@ describe.skipIf(!dbUrl)("pending_storage_deletions repository", () => {
     }
     userBId = createdB.user.id;
 
-    const [rowA] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userAId}`;
-    const [rowB] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userBId}`;
+    const [rowA] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userAId}`;
+    const [rowB] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userBId}`;
     if (!rowA || !rowB) {
       throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
     }
@@ -90,7 +93,6 @@ describe.skipIf(!dbUrl)("pending_storage_deletions repository", () => {
     if (signInA.error || !signInA.data.session?.access_token) {
       throw new Error(`signInWithPassword A failed: ${signInA.error?.message}`);
     }
-    userAJwtSub = jwtSub(signInA.data.session.access_token);
 
     const signInB = await adminClient.auth.signInWithPassword({
       email: `psd-repo-userB-${runId}@test.local`,

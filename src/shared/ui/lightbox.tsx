@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import * as Dialog from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
@@ -123,8 +124,9 @@ export function Lightbox({
               type="button"
               aria-label={closeLabel}
               className="
-                absolute right-4 top-4 z-10 inline-flex min-h-[44px] min-w-[44px]
-                items-center justify-center rounded-full bg-forest/60 text-ivory
+                absolute top-4 right-4 z-10 inline-flex min-h-[44px]
+                min-w-[44px] items-center justify-center rounded-full
+                bg-forest/60 text-ivory
                 hover:bg-forest/80
               "
             >
@@ -134,15 +136,23 @@ export function Lightbox({
 
           {/* Photo */}
           {currentPhoto && (
-            <img
+            <Image
+              unoptimized
+              width={1920}
+              height={1080}
               src={currentPhoto.src}
               alt={altText}
-              className="max-h-[90vh] max-w-[90vw] object-contain"
+              className="size-auto max-h-[90vh] max-w-[90vw] object-contain"
             />
           )}
 
           {currentPhoto?.caption && (
-            <p className="absolute bottom-16 left-6 right-6 line-clamp-2 text-center text-sm text-ivory">
+            <p
+              className="
+                absolute inset-x-6 bottom-16 line-clamp-2 text-center text-sm
+                text-ivory
+              "
+            >
               {currentPhoto.caption}
             </p>
           )}
@@ -151,7 +161,10 @@ export function Lightbox({
           {photos.length >= 2 && (
             <span
               aria-live="polite"
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 text-sm font-semibold text-ivory"
+              className="
+                absolute bottom-6 left-1/2 -translate-x-1/2 text-sm
+                font-semibold text-ivory
+              "
             >
               {`${index + 1} / ${photos.length}`}
             </span>

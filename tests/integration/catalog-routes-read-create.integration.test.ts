@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import sharp from "sharp";
 import postgres from "postgres";
@@ -113,15 +113,6 @@ async function buildMultipartBody(
   return { body, contentType: `multipart/form-data; boundary=${boundary}` };
 }
 
-// --- Helper: compute multipart request hash (mirrors route handler logic) ---
-function computeMultipartHashSync(
-  idempotencyKey: string,
-  rawBodyBytes: Buffer,
-): string {
-  const bodyHash = createHash("sha256").update(rawBodyBytes).digest("hex");
-  return createHash("sha256").update(`${idempotencyKey}:${bodyHash}`).digest("hex");
-}
-
 // --- Helper: build a fake AuthAdapter that returns a specific user ---
 
 type AuthAdapter = import("@contexts/iam/infrastructure/auth/auth-adapter").AuthAdapter;
@@ -163,12 +154,10 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
   let setStorageAdapterForTests: typeof import("@contexts/catalog/infrastructure/photo-storage").__setStorageAdapterForTests;
 
   beforeAll(async () => {
-    ({ __setCurrentUserAdapterForTests: setCurrentUserAdapterForTests } = await import(
-      "@contexts/iam/application/current-user"
-    ));
-    ({ __setStorageAdapterForTests: setStorageAdapterForTests } = await import(
-      "@contexts/catalog/infrastructure/photo-storage"
-    ));
+    ({ __setCurrentUserAdapterForTests: setCurrentUserAdapterForTests } =
+      await import("@contexts/iam/application/current-user"));
+    ({ __setStorageAdapterForTests: setStorageAdapterForTests } =
+      await import("@contexts/catalog/infrastructure/photo-storage"));
 
     // Seed verified user
     const runId = randomUUID().slice(0, 8);
@@ -344,8 +333,13 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
 
       // Missing name
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", { type: "image/jpeg" });
-      const { body: body1, contentType: ct1 } = await buildMultipartBody({ photo: photoFile }, boundary);
+      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", {
+        type: "image/jpeg",
+      });
+      const { body: body1, contentType: ct1 } = await buildMultipartBody(
+        { photo: photoFile },
+        boundary,
+      );
       const req1 = new Request("http://localhost:3000/api/v1/plants", {
         method: "POST",
         headers: { "content-type": ct1, "idempotency-key": randomUUID() },
@@ -358,7 +352,10 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
 
       // Missing photo
       const boundary2 = `b${randomUUID().replace(/-/g, "")}`;
-      const { body: body2, contentType: ct2 } = await buildMultipartBody({ name: "Suculenta" }, boundary2);
+      const { body: body2, contentType: ct2 } = await buildMultipartBody(
+        { name: "Suculenta" },
+        boundary2,
+      );
       const req2 = new Request("http://localhost:3000/api/v1/plants", {
         method: "POST",
         headers: { "content-type": ct2, "idempotency-key": randomUUID() },
@@ -403,9 +400,13 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       expect(json.photo_entry.plant_id).toBe(json.plant.id);
 
       // Verify DB rows exist
-      const plantRows = await driver<{ id: string }[]>`SELECT id FROM plants WHERE id = ${json.plant.id as string}`;
+      const plantRows = await driver<
+        { id: string }[]
+      >`SELECT id FROM plants WHERE id = ${json.plant.id as string}`;
       expect(plantRows).toHaveLength(1);
-      const photoRows = await driver<{ id: string }[]>`SELECT id FROM photo_entries WHERE id = ${json.photo_entry.id as string}`;
+      const photoRows = await driver<
+        { id: string }[]
+      >`SELECT id FROM photo_entries WHERE id = ${json.photo_entry.id as string}`;
       expect(photoRows).toHaveLength(1);
     });
 
@@ -416,7 +417,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       const idempotencyKey = randomUUID();
 
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", {
+        type: "image/jpeg",
+      });
       const { body, contentType } = await buildMultipartBody(
         { name: "Replay Plant", photo: photoFile },
         boundary,
@@ -432,7 +435,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       // First call
       const res1 = await POST(makeReq());
       expect(res1.status).toBe(201);
-      const body1 = await res1.json() as { plant: { id: string } };
+      const body1 = (await res1.json()) as { plant: { id: string } };
       const plantId = body1.plant.id;
 
       // Reset mocks to track second call only
@@ -441,7 +444,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       // Second call — same key + same body
       const res2 = await POST(makeReq());
       expect(res2.status).toBe(201);
-      const body2 = await res2.json() as { plant: { id: string } };
+      const body2 = (await res2.json()) as { plant: { id: string } };
 
       // Same response
       expect(body2.plant.id).toBe(plantId);
@@ -508,10 +511,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     it("Test 1.10 (no-Drizzle-in-route gate): route file imports no drizzle or DB internals", async () => {
       const { readFileSync } = await import("node:fs");
       const { join } = await import("node:path");
-      const content = readFileSync(
-        join(process.cwd(), "src/app/api/v1/plants/route.ts"),
-        "utf8",
-      );
+      const content = readFileSync(join(process.cwd(), "src/app/api/v1/plants/route.ts"), "utf8");
       const drizzlePattern = /from\s+["']drizzle-orm(?:\/[^"']*)?["']/;
       const dbClientPattern = /from\s+["'][^"']*shared\/db\/client["']/;
       const schemaPattern = /from\s+["'][^"']*contexts\/[^"'/]+\/infrastructure\/db\/schema["']/;
@@ -556,19 +556,18 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       if (opts.idempotencyKey !== undefined) {
         headers["idempotency-key"] = opts.idempotencyKey;
       }
-      const req = new Request(
-        `http://localhost:3000/api/v1/plants/${opts.plantId}/photo-entries`,
-        { method: "POST", headers, body: new Uint8Array(body) },
-      );
+      const req = new Request(`http://localhost:3000/api/v1/plants/${opts.plantId}/photo-entries`, {
+        method: "POST",
+        headers,
+        body: new Uint8Array(body),
+      });
       const params = Promise.resolve({ plantId: opts.plantId });
       return [req, { params }];
     }
 
     it("Test 2.1a (auth gate): no session → 401 unauthenticated", async () => {
       setCurrentUserAdapterForTests(buildFakeAdapter(null));
-      const { POST } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { POST } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const [req, ctx] = await buildPhotoEntryRequest({
         plantId: ownedPlantId,
         idempotencyKey: randomUUID(),
@@ -581,9 +580,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
 
     it("Test 2.1b (verified gate): unverified user → 403 email_unverified", async () => {
       setCurrentUserAdapterForTests(buildFakeAdapter(unverifiedUserRow));
-      const { POST } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { POST } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const [req, ctx] = await buildPhotoEntryRequest({
         plantId: ownedPlantId,
         idempotencyKey: randomUUID(),
@@ -596,9 +593,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
 
     it("Test 2.1c (idempotency-key required): no Idempotency-Key → 400 validation_failed", async () => {
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { POST } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { POST } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const [req, ctx] = await buildPhotoEntryRequest({ plantId: ownedPlantId });
       const res = await POST(req, ctx);
       expect(res.status).toBe(400);
@@ -609,9 +604,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     it("Test 2.2 (plant ownership 404): other user's plant → 404 not_found", async () => {
       useInMemoryStorage();
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { POST } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { POST } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       // Use a random UUID plant (not owned by verifiedUser)
       const otherPlantId = randomUUID();
       const [req, ctx] = await buildPhotoEntryRequest({
@@ -627,9 +620,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     it("Test 2.3 (happy path 201 + snake_case): valid multipart → 201 with photo_entry", async () => {
       useInMemoryStorage();
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { POST } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { POST } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const [req, ctx] = await buildPhotoEntryRequest({
         plantId: ownedPlantId,
         note: "Cresceu muito hoje",
@@ -654,12 +645,12 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     it("Test 2.4 (idempotent replay): same key+body → identical response, ONE row", async () => {
       useInMemoryStorage();
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { POST } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { POST } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const idempotencyKey = randomUUID();
       const boundary = `b${randomUUID().replace(/-/g, "")}`;
-      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", { type: "image/jpeg" });
+      const photoFile = new File([new Uint8Array(validJpegBuffer)], "photo.jpg", {
+        type: "image/jpeg",
+      });
       const { body, contentType } = await buildMultipartBody({ photo: photoFile }, boundary);
 
       const makeReq = () =>
@@ -702,12 +693,10 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
   // ============================================================================
 
   describe("GET /api/v1/plants", () => {
-    let listPlantIds: string[] = [];
-
     beforeAll(async () => {
       useInMemoryStorage();
       // Seed 5 plants with varying acquisition dates
-      const rows = await driver<{ id: string }[]>`
+      await driver`
         INSERT INTO plants (user_id, name, location, acquisition_date)
         VALUES
           (${userId}, 'Áloe Vera', 'sala', '2024-03-01'),
@@ -715,9 +704,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
           (${userId}, 'Samambaia', 'varanda', '2024-02-20'),
           (${userId}, 'Espada-de-São-Jorge', 'sala', NULL),
           (${userId}, 'Orquídea', 'banheiro', '2024-04-10')
-        RETURNING id
       `;
-      listPlantIds = rows.map((r) => r.id);
     });
 
     it("Test 3.1 (auth/verified gates): unauthenticated → 401; unverified → 403", async () => {
@@ -755,9 +742,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       const { GET } = await import("../../src/app/api/v1/plants/route");
 
       // First page with include_count=1
-      const res1 = await GET(
-        new Request("http://localhost:3000/api/v1/plants?include_count=1"),
-      );
+      const res1 = await GET(new Request("http://localhost:3000/api/v1/plants?include_count=1"));
       expect(res1.status).toBe(200);
       const json1 = (await res1.json()) as {
         items: unknown[];
@@ -769,9 +754,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
 
       // With cursor + include_count=1: total_count absent (D-12)
       const res2 = await GET(
-        new Request(
-          `http://localhost:3000/api/v1/plants?limit=2&include_count=1`,
-        ),
+        new Request(`http://localhost:3000/api/v1/plants?limit=2&include_count=1`),
       );
       const json2 = (await res2.json()) as {
         items: unknown[];
@@ -823,7 +806,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       expect(j1.next_cursor).not.toBeNull();
 
       const res2 = await GET(
-        new Request(`http://localhost:3000/api/v1/plants?limit=2&sort=name_asc&cursor=${j1.next_cursor}`),
+        new Request(
+          `http://localhost:3000/api/v1/plants?limit=2&sort=name_asc&cursor=${j1.next_cursor}`,
+        ),
       );
       expect(res2.status).toBe(200);
       const j2 = (await res2.json()) as { items: unknown[]; next_cursor: string | null };
@@ -831,7 +816,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       expect(j2.next_cursor).not.toBeNull();
 
       const res3 = await GET(
-        new Request(`http://localhost:3000/api/v1/plants?limit=2&sort=name_asc&cursor=${j2.next_cursor}`),
+        new Request(
+          `http://localhost:3000/api/v1/plants?limit=2&sort=name_asc&cursor=${j2.next_cursor}`,
+        ),
       );
       expect(res3.status).toBe(200);
       const j3 = (await res3.json()) as { items: unknown[]; next_cursor: string | null };
@@ -899,17 +886,15 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       const { GET } = await import("../../src/app/api/v1/plants/[plantId]/route");
 
       setCurrentUserAdapterForTests(buildFakeAdapter(null));
-      const res1 = await GET(
-        new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`),
-        { params: Promise.resolve({ plantId: detailPlantId }) },
-      );
+      const res1 = await GET(new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`), {
+        params: Promise.resolve({ plantId: detailPlantId }),
+      });
       expect(res1.status).toBe(401);
 
       setCurrentUserAdapterForTests(buildFakeAdapter(unverifiedUserRow));
-      const res2 = await GET(
-        new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`),
-        { params: Promise.resolve({ plantId: detailPlantId }) },
-      );
+      const res2 = await GET(new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`), {
+        params: Promise.resolve({ plantId: detailPlantId }),
+      });
       expect(res2.status).toBe(403);
     });
 
@@ -919,10 +904,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       const { GET } = await import("../../src/app/api/v1/plants/[plantId]/route");
 
       const unknownId = randomUUID();
-      const res1 = await GET(
-        new Request(`http://localhost:3000/api/v1/plants/${unknownId}`),
-        { params: Promise.resolve({ plantId: unknownId }) },
-      );
+      const res1 = await GET(new Request(`http://localhost:3000/api/v1/plants/${unknownId}`), {
+        params: Promise.resolve({ plantId: unknownId }),
+      });
       expect(res1.status).toBe(404);
       const body1 = (await res1.json()) as { error: { code: string } };
       expect(body1.error.code).toBe("not_found");
@@ -933,10 +917,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
       const { GET } = await import("../../src/app/api/v1/plants/[plantId]/route");
 
-      const res = await GET(
-        new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`),
-        { params: Promise.resolve({ plantId: detailPlantId }) },
-      );
+      const res = await GET(new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`), {
+        params: Promise.resolve({ plantId: detailPlantId }),
+      });
       expect(res.status).toBe(200);
       const json = (await res.json()) as {
         plant: Record<string, unknown>;
@@ -955,10 +938,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
       const { GET } = await import("../../src/app/api/v1/plants/[plantId]/route");
 
-      const res = await GET(
-        new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`),
-        { params: Promise.resolve({ plantId: detailPlantId }) },
-      );
+      const res = await GET(new Request(`http://localhost:3000/api/v1/plants/${detailPlantId}`), {
+        params: Promise.resolve({ plantId: detailPlantId }),
+      });
       expect(res.status).toBe(200);
       const json = (await res.json()) as {
         plant: Record<string, unknown>;
@@ -1010,9 +992,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     });
 
     it("Test 5.1 (auth/verified gates): unauthenticated → 401; unverified → 403", async () => {
-      const { GET } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { GET } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
 
       setCurrentUserAdapterForTests(buildFakeAdapter(null));
       const res1 = await GET(
@@ -1032,9 +1012,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
     it("Test 5.2 (cross-user): other user's plant → 404 not_found", async () => {
       useInMemoryStorage();
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { GET } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { GET } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const otherPlantId = randomUUID();
       const res = await GET(
         new Request(`http://localhost:3000/api/v1/plants/${otherPlantId}/photo-entries`),
@@ -1061,9 +1039,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
           return { bucket: url.slice(0, idx), objectKey: url.slice(idx + 1) };
         };
         const { bucket: photoBucket, objectKey: photoKey } = parseBucketKey(entry.photo_url);
-        const { bucket: thumbBucket, objectKey: thumbKey } = parseBucketKey(
-          entry.thumbnail_url,
-        );
+        const { bucket: thumbBucket, objectKey: thumbKey } = parseBucketKey(entry.thumbnail_url);
         await adapter.uploadObject({
           bucket: photoBucket,
           objectKey: photoKey,
@@ -1079,9 +1055,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       }
 
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { GET } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { GET } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const res = await GET(
         new Request(`http://localhost:3000/api/v1/plants/${journalPlantId}/photo-entries`),
         { params: Promise.resolve({ plantId: journalPlantId }) },
@@ -1134,9 +1108,7 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       }
 
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
-      const { GET } = await import(
-        "../../src/app/api/v1/plants/[plantId]/photo-entries/route"
-      );
+      const { GET } = await import("../../src/app/api/v1/plants/[plantId]/photo-entries/route");
       const res = await GET(
         new Request(`http://localhost:3000/api/v1/plants/${journalPlantId}/photo-entries`),
         { params: Promise.resolve({ plantId: journalPlantId }) },
@@ -1147,9 +1119,9 @@ describe.skipIf(!dbUrl)("Phase-05-08 catalog route handlers (read + create)", ()
       for (const item of json.items) {
         expect(item).toHaveProperty("photo_signed_url");
         expect(item).toHaveProperty("thumbnail_signed_url");
-        expect(
-          typeof item.photo_signed_url === "string" || item.photo_signed_url === null,
-        ).toBe(true);
+        expect(typeof item.photo_signed_url === "string" || item.photo_signed_url === null).toBe(
+          true,
+        );
         expect(
           typeof item.thumbnail_signed_url === "string" || item.thumbnail_signed_url === null,
         ).toBe(true);

@@ -37,7 +37,7 @@ export default async function AddPlantPage() {
   };
 
   return (
-    <div className="mx-auto max-w-tablet pb-safe-area-inset-bottom">
+    <div className="mx-auto max-w-[480px] pb-safe-bottom">
       <AddPlantForm readOnly={readOnly} labels={labels} initialLocationSuggestions={[]} />
     </div>
   );

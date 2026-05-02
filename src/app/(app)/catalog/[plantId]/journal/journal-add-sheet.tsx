@@ -5,6 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertCircle } from "lucide-react";
 
+import Image from "next/image";
+
 import { BottomSheet } from "@shared/ui/bottom-sheet";
 import { compressPlantPhoto } from "@shared/images/client-compress";
 import {
@@ -170,27 +172,36 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <div
-            className={`relative aspect-[4/5] w-full cursor-pointer overflow-hidden rounded-2xl border-[1.5px] border-dashed ${photoError ? "border-rust" : "border-hairline"} bg-ivory`}
+            className={`
+              relative aspect-4/5 w-full cursor-pointer overflow-hidden
+              rounded-2xl border-[1.5px] border-dashed
+              ${photoError ? `border-rust` : `border-hairline`}
+              bg-ivory
+            `}
             onClick={openFilePicker}
           >
             {previewUrl ? (
-              <img
+              <Image
+                fill
+                unoptimized
                 data-testid="journal-sheet-preview"
                 src={previewUrl}
                 alt={labels.photoPlaceholder}
-                className="h-full w-full object-cover"
+                className="object-cover"
               />
             ) : (
               <div
                 tabIndex={0}
                 role="button"
                 aria-label={labels.photoPlaceholder}
-                aria-invalid={Boolean(photoError)}
                 aria-describedby={photoError ? photoErrorId : undefined}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") openFilePicker();
                 }}
-                className="flex h-full w-full flex-col items-center justify-center gap-2 text-slate"
+                className="
+                  flex size-full flex-col items-center justify-center gap-2
+                  text-slate
+                "
               >
                 <AlertCircle strokeWidth={1.5} size={32} aria-hidden="true" />
                 <span className="text-sm">{labels.photoPlaceholder}</span>
@@ -199,7 +210,9 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
           </div>
 
           {photoError && (
-            <p id={photoErrorId} role="alert" className="flex items-center gap-1 text-sm text-rust">
+            <p id={photoErrorId} role="alert" className="
+              flex items-center gap-1 text-sm text-rust
+            ">
               <AlertCircle strokeWidth={1.5} size={16} aria-hidden="true" />
               {photoError}
             </p>
@@ -216,7 +229,9 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${formId}-note`} className="text-sm font-semibold text-forest">
+          <label htmlFor={`${formId}-note`} className="
+            text-sm font-semibold text-forest
+          ">
             {labels.noteLabel}
           </label>
           <textarea
@@ -224,7 +239,11 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
             placeholder={labels.notePlaceholder}
             value={noteValue}
             onChange={(e) => setNoteValue(e.target.value)}
-            className="min-h-[96px] max-h-[240px] resize-y rounded-lg border-[1.5px] border-hairline bg-ivory px-4 py-3 text-base text-forest focus:border-canopy focus:outline-none"
+            className="
+              max-h-[240px] min-h-[96px] resize-y rounded-lg border-[1.5px]
+              border-hairline bg-ivory px-4 py-3 text-base text-forest
+              focus:border-canopy focus:outline-none
+            "
           />
         </div>
 
@@ -232,7 +251,11 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
           type="button"
           disabled={submitting}
           onClick={handleSubmit}
-          className="w-full rounded-lg bg-canopy px-4 py-3 text-base font-semibold text-ivory min-h-[48px] disabled:opacity-70"
+          className="
+            min-h-[48px] w-full rounded-lg bg-canopy px-4 py-3 text-base
+            font-semibold text-ivory
+            disabled:opacity-70
+          "
         >
           {submitting ? labels.submitting : labels.submit}
         </button>
@@ -244,7 +267,10 @@ export function JournalAddSheet({ open, onOpenChange, plantId, labels }: Journal
             resetState();
             onOpenChange(false);
           }}
-          className="w-full rounded-lg border border-canopy px-4 py-3 text-base font-semibold text-canopy min-h-[48px]"
+          className="
+            min-h-[48px] w-full rounded-lg border border-canopy px-4 py-3
+            text-base font-semibold text-canopy
+          "
         >
           {labels.cancel}
         </button>

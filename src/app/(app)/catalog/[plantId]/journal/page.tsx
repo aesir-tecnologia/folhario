@@ -10,11 +10,7 @@ import { ErrorCode } from "@shared/config/errors";
 
 import { PhotoJournal } from "./photo-journal";
 
-export default async function JournalPage({
-  params,
-}: {
-  params: Promise<{ plantId: string }>;
-}) {
+export default async function JournalPage({ params }: { params: Promise<{ plantId: string }> }) {
   const { plantId } = await params;
 
   const auth = await getCurrentUserFromSessionReadOnly();
@@ -76,7 +72,7 @@ export default async function JournalPage({
   });
 
   return (
-    <div className="mx-auto max-w-tablet">
+    <div className="mx-auto max-w-[480px]">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <PhotoJournal
           plant={plantForClient}

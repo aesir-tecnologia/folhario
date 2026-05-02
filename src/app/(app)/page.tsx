@@ -20,12 +20,19 @@ export default async function HomePage() {
     return (
       <div
         data-testid="home-empty"
-        className="flex min-h-[calc(100dvh-64px-80px)] flex-col items-center justify-center gap-6 px-5 py-8 text-center"
+        className="
+          flex min-h-[calc(100dvh-64px-80px)] flex-col items-center
+          justify-center gap-6 px-5 py-8 text-center
+        "
       >
-        <h1 className="font-serif text-[32px] leading-[38px] font-medium text-forest dark:text-moonpaper">
+        <h1
+          className="
+            font-serif text-[32px] leading-[38px] font-medium text-forest
+          "
+        >
           {t("empty.title")}
         </h1>
-        <p className="text-base text-slate dark:text-lantern-slate">{t("empty.hint")}</p>
+        <p className="text-base text-slate">{t("empty.hint")}</p>
         <div className="mt-24">
           <Link href="/identify" aria-label={t("empty.cta")}>
             <CaptureButton aria-label={t("empty.cta")} breathing />
@@ -33,7 +40,10 @@ export default async function HomePage() {
         </div>
         <Link
           href="/catalog/add"
-          className="text-canopy underline-offset-2 hover:underline mt-6"
+          className="
+            mt-6 text-canopy underline-offset-2
+            hover:underline
+          "
         >
           {t("empty.manualLink")}
         </Link>
@@ -44,14 +54,18 @@ export default async function HomePage() {
   return (
     <div
       data-testid="home-bridge"
-      className="flex min-h-[calc(100dvh-64px-80px)] flex-col items-center justify-center gap-6 px-5 py-8 text-center"
+      className="
+        flex min-h-[calc(100dvh-64px-80px)] flex-col items-center justify-center
+        gap-6 px-5 py-8 text-center
+      "
     >
-      <p className="text-base text-forest dark:text-moonpaper">
-        {t("bridge.body", { count })}
-      </p>
+      <p className="text-base text-forest">{t("bridge.body", { count })}</p>
       <Link
         href="/catalog"
-        className="text-canopy underline-offset-2 hover:underline mt-4"
+        className="
+          mt-4 text-canopy underline-offset-2
+          hover:underline
+        "
       >
         {t("bridge.cta")}
       </Link>

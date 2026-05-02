@@ -55,7 +55,10 @@ export function EmptyState({
   const cta = ctaHref ? (
     <a
       href={ctaHref}
-      className="inline-flex items-center justify-center rounded-lg bg-canopy px-6 py-3 text-base font-semibold text-ivory min-h-[48px]"
+      className="
+        inline-flex min-h-[48px] items-center justify-center rounded-lg
+        bg-canopy px-6 py-3 text-base font-semibold text-ivory
+      "
     >
       {ctaLabel}
     </a>
@@ -63,7 +66,10 @@ export function EmptyState({
     <button
       type="button"
       onClick={ctaOnClick}
-      className="inline-flex items-center justify-center rounded-lg bg-canopy px-6 py-3 text-base font-semibold text-ivory min-h-[48px]"
+      className="
+        inline-flex min-h-[48px] items-center justify-center rounded-lg
+        bg-canopy px-6 py-3 text-base font-semibold text-ivory
+      "
     >
       {ctaLabel}
     </button>

@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
@@ -54,7 +52,8 @@ describe.skipIf(!dbUrl)("Phase-05-07 createPhotoEntry use-case integration", () 
 
   beforeAll(async () => {
     ({ createPhotoEntry } = await import("@contexts/catalog/application/create-photo-entry"));
-    ({ __setStorageAdapterForTests } = await import("@contexts/catalog/infrastructure/photo-storage"));
+    ({ __setStorageAdapterForTests } =
+      await import("@contexts/catalog/infrastructure/photo-storage"));
     ({ InMemoryStorageAdapter } = await import("./fixtures/in-memory-storage-adapter"));
 
     if (!serviceRoleKey) {
@@ -79,8 +78,12 @@ describe.skipIf(!dbUrl)("Phase-05-07 createPhotoEntry use-case integration", () 
     if (errB || !userB.user) throw new Error(`createUser B: ${errB?.message}`);
     otherUserId = userB.user.id;
 
-    const [rowA] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userId}`;
-    const [rowB] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${otherUserId}`;
+    const [rowA] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userId}`;
+    const [rowB] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${otherUserId}`;
     if (!rowA || !rowB) {
       throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
     }
@@ -179,7 +182,7 @@ describe.skipIf(!dbUrl)("Phase-05-07 createPhotoEntry use-case integration", () 
     const uploadPhotoModule = await import("@contexts/catalog/application/upload-photo");
     const uploadSpy = vi.spyOn(uploadPhotoModule, "uploadPhoto");
 
-    const result = await createPhotoEntry({
+    const _result = await createPhotoEntry({
       userId,
       plantId,
       buffer: MINIMAL_JPEG,

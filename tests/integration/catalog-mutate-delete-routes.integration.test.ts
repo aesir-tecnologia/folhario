@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import postgres from "postgres";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -83,15 +83,14 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
   let userId: string;
   let userId2: string;
   let verifiedUserRow: UserRow;
-  let verifiedUserRow2: UserRow;
+  let _verifiedUserRow2: UserRow;
   let unverifiedUserRow: UserRow;
 
   let setCurrentUserAdapterForTests: typeof import("@contexts/iam/application/current-user").__setCurrentUserAdapterForTests;
 
   beforeAll(async () => {
-    ({ __setCurrentUserAdapterForTests: setCurrentUserAdapterForTests } = await import(
-      "@contexts/iam/application/current-user"
-    ));
+    ({ __setCurrentUserAdapterForTests: setCurrentUserAdapterForTests } =
+      await import("@contexts/iam/application/current-user"));
 
     const runId = randomUUID().slice(0, 8);
 
@@ -150,7 +149,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
     const uvRow = await findById(db, row3.id);
     if (!vRow1 || !vRow2 || !uvRow) throw new Error("findById failed");
     verifiedUserRow = vRow1;
-    verifiedUserRow2 = vRow2;
+    _verifiedUserRow2 = vRow2;
     unverifiedUserRow = uvRow;
   }, 30_000);
 
@@ -176,7 +175,10 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
 
   // --- DB helpers ---
 
-  async function seedPlant(uid: string, opts: { name?: string; coverPhotoUrl?: string } = {}): Promise<string> {
+  async function seedPlant(
+    uid: string,
+    opts: { name?: string; coverPhotoUrl?: string } = {},
+  ): Promise<string> {
     const [row] = await driver<{ id: string }[]>`
       INSERT INTO plants (user_id, name, cover_photo_url)
       VALUES (${uid}, ${opts.name ?? "Test Plant"}, ${opts.coverPhotoUrl ?? null})
@@ -293,7 +295,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(200);
-      const json = await res.json() as { plant: { id: string; name: string } };
+      const json = (await res.json()) as { plant: { id: string; name: string } };
       expect(json.plant.id).toBe(plantId);
       expect(json.plant.name).toBe("Costela Adam");
 
@@ -342,14 +344,18 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
 
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
 
-      const req1 = makePatchRequest({ plantId, body: { name: "Costela Adam" }, idempotencyKey: key });
+      const req1 = makePatchRequest({
+        plantId,
+        body: { name: "Costela Adam" },
+        idempotencyKey: key,
+      });
       await PATCH(req1, { params: Promise.resolve({ plantId }) });
 
       // Same key, different body → conflict
       const req2 = makePatchRequest({ plantId, body: { nickname: "Cris" }, idempotencyKey: key });
       const res2 = await PATCH(req2, { params: Promise.resolve({ plantId }) });
       expect(res2.status).toBe(409);
-      const json2 = await res2.json() as { error: { code: string } };
+      const json2 = (await res2.json()) as { error: { code: string } };
       expect(json2.error.code).toBe("conflict");
 
       // spy called only once (for req1)
@@ -373,7 +379,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("validation_failed");
       expect(spy).not.toHaveBeenCalled();
 
@@ -389,7 +395,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("validation_failed");
       expect(spy).not.toHaveBeenCalled();
 
@@ -398,11 +404,15 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
 
     it("Test 6 — unknown body field (.strict() rejection): 400 validation_failed", async () => {
       const plantId = await seedPlant(userId, { name: "Test" });
-      const req = makePatchRequest({ plantId, body: { id: "different-uuid" }, idempotencyKey: randomUUID() });
+      const req = makePatchRequest({
+        plantId,
+        body: { id: "different-uuid" },
+        idempotencyKey: randomUUID(),
+      });
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("validation_failed");
 
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
@@ -424,7 +434,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId: plantId2 }) });
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("not_found");
 
       const [dbRow] = await driver<{ name: string }[]>`
@@ -449,7 +459,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(401);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("unauthenticated");
       expect(spy).not.toHaveBeenCalled();
 
@@ -470,7 +480,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(403);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("email_unverified");
       expect(spy).not.toHaveBeenCalled();
 
@@ -493,11 +503,13 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { PATCH } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await PATCH(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(402);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("read_only_mode");
       expect(spy).not.toHaveBeenCalled();
 
-      const [dbRow] = await driver<{ name: string }[]>`SELECT name FROM plants WHERE id = ${plantId}`;
+      const [dbRow] = await driver<
+        { name: string }[]
+      >`SELECT name FROM plants WHERE id = ${plantId}`;
       expect(dbRow?.name).toBe("Test");
 
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
@@ -526,9 +538,15 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
     it("Test 1 — happy path (cascade): 204 + cascade verified", async () => {
       const plantId = await seedPlant(userId, { name: "Cascade Plant" });
       const now = new Date();
-      const e1 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now.getTime()).toISOString() });
-      const e2 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now.getTime() + 1000).toISOString() });
-      const e3 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now.getTime() + 2000).toISOString() });
+      const e1 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now.getTime()).toISOString(),
+      });
+      const e2 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now.getTime() + 1000).toISOString(),
+      });
+      const e3 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now.getTime() + 2000).toISOString(),
+      });
 
       // seed a reminder
       await driver`
@@ -549,7 +567,8 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       expect(plantRow).toBeUndefined();
 
       // photo_entries gone
-      const photoRows = await driver`SELECT id FROM photo_entries WHERE id IN (${e1.id}, ${e2.id}, ${e3.id})`;
+      const photoRows =
+        await driver`SELECT id FROM photo_entries WHERE id IN (${e1.id}, ${e2.id}, ${e3.id})`;
       expect(photoRows.length).toBe(0);
 
       // reminders gone
@@ -557,7 +576,9 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       expect(reminderRows.length).toBe(0);
 
       // pending_storage_deletions: 2 rows inserted
-      const psdRows = await driver<{ bucket: string }[]>`SELECT bucket, prefix FROM pending_storage_deletions WHERE user_id = ${userId}`;
+      const psdRows = await driver<
+        { bucket: string }[]
+      >`SELECT bucket, prefix FROM pending_storage_deletions WHERE user_id = ${userId}`;
       expect(psdRows.length).toBe(2);
       const buckets = psdRows.map((r) => r.bucket).sort();
       expect(buckets).toContain("plant-photos");
@@ -614,15 +635,18 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ plantId: plantId2 }) });
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("not_found");
 
       // plant still exists
-      const [plantRow] = await driver<{ id: string }[]>`SELECT id FROM plants WHERE id = ${plantId2}`;
+      const [plantRow] = await driver<
+        { id: string }[]
+      >`SELECT id FROM plants WHERE id = ${plantId2}`;
       expect(plantRow).toBeDefined();
 
       // no pending_storage_deletions inserted
-      const psdRows = await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
+      const psdRows =
+        await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
       expect(psdRows.length).toBe(0);
 
       await driver`DELETE FROM photo_entries WHERE plant_id = ${plantId2}`;
@@ -641,12 +665,14 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(402);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("read_only_mode");
       expect(spy).not.toHaveBeenCalled();
 
       // plant still exists
-      const [plantRow] = await driver<{ id: string }[]>`SELECT id FROM plants WHERE id = ${plantId}`;
+      const [plantRow] = await driver<
+        { id: string }[]
+      >`SELECT id FROM plants WHERE id = ${plantId}`;
       expect(plantRow).toBeDefined();
 
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
@@ -662,7 +688,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(401);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("unauthenticated");
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
     });
@@ -677,7 +703,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(403);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("email_unverified");
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
     });
@@ -694,7 +720,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/plants/[plantId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ plantId }) });
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("validation_failed");
       expect(spy).not.toHaveBeenCalled();
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
@@ -744,8 +770,12 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const now = Date.now();
       const plantId = await seedPlant(userId, { name: "Photo Plant" });
       const e1 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now).toISOString() });
-      const e2 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now + 1000).toISOString() });
-      const e3 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now + 2000).toISOString() });
+      const e2 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now + 1000).toISOString(),
+      });
+      const _e3 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now + 2000).toISOString(),
+      });
       // Set cover to e1
       await driver`UPDATE plants SET cover_photo_url = ${e1.photoUrl} WHERE id = ${plantId}`;
 
@@ -762,11 +792,14 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       expect(e2Row).toBeUndefined();
 
       // cover still e1
-      const [plantRow] = await driver<{ cover_photo_url: string }[]>`SELECT cover_photo_url FROM plants WHERE id = ${plantId}`;
+      const [plantRow] = await driver<
+        { cover_photo_url: string }[]
+      >`SELECT cover_photo_url FROM plants WHERE id = ${plantId}`;
       expect(plantRow?.cover_photo_url).toBe(e1.photoUrl);
 
       // pending_storage_deletions has a row for e2's photo
-      const psdRows = await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
+      const psdRows =
+        await driver`SELECT id FROM pending_storage_deletions WHERE user_id = ${userId}`;
       expect(psdRows.length).toBeGreaterThan(0);
 
       await driver`DELETE FROM pending_storage_deletions WHERE user_id = ${userId}`;
@@ -778,8 +811,12 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const now = Date.now();
       const plantId = await seedPlant(userId, { name: "Cover Plant" });
       const e1 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now).toISOString() });
-      const e2 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now + 1000).toISOString() });
-      const e3 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now + 2000).toISOString() });
+      const e2 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now + 1000).toISOString(),
+      });
+      const _e3 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now + 2000).toISOString(),
+      });
       await driver`UPDATE plants SET cover_photo_url = ${e1.photoUrl} WHERE id = ${plantId}`;
 
       await driver`DELETE FROM pending_storage_deletions WHERE user_id = ${userId}`;
@@ -795,7 +832,9 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       expect(e1Row).toBeUndefined();
 
       // cover auto-promoted to e2 (next-oldest)
-      const [plantRow] = await driver<{ cover_photo_url: string }[]>`SELECT cover_photo_url FROM plants WHERE id = ${plantId}`;
+      const [plantRow] = await driver<
+        { cover_photo_url: string }[]
+      >`SELECT cover_photo_url FROM plants WHERE id = ${plantId}`;
       expect(plantRow?.cover_photo_url).toBe(e2.photoUrl);
 
       await driver`DELETE FROM pending_storage_deletions WHERE user_id = ${userId}`;
@@ -816,7 +855,9 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const res = await DELETE(req, { params: Promise.resolve({ photoEntryId: e1.id }) });
       expect(res.status).toBe(204);
 
-      const [plantRow] = await driver<{ cover_photo_url: string | null }[]>`SELECT cover_photo_url FROM plants WHERE id = ${plantId}`;
+      const [plantRow] = await driver<
+        { cover_photo_url: string | null }[]
+      >`SELECT cover_photo_url FROM plants WHERE id = ${plantId}`;
       expect(plantRow?.cover_photo_url).toBeNull();
 
       await driver`DELETE FROM pending_storage_deletions WHERE user_id = ${userId}`;
@@ -837,15 +878,19 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/photo-entries/[photoEntryId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ photoEntryId: e_p2.id }) });
       expect(res.status).toBe(404);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("not_found");
 
       // e_p2 still exists
-      const [entryRow] = await driver<{ id: string }[]>`SELECT id FROM photo_entries WHERE id = ${e_p2.id}`;
+      const [entryRow] = await driver<
+        { id: string }[]
+      >`SELECT id FROM photo_entries WHERE id = ${e_p2.id}`;
       expect(entryRow).toBeDefined();
 
       // cover unchanged
-      const [plantRow] = await driver<{ cover_photo_url: string }[]>`SELECT cover_photo_url FROM plants WHERE id = ${plantId2}`;
+      const [plantRow] = await driver<
+        { cover_photo_url: string }[]
+      >`SELECT cover_photo_url FROM plants WHERE id = ${plantId2}`;
       expect(plantRow?.cover_photo_url).toBe(e_p2.photoUrl);
 
       await driver`DELETE FROM photo_entries WHERE plant_id = ${plantId2}`;
@@ -856,20 +901,27 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const plantId = await seedPlant(userId, { name: "RO PE Plant" });
       const e1 = await seedPhotoEntry(plantId, userId);
 
-      const deletePhotoEntryModule = await import("@contexts/catalog/application/delete-photo-entry");
+      const deletePhotoEntryModule =
+        await import("@contexts/catalog/application/delete-photo-entry");
       const spy = vi.spyOn(deletePhotoEntryModule, "deletePhotoEntry");
 
       vi.stubEnv("ENABLE_TEST_ROUTES", "1");
 
-      const req = makeDeletePhotoEntryRequest({ photoEntryId: e1.id, idempotencyKey: randomUUID(), readOnly: true });
+      const req = makeDeletePhotoEntryRequest({
+        photoEntryId: e1.id,
+        idempotencyKey: randomUUID(),
+        readOnly: true,
+      });
       const { DELETE } = await import("../../src/app/api/v1/photo-entries/[photoEntryId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ photoEntryId: e1.id }) });
       expect(res.status).toBe(402);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("read_only_mode");
       expect(spy).not.toHaveBeenCalled();
 
-      const [entryRow] = await driver<{ id: string }[]>`SELECT id FROM photo_entries WHERE id = ${e1.id}`;
+      const [entryRow] = await driver<
+        { id: string }[]
+      >`SELECT id FROM photo_entries WHERE id = ${e1.id}`;
       expect(entryRow).toBeDefined();
 
       await driver`DELETE FROM photo_entries WHERE plant_id = ${plantId}`;
@@ -887,7 +939,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/photo-entries/[photoEntryId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ photoEntryId: e1.id }) });
       expect(res.status).toBe(401);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("unauthenticated");
       await driver`DELETE FROM photo_entries WHERE plant_id = ${plantId}`;
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
@@ -904,7 +956,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/photo-entries/[photoEntryId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ photoEntryId: e1.id }) });
       expect(res.status).toBe(403);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("email_unverified");
       await driver`DELETE FROM photo_entries WHERE plant_id = ${plantId}`;
       await driver`DELETE FROM plants WHERE id = ${plantId}`;
@@ -914,11 +966,14 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const now = Date.now();
       const plantId = await seedPlant(userId, { name: "Replay PE Plant" });
       const e1 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now).toISOString() });
-      const e2 = await seedPhotoEntry(plantId, userId, { createdAt: new Date(now + 1000).toISOString() });
+      const _e2 = await seedPhotoEntry(plantId, userId, {
+        createdAt: new Date(now + 1000).toISOString(),
+      });
 
       await driver`DELETE FROM pending_storage_deletions WHERE user_id = ${userId}`;
 
-      const deletePhotoEntryModule = await import("@contexts/catalog/application/delete-photo-entry");
+      const deletePhotoEntryModule =
+        await import("@contexts/catalog/application/delete-photo-entry");
       const spy = vi.spyOn(deletePhotoEntryModule, "deletePhotoEntry");
 
       const key = "del-pe-replay-" + randomUUID();
@@ -943,7 +998,8 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
     it("Test 9 — missing Idempotency-Key header: 400 validation_failed", async () => {
       const plantId = await seedPlant(userId, { name: "Test" });
       const e1 = await seedPhotoEntry(plantId, userId);
-      const deletePhotoEntryModule = await import("@contexts/catalog/application/delete-photo-entry");
+      const deletePhotoEntryModule =
+        await import("@contexts/catalog/application/delete-photo-entry");
       const spy = vi.spyOn(deletePhotoEntryModule, "deletePhotoEntry");
 
       setCurrentUserAdapterForTests(buildFakeAdapter(verifiedUserRow));
@@ -953,7 +1009,7 @@ describe.skipIf(!dbUrl)("Phase-05-09 catalog mutate/delete route handlers", () =
       const { DELETE } = await import("../../src/app/api/v1/photo-entries/[photoEntryId]/route");
       const res = await DELETE(req, { params: Promise.resolve({ photoEntryId: e1.id }) });
       expect(res.status).toBe(400);
-      const json = await res.json() as { error: { code: string } };
+      const json = (await res.json()) as { error: { code: string } };
       expect(json.error.code).toBe("validation_failed");
       expect(spy).not.toHaveBeenCalled();
 

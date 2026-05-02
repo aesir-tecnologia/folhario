@@ -35,13 +35,18 @@ export function Select({ label, options, error, id, className, ...rest }: Select
           className={`appearance-none w-full bg-ivory border-[1.5px] ${strokeClass} rounded-lg px-4 py-3 pr-10 text-base text-forest min-h-[48px] ${className ?? ""}`.trim()}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
         <ChevronDownIcon
           strokeWidth={1.5}
           size={20}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate pointer-events-none"
+          className="
+            pointer-events-none absolute top-1/2 right-3 -translate-y-1/2
+            text-slate
+          "
         />
       </div>
       {error ? (

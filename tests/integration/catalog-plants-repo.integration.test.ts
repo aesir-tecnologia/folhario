@@ -6,13 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { db } from "@shared/db/client";
 import { withUnitOfWork } from "@shared/db/unit-of-work";
-import {
-  photoEntries,
-  plants,
-} from "@contexts/catalog/infrastructure/db/schema";
-import { reminders } from "@contexts/reminders/infrastructure/db/schema";
 import * as plantsRepo from "@contexts/catalog/infrastructure/db/plants";
-import { encodeSortCursor, type SortId } from "@shared/api/cursor";
+import { type SortId } from "@shared/api/cursor";
 
 process.env.NEXT_PUBLIC_SUPABASE_URL ??= "http://127.0.0.1:54321";
 
@@ -45,7 +40,6 @@ function jwtSub(jwt: string): string {
 describe.skipIf(!dbUrl)("plants repository", () => {
   let userAId: string;
   let userBId: string;
-  let userAJwtSub: string;
   let userBJwtSub: string;
 
   const adminClient = createClient(supabaseUrl!, serviceRoleKey ?? "", {
@@ -88,8 +82,12 @@ describe.skipIf(!dbUrl)("plants repository", () => {
     }
     userBId = createdB.user.id;
 
-    const [rowA] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userAId}`;
-    const [rowB] = await adminSql<{ id: string }[]>`SELECT id FROM public.users WHERE id = ${userBId}`;
+    const [rowA] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userAId}`;
+    const [rowB] = await adminSql<
+      { id: string }[]
+    >`SELECT id FROM public.users WHERE id = ${userBId}`;
     if (!rowA || !rowB) {
       throw new Error("auth.users -> public.users sync trigger did not fire. Run pnpm db:migrate.");
     }
@@ -101,7 +99,6 @@ describe.skipIf(!dbUrl)("plants repository", () => {
     if (signInA.error || !signInA.data.session?.access_token) {
       throw new Error(`signInWithPassword A failed: ${signInA.error?.message}`);
     }
-    userAJwtSub = jwtSub(signInA.data.session.access_token);
 
     const signInB = await adminClient.auth.signInWithPassword({
       email: `plants-repo-userB-${runId}@test.local`,
@@ -455,8 +452,8 @@ describe.skipIf(!dbUrl)("plants repository", () => {
       // Use that cursor in a connection bound to userB's JWT sub
       const driver = postgres(dbUrl!, { prepare: false, max: 1, idle_timeout: 5 });
       try {
-        const lastA = page1A.rows[4]!;
-        const crossCursorPayload = page1A.nextCursor!;
+        const _lastA = page1A.rows[4]!;
+        const _crossCursorPayload = page1A.nextCursor!;
 
         // Build same WHERE/ORDER that list() would use with that cursor, under userB's auth
         const rows = await driver.begin(async (tx) => {
@@ -614,9 +611,7 @@ describe.skipIf(!dbUrl)("plants repository", () => {
         name: "Costela de Adão",
       });
       expect(row.userId).toBe(userAId);
-      expect(row.id).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-      );
+      expect(row.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
       expect(row.name).toBe("Costela de Adão");
       await adminSql`DELETE FROM public.plants WHERE id = ${row.id}`;
     });

@@ -24,14 +24,20 @@ export function InlineError({ cause, recovery, retry }: InlineErrorProps): React
   return (
     <div
       role="alert"
-      className="flex flex-col gap-2 rounded-lg border border-rust bg-ivory px-4 py-3 text-sm text-rust"
+      className="
+        flex flex-col gap-2 rounded-lg border border-rust bg-ivory px-4 py-3
+        text-sm text-rust
+      "
     >
       <p className="font-semibold">{cause}</p>
       <p className="text-slate">{recovery}</p>
       <button
         type="button"
         onClick={retry.onClick}
-        className="self-start rounded-lg bg-canopy px-4 py-2 text-sm font-semibold text-ivory min-h-[44px]"
+        className="
+          min-h-[44px] self-start rounded-lg bg-canopy px-4 py-2 text-sm
+          font-semibold text-ivory
+        "
       >
         {retry.label}
       </button>

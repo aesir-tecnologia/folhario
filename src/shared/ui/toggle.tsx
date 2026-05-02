@@ -24,21 +24,32 @@ export function Toggle({ label, checked, onChange, id }: ToggleProps) {
   const knobX = checked ? "translate-x-[20px]" : "translate-x-0";
 
   return (
-    <label htmlFor={toggleId} className="inline-flex items-center gap-3 cursor-pointer min-h-[44px]">
+    <label
+      htmlFor={toggleId}
+      className="inline-flex min-h-[44px] cursor-pointer items-center gap-3"
+    >
       <input
         id={toggleId}
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="sr-only peer"
+        className="peer sr-only"
         aria-label={label}
       />
       <span
         aria-hidden="true"
-        className={`relative inline-block w-[52px] h-[32px] rounded-full ${trackClass} peer-focus-visible:ring-[3px] peer-focus-visible:ring-canopy/40`}
+        className={`
+          relative inline-block h-[32px] w-[52px] rounded-full
+          ${trackClass}
+          peer-focus-visible:ring-[3px] peer-focus-visible:ring-canopy/40
+        `}
       >
         <span
-          className={`absolute top-[2px] left-[2px] w-[28px] h-[28px] rounded-full bg-ivory transition-transform ${knobX}`}
+          className={`
+            absolute top-[2px] left-[2px] size-[28px] rounded-full bg-ivory
+            transition-transform
+            ${knobX}
+          `}
         />
       </span>
       <span className="text-base text-forest">{label}</span>

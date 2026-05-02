@@ -107,6 +107,8 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
     }
   }
 
+  const savingLabel = t("savingLabel");
+
   const handleSave = (field: PatchableField) => async (value: string) => {
     await patchMutation.mutateAsync({ field, value });
   };
@@ -256,6 +258,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             variant="text"
             required
             requiredErrorCopy={t("fields.name.requiredError")}
+            savingLabel={savingLabel}
             onSave={handleSave("name")}
             readOnly={readOnly}
           />
@@ -267,6 +270,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             value={plant.nickname}
             placeholder={t("fields.nickname.placeholder")}
             variant="text"
+            savingLabel={savingLabel}
             onSave={handleSave("nickname")}
             readOnly={readOnly}
           />
@@ -278,6 +282,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             value={plant.location}
             placeholder={t("fields.location.placeholder")}
             variant="text"
+            savingLabel={savingLabel}
             onSave={handleSave("location")}
             readOnly={readOnly}
             renderEditor={(slot) => (
@@ -302,6 +307,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             value={plant.acquisition_date}
             placeholder={t("fields.acquisitionDate.placeholder")}
             variant="date"
+            savingLabel={savingLabel}
             onSave={handleSave("acquisitionDate")}
             readOnly={readOnly}
           />
@@ -315,6 +321,7 @@ export function PlantProfile({ plantId }: PlantProfileProps) {
             variant="textarea"
             minRows={4}
             maxRows={10}
+            savingLabel={savingLabel}
             onSave={handleSave("notes")}
             readOnly={readOnly}
           />

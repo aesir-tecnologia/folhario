@@ -2,6 +2,9 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
+// savingLabel prop default — matches catalog.profile.savingLabel in pt-BR.json.
+const DEFAULT_SAVING_LABEL = "Salvando…";
+
 export type InlineEditFieldVariant = "text" | "textarea" | "date";
 
 export interface InlineEditFieldRenderEditorArgs {
@@ -24,6 +27,7 @@ export interface InlineEditFieldProps {
   required?: boolean;
   requiredErrorCopy?: string;
   revertAnnouncementCopy?: string;
+  savingLabel?: string;
   minRows?: number;
   maxRows?: number;
   renderEditor?: (args: InlineEditFieldRenderEditorArgs) => ReactNode;
@@ -41,6 +45,7 @@ export function InlineEditField({
   required = false,
   requiredErrorCopy,
   revertAnnouncementCopy,
+  savingLabel = DEFAULT_SAVING_LABEL,
   minRows = 3,
   maxRows = 8,
   renderEditor,
@@ -56,6 +61,8 @@ export function InlineEditField({
   // Pre-edit snapshot: saves the persisted value before editing begins so Esc reverts correctly.
   const preEditValueRef = useRef<string>("");
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  // Prevents spurious PATCH when blur fires after Enter/Esc has already committed/cancelled.
+  const committingRef = useRef(false);
 
   // Auto-select input text when entering editing state (built-in variants only).
   useEffect(() => {
@@ -118,8 +125,10 @@ export function InlineEditField({
   function handleTextKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
+      committingRef.current = true;
       void commit();
     } else if (e.key === "Escape") {
+      committingRef.current = true;
       cancel();
     }
   }
@@ -127,11 +136,21 @@ export function InlineEditField({
   function handleTextareaKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
+      committingRef.current = true;
       void commit();
     } else if (e.key === "Escape") {
+      committingRef.current = true;
       cancel();
     }
     // Plain Enter in textarea → browser default (inserts newline).
+  }
+
+  function handleBlurCommit() {
+    if (committingRef.current) {
+      committingRef.current = false;
+      return;
+    }
+    void commit();
   }
 
   const isSaving = mode === "saving";
@@ -230,7 +249,7 @@ export function InlineEditField({
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => void commit()}
+              onBlur={handleBlurCommit}
               onKeyDown={handleTextareaKeyDown}
               aria-label={label}
               aria-invalid={validationError !== null}
@@ -250,9 +269,12 @@ export function InlineEditField({
               type="date"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => void commit()}
+              onBlur={handleBlurCommit}
               onKeyDown={(e) => {
-                if (e.key === "Escape") cancel();
+                if (e.key === "Escape") {
+                  committingRef.current = true;
+                  cancel();
+                }
               }}
               aria-label={label}
               aria-invalid={validationError !== null}
@@ -270,7 +292,7 @@ export function InlineEditField({
               type="text"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onBlur={() => void commit()}
+              onBlur={handleBlurCommit}
               onKeyDown={handleTextKeyDown}
               aria-label={label}
               aria-invalid={validationError !== null}
@@ -285,9 +307,9 @@ export function InlineEditField({
             />
           )}
 
-          {/* Saving label — "Salvando…" text, NOT a spinner. UI-SPEC §12 line 575. */}
+          {/* Saving label — NOT a spinner. UI-SPEC §12 line 575. */}
           {isSaving && (
-            <span className="text-sm text-slate">Salvando…</span>
+            <span className="text-sm text-slate">{savingLabel}</span>
           )}
 
           {/* Required-empty validation error */}

@@ -76,6 +76,17 @@ const PUBLIC_API_ENDPOINTS: readonly RegExp[] = [
   /^\/api\/v1\/health\/connectivity$/,
   /^\/api\/v1\/photos\/upload$/,
   /^\/api\/v1\/webhooks\/stripe$/,
+  // Phase 5 — catalog routes are cookie-session-authenticated for the
+  // web/PWA flow. The route handlers gate via `requireVerifiedUser`
+  // which checks the Supabase SSR cookie. Without these entries the
+  // bearer-only proxy gate 401s every browser-issued catalog mutation
+  // before the cookie fallback can run. UUID segments are matched
+  // against `[0-9a-f-]{36}` to keep the allowlist tight.
+  /^\/api\/v1\/plants$/,
+  /^\/api\/v1\/plants\/[0-9a-f-]{36}$/,
+  /^\/api\/v1\/plants\/[0-9a-f-]{36}\/photo-entries$/,
+  /^\/api\/v1\/photo-entries\/[0-9a-f-]{36}$/,
+  /^\/api\/v1\/locations$/,
   // Add future public endpoints here. Keep the `^` and `$` anchors in
   // every entry — substring matching is forbidden.
 ] as const;

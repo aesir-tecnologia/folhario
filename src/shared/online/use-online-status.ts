@@ -28,7 +28,7 @@ const POLL_AFTER_RECONNECT = 5_000;
 
 export function useOnlineStatus(): boolean {
   const [online, setOnline] = useState<boolean>(() =>
-    typeof navigator !== "undefined" ? navigator.onLine : true,
+    typeof window !== "undefined" ? navigator.onLine : true,
   );
 
   useEffect(() => {

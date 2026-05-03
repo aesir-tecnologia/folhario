@@ -34,8 +34,11 @@ export default async function JournalPage({ params }: { params: Promise<{ plantI
   const tAdd = await getTranslations("catalog.journal.add");
   const tEmpty = await getTranslations("catalog.journal.empty");
 
+  const { plant } = plantResult;
+  const readOnly = process.env.SUBSCRIPTION_READ_ONLY === "1";
+
   const labels = {
-    titleFormat: t("titleFormat"),
+    titleFormat: t("titleFormat", { name: plant.nickname ?? plant.name }),
     add: {
       cta: tAdd("cta"),
       title: tAdd("title"),
@@ -56,9 +59,6 @@ export default async function JournalPage({ params }: { params: Promise<{ plantI
     lightboxClose: t("lightboxClose"),
   };
 
-  const readOnly = process.env.SUBSCRIPTION_READ_ONLY === "1";
-
-  const { plant } = plantResult;
   const plantForClient = {
     id: plant.id,
     name: plant.name,

@@ -225,7 +225,9 @@ export function Combobox({
           if (value && !query) {
             setQuery(value);
           }
+          openListbox();
         }}
+        onClick={() => openListbox()}
         aria-controls={listboxId}
         aria-expanded={open}
         aria-activedescendant={activedescendant}

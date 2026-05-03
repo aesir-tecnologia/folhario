@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const SORT_IDS = ["name_asc", "name_desc", "date_new", "date_old", "location"] as const;
 export type SortId = (typeof SORT_IDS)[number];
@@ -21,7 +21,14 @@ function readStoredSort(): SortId {
 }
 
 export function useSortPreference(): [SortId, (next: SortId) => void] {
-  const [sortId, setSortId] = useState<SortId>(readStoredSort);
+  const [sortId, setSortId] = useState<SortId>("date_new");
+
+  useEffect(() => {
+    const stored = readStoredSort();
+    if (stored !== "date_new") {
+      setSortId(stored); // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, []);
 
   function setSort(next: SortId): void {
     sessionStorage.setItem(STORAGE_KEY, next);

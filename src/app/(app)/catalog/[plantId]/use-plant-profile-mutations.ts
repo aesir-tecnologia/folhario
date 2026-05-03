@@ -86,9 +86,8 @@ export function usePatchPlantField(
       emit(t("saveFailure"));
     },
     onSuccess: (data) => {
-      qc.setQueryData<PlantDetailDto>(
-        ["catalog", "plant", plantId],
-        (prev) => (prev ? { ...prev, plant: data.plant } : prev),
+      qc.setQueryData<PlantDetailDto>(["catalog", "plant", plantId], (prev) =>
+        prev ? { ...prev, plant: { ...prev.plant, ...data.plant } } : prev,
       );
     },
   });
@@ -135,9 +134,7 @@ export function useDeletePlant(
       const snapshots: Array<{ queryKey: readonly unknown[]; data: unknown }> = [];
       qc.getQueriesData<{ items: Array<{ id: string }> }>({
         predicate: (q) =>
-          Array.isArray(q.queryKey) &&
-          q.queryKey[0] === "catalog" &&
-          q.queryKey[1] === "plants",
+          Array.isArray(q.queryKey) && q.queryKey[0] === "catalog" && q.queryKey[1] === "plants",
       }).forEach(([queryKey, data]) => {
         snapshots.push({ queryKey, data });
         if (data?.items) {
@@ -161,6 +158,7 @@ export function useDeletePlant(
       emit(t("failure"));
     },
     onSuccess: () => {
+      toast.success(t("success"));
       opts?.onSuccess?.();
     },
   });

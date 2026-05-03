@@ -141,7 +141,8 @@
         "cancel": "Cancelar",
         "confirm": "Excluir planta",
         "deleting": "Excluindo…",
-        "failure": "Não conseguimos excluir agora. Tente novamente."
+        "failure": "Não conseguimos excluir agora. Tente novamente.",
+        "success": "Planta excluída com sucesso."
       }
     },
     "journal": {

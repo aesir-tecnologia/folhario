@@ -1,6 +1,12 @@
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist, NetworkOnly, NetworkFirst, StaleWhileRevalidate, ExpirationPlugin } from "serwist";
+import {
+  Serwist,
+  NetworkOnly,
+  NetworkFirst,
+  StaleWhileRevalidate,
+  ExpirationPlugin,
+} from "serwist";
 
 export const CATALOG_API_CACHE = "folhario-catalog-api-v1";
 
@@ -58,7 +64,16 @@ const serwist = new Serwist({
   skipWaiting: false,
   clientsClaim: true,
   navigationPreload: false,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    {
+      matcher: ({ request }) => request.mode === "navigate",
+      handler: new NetworkFirst({
+        cacheName: "pages",
+        networkTimeoutSeconds: 3,
+      }),
+    },
+    ...defaultCache,
+  ],
   fallbacks: {
     entries: [
       {
@@ -92,20 +107,6 @@ serwist.registerCapture(
 );
 
 serwist.registerCapture(({ url }) => url.pathname.startsWith("/api/"), new NetworkOnly());
-
-// Navigation handler — required for `fallbacks.entries` to fire on offline
-// reload of HTML documents. `@serwist/next/worker` defaultCache does not
-// include a navigation/document strategy; without this the request reaches
-// the network unmediated, fails with ERR_FAILED, and the fallback never runs.
-// NetworkFirst keeps page HTML fresh online; on network error it serves the
-// cached copy if any, then falls through to the precached /offline route.
-serwist.registerCapture(
-  ({ request }) => request.mode === "navigate",
-  new NetworkFirst({
-    cacheName: "pages",
-    networkTimeoutSeconds: 3,
-  }),
-);
 
 self.addEventListener("message", (event) => {
   // T-03-04-01 — guard event.data.type. Without this, any postMessage

@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, image pipeline, API conventions
 - [ ] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings
 - [x] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Inngest `serve()` + Resend transactional-email backbone (first async consumer)
-- [ ] **Phase 5: Catalog — Meu Jardim** - Manual plant add, plant profile, photo journal, location picker, offline-browsable catalog
+- [x] **Phase 5: Catalog — Meu Jardim** - Manual plant add, plant profile, photo journal, location picker, offline-browsable catalog (completed 2026-05-03)
 - [ ] **Phase 6: Identification Flow & Cost Controls** - Plant.id + OpenAI-compat adapters, per-user caps, per-provider ceilings, breakers, LGPD transfer consent, confidence ladder
 - [ ] **Phase 7: Species, Care Guides & Augmentation** - Curated launch corpus rendering, toxicity badge spec, Inngest care-guide augmentation with "Gerado por IA" chip
 - [ ] **Phase 8: Reminders & Single Daily Push Nudge** - Reminder creation/done/snooze, `reminders/dispatch` cron, deferred push permission, self-healing PushSubscription
@@ -316,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Data Layer & Bounded Contexts | 11/11 | Complete | 2026-04-26 |
 | 3. Design System & App Shell | 0/5 | Ready to execute | - |
 | 4. IAM — Auth, Verification, Consent | 13/13 | Complete | 2026-04-29 |
-| 5. Catalog — Meu Jardim | 4/18 | In Progress|  |
+| 5. Catalog — Meu Jardim | 24/24 | Complete   | 2026-05-03 |
 | 6. Identification Flow & Cost Controls | 0/TBD | Not started | - |
 | 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |
 | 8. Reminders & Single Daily Push Nudge | 0/TBD | Not started | - |

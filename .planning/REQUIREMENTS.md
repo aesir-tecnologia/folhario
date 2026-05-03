@@ -54,11 +54,11 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 - [ ] **CAT-01**: From identification + selected result, Plant created with `species_id`, name pre-filled, cover photo from identification upload (AC-CAT-001)
 - [ ] **CAT-02**: Manual plant creation with name + ≥1 photo creates Plant `species_id=null` + PhotoEntry for initial photo (AC-CAT-002)
-- [ ] **CAT-03**: Manual create missing name OR missing photo → `validation_failed`, no row, field highlighted (AC-CAT-003)
-- [ ] **CAT-04**: Plant profile shows name, nickname, room, acquisition_date, notes, cover, care-card link (if CareGuide exists), active reminders, photo journal, identification history (AC-CAT-004, §7)
+- [x] **CAT-03**: Manual create missing name OR missing photo → `validation_failed`, no row, field highlighted (AC-CAT-003)
+- [x] **CAT-04**: Plant profile shows name, nickname, room, acquisition_date, notes, cover, care-card link (if CareGuide exists), active reminders, photo journal, identification history (AC-CAT-004, §7)
 - [x] **CAT-05**: Location picker shows user's prior locations as quick-select + defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` + free text; free text becomes reusable (AC-CAT-005, AC-CAT-006)
 - [ ] **CAT-06**: Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline (AC-CAT-007)
-- [ ] **CAT-07**: Catalog default sort: `acquisition_date` desc, null dates last (AC-CAT-008)
+- [x] **CAT-07**: Catalog default sort: `acquisition_date` desc, null dates last (AC-CAT-008)
 - [ ] **CAT-08**: Sort control offers name A-Z, name Z-A, date newest, date oldest, location; selected sort persists for session (AC-CAT-009)
 - [x] **CAT-09**: Deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, sets `Identification.plant_id` NULL but preserves the history row (AC-CAT-010)
 - [ ] **CAT-10**: Catalog grid responsive: 2 cols ≤375px, 3 cols 600–899px, 4 cols ≥900px (§16)
@@ -362,11 +362,11 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | IDENT-21 | Phase 6 | Pending |
 | CAT-01 | Phase 5 | Pending |
 | CAT-02 | Phase 5 | Pending |
-| CAT-03 | Phase 5 | Pending |
-| CAT-04 | Phase 5 | Pending |
+| CAT-03 | Phase 5 | Complete |
+| CAT-04 | Phase 5 | Complete |
 | CAT-05 | Phase 5 | Complete |
 | CAT-06 | Phase 5 | Pending |
-| CAT-07 | Phase 5 | Pending |
+| CAT-07 | Phase 5 | Complete |
 | CAT-08 | Phase 5 | Pending |
 | CAT-09 | Phase 5 | Complete |
 | CAT-10 | Phase 5 | Pending |

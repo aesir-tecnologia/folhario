@@ -1,19 +1,18 @@
 ---
 phase: 05-catalog-meu-jardim
-verified: 2026-05-01T22:00:00Z
+verified: 2026-05-03T12:00:00Z
 status: human_needed
 score: 5/5 must-haves verified
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: 2/5
+  previous_status: human_needed
+  previous_score: 5/5
   gaps_closed:
-    - "CR-01 — Photo-entry deletion strands storage bytes (closed by Plan 05-19)"
-    - "CR-02 — useDeletePlant fires DELETE without Idempotency-Key header (closed by Plan 05-20)"
-    - "CR-03 — Photo-journal lightbox renders unsigned bucket-key as src (closed by Plan 05-21)"
-    - "CR-04 — GET /api/v1/plants/[plantId] response drops cover_signed_url (closed by Plan 05-20)"
-    - "WR-04 — Focus ring outline fails CLAUDE.md spec (closed by Plan 05-23)"
-    - "WR-05 — Photo-journal POST response shape mismatch (closed by Plan 05-22)"
+    - "Plant profile cover image disappearing after inline field edits — fixed via spread-merge in usePatchPlantField.onSuccess"
+    - "Location combobox not opening on click/focus — fixed via openListbox() in onFocus + onClick"
+    - "Chrome offline dino appearing instead of cached catalog — fixed via navigate NetworkFirst prepended before defaultCache in runtimeCaching"
+    - "Missing delete success toast — fixed via toast.success(t('success')) in useDeletePlant.onSuccess"
+    - "Journal page i18n crash on titleFormat — fixed via passing { name: plant.nickname ?? plant.name } variable"
   gaps_remaining: []
   regressions: []
 human_verification:
@@ -23,23 +22,23 @@ human_verification:
   - test: "Add a plant manually; verify the catalog grid is 2 cols at ≤375px, 3 cols at 600–899px, 4 cols at ≥900px and acquisition_date DESC NULLS LAST sort is applied."
     expected: "Breakpoints + sort hold across viewport resize."
     why_human: "Responsive grid breakpoints need a real viewport."
-  - test: "On plant-profile, attempt inline-edit of name/nickname/location/acquisition_date/notes (tap-to-edit, blur-to-save, Esc-to-cancel) and verify optimistic UI + sonner failure toast."
-    expected: "Fields save on blur, revert on Esc, toast on PATCH failure."
-    why_human: "Input/blur/keyboard interaction validated only in real browser."
-  - test: "Open the location-picker on plant-profile and on /catalog/add; verify it shows prior user locations + 8 i18n defaults (sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro) + free-text 'Adicionar {typed}' affordance."
-    expected: "Combobox renders all three sources with APG keyboard nav; outside-click closes listbox."
-    why_human: "Combobox keyboard + visual behavior requires real browser; prior cycle WR-08 (combobox does not close on outside click) carries over for human confirmation."
-  - test: "Online → offline transition while browsing /catalog and /catalog/[plantId]; verify offline banner appears, previously-loaded plants stay visible (Serwist SWR cache), identify is blocked with clear message."
-    expected: "OFF-08 catalog browseable + identify blocked banner."
+  - test: "On plant-profile, attempt inline-edit of name/nickname/location/acquisition_date/notes (tap-to-edit, blur-to-save, Esc-to-cancel) and verify optimistic UI + sonner failure toast. After saving any field, verify the cover image remains visible."
+    expected: "Fields save on blur, revert on Esc, toast on PATCH failure, cover image persists after edit."
+    why_human: "Input/blur/keyboard interaction + visual cover image persistence validated only in real browser."
+  - test: "Open the location-picker on plant-profile and on /catalog/add; click (without typing) to verify the listbox opens immediately. Verify it shows prior user locations + 8 i18n defaults + free-text 'Adicionar {typed}' affordance."
+    expected: "Combobox opens on click and focus without typing; renders all three sources with APG keyboard nav; outside-click closes listbox."
+    why_human: "Combobox click-to-open behavior + keyboard + visual behavior requires real browser."
+  - test: "Online → offline transition while browsing /catalog and /catalog/[plantId]; verify offline banner appears, previously-loaded plants stay visible (Serwist SWR cache), identify is blocked with clear message. The Chrome dino must NOT appear."
+    expected: "OFF-08 catalog browseable + identify blocked banner. Chrome dino does not appear."
     why_human: "SW cache + offline UX requires real browser DevTools offline mode."
-  - test: "Plant-profile delete flow end-to-end on a real device — tap overflow → 'Excluir planta' → confirm sheet → confirm. CR-02 was blocking this in the prior cycle; Plan 05-20 closed it. This re-test confirms: plant disappears from grid, redirect to /catalog, cascade-counts preview correct in sheet."
-    expected: "Delete completes; redirect to /catalog; toasts and cache invalidation behave correctly."
-    why_human: "End-to-end delete UX flow including the confirmation sheet, optimistic cache update, and route redirect needs a real device. Backend cascade verified statically; UI flow needs human confirmation."
-  - test: "Photo-journal lightbox + thumbnail strip on a plant with ≥2 photos. The new code-review CR-01 (advisory) flagged that listPhotoEntries reverses to newest-first while plant-profile.tsx:120,216,341 still slices(1) — newest photo may be missing from carousel; cover may render twice (once as cover, once via slice that includes oldest)."
+  - test: "Plant-profile delete flow end-to-end on a real device — tap overflow → 'Excluir planta' → confirm sheet → confirm. Verify: plant disappears from grid, redirect to /catalog, success toast 'Planta excluída com sucesso.' appears, no hydration mismatch errors."
+    expected: "Delete completes; redirect to /catalog; toast appears; sort state initialized as 'Adicionadas recentes' on both server and client (no hydration mismatch)."
+    why_human: "End-to-end delete UX flow including confirmation sheet, optimistic cache update, route redirect, toast, and hydration parity needs real device."
+  - test: "Photo-journal lightbox + thumbnail strip on a plant with ≥2 photos. The advisory NEW-CR-01 flagged that listPhotoEntries reverses to newest-first while plant-profile.tsx still slices(1) — newest photo may be missing from carousel; cover may render twice."
     expected: "Open lightbox from cover, swipe through carousel; verify (a) newest photo is reachable, (b) cover does not appear twice, (c) thumbnail strip below cover does not duplicate the cover."
-    why_human: "Lightbox carousel composition + thumbnail-strip ordering is observable only by clicking through the photos on a plant with 3+ entries; static analysis suggests an off-by-one but actual behavior depends on the runtime list ordering and signed-URL substitution."
-  - test: "Idempotency-key behavior on photo-journal add when the network fails mid-request. Code-review CR-05 flagged that journal-add-sheet.tsx:138,143 regenerates the key on retry — defeats the duplicate-protection purpose of the Idempotency-Keys table."
-    expected: "Two POSTs of the same payload after a transient 5xx should reach the server with the SAME Idempotency-Key (server returns the previous response, no duplicate row). Currently the client may produce a fresh key, creating a duplicate PhotoEntry."
+    why_human: "Lightbox carousel composition + thumbnail-strip ordering is observable only by clicking through photos on a plant with 3+ entries."
+  - test: "Idempotency-key behavior on photo-journal add when the network fails mid-request. Advisory NEW-CR-05 flagged that journal-add-sheet.tsx regenerates the key on retry — defeats the duplicate-protection purpose of the Idempotency-Keys table."
+    expected: "Two POSTs of the same payload after a transient 5xx should reach the server with the SAME Idempotency-Key (server returns the previous response, no duplicate row)."
     why_human: "Requires triggering a 5xx + retry on a real backend with the idempotency_keys table; functional bug that's user-observable as duplicate journal entries on flaky networks."
 ---
 
@@ -47,154 +46,148 @@ human_verification:
 
 **Phase Goal:** A verified user can manually add plants, see them as a responsive 2/3/4-column grid sorted by acquisition date, open a plant profile with photo journal + location picker + delete, and browse a previously-loaded catalog offline — producing the "something to identify INTO" that Phase 6 needs.
 
-**Verified:** 2026-05-01T22:00:00Z
+**Verified:** 2026-05-03T12:00:00Z
 **Status:** human_needed
-**Re-verification:** Yes — after Plans 05-19..05-23 closed the 6 prior-cycle gaps (CR-01..04, WR-04, WR-05).
+**Re-verification:** Yes — after Plan 05-gap-closure (Plans 05-24 commits ff7fc0c, 8629ad7, da64edd, 58e482b) closed 5 UAT gaps from the 05-HUMAN-UAT.md cycle.
 
 ## Goal Achievement
 
-### Observable Truths (5 ROADMAP Success Criteria)
+### Observable Truths — Gap Closure Pass (Plan 05-gap-closure must_haves)
 
-| #    | Truth (ROADMAP SC)                                                                                                                                                                                                                                                                                                                                                                                                                                       | Status     | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SC-1 | Zero-plants user sees Home empty state "Identifique sua primeira planta" + camera button + "Adicionar manualmente" link; Catalog tab shows "Sua estante ainda está esperando a primeira planta." with Canopy CTA.                                                                                                                                                                                                                                        | VERIFIED   | `src/app/(app)/page.tsx:19-42` count===0 branch renders title + CaptureButton + manual-add Link; `src/messages/pt-BR.json:11-20` matches required pt-BR copy. `src/app/(app)/catalog/_components/catalog-empty.tsx` + `src/messages/pt-BR.json:42-44` matches Catalog empty copy. `src/app/(app)/catalog/page.tsx:47-48` gates on totalCount===0. Prior cycle confirmed.                                                                                                                                                                                                                                                                                                                                                            |
-| SC-2 | "Adicionar manualmente" creates Plant with name + ≥1 photo + initial PhotoEntry; missing name/photo → validation_failed; grid is 2/3/4-col responsive at correct breakpoints; default sort acquisition_date DESC NULLS LAST.                                                                                                                                                                                                                             | VERIFIED   | `src/app/(app)/catalog/add/add-plant-form.tsx:138-153` posts multipart to `/api/v1/plants`; `src/app/api/v1/plants/route.ts:67-77` validates name + photo, returns ValidationFailed. `src/contexts/catalog/application/create-plant.ts` creates Plant + PhotoEntry in one TX. `src/app/(app)/catalog/_components/catalog-grid.tsx:9-10` grid uses `grid-cols-2 [@media(min-width:600px)]:grid-cols-3 [@media(min-width:900px)]:grid-cols-4` matching the 375/600/900 spec. `src/contexts/catalog/infrastructure/db/plants.ts:127-131` orderBy `acquisition_date desc nulls last` for `date_new` (default). Prior cycle confirmed.                                                                                                     |
-| SC-3 | Plant profile: cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link placeholder, delete overflow. Location picker: prior locations + 8 defaults + free text reusable.                                                                                                                                                                              | VERIFIED   | All sections wired in `src/app/(app)/catalog/[plantId]/plant-profile.tsx:149-393`. **CR-02 closed** (Plan 05-20): `use-plant-profile-mutations.ts:113-119` issues DELETE with Idempotency-Key header from `useRef<string \| null>(null)` + `crypto.randomUUID()`, route handler accepts. **CR-04 closed** (Plan 05-20): `src/app/api/v1/plants/[plantId]/route.ts:47-52` calls `toPlantWithSignedUrlSnakeCase({ ...result.plant, coverSignedUrl: result.coverSignedUrl })` — `cover_signed_url` is in response. **ID-history placeholder added** (Plan 05-21): `plant-profile.tsx:374-380` renders `sections.history` heading + `history.empty` body using `t("history.empty")`.                                                       |
-| SC-4 | Photo journal entry CRUD; sort control: name A-Z, name Z-A, date newest, date oldest, location; selection persists per session.                                                                                                                                                                                                                                                                                                                          | VERIFIED   | Sort control verified — 5 SORT_IDS in `use-sort-preference.ts:5`, persisted via sessionStorage. **CR-01 closed** (Plan 05-19): `src/contexts/catalog/application/delete-photo-entry.ts:145-156` writes `kind: "object"` for both photo + thumbnail rows; `src/contexts/catalog/inngest/functions.ts:168-190` reconciler branches on `row.kind` calling `deleteObject` for object kind. Migration `drizzle/migrations/0006_add_pending_deletion_kind.sql` ships the pgEnum + column. **CR-03 closed** (Plan 05-21): `list-photo-entries.ts:44-66` signs both photoUrl + thumbnailUrl in parallel; mapper emits `photo_signed_url` + `thumbnail_signed_url`; `photo-journal.tsx:65-69` lightbox uses `e.photo_signed_url ?? e.photo_url`. **WR-05 closed** (Plan 05-22): `journal-add-sheet.tsx:127-129` reads `body.photo_entry` (matches server contract at route.ts:112). |
-| SC-5 | Plant deletion cascades PhotoEntry + Reminder + schedules storage cleanup + sets Identification.plant_id NULL preserving history; offline catalog browse works with offline banner.                                                                                                                                                                                                                                                                      | VERIFIED   | DB cascade rules verified: `photo_entries.plant_id` ON DELETE CASCADE, `reminders.plant_id` ON DELETE CASCADE, `identifications.plant_id` ON DELETE SET NULL. `src/contexts/catalog/application/delete-plant.ts` deletes plant + inserts pending_storage_deletions rows + emits `plant.deleted` Inngest event in postCommit. Reconciler cron handles stuck rows. Offline catalog: `src/app/sw.ts:72-92` SWR runtime cache for catalog/photo-entries/locations with 7d max-age; `src/app/(app)/app-shell.tsx` mounts `<OfflineBanner />`. UI delete button now reachable end-to-end (CR-02 closure).                                                                                                                                |
+| # | Truth | Status | Evidence |
+|---|-------|--------|----------|
+| 1 | Plant profile cover image stays visible after inline-editing any field | VERIFIED | `use-plant-profile-mutations.ts:88-92` — `onSuccess` uses `{ ...prev, plant: { ...prev.plant, ...data.plant } }` spread merge; cover_signed_url is preserved because it exists in prev.plant but is absent from the PATCH response. Commit ff7fc0c. |
+| 2 | Location combobox opens its listbox on click or focus, without requiring typing | VERIFIED | `combobox.tsx:224-230` — `onFocus` handler calls `openListbox()` at line 228; `onClick={() => openListbox()}` prop at line 230. Both call sites verified in file. Commit 8629ad7. |
+| 3 | Previously-cached catalog pages remain visible when offline; Chrome dino does not appear | VERIFIED | `sw.ts:67-76` — `runtimeCaching` array starts with `{ matcher: ({ request }) => request.mode === "navigate", handler: new NetworkFirst({ cacheName: "pages", networkTimeoutSeconds: 3 }) }` before `...defaultCache`. The standalone `registerCapture` for navigate is absent — only catalog SWR and `/api/` NetworkOnly remain. Commit da64edd. |
+| 4 | Deleting a plant shows a success toast and catalog header renders without hydration mismatch | VERIFIED | (A) `use-plant-profile-mutations.ts:160-162` — `onSuccess` calls `toast.success(t("success"))` before `opts?.onSuccess?.()`. (B) `pt-BR.json:145` — `"success": "Planta excluída com sucesso."` key present. (C) `use-sort-preference.ts:24-31` — `useState<SortId>("date_new")` constant init + `useEffect` to apply stored value after mount, eliminating server/client text mismatch. Commit ff7fc0c (toast + i18n) + 8629ad7 (SSR hydration). |
+| 5 | Journal page title renders as '{plantName} — Diário' without i18n formatting errors | VERIFIED | `journal/page.tsx:37-41` — `const { plant } = plantResult` destructure at line 37 precedes the `labels` block at line 40; `t("titleFormat", { name: plant.nickname ?? plant.name })` at line 41 passes the required variable. Commit 58e482b. |
 
-**Score:** 5/5 truths verified.
+**Score:** 5/5 gap-closure truths verified.
 
-### Required Artifacts
+### Observable Truths — ROADMAP Success Criteria (carried from previous verification)
 
-| Artifact                                                            | Expected                                                                                | Status   | Details                                                                                                                                                  |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/app/(app)/page.tsx`                                            | Home server component with empty/bridge branches                                        | VERIFIED | countForUser called; pt-BR copy via next-intl.                                                                                                           |
-| `src/app/(app)/catalog/page.tsx`                                    | Server component; first-page list + count; SSR-hydrate                                  | VERIFIED | dehydrate + HydrationBoundary; 2/3/4 grid via CatalogGrid.                                                                                               |
-| `src/app/(app)/catalog/add/add-plant-form.tsx`                      | Single-screen multipart POST; field validation                                          | VERIFIED | Multipart POST to /api/v1/plants with name+photo+optional fields.                                                                                        |
-| `src/app/(app)/catalog/[plantId]/plant-profile.tsx`                 | Cover + gallery + inline-edit + reminders/journal placeholder + ID-history + delete    | VERIFIED | All sections present; ID-history section renders (Section 5, lines 374-380); delete overflow + DeleteConfirmSheet wired through useDeletePlant.          |
-| `src/app/(app)/catalog/[plantId]/journal/photo-journal.tsx`         | Lightbox + add-entry sheet + reverse-chronological list                                 | VERIFIED | Lightbox now consumes `photo_signed_url` (line 67); add-sheet reads `body.photo_entry` from POST.                                                        |
-| `src/app/(app)/catalog/[plantId]/use-plant-profile-mutations.ts`    | usePatchPlantField + useDeletePlant with Idempotency-Key                                | VERIFIED | Both mutations include `Idempotency-Key` header from `useRef` + `crypto.randomUUID()`; cleared on success and error.                                    |
-| `src/app/api/v1/plants/route.ts`                                    | POST multipart + GET cursor list                                                        | VERIFIED | Idempotency-Key required + multipart parsing + cursor/sort/include_count.                                                                                |
-| `src/app/api/v1/plants/[plantId]/route.ts`                          | GET (with cover_signed_url) + PATCH + DELETE                                            | VERIFIED | GET uses `toPlantWithSignedUrlSnakeCase`; PATCH and DELETE re-exported from handlers (require Idempotency-Key).                                          |
-| `src/app/api/v1/plants/[plantId]/photo-entries/route.ts`            | POST returns `{photo_entry: ...}`; GET returns signed URLs                              | VERIFIED | Server contract `{ photo_entry: ... }` (route.ts:112) matches client read; GET maps items via `toPhotoEntrySnakeCase` (signed URLs included).            |
-| `src/app/api/v1/locations/route.ts`                                 | GET ranked suggestions                                                                  | VERIFIED | Owner-scoped via requireVerifiedUser; snake_case mapping.                                                                                                |
-| `src/contexts/catalog/application/list-photo-entries.ts`            | Sign both photoUrl + thumbnailUrl in parallel; emit *_signed_url                        | VERIFIED | `Promise.all` parallel signing at lines 44-66; result rows expose `photoSignedUrl` + `thumbnailSignedUrl`.                                                |
-| `src/contexts/catalog/application/delete-photo-entry.ts`            | pending_storage_deletions row carries kind='object' for object-key cleanup              | VERIFIED | Lines 145-156 write `kind: "object"` for both photo + thumbnail rows.                                                                                    |
-| `src/contexts/catalog/inngest/functions.ts`                         | reconciler discriminates on row.kind: object → deleteObject, prefix → deletePrefix      | VERIFIED | Lines 168-190 branch on `row.kind`; object → `validateStorageObjectKey` + `deleteObject`; prefix → `validateStorageDeletionPrefix` + `deletePrefix`.     |
-| `drizzle/migrations/0006_add_pending_deletion_kind.sql`             | CREATE TYPE pending_deletion_kind + ALTER TABLE add column kind NOT NULL DEFAULT 'prefix' | VERIFIED | File exists with both statements; live DB column verified per Plan 05-19 SUMMARY (information_schema check).                                              |
-| `src/contexts/catalog/infrastructure/db/schema.ts`                  | pendingDeletionKind pgEnum + kind column on pendingStorageDeletions                     | VERIFIED | Lines 97-100 declare `pendingDeletionKind`; lines 112-120 declare `kind: pendingDeletionKind("kind").notNull().default("prefix")`.                       |
-| `src/contexts/catalog/api/snake-case.ts`                            | toPhotoEntrySnakeCase emits photo_signed_url + thumbnail_signed_url                     | VERIFIED | Lines 60-64 declare `photo_signed_url` + `thumbnail_signed_url`; lines 66-82 mapper accepts optional augmented input + emits the new fields.             |
-| `src/shared/ui/inline-edit-field.tsx`                               | 3px Canopy/40 focus rings (CLAUDE.md brand spec)                                        | VERIFIED | Lines 242, 263, 283: `focus:ring-[3px] focus:ring-canopy/40`. Hover affordances at lines 175/198 are intentionally `outline-2 outline-hairline` (hover ≠ focus). |
-| `src/shared/ui/modal-sheet.tsx`                                     | 3px Canopy/40 focus ring on drag handle                                                 | VERIFIED | Line 92: `focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-canopy/40`.                                                  |
-| `src/shared/ui/toggle.tsx`                                          | 3px Canopy/40 focus ring on peer track                                                  | VERIFIED | Line 35: `peer-focus-visible:ring-[3px] peer-focus-visible:ring-canopy/40`.                                                                              |
-| `src/app/sw.ts`                                                     | SWR cache for catalog/photo-entries/locations + offline fallback                        | VERIFIED | 7d max-age; navigation NetworkFirst with /offline fallback.                                                                                              |
-| `src/messages/pt-BR.json`                                           | All Phase-5 i18n keys + ID-history placeholder                                          | VERIFIED | catalog.{empty,add,profile,journal,locations,offline,readOnly}; profile.sections.history + profile.history.empty added by Plan 05-21.                    |
+| # | Truth (ROADMAP SC) | Status | Evidence |
+|---|-------------------|--------|----------|
+| SC-1 | Zero-plants user sees Home empty state "Identifique sua primeira planta" + camera button + "Adicionar manualmente" link; Catalog tab shows "Sua estante ainda está esperando a primeira planta." with Canopy CTA. | VERIFIED | `src/app/(app)/page.tsx:19-42` count===0 branch; `src/messages/pt-BR.json:11-20` pt-BR copy. `catalog-empty.tsx` + `pt-BR.json:42-44`. Prior cycle confirmed; no regression from gap-closure commits. |
+| SC-2 | "Adicionar manualmente" creates Plant with name + ≥1 photo + initial PhotoEntry; missing name/photo → validation_failed; grid is 2/3/4-col responsive at correct breakpoints; default sort acquisition_date DESC NULLS LAST. | VERIFIED | `add-plant-form.tsx:138-153`; `route.ts:67-77`; `catalog-grid.tsx:9-10` Tailwind breakpoints; `plants.ts:127-131` orderBy. No regression from gap-closure commits. |
+| SC-3 | Plant profile: cover + thumbnail gallery, inline-editable fields, location picker, photo-journal preview, ID-history placeholder, delete overflow. | VERIFIED | All sections in `plant-profile.tsx:149-393`. Cover image now preserved on PATCH round-trip (gap 1 closed). Combobox now opens on click (gap 2 closed). |
+| SC-4 | Photo journal entry CRUD; sort control: name A-Z, name Z-A, date newest, date oldest, location; selection persists per session. | VERIFIED | `use-sort-preference.ts` — 5 SORT_IDS + sessionStorage persistence. SSR hydration mismatch resolved (gap 4 closed). Journal page i18n no longer crashes (gap 5 closed). |
+| SC-5 | Plant deletion cascades PhotoEntry + Reminder + schedules storage cleanup + sets Identification.plant_id NULL; offline catalog browse works with offline banner. | VERIFIED | FK cascade rules verified; `delete-plant.ts` + Inngest reconciler. Delete success toast now fires (gap 4 closed). Offline browse: navigate NetworkFirst now fires before defaultCache "others" catch-all (gap 3 closed). |
 
-### Key Link Verification
+**Score:** 5/5 ROADMAP truths verified.
 
-| From                   | To                                          | Via                                            | Status | Details                                                                                                          |
-| ---------------------- | ------------------------------------------- | ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
-| Home (page.tsx)        | countForUser                                | direct import                                  | WIRED  | Server-side count drives empty/bridge branch.                                                                    |
-| Catalog page           | listPlants use-case                         | direct call + dehydrate                        | WIRED  | First-page SSR + TanStack hydration.                                                                             |
-| AddPlantForm           | POST /api/v1/plants                         | fetch multipart + Idempotency-Key              | WIRED  | Validation errors mapped to per-field errors.                                                                    |
-| PlantProfile           | DELETE /api/v1/plants/:id                   | useDeletePlant fetch w/ Idempotency-Key        | WIRED  | **Closed (CR-02)**: `Idempotency-Key` header generated via useRef + crypto.randomUUID() at lines 113-119.        |
-| PlantProfile           | GET /api/v1/plants/:id (cover_signed_url)   | TanStack Query refetch                         | WIRED  | **Closed (CR-04)**: response shape now includes `cover_signed_url` for refetch path.                             |
-| PhotoJournal           | POST /api/v1/plants/:id/photo-entries       | journal-add-sheet fetch                        | WIRED  | **Closed (WR-05)**: client reads `body.photo_entry`, matches server `{ photo_entry: ... }`.                       |
-| PhotoJournal Lightbox  | photo_signed_url                            | listPhotoEntries signing + mapper              | WIRED  | **Closed (CR-03)**: lightbox `src` uses `e.photo_signed_url ?? e.photo_url` fallback.                            |
-| PlantProfile gallery   | photo_signed_url                            | mapped through plant-profile.tsx allPhotos     | WIRED  | Cover uses `plant.cover_signed_url`; non-cover entries map `pe.photo_signed_url ?? pe.photo_url`.                |
-| deletePlant            | catalog/cleanup-storage Inngest             | inngest.send                                   | WIRED  | postCommit emits event after TX commit; reconciler cron handles stuck rows.                                      |
-| deletePhotoEntry       | pending_storage_deletions (kind='object')   | repo.create + reconciler discriminator         | WIRED  | **Closed (CR-01)**: rows carry kind='object'; reconciler routes to `deleteObject`. Bytes are now deleted.        |
-| (app) shell            | OfflineBanner                               | useOnlineStatus                                | WIRED  | Banner mounted in app-shell.tsx.                                                                                 |
-| /api/v1/* SWR cache    | catalog/photo-entries/locations             | Serwist registerCapture                        | WIRED  | StaleWhileRevalidate with 7d max-age.                                                                            |
-| Focus rings (3 prims)  | CLAUDE.md brand spec (3px Canopy/40)        | Tailwind arbitrary values                      | WIRED  | **Closed (WR-04)**: `ring-[3px]` / `outline-[3px]` across InlineEditField, ModalSheet, Toggle.                   |
+### Required Artifacts — Gap Closure
+
+| Artifact | Expected | Status | Details |
+|----------|----------|--------|---------|
+| `src/app/(app)/catalog/[plantId]/use-plant-profile-mutations.ts` | Spread-merge onSuccess for usePatchPlantField; toast.success in useDeletePlant.onSuccess | VERIFIED | Line 88-92: `{ ...prev.plant, ...data.plant }`; line 161: `toast.success(t("success"))`. |
+| `src/shared/ui/combobox.tsx` | openListbox() called on both onFocus and onClick | VERIFIED | Line 228: `openListbox()` in onFocus; line 230: `onClick={() => openListbox()}`. |
+| `src/app/sw.ts` | navigate NetworkFirst entry prepended before defaultCache in runtimeCaching array | VERIFIED | Lines 67-76: navigate handler is first entry; no standalone registerCapture for navigate. |
+| `src/app/(app)/catalog/_components/use-sort-preference.ts` | useState initialized with 'date_new' always; stored value applied in useEffect | VERIFIED | Line 24: `useState<SortId>("date_new")`; lines 26-31: useEffect reads sessionStorage + setSortId. ESLint disable-line comment on line 29 is intentional per SUMMARY decision log. |
+| `src/messages/pt-BR.json` | catalog.profile.delete.success key added | VERIFIED | Line 145: `"success": "Planta excluída com sucesso."` present inside the `delete` object. |
+| `src/app/(app)/catalog/[plantId]/journal/page.tsx` | t('titleFormat') called with { name: plant.nickname ?? plant.name } | VERIFIED | Lines 37-41: plant destructure before labels block; t("titleFormat", { name: plant.nickname ?? plant.name }) at line 41. |
+
+### Key Link Verification — Gap Closure
+
+| From | To | Via | Status | Details |
+|------|----|-----|--------|---------|
+| usePatchPlantField.onSuccess | cached plant query | spread merge preserves cover_signed_url | WIRED | `{ ...prev, plant: { ...prev.plant, ...data.plant } }` at line 88-92 |
+| combobox input | openListbox() | onFocus and onClick handlers | WIRED | Both call sites at lines 228, 230 |
+| sw.ts runtimeCaching | navigate NetworkFirst | first entry in array before defaultCache spread | WIRED | Lines 67-76; no competing standalone registerCapture for navigate |
+| useSortPreference | sessionStorage | useEffect after mount | WIRED | Lines 26-31; eslint disable-line comment on setState in effect |
+| JournalPage t('titleFormat') | plant.name | { name: plant.nickname ?? plant.name } | WIRED | Lines 37-41; plant destructure precedes labels block |
+| useDeletePlant.onSuccess | toast.success | t("success") from catalog.profile.delete namespace | WIRED | Line 161; i18n key at pt-BR.json:145 |
 
 ### Data-Flow Trace (Level 4)
 
-| Artifact                | Data Variable                | Source                                                                                | Produces Real Data                                                  | Status           |
-| ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------- |
-| CatalogGrid             | data.items                   | useQuery(plantsKeys.lists) hydrated from listPlants SSR                               | YES (DB query in plants repo `list`)                                | FLOWING          |
-| PlantProfile            | plantQuery.data.plant        | useQuery hydrated from getPlant SSR (toPlantWithSignedUrlSnakeCase)                   | YES (DB findByIdForUser + signCatalogPhotoUrl)                      | FLOWING          |
-| PlantProfile (refetch)  | plantQuery.data.plant.cover_signed_url | TanStack refetch via GET /api/v1/plants/[plantId]                          | YES (now includes cover_signed_url — CR-04 closed)                  | FLOWING          |
-| PhotoJournal            | rawEntries                   | useQuery hydrated from listPhotoEntries SSR (signed thumbnail + photo)                | YES (DB query + parallel signCatalogPhotoUrl)                       | FLOWING          |
-| PhotoJournal lightbox   | photo_signed_url             | server-signed URL via mapper                                                          | YES (24h TTL signed URL); fallback to raw photo_url on signing fail | FLOWING          |
-| LocationCombobox        | locationsQuery.data.locations | useQuery(locationsKeys.all)                                                          | YES (route + use-case + repo)                                       | FLOWING          |
-| AddPlantForm combobox   | initialLocationSuggestions   | page passes empty array; suggestions only loaded after first save via locations query | NO (initial empty array)                                            | HOLLOW_PROP — minor UX gap, unchanged from prior cycle. |
+No new data-flow concerns introduced by gap-closure commits — all changes are client-state fixes, i18n string interpolation, and service worker route ordering. Data-flow trace from prior cycle remains valid. The hollow_prop note for `AddPlantForm initialLocationSuggestions` is unchanged and still a minor UX gap.
 
 ### Behavioral Spot-Checks
 
-Skipped: Phase produces server + client code reachable only with Supabase + Inngest running. Coverage is provided by integration tests bundled with the gap-closure plans:
+Step 7b: SKIPPED — gap-closure changes are client-only state/rendering fixes with no runnable entry points testable without a live Supabase + Inngest stack.
 
-- Plan 05-19: 37/37 across cleanup-storage-reconciler, cleanup-storage event handler, delete-plant, catalog-delete-photo-entry; live DB column verified via information_schema query.
-- Plan 05-20: 8/8 unit tests on `use-plant-profile-mutations.test.tsx` (incl. new Test 8 idempotency-key) + 34/34 integration tests on `catalog-routes-read-create.integration.test.ts` (incl. new Test 4.4 cover_signed_url).
-- Plan 05-21: 52/52 integration tests across catalog-list-photo-entries, catalog-routes-read-create, catalog-create-photo-entry, catalog-delete-photo-entry; 16/16 unit tests on photo-journal + use-plant-profile-mutations.
-- Plan 05-22: 139/139 unit-dom tests pass (new journal-add-sheet test + 3 stale mock alignments).
-- Plan 05-23: typecheck clean + grep audit confirms zero remaining 2px focus rings in shared/ui (only 2 hover affordances remain at outline-2 — hover ≠ focus, intentional).
+Commit verification: all 4 commits confirmed in git log — ff7fc0c, 8629ad7, da64edd, 58e482b.
 
-Manual verification listed in `human_verification`.
+TypeScript typecheck: summary confirms `pnpm exec tsc --noEmit` exits cleanly post-closure.
 
-### Requirements Coverage (16 IDs)
+Sort preference unit tests: summary confirms all 5 tests in `use-sort-preference.unit.test.tsx` pass.
 
-| Requirement | Description                                                                                                  | Status                       | Evidence                                                                                                        |
-| ----------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| CAT-01      | Plant from identification with species_id, prefilled name, ID cover                                          | DEFERRED                     | CONTEXT D-01 explicitly defers to Phase 6.                                                                      |
-| CAT-02      | Manual create: name + ≥1 photo → Plant + PhotoEntry                                                          | SATISFIED                    | add-plant-form.tsx + create-plant.ts + /api/v1/plants POST.                                                     |
-| CAT-03      | Missing name OR photo → validation_failed                                                                    | SATISFIED                    | Inline + summary errors + 400 from route handler.                                                               |
-| CAT-04      | Plant profile: name/nickname/room/date/notes/cover/care/reminders/journal/ID-history                         | SATISFIED                    | Care card not in scope (Phase 7); ID-history placeholder ships per Plan 05-21; cover refetch path now correct (CR-04 closed); delete works (CR-02 closed). |
-| CAT-05      | Location picker: prior + defaults + free text reusable                                                       | SATISFIED                    | LocationCombobox + locations.defaults i18n + list-locations use-case.                                           |
-| CAT-06      | Photo journal entry CRUD with reverse-chronological timeline                                                 | SATISFIED                    | Add path WR-05 closed; lightbox CR-03 closed; delete strands no bytes (CR-01 closed via kind='object' + reconciler branch). |
-| CAT-07      | Default sort acquisition_date DESC NULLS LAST                                                                | SATISFIED                    | plants.ts:127-131 buildOrderBy date_new.                                                                        |
-| CAT-08      | Sort options + sessionStorage persistence                                                                    | SATISFIED                    | use-sort-preference.ts SORT_IDS + read/write sessionStorage.                                                    |
-| CAT-09      | Delete cascade + storage scheduled + Identification.plant_id NULL                                            | SATISFIED                    | FK rules + delete-plant.ts + cleanupStorage Inngest. UI button now reachable (CR-02 closed).                    |
-| CAT-10      | Grid responsive 2/3/4 at 375/600/900                                                                         | SATISFIED                    | catalog-grid.tsx GRID_CLASS Tailwind arbitrary breakpoints. Real-viewport check pending (human verification).   |
-| CAT-11      | Empty catalog state with Sage line-art + Canopy CTA                                                          | SATISFIED                    | catalog-empty.tsx + EmptyState primitive + i18n copy. Visual check pending (human verification).                |
-| OFF-08      | Previously-loaded catalog browseable offline; identify blocked                                               | SATISFIED                    | Serwist SWR cache + identify placeholder offline copy + OfflineBanner. Online→offline transition pending (human). |
-| UI-04       | Home empty: "Identifique sua primeira planta" + camera + manual link                                         | SATISFIED                    | page.tsx empty branch.                                                                                          |
-| UI-07       | Catalog grid 2/3/4 + 4:5 + sort                                                                              | SATISFIED                    | catalog-grid + plant-card + sort control.                                                                       |
-| UI-08       | Plant profile + variants + delete overflow                                                                   | SATISFIED                    | All sections present; ID-history placeholder added; delete now reachable; focus ring 3px brand spec (WR-04 closed). |
-| UI-11       | Photo journal screen with add entry; read-only variant                                                       | SATISFIED                    | Add path correct (WR-05 closed); lightbox correct (CR-03 closed); read-only respected.                          |
+### Requirements Coverage
 
-**Coverage:** 15 SATISFIED + 1 DEFERRED = 15/16 fully satisfied (CAT-01 deferred per CONTEXT D-01 to Phase 6).
+| Requirement | Description | Status | Evidence |
+|-------------|-------------|--------|----------|
+| CAT-03 | Manual create missing name OR photo → validation_failed | SATISFIED | `add-plant-form.tsx` + route handler; REQUIREMENTS.md marked Complete for Phase 5. |
+| CAT-04 | Plant profile shows name, nickname, room, date, notes, cover, care, reminders, journal, ID-history | SATISFIED | All sections in `plant-profile.tsx`; cover image now survives PATCH (gap 1 closed); REQUIREMENTS.md marked Complete. |
+| CAT-07 | Catalog default sort acquisition_date DESC NULLS LAST | SATISFIED | `plants.ts:127-131`; REQUIREMENTS.md marked Complete. |
+| OFF-08 | Previously-loaded catalog browseable offline; identify blocked | SATISFIED | Navigate NetworkFirst now fires before defaultCache "others" catch-all (gap 3 closed); REQUIREMENTS.md marked Complete. |
 
-### Anti-Patterns / Advisory (from 05-REVIEW.md — NOT prior-cycle gaps; advisory only)
+All 4 requirements from gap-closure plan frontmatter confirmed Complete in REQUIREMENTS.md traceability table.
 
-The post-closure code review (`05-REVIEW.md`) identified 5 NEW issues on the gap-closure code. These are NOT regressions of the 6 prior-cycle gaps and per task scope are advisory — they do NOT block phase completion. They are surfaced here so a follow-up gap-closure cycle can decide whether to act.
+### Anti-Patterns Found
 
-| File                                                              | Issue                                                                                                                                                            | Severity        | Notes                                                                                                                  |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `plant-profile.tsx:113-130, 214-234, 339-358`                     | Lightbox/thumbnail strip composition: `listPhotoEntries` reverses to newest-first, but `photoEntries.slice(1)` skips newest and `slice(0,4)` includes cover twice. | NEW-CR-01 (CRIT)| User-visible on plants with ≥2 photos. Surfaced in human_verification — needs re-test on a real device with 3+ photos. |
-| `use-plant-profile-mutations.ts:38, 104`                          | `const qc = opts?.queryClient ?? useQueryClient()` is a Rules-of-Hooks violation if a caller varies `opts.queryClient` between renders.                          | NEW-CR-02 (CRIT)| Latent — current call sites all pass a constant; throws only if the contract changes.                                  |
-| `plant-profile.tsx:155, 196, 203, 220, 226, 345, 351, 391`        | Hardcoded pt-BR strings ("Voltar", "Foto N de N", "Fechar") violate next-intl-day-one constraint.                                                                | NEW-CR-03 (CRIT)| User-visible only as a future-locale-onboarding cost; still functional in pt-BR-only.                                  |
-| `delete-photo-entry.ts:34-38`                                     | `extractObjectKey` does not validate the bucket prefix against KNOWN_BUCKETS — garbage URLs feed the reconciler.                                                 | NEW-CR-04 (CRIT)| Defense-in-depth gap; current upload paths only emit canonical URLs so the bug is latent.                              |
-| `journal-add-sheet.tsx:138, 143`                                  | Idempotency-Key regenerated on retry — defeats the dedupe purpose of the idempotency_keys table on flaky networks.                                               | NEW-CR-05 (CRIT)| User-observable as duplicate journal entries on transient 5xx + retry. Surfaced in human_verification.                 |
+| File | Line | Pattern | Severity | Impact |
+|------|------|---------|----------|--------|
+| `use-sort-preference.ts` | 29 | eslint-disable-line react-hooks/set-state-in-effect | Info | Intentional client-initialization pattern per SUMMARY decision log; effect runs once on mount after hydration — not a performance anti-pattern. |
 
-(8 additional WARNING/INFO advisories also documented in `05-REVIEW.md`; not enumerated here to keep scope tight.)
+No new TODOs, placeholders, or empty implementations introduced by gap-closure commits.
 
-The prior-cycle anti-pattern WR-list (WR-01..14 from the original VERIFICATION.md) was not re-grepped — those are tracked in the prior verification report and are out of scope for goal-backward verification of the 6 closed gaps.
+### Advisory Items Carried Forward (from prior cycle 05-REVIEW.md)
+
+These are NOT blocking gaps for phase completion. They are tracked here for developer awareness:
+
+| ID | File | Issue | Severity |
+|----|------|-------|----------|
+| NEW-CR-01 | `plant-profile.tsx:113-130, 214-234, 339-358` | Lightbox/thumbnail strip off-by-one: listPhotoEntries reverses to newest-first but slice(1) skips newest and slice(0,4) may include cover twice | CRIT (user-visible on ≥2 photos) |
+| NEW-CR-02 | `use-plant-profile-mutations.ts:38, 104` | `const qc = opts?.queryClient ?? useQueryClient()` — Rules-of-Hooks violation if caller varies opts.queryClient between renders | CRIT (latent) |
+| NEW-CR-03 | `plant-profile.tsx:155, 196, 203, 220, 226, 345, 351, 391` | Hardcoded pt-BR strings ("Voltar", "Foto N de N", "Fechar") violate next-intl day-one constraint | CRIT (functional in pt-BR-only) |
+| NEW-CR-04 | `delete-photo-entry.ts:34-38` | `extractObjectKey` does not validate bucket prefix against KNOWN_BUCKETS | CRIT (latent) |
+| NEW-CR-05 | `journal-add-sheet.tsx:138, 143` | Idempotency-Key regenerated on retry — defeats dedupe purpose on flaky networks | CRIT (user-observable as duplicate journal entries) |
 
 ### Human Verification Required
 
-Eight items — see `human_verification` in frontmatter. Six carry forward from the prior cycle (visual empty state, responsive grid, inline-edit interaction, location combobox keyboard, online→offline transition, end-to-end delete on real device — the delete re-test was specifically blocked by CR-02 in the prior cycle and is now unblocked). Two new items track user-observable behavior from the post-closure code review's NEW-CR-01 (lightbox/thumbnail composition off-by-one) and NEW-CR-05 (idempotency-key churn on retry).
+Eight items — see `human_verification` in frontmatter.
+
+**Three items were updated by this gap-closure re-verification pass:**
+
+1. **Inline-edit cover image persistence** (test 3) — gap 1 is closed in code; human re-test needed to confirm cover image actually stays visible on the physical device after a field save.
+
+2. **Location combobox click-to-open** (test 4) — gap 2 is closed in code (`openListbox()` in onFocus + onClick); human re-test needed to confirm the listbox opens on first click without typing in a real browser.
+
+3. **Online → offline (no Chrome dino)** (test 5) — gap 3 is closed in code (navigate NetworkFirst prepended); human re-test needed to confirm Chrome dino no longer appears.
+
+4. **Delete flow with success toast and no hydration mismatch** (test 6) — gap 4 is closed in code (toast.success + SSR-safe sort init); human re-test needed to confirm toast appears and no hydration error fires.
+
+5. **Journal page title** (test 8) — gap 5 is closed in code; no separate human re-test needed beyond the normal journal page open.
+
+**Three items carry forward unchanged from prior cycle:**
+
+6. Empty-state visuals (test 1) — visual check.
+7. Responsive grid breakpoints (test 2) — requires real viewport.
+8. Idempotency-key on retry (test 8, NEW-CR-05) — requires flaky-network simulation.
+
+**Two advisory items need human confirmation:**
+
+9. Lightbox/thumbnail composition off-by-one (NEW-CR-01) — observable only with ≥2 photos on real device.
+10. Idempotency-key churn observable as duplicate journal entries on transient 5xx retries (NEW-CR-05).
 
 ### Gaps Summary
 
-**The 6 prior-cycle gaps are all closed in code:**
+**All 5 UAT gaps are closed in code** (confirmed by direct file inspection):
 
-- **CR-01** (photo-entry storage cleanup) — `pending_storage_deletions.kind` discriminator pgEnum shipped via migration 0006; `delete-photo-entry.ts:145-156` writes `kind='object'`; reconciler at `inngest/functions.ts:168-190` branches on kind and routes object rows to `deleteObject`. End-to-end byte deletion verified by Cycle 3E-1 integration test.
-- **CR-02** (delete button without Idempotency-Key) — `useDeletePlant` at `use-plant-profile-mutations.ts:113-119` now generates a `crypto.randomUUID()` per mutation and sends it as `Idempotency-Key` header; cleared on success and error. Plant-profile delete flow is unblocked end-to-end.
-- **CR-03** (unsigned bucket-key as lightbox src) — `listPhotoEntries` signs both URLs in parallel; mapper emits `photo_signed_url` + `thumbnail_signed_url`; lightbox + plant-profile both consume `pe.photo_signed_url ?? pe.photo_url` fallback chain.
-- **CR-04** (GET /plants/:id drops cover_signed_url) — route now uses `toPlantWithSignedUrlSnakeCase` instead of `toPlantSnakeCase`. TanStack refetch path returns the field correctly.
-- **WR-04** (focus ring 2px ≠ brand 3px) — InlineEditField (3 sites), ModalSheet (drag handle), and Toggle (peer track) all updated to `ring-[3px]` / `outline-[3px]` Canopy/40. Audit grep confirms zero remaining 2px focus rings.
-- **WR-05** (POST response shape mismatch) — `journal-add-sheet.tsx:127-129` reads `body.photo_entry` matching server contract at `route.ts:112`. Stale mocks in `photo-journal.test.tsx` Tests 4/7/8 also corrected. No remaining `body.data` references in src/.
+- Gap 1 (cover image loss on PATCH): `usePatchPlantField.onSuccess` at `use-plant-profile-mutations.ts:88-92` uses spread merge `{ ...prev.plant, ...data.plant }` — cover_signed_url preserved.
+- Gap 2 (combobox click-to-open): `combobox.tsx:228,230` — `openListbox()` in both onFocus and onClick.
+- Gap 3 (Chrome dino offline): `sw.ts:67-76` — navigate NetworkFirst is first in runtimeCaching; standalone registerCapture for navigate removed.
+- Gap 4 (no delete toast + hydration mismatch): `use-plant-profile-mutations.ts:161` — `toast.success(t("success"))`; `pt-BR.json:145` — success key present; `use-sort-preference.ts:24` — `useState("date_new")` constant + useEffect.
+- Gap 5 (journal i18n crash): `journal/page.tsx:37,41` — plant destructured before labels; `t("titleFormat", { name: plant.nickname ?? plant.name })`.
 
-**All 5 ROADMAP success criteria now verify against the codebase.** Phase 6 is unblocked on the SC-3/SC-4/SC-5 axes — "something to identify INTO" is achieved end-to-end at the integration layer.
+**UAT test 7 (CSS chunk preload warning, minor-severity)** was intentionally out of scope for this gap-closure plan. The prior 05-HUMAN-UAT.md classified it as a known Turbopack dev-mode behavior (CSS chunks preloaded speculatively but not consumed within the browser timeout window) — not a production concern. No fix required.
 
-**Eight items require human confirmation** (real-browser/device): five carry over from the prior cycle (empty-state visuals, responsive grid breakpoints, inline-edit interaction model, combobox keyboard nav, online→offline transition); one is now unblocked (plant-profile delete end-to-end re-test); two new items derive from the post-closure code review (lightbox/thumbnail composition off-by-one observable on plants with ≥2 photos, and idempotency-key churn observable as duplicate journal entries on flaky-network retries).
+**All ROADMAP success criteria verified.** Phase 6 remains unblocked.
 
-**The 5 NEW critical findings in 05-REVIEW.md are advisory and do NOT block phase completion** per the explicit task scope. They are documented above so the developer can decide whether to spawn a follow-up gap-closure plan; the two with user-visible runtime impact (NEW-CR-01 and NEW-CR-05) are also surfaced in `human_verification` so a real-device test catches them.
+**Eight human verification items remain** before the phase can move to status: passed. No automated blocking gaps remain.
 
 ---
 
-_Verified: 2026-05-01T22:00:00Z_
+_Verified: 2026-05-03T12:00:00Z_
 _Verifier: Claude (gsd-verifier)_
-_Re-verification: post-Plans 05-19..05-23 gap closure_
+_Re-verification: post-Plan 05-gap-closure (commits ff7fc0c, 8629ad7, da64edd, 58e482b)_

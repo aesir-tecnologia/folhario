@@ -176,11 +176,12 @@ export async function withIdempotency(
       };
     }
 
-    // SAME HASH: replay the stored response. response_status / response_body
-    // are nullable in the column type but should be non-null whenever a
-    // successful first call has committed. If they are null, surface a
-    // clear failure rather than a silent 0-status replay.
-    if (existing.responseStatus === null || existing.responseBody === null) {
+    // SAME HASH: replay the stored response. response_status MUST be
+    // non-null whenever a first call committed (the row is INSERTed and
+    // UPDATEd in the same tx; either both succeed or both roll back).
+    // response_body is legitimately null for 204 No Content responses
+    // (e.g. DELETE handlers), so it is NOT a commit indicator.
+    if (existing.responseStatus === null) {
       throw new Error(
         "withIdempotency: stored row has no response — first-call commit was incomplete",
       );

@@ -19,7 +19,10 @@ export function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center gap-2 bg-rust/10 px-4 py-2 text-sm text-rust"
+      className="
+        flex items-center gap-2 bg-rust/15 px-4 py-2 text-sm text-rust
+        dark:text-forest
+      "
     >
       <WifiOffIcon strokeWidth={1.5} size={20} aria-hidden="true" />
       <span>{t("label")}</span>

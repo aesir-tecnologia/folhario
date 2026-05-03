@@ -1,13 +1,20 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/authed-user";
 
 // HIGH 3 (codex review) — this spec MUST run against `next build && next start`,
 // NOT `next dev`. Service workers are disabled in Next dev mode by default —
 // under dev the test would NEVER exercise the SW navigation-fallback path.
 // playwright.config.ts wires webServer.command = "pnpm start" — keep it.
+//
+// Authenticated: SW is registered in the (app) shell via AppUpdateToast. The
+// unauthenticated landing redirects to /auth/login which is not part of (app),
+// so this spec must land on / under an authed session for the SW to install.
 test("OFF-09 — SW navigation-fallback serves /offline when context offline + uncached route requested", async ({
   page,
   context,
+  authedUser,
 }) => {
+  test.setTimeout(60_000);
+  void authedUser;
   // 1. Navigate ONLINE to a route that triggers SW install + pre-cache.
   await page.goto("/");
   await page.waitForLoadState("networkidle");
@@ -17,11 +24,9 @@ test("OFF-09 — SW navigation-fallback serves /offline when context offline + u
   //    is controlling the page. HIGH 3 (codex review) — without this wait,
   //    the next setOffline+navigate races the SW install and the test would
   //    fall through to a real network failure instead of the SW fallback.
-  await page.waitForFunction(
-    () => navigator.serviceWorker.ready.then(() => true),
-    null,
-    { timeout: 10_000 },
-  );
+  await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true), null, {
+    timeout: 30_000,
+  });
   await page.evaluate(() => navigator.serviceWorker.ready);
 
   // 3. Force the BrowserContext offline AFTER the SW is ready + caching the
@@ -42,13 +47,9 @@ test("OFF-09 — SW navigation-fallback serves /offline when context offline + u
   //    Open Risk #3 — placeholder leaf SVG renders inline if no founder asset.
   const svg = page.locator("svg").first();
   await expect(svg).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: /você está offline/i }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /você está offline/i })).toBeVisible();
   await expect(page.getByText(/Verifique sua conexão/)).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Tentar novamente" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tentar novamente" })).toBeVisible();
 
   await context.setOffline(false);
 });

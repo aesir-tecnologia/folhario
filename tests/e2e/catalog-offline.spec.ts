@@ -7,7 +7,7 @@ import { type Page, type BrowserContext } from "@playwright/test";
 import { test, expect } from "./fixtures/authed-user";
 import AxeBuilder from "@axe-core/playwright";
 
-test.describe.configure({ retries: 0 });
+test.describe.configure({ retries: 0, timeout: 60_000 });
 
 const COMBOS = [
   { colorScheme: "light", reducedMotion: "no-preference" },
@@ -48,7 +48,14 @@ async function seedPlantViaApi(page: Page, opts: { name?: string } = {}): Promis
   return id;
 }
 
+async function waitForServiceWorkerReady(page: Page) {
+  await page.waitForFunction(() => navigator.serviceWorker.ready.then(() => true), null, {
+    timeout: 30_000,
+  });
+}
+
 async function setOfflineAndReload(page: Page, context: BrowserContext) {
+  await waitForServiceWorkerReady(page);
   await context.setOffline(true);
   await page.reload();
   await page.waitForTimeout(500);
@@ -99,6 +106,7 @@ test("OFF-08 — /identify offline shows blocked message + OfflineBanner", async
   await page.goto("/identify");
   await page.waitForLoadState("networkidle");
 
+  await waitForServiceWorkerReady(page);
   await context.setOffline(true);
   await page.reload();
   await page.waitForTimeout(500);
@@ -171,6 +179,7 @@ for (const combo of COMBOS) {
     await page.goto("/catalog");
     await page.waitForLoadState("networkidle");
 
+    await waitForServiceWorkerReady(page);
     await context.setOffline(true);
     await page.reload();
     await page.waitForTimeout(500);
@@ -330,9 +339,8 @@ test("SW cache purged on logout — user B cannot see user A data (T-05-18-04)",
 
     await pageA
       .getByRole("link", { name: /Sair/i })
-      .click()
+      .click({ timeout: 2_000 })
       .catch(async () => {
-        await pageA.goto("/api/v1/iam/logout", { waitUntil: "commit" }).catch(() => {});
         await pageA.request.post("/api/v1/iam/logout", {
           headers: { "Content-Type": "application/json" },
           data: "{}",

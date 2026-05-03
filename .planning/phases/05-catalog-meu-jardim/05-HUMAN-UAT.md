@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 05-catalog-meu-jardim
 source: [05-VERIFICATION.md]
 started: "2026-05-01T22:30:00Z"
@@ -80,7 +80,7 @@ blocked: 0
   reason: "User reported: browser console warning: CSS chunk preloaded but not used — _next/static/chunks/[root-of-the-server]__10azt31._.css preloaded but not used within a few seconds of window load"
   severity: minor
   test: 7
-  root_cause: ""
+  root_cause: "Known Turbopack dev-mode issue — CSS chunks are preloaded speculatively but not consumed within the browser's timeout window; not a production concern"
   artifacts: []
   missing: []
   debug_session: ""
@@ -90,11 +90,16 @@ blocked: 0
   reason: "User reported: no toast and I get this error: hydration failed because the server rendered text didn't match the client. CatalogHeader sort announcement mismatch: server='Catálogo reordenado por Adicionadas antigas' vs client='Catálogo reordenado por Adicionadas recentes'. src/app/(app)/catalog/_components/catalog-header.tsx:75"
   severity: major
   test: 6
-  root_cause: ""
+  root_cause: "Two separate bugs: (A) use-sort-preference.ts:10-24 initializes useState with readStoredSort() which reads sessionStorage synchronously — server returns 'date_new' but client may return a stored 'date_old', causing aria-live text mismatch; fix: initialize with 'date_new' always and apply stored value in useEffect. (B) useDeletePlant.onSuccess in use-plant-profile-mutations.ts never calls toast.success() — the toast was simply never written."
   artifacts:
-    - path: "src/app/(app)/catalog/_components/catalog-header.tsx"
-      issue: "Sort announcement text differs between SSR and client render — sort state initialized differently on server vs client"
-  missing: []
+    - path: "src/app/(app)/catalog/_components/use-sort-preference.ts"
+      issue: "useState initialized with sessionStorage read — different between server and client"
+    - path: "src/app/(app)/catalog/[plantId]/use-plant-profile-mutations.ts"
+      issue: "useDeletePlant.onSuccess missing toast.success() call"
+  missing:
+    - "Initialize sort state with 'date_new' on both server/client, apply stored value in useEffect"
+    - "Add toast.success(t('success')) in useDeletePlant.onSuccess"
+    - "Add catalog.profile.delete.success key to src/messages/pt-BR.json"
   debug_session: ""
 
 - truth: "Catalog and plant-profile pages remain visible from Serwist cache when going offline; offline banner stays visible and identify is blocked"
@@ -102,9 +107,12 @@ blocked: 0
   reason: "User reported: no. the banner appears briefly then the whole page goes offline and I get the chrome dino"
   severity: major
   test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "In src/app/sw.ts, the defaultCache 'others' catch-all route (sameOrigin && !pathname.startsWith('/api/')) is registered first via runtimeCaching and matches all same-origin navigations before the custom request.mode==='navigate' NetworkFirst handler at line 102-108 is reached — because Serwist's findMatchingRoute uses first-match wins. The 'others' NetworkFirst has no networkTimeoutSeconds and its cache ('others') doesn't contain precached page entries, so offline navigations hang then fall through to the browser's own offline page."
+  artifacts:
+    - path: "src/app/sw.ts"
+      issue: "navigate handler registered after defaultCache 'others' catch-all — route ordering means navigate handler never fires for document requests"
+  missing:
+    - "Move navigate NetworkFirst rule to the front of the runtimeCaching array, before spreading defaultCache"
   debug_session: ""
 
 - truth: "Location picker listbox opens on click/focus without requiring any typing"
@@ -112,9 +120,13 @@ blocked: 0
   reason: "User reported: everything works except that the list only shows after I start typing inside the box. it doesn't show the list when I just click."
   severity: major
   test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "src/shared/ui/combobox.tsx:224 — onFocus handler only syncs query state but never calls openListbox(); no onClick handler exists either. openListbox() is only called from handleInputChange (typing) and handleKeyDown (arrow keys), so click/tab-focus never opens the listbox."
+  artifacts:
+    - path: "src/shared/ui/combobox.tsx"
+      issue: "onFocus missing openListbox() call at line 224; no onClick handler on input"
+  missing:
+    - "Add openListbox() to onFocus handler"
+    - "Add onClick={() => openListbox()} to input element"
   debug_session: ""
 
 - truth: "Plant profile cover image remains visible during and after inline-edit of any field"
@@ -122,9 +134,14 @@ blocked: 0
   reason: "User reported: it works but the image disappears"
   severity: major
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "PATCH handler (update-plant-handler.ts:78) returns toPlantSnakeCase() which omits cover_signed_url; useUpdatePlant.onSuccess (use-plant-profile-mutations.ts:88-94) fully replaces the cached plant with the API response body — erasing the cover_signed_url that was present from the initial GET. The cover image is conditionally rendered only when plant.cover_signed_url is truthy (plant-profile.tsx:197)."
+  artifacts:
+    - path: "src/app/(app)/catalog/[plantId]/use-plant-profile-mutations.ts"
+      issue: "onSuccess replaces entire cached plant object, losing cover_signed_url — line 88-94"
+    - path: "src/contexts/catalog/api/route-handlers/update-plant-handler.ts"
+      issue: "PATCH response uses toPlantSnakeCase (no signed URL) instead of toPlantWithSignedUrlSnakeCase — line 78"
+  missing:
+    - "Merge PATCH response into cached plant with spread: { ...prev.plant, ...data.plant } to preserve cover_signed_url"
   debug_session: ""
 
 - truth: "Journal page title renders correctly as '{plantName} — Diário' without i18n formatting errors"
@@ -132,9 +149,10 @@ blocked: 0
   reason: "User reported: FORMATTING_ERROR: The intl string context variable 'name' was not provided to the string '{name} — Diário' at JournalPage src/app/(app)/catalog/[plantId]/journal/page.tsx:38"
   severity: major
   test: 8
-  root_cause: ""
+  root_cause: "t('titleFormat') is called at line 38 inside the labels block without passing the required { name } variable; plant data is available but the { name } argument is simply missing from the call. Fix: move plant destructure before labels block and pass { name: plant.nickname ?? plant.name } to t('titleFormat')."
   artifacts:
     - path: "src/app/(app)/catalog/[plantId]/journal/page.tsx"
-      issue: "t('titleFormat') called without passing { name: plant.name } interpolation variable"
-  missing: []
+      issue: "t('titleFormat') called without { name } interpolation variable at line 38"
+  missing:
+    - "Pass { name: plant.nickname ?? plant.name } to t('titleFormat') call; ensure plant is destructured before labels block"
   debug_session: ""

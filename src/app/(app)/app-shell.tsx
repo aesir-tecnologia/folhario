@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { Toaster } from "sonner";
 
 import {
@@ -42,15 +41,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
   const mainRef = useRef<HTMLElement>(null);
   const prevPathnameRef = useRef<string>(pathname);
-  const skipLinkText = useTranslations("focus")("skipToMain");
   const { readOnly } = useSubscription();
 
   // Focus management on route change (UI-03 + D-24).
   // Only refocus on actual segment change — not hash changes.
   useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
-      mainRef.current?.focus({ preventScroll: false });
       prevPathnameRef.current = pathname;
+      const id = setTimeout(() => {
+        mainRef.current?.focus({ preventScroll: false });
+      }, 0);
+      return () => clearTimeout(id);
     }
   }, [pathname]);
 
@@ -133,17 +134,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="mx-auto min-h-dvh max-w-[480px] bg-paper">
-      {/* Skip-to-main link — UI-22 first focusable element */}
-      <a
-        href="#main"
-        className="
-          sr-only rounded-lg bg-canopy px-4 py-2 text-ivory
-          focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-100
-        "
-      >
-        {skipLinkText}
-      </a>
-
       <OfflineBanner />
       <ReadOnlyBanner active={readOnly} />
 

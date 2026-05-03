@@ -16,6 +16,7 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   images: {
     remotePatterns: [
       // Supabase Storage signed URLs for plant covers + photo entries.

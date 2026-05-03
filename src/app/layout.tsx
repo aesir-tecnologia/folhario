@@ -1,5 +1,5 @@
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Source_Serif_4, Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -35,6 +35,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = await getLocale();
   const messages = await getMessages();
   const theme = await getTheme(); // Open Risk #4 — MUST live in root layout, not (app)/layout.tsx.
+  const t = await getTranslations("focus");
 
   // Only set data-theme for explicit "light"/"dark"; "auto" omits attribute so
   // CSS @media (prefers-color-scheme: dark) controls flash-free first paint (D-03).
@@ -57,6 +58,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         {/* Plan 04 task adds icon set links here once pwa-asset-generator runs. */}
       </head>
       <body>
+        <a
+          href="#main"
+          className="
+            sr-only rounded-lg bg-canopy px-4 py-2 text-ivory
+            focus:not-sr-only focus:absolute focus:top-2 focus:left-2
+            focus:z-100
+          "
+        >
+          {t("skipToMain")}
+        </a>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <PostHogProvider>{children}</PostHogProvider>
         </NextIntlClientProvider>

@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 phase: 05-catalog-meu-jardim
 source: [05-VERIFICATION.md]
 started: "2026-05-01T22:30:00Z"
-updated: "2026-05-03T01:00:00Z"
+updated: "2026-05-03T00:00:00Z"
 ---
 
 ## Current Test
@@ -86,7 +86,7 @@ blocked: 0
   debug_session: ""
 
 - truth: "Delete flow redirects to /catalog with success toast; no hydration errors on return to catalog"
-  status: failed
+  status: resolved
   reason: "User reported: no toast and I get this error: hydration failed because the server rendered text didn't match the client. CatalogHeader sort announcement mismatch: server='Catálogo reordenado por Adicionadas antigas' vs client='Catálogo reordenado por Adicionadas recentes'. src/app/(app)/catalog/_components/catalog-header.tsx:75"
   severity: major
   test: 6
@@ -103,7 +103,7 @@ blocked: 0
   debug_session: ""
 
 - truth: "Catalog and plant-profile pages remain visible from Serwist cache when going offline; offline banner stays visible and identify is blocked"
-  status: failed
+  status: resolved
   reason: "User reported: no. the banner appears briefly then the whole page goes offline and I get the chrome dino"
   severity: major
   test: 5
@@ -116,7 +116,7 @@ blocked: 0
   debug_session: ""
 
 - truth: "Location picker listbox opens on click/focus without requiring any typing"
-  status: failed
+  status: resolved
   reason: "User reported: everything works except that the list only shows after I start typing inside the box. it doesn't show the list when I just click."
   severity: major
   test: 4
@@ -130,7 +130,7 @@ blocked: 0
   debug_session: ""
 
 - truth: "Plant profile cover image remains visible during and after inline-edit of any field"
-  status: failed
+  status: resolved
   reason: "User reported: it works but the image disappears"
   severity: major
   test: 3
@@ -145,7 +145,7 @@ blocked: 0
   debug_session: ""
 
 - truth: "Journal page title renders correctly as '{plantName} — Diário' without i18n formatting errors"
-  status: failed
+  status: resolved
   reason: "User reported: FORMATTING_ERROR: The intl string context variable 'name' was not provided to the string '{name} — Diário' at JournalPage src/app/(app)/catalog/[plantId]/journal/page.tsx:38"
   severity: major
   test: 8

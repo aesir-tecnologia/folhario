@@ -24,17 +24,17 @@ test.describe.configure({ retries: 0 });
 const MINIMAL_JPEG_B64 =
   "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=";
 
-// The proxy at src/proxy.ts:90-110 is a bearer-only fast-fail gate on
-// /api/v1/* — cookies are NOT consulted at the proxy layer. Seed via
-// page.request.post must carry the user's access_token as a Bearer
-// header. The route handler's cookie fallback only runs after the
-// proxy passes the request through, which requires the bearer.
-async function seedPlant(page: Page, accessToken: string, name: string): Promise<string> {
+// The proxy at src/proxy.ts allows /api/v1/plants and /api/v1/plants/{id}/photo-entries
+// without a Bearer (Phase 5 — cookie-session is the web/PWA auth path). The route
+// handler's `requireApiUser` falls through to Supabase SSR cookies when no
+// Authorization header is present. The Bearer header is intentionally omitted
+// because the test webserver verifies bearers against a deterministic test
+// JWKS, which does not recognize Supabase-signed tokens.
+async function seedPlant(page: Page, _accessToken: string, name: string): Promise<string> {
   const imageBuffer = Buffer.from(MINIMAL_JPEG_B64, "base64");
   const resp = await page.request.post("/api/v1/plants", {
     headers: {
       "Idempotency-Key": `seed-uat2-${name}-${Date.now()}`,
-      authorization: `Bearer ${accessToken}`,
     },
     multipart: {
       name,
@@ -52,7 +52,7 @@ async function seedPlant(page: Page, accessToken: string, name: string): Promise
 
 async function seedPhotoEntry(
   page: Page,
-  accessToken: string,
+  _accessToken: string,
   plantId: string,
   label: string,
 ): Promise<void> {
@@ -60,7 +60,6 @@ async function seedPhotoEntry(
   const resp = await page.request.post(`/api/v1/plants/${plantId}/photo-entries`, {
     headers: {
       "Idempotency-Key": `seed-entry-${label}-${Date.now()}-${Math.random()}`,
-      authorization: `Bearer ${accessToken}`,
     },
     multipart: {
       photo: { name: `${label}.jpg`, mimeType: "image/jpeg", buffer: imageBuffer },

@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   devIndicators: false,
   images: {
+    unoptimized: process.env.NODE_ENV === "development",
     remotePatterns: [
       // Supabase Storage signed URLs for plant covers + photo entries.
       // Local dev/CI runs Supabase at 127.0.0.1:54321 (per supabase/config.toml);

@@ -36,6 +36,13 @@ export interface ModalSheetProps {
    */
   onCloseAutoFocus?: (event: Event) => void;
   /**
+   * Forwarded to Radix `Dialog.Content`. Default behavior: if a descendant
+   * with the `autofocus` attribute is present, focus it (UI-SPEC §7
+   * Cancel-first autofocus). Otherwise Radix's default first-focusable
+   * heuristic applies.
+   */
+  onOpenAutoFocus?: (event: Event) => void;
+  /**
    * Override Radix's default role on Dialog.Content. UI-SPEC §7 line 367
    * requires "alertdialog" for the destructive delete-confirm sheet so screen
    * readers announce headline+body as a higher-priority alert.
@@ -58,15 +65,37 @@ export function ModalSheet({
   closeLabel,
   children,
   onCloseAutoFocus,
+  onOpenAutoFocus,
   role,
   interactiveDragHandle = false,
 }: ModalSheetProps) {
+  const handleOpenAutoFocus = (event: Event) => {
+    if (onOpenAutoFocus) {
+      onOpenAutoFocus(event);
+      return;
+    }
+    const root =
+      (event.currentTarget as HTMLElement | null) ??
+      (event.target as HTMLElement | null) ??
+      document;
+    const autofocusEl =
+      root.querySelector<HTMLElement>('[data-autofocus="true"]') ??
+      document.querySelector<HTMLElement>(
+        '[role="dialog"] [data-autofocus="true"], [role="alertdialog"] [data-autofocus="true"]',
+      );
+    if (autofocusEl) {
+      event.preventDefault();
+      autofocusEl.focus();
+    }
+  };
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-forest/50" />
         <Dialog.Content
           onCloseAutoFocus={onCloseAutoFocus}
+          onOpenAutoFocus={handleOpenAutoFocus}
           {...(role !== undefined && { role })}
           className="
             fixed inset-x-0 bottom-0 z-50 max-h-[80dvh] overflow-y-auto
@@ -100,9 +129,9 @@ export function ModalSheet({
             />
           )}
           <div className="flex items-start justify-between gap-4">
-            <Dialog.Title className="
-              font-serif text-2xl font-medium text-forest
-            ">
+            <Dialog.Title
+              className="font-serif text-2xl font-medium text-forest"
+            >
               {title}
             </Dialog.Title>
             <Dialog.Close asChild>

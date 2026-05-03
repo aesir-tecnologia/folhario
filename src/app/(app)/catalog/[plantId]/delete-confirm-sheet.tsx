@@ -52,7 +52,7 @@ export function DeleteConfirmSheet(props: DeleteConfirmSheetProps) {
         {/* Cancelar BEFORE Excluir in DOM — PRD §17 destructive layout-secondary rule */}
         <button
           type="button"
-          autoFocus
+          data-autofocus="true"
           data-testid="delete-confirm-cancel"
           onClick={() => props.onOpenChange(false)}
           className="

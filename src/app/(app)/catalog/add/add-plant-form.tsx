@@ -251,9 +251,10 @@ export function AddPlantForm({
               )}
               {errors.acquisitionDate && (
                 <li>
-                  <a href={`#${acquisitionDateId}`} className="
-                    text-rust underline
-                  ">
+                  <a
+                    href={`#${acquisitionDateId}`}
+                    className="text-rust underline"
+                  >
                     {labels.fieldNames.acquisitionDate}
                   </a>
                 </li>
@@ -287,6 +288,7 @@ export function AddPlantForm({
                 tabIndex={readOnly ? -1 : 0}
                 role="button"
                 aria-label={labels.photoLabel}
+                aria-invalid={errors.photo ? true : undefined}
                 aria-describedby={errors.photo ? photoErrorId : undefined}
                 onKeyDown={(e) => {
                   if (!readOnly && (e.key === "Enter" || e.key === " ")) openFilePicker();
@@ -303,9 +305,11 @@ export function AddPlantForm({
           </div>
 
           {errors.photo && (
-            <p id={photoErrorId} role="alert" className="
-              flex items-center gap-1 text-sm text-rust
-            ">
+            <p
+              id={photoErrorId}
+              role="alert"
+              className="flex items-center gap-1 text-sm text-rust"
+            >
               <AlertCircle strokeWidth={1.5} size={16} aria-hidden="true" />
               {errors.photo}
             </p>
@@ -330,6 +334,7 @@ export function AddPlantForm({
             onChange={handleFileChange}
             disabled={readOnly}
             aria-hidden="true"
+            tabIndex={-1}
           />
         </div>
 
@@ -373,9 +378,10 @@ export function AddPlantForm({
         />
 
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${formId}-notes`} className="
-            text-sm font-semibold text-forest
-          ">
+          <label
+            htmlFor={`${formId}-notes`}
+            className="text-sm font-semibold text-forest"
+          >
             {labels.notes}
           </label>
           <textarea
@@ -393,24 +399,17 @@ export function AddPlantForm({
         </div>
 
         {!readOnly && (
-          <div
+          <button
+            type="submit"
+            disabled={submitting}
             className="
-              fixed inset-x-0 bottom-0 mx-auto max-w-[480px] bg-ivory/95 px-4
-              pt-3 pb-safe-bottom
+              min-h-[48px] w-full rounded-lg bg-canopy px-4 py-3 text-base
+              font-semibold text-ivory
+              disabled:opacity-70
             "
           >
-            <button
-              type="submit"
-              disabled={submitting}
-              className="
-                min-h-[48px] w-full rounded-lg bg-canopy px-4 py-3 text-base
-                font-semibold text-ivory
-                disabled:opacity-70
-              "
-            >
-              {submitting ? labels.submitLoading : labels.submit}
-            </button>
-          </div>
+            {submitting ? labels.submitLoading : labels.submit}
+          </button>
         )}
       </form>
     </div>

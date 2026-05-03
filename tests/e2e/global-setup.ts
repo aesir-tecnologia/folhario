@@ -44,12 +44,7 @@ export const TEST_JWKS_URL = `http://127.0.0.1:${TEST_JWKS_PORT}${TEST_JWKS_PATH
 export const TEST_USER_ID = "00000000-0000-4000-8000-0000000000a9";
 export const TEST_USER_EMAIL = "e2e-consent@folhario.test";
 
-export const TEST_KEY_DUMP_PATH = join(
-  process.cwd(),
-  "tests",
-  "e2e",
-  ".tmp-jwks.json",
-);
+export const TEST_KEY_DUMP_PATH = join(process.cwd(), "tests", "e2e", ".tmp-jwks.json");
 
 let activeServer: Server | undefined;
 
@@ -76,11 +71,7 @@ function publishJwks(jwksJson: string): Promise<Server> {
     server.listen(TEST_JWKS_PORT, "127.0.0.1", () => {
       const addr = server.address() as AddressInfo;
       if (addr.port !== TEST_JWKS_PORT) {
-        reject(
-          new Error(
-            `globalSetup: bound to port ${addr.port} but expected ${TEST_JWKS_PORT}`,
-          ),
-        );
+        reject(new Error(`globalSetup: bound to port ${addr.port} but expected ${TEST_JWKS_PORT}`));
         return;
       }
       resolve(server);
@@ -89,6 +80,21 @@ function publishJwks(jwksJson: string): Promise<Server> {
 }
 
 async function seedTestUser(databaseUrl: string): Promise<void> {
+  // auth.users row required for getUserById INNER JOIN
+  const { createClient } = await import("@supabase/supabase-js");
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  await supabaseAdmin.auth.admin.deleteUser(TEST_USER_ID).catch(() => {});
+  const { error: authErr } = await supabaseAdmin.auth.admin.createUser({
+    id: TEST_USER_ID,
+    email: TEST_USER_EMAIL,
+    email_confirm: true,
+  });
+  if (authErr) throw new Error(`globalSetup: createUser failed: ${authErr.message}`);
+
   const postgresMod = await import("postgres");
   const postgres = postgresMod.default;
   const sql = postgres(databaseUrl, { prepare: false, max: 1, idle_timeout: 5 });
@@ -104,6 +110,7 @@ async function seedTestUser(databaseUrl: string): Promise<void> {
       )
       ON CONFLICT (email) DO UPDATE SET id = EXCLUDED.id
     `;
+    await sql`DELETE FROM public.auth_throttle WHERE ip = '127.0.0.1'`;
   } finally {
     await sql.end({ timeout: 5 });
   }
@@ -121,9 +128,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   //    fails, the Playwright run aborts BEFORE any spec runs.
   const probe = await fetch(TEST_JWKS_URL);
   if (!probe.ok) {
-    throw new Error(
-      `globalSetup: JWKS self-probe returned status ${probe.status}; expected 200`,
-    );
+    throw new Error(`globalSetup: JWKS self-probe returned status ${probe.status}; expected 200`);
   }
   const probeBody = await probe.json();
   if (
@@ -166,9 +171,7 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   const dbUrl = process.env.DATABASE_POOL_URL ?? process.env.DATABASE_URL;
   if (dbUrl) {
     if (/supabase\.co/.test(dbUrl)) {
-      throw new Error(
-        "globalSetup: refusing to seed E2E test user against cloud Supabase",
-      );
+      throw new Error("globalSetup: refusing to seed E2E test user against cloud Supabase");
     }
     await seedTestUser(dbUrl);
   }

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/authed-user";
 
 // Retry once under CI throttling — debounced scroll save (150ms) + useLayoutEffect restore
 // timing can race; advisor flagged the two waitForTimeout() calls as fragility risk.
@@ -6,7 +6,9 @@ test.describe.configure({ retries: 2 });
 
 test("UI-14 — per-tab scroll preservation across bottom-nav switches", async ({
   page,
+  authedUser,
 }) => {
+  void authedUser;
   // Placeholder routes are too short for natural 400px scroll, so each visit
   // injects a tall spacer client-side. The contract under test:
   //   1. The 150ms-debounced scroll save fires when the user navigates away
@@ -44,11 +46,10 @@ test("UI-14 — per-tab scroll preservation across bottom-nav switches", async (
   await page.evaluate(() => window.scrollTo(0, 400));
   // Poll until the 150ms-debounced save has flushed sessionStorage. This
   // replaces a fixed waitForTimeout that flaked under parallel-worker load.
-  await page.waitForFunction(
-    () => Number(sessionStorage.getItem("scroll:/") ?? "0") >= 399,
-    null,
-    { timeout: 3000, polling: 25 },
-  );
+  await page.waitForFunction(() => Number(sessionStorage.getItem("scroll:/") ?? "0") >= 399, null, {
+    timeout: 3000,
+    polling: 25,
+  });
 
   // Switch to Catalog tab.
   await page.getByRole("link", { name: "Catálogo" }).click();

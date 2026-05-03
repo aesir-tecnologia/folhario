@@ -1,6 +1,7 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/authed-user";
 
-test("UI-03 — focus moves to <main> on route change", async ({ page }) => {
+test("UI-03 — focus moves to <main> on route change", async ({ page, authedUser }) => {
+  void authedUser;
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
@@ -8,11 +9,7 @@ test("UI-03 — focus moves to <main> on route change", async ({ page }) => {
   await page.getByRole("link", { name: "Catálogo" }).click();
   await page.waitForLoadState("networkidle");
 
-  // Allow useEffect focus call to fire.
-  await page.waitForTimeout(100);
-
-  const activeId = await page.evaluate(
-    () => document.activeElement?.id ?? "",
-  );
+  await page.waitForFunction(() => document.activeElement?.id === "main", null, { timeout: 3000 });
+  const activeId = await page.evaluate(() => document.activeElement?.id ?? "");
   expect(activeId).toBe("main");
 });

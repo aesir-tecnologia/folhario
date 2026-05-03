@@ -1,11 +1,15 @@
 import type { BrowserContext } from "@playwright/test";
-import { test as authedTest, expect } from "./authed-user";
+import { test as authedTest, expect, type AuthedUser } from "./authed-user";
 
 type ReadOnlyFixtures = { readOnly: boolean };
 
 export const test = authedTest.extend<ReadOnlyFixtures>({
   readOnly: [
-    async ({ context }: { context: BrowserContext }, use: (r: boolean) => Promise<void>) => {
+    async (
+      { context, authedUser }: { context: BrowserContext; authedUser: AuthedUser },
+      use: (r: boolean) => Promise<void>,
+    ) => {
+      void authedUser;
       await context.addCookies([
         {
           name: "__test_subscription_read_only",

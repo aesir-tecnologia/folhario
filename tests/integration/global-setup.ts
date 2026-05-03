@@ -7,4 +7,12 @@
 // a fake DB. Keep this file as a marker only — opt-in helpers
 // (`truncateAuthAndIamTables`, etc.) are imported per-test.
 
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+
+const envLocal = resolve(process.cwd(), ".env.local");
+if (existsSync(envLocal)) {
+  process.loadEnvFile(envLocal);
+}
+
 export {};

@@ -103,14 +103,14 @@ describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
       expect(result.ok).toBe(true);
       const labels = result.items.map((i) => i.labelDisplay);
       expect(labels).toEqual([
-        "Sala",
-        "Varanda",
-        "Quarto",
-        "Banheiro",
-        "Cozinha",
-        "Escritório",
-        "Jardim",
-        "Outro",
+        "sala",
+        "varanda",
+        "quarto",
+        "banheiro",
+        "cozinha",
+        "escritório",
+        "jardim",
+        "outro",
       ]);
     });
 
@@ -131,11 +131,11 @@ describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
       expect(labels[1]).toBe("Varanda"); // usage_count=3
       expect(labels[2]).toBe("Banheiro"); // usage_count=1
       // Remaining defaults follow (de-duped, unmatched)
-      expect(labels).toContain("Quarto");
-      expect(labels).toContain("Cozinha");
-      expect(labels).toContain("Escritório");
-      expect(labels).toContain("Jardim");
-      expect(labels).toContain("Outro");
+      expect(labels).toContain("quarto");
+      expect(labels).toContain("cozinha");
+      expect(labels).toContain("escritório");
+      expect(labels).toContain("jardim");
+      expect(labels).toContain("outro");
     });
 
     it("Test 3: custom location 'Estufa' → 9 entries, Estufa first", async () => {
@@ -148,8 +148,8 @@ describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
       expect(labels).toHaveLength(9);
       expect(labels[0]).toBe("Estufa"); // highest usage_count, custom
       // All 8 defaults follow
-      expect(labels).toContain("Sala");
-      expect(labels).toContain("Outro");
+      expect(labels).toContain("sala");
+      expect(labels).toContain("outro");
     });
 
     it("Test 4: 25 saved suggestions → only top 20 returned + 8 defaults (de-duped)", async () => {

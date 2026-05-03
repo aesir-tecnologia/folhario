@@ -40,6 +40,11 @@ export default defineConfig({
           // without re-introducing the unit setup-env regression
           // (Phase 1 plan 01-04 fix).
           setupFiles: ["./tests/integration/global-setup.ts"],
+          // Integration tests share a single local Postgres; running
+          // files in parallel cross-pollutes global-scoped queries
+          // (e.g. fetchPendingBatch, list-locations defaults). Force
+          // serial file execution.
+          fileParallelism: false,
         },
       },
     ],

@@ -330,7 +330,9 @@ describe.skipIf(!dbUrl || !supabaseAuthAvailable)(
 
         const body1 = await res1.json();
         const body2 = await res2.json();
-        expect(JSON.stringify(body1)).toBe(JSON.stringify(body2));
+        // Compare structurally — jsonb storage preserves values but not
+        // key order, so byte-equal JSON.stringify is too strict.
+        expect(body1).toEqual(body2);
 
         // use-case called exactly once (replay skips it)
         expect(spy.mock.calls.length).toBe(1);

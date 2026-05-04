@@ -36,6 +36,7 @@ extends: .planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
 | Registry safety (no shadcn, raw Tailwind v4) | Phase 3 UI-SPEC § Registry Safety |
 | `Combobox`, `ScientificName`, `Lightbox`, `useSubscription` | Phase 5 UI-SPEC § Composed Primitives |
 | `authedUser` Playwright fixture | Phase 5 UI-SPEC |
+| Lucide icon sizes (locked set 18 / 20 / 24 / 28 px) | Phase 3 UI-SPEC § Design System line 27 (D-05). **Phase 6 does NOT expand this set** — chip-internal and micro-action icons all bump to 18 px (smallest locked size) per revision pass 1. |
 
 ---
 
@@ -50,6 +51,9 @@ extends: .planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
 | LGPD consent modal CTA | PRD §16 line 770: `Aceitar e continuar / Cancelar` | CONTEXT `<specifics>` line 220: `Entendo e aceito / Cancelar` | **`Entendo e aceito` + `Cancelar`** | CONTEXT specifics block is locked. "Entendo e aceito" reads as a deliberate consent verb, matching LGPD's "manifestação livre, informada e inequívoca" (Art. 5 XII). |
 | LGPD modal dismissibility | Phase 3 ModalSheet: tap-scrim allowed in addition to "Fechar" | PRD §17 line 1132: "Click-outside optional (NOT for critical modals like LGPD consent)" | **PRD wins** — LGPD modal: `dismissOnScrim={false}`, `dismissOnEsc={false}`. User MUST commit via "Entendo e aceito" or "Cancelar". | LGPD Art. 8 §1 requires consent be granted by an "ato inequívoco." Accidental scrim-tap dismissal is ambiguous. Same override applies to read-only paywall Radix Dialog. |
 | Loading state visual | PRD §16 line 767: "spinner + …" | Phase 3 D-27 + CONTEXT D-15: skeleton shimmer (banned: circular spinners) | **Skeleton shimmer + progress text** | Phase 3 bans circular spinners as a system-wide pattern (UI-17). PRD §16 wording is descriptive, not prescriptive on visual treatment. CONTEXT D-15 supersedes. |
+| Chip vertical padding (`AiProvenanceChip`, `CapHitChip`) — revision pass 1 | Initial draft: 6 px (md AiProvenance) / 6 px (CapHit) | Phase 3 line 44 / lines 38–61: 8 pt grid; sub-8 ONLY permitted as 4 px icon-to-label gap | **`AiProvenanceChip` sm: 4 px vertical (icon-gap exception applies — 4 px is the locked Phase 3 sub-8 token, repurposed here as chip vertical padding to keep the sm pill compact alongside its 12 px label). md: 8 px vertical. `CapHitChip`: 8 px vertical. Horizontal stays 12 px (already grid-compliant).** | Option A (lower-risk): re-use Phase 3 locked exceptions instead of declaring a new `chip-vertical: 6 px` exception. Sm chip height after fix = 4 + 18 (icon) + 4 = 26 px (label is 12/16, vertically centered against the 18 px icon). Md chip height = 8 + 18 (icon) + 8 = 34 px. CapHit two-line label height = 8 + (16 + 16) + 8 = 48 px. All visually acceptable. |
+| Chip-internal + micro-action Lucide icon sizes — revision pass 1 | Initial draft: 14 px (Sparkles in `AiProvenanceChip`, Clock in `CapHitChip`), 12 px (Clock in history-status pill), 16 px (X in photo-strip remove button) | Phase 3 line 27 (D-05): locked Lucide size set `18 / 20 / 24 / 28 px` | **All chip-internal and micro-action icons bump to 18 px** (smallest locked size). `AiProvenanceChip` Sparkles: 14 → 18 px. `CapHitChip` Clock: 14 → 18 px. History-status pill Clock: 12 → 18 px. Photo-strip remove `X`: 16 → 18 px. Capture-guide `Plus` (already 20 px) unchanged. | Option A (lower-risk): preserve Phase 3's locked size set instead of expanding it for downstream phases. The 20 × 20 px circular tap target on each photo tile (line 217) accommodates an 18 px icon with 1 px breathing room — geometry holds. Chip heights recomputed in the spacing-padding row above. |
+| Per-plant identification history empty state composition — revision pass 1 | Initial draft (line 507): `<EmptyState>` composer "with NO primary CTA" | Phase 3 lines 206–211: EmptyState contract mandates exactly ONE Canopy primary CTA; the composer cannot ship without it | **Raw composition (NOT `<EmptyState>`)** — same approach as the offline state at line 121. Sage line-art SVG (Phase 3 D-35) + Source Serif 4 24 / 30 weight 500 Forest Ink / Moonpaper headline + Plus Jakarta Sans 16 / 24 weight 400 Calm Slate / Lantern Slate hint, vertical stack, 16 px gaps. **Cite reason inline:** "Raw composition (NOT `<EmptyState>` — read-only-from-this-surface intent; ID flow lives at /identify, not on a plant profile)." | Option A (lower-risk): match the established pattern already used at line 121 for offline state. The rationale is genuine UX intent (this surface is a read-only window into a plant's history; users start new identifications from `/identify`, not from a plant profile), not a violation of Phase 3 contract. |
 
 ---
 
@@ -60,7 +64,7 @@ extends: .planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
 | Tool | none | Phase 3 D-01 — raw Tailwind v4, no shadcn registry |
 | Preset | not applicable | no shadcn registry in use |
 | Component library | `radix-ui` (Dialog only — for paywall + LGPD consent overlay variants) | Phase 3 / Phase 5 (Lightbox already on Radix Dialog) |
-| Icon library | `lucide-react` `strokeWidth={1.5}`, sizes 18/20/24/28 px | Phase 3 D-05 |
+| Icon library | `lucide-react` `strokeWidth={1.5}`, sizes 18/20/24/28 px (locked set — Phase 6 does NOT expand) | Phase 3 D-05 |
 | Font | Source Serif 4 (editorial) + Plus Jakarta Sans (interface) | Phase 3 |
 | New primitives shipped this phase | `ConfidenceLadder`, `CaptureGuide`, `PhotoStrip`, `IdentificationResultCard`, `IdentificationHistoryItem`, `CapHitChip`, `AiProvenanceChip` | CONTEXT D-13, D-14, D-16, D-17, D-21 + key-constraint 5 |
 | Reused primitives | `Button` (4 variants), `TextInput`, `ModalSheet`, `EmptyState`, `InlineError`, `Skeleton`, `ReadOnlyBanner`, `Toast` (sonner), `BottomNav`, `Combobox`, `Lightbox`, `ScientificName`, `useSubscription`, `useOnlineStatus` | Phase 3 + Phase 5 |
@@ -70,6 +74,8 @@ extends: .planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
 ## Spacing Scale
 
 > Inherits Phase 3's full 8 pt grid. No new tokens this phase. No exceptions.
+>
+> **Sub-8 token usage in Phase 6:** Phase 3 line 44 locks `space-1 = 4 px` for "tight icon-to-label gap." Phase 6 reuses this token as the **vertical padding for the small `AiProvenanceChip`** (sm size only). Mental model: the 4 px above and below the chip's 18 px Lucide icon is conceptually the same micro-gap that Phase 3 reserves for icon-adjacent text. No new exception is declared. Md `AiProvenanceChip` and `CapHitChip` use 8 px vertical padding (full grid alignment).
 
 ---
 
@@ -94,7 +100,7 @@ extends: .planning/phases/05-catalog-meu-jardim/05-UI-SPEC.md
 | Calm Slate / Lantern Slate | Confidence-ladder bar fill at LOW (threshold–39 %) tier; history-card success-status text label (no celebration color); zero-result hint copy. |
 | Overdue Rust / Overdue Copper | `CapHitChip` 1 px stroke + label; history-card status badges for `timeout` / `provider_unavailable` / `cap_hit`. |
 | Trust Teal / Trust Mist | `AiProvenanceChip` ("Gerado por IA") 1 px stroke + label in LGPD consent modal header. **Phase 6 is first consumer of this chip** (Phase 3 deferred table line 272 listed Phase 7; CONTEXT key-constraint 5 brings it forward to Phase 6 LGPD modal). |
-| Urgent Poppy / Urgent Blossom | Multi-photo strip per-thumbnail remove-X icon (16 px Lucide `X`). PRD §17 reserves this token to "TOXICITY + destructive ONLY"; per-photo removal is a destructive micro-action and qualifies. NEVER as a general-error fill in Phase 6. |
+| Urgent Poppy / Urgent Blossom | Multi-photo strip per-thumbnail remove-X icon (18 px Lucide `X`). PRD §17 reserves this token to "TOXICITY + destructive ONLY"; per-photo removal is a destructive micro-action and qualifies. NEVER as a general-error fill in Phase 6. |
 | Hairline Beige / Hairline Umber | Confidence-ladder bar background (unfilled portion); capture-guide thumbnail 1.5 px stroke when empty. |
 
 > Phase 6 introduces NO new color hex values. All tokens are Phase 3 inheritances.
@@ -214,7 +220,7 @@ type PhotoStripProps = {
 **Tile (per photo):**
 
 - 56 × 56 px square, 8 px radius, photo as `<img>` `object-fit: cover` from local `URL.createObjectURL` preview (CONTEXT D-14).
-- Top-right corner: 20 × 20 px circular tap target with Lucide `X` 16 px stroked icon, Urgent Poppy `#C73E1D` / Urgent Blossom `#E8593A` color, Warm Ivory / Embered Surface bg @ 90 % opacity, 1.5 px Urgent Poppy / Blossom stroke. Tap → `onRemove(id)`.
+- Top-right corner: 20 × 20 px circular tap target with Lucide `X` 18 px stroked icon (smallest locked Lucide size — Phase 3 D-05; the 20 px circle accommodates the 18 px icon with 1 px breathing room), Urgent Poppy `#C73E1D` / Urgent Blossom `#E8593A` color, Warm Ivory / Embered Surface bg @ 90 % opacity, 1.5 px Urgent Poppy / Blossom stroke. Tap → `onRemove(id)`.
 - Per PRD §17 destructive-color reservation: this is a per-photo destructive micro-action (removes the photo from the upcoming submission), so Urgent Poppy is **in-scope**. Stripe red is NOT used for "general error" or styling here.
 
 **"Adicionar mais" tile** (when `photos.length < maxPhotos`):
@@ -325,7 +331,7 @@ Surfaces on user's first identify attempt (no prior `identification_third_party`
 
 | Slot | Component | i18n key | pt-BR copy |
 |------|-----------|----------|------------|
-| Header chip | `<AiProvenanceChip>` (NEW — see § 7) | (chip uses its own key) | `Gerado por IA` — Trust Teal / Mist 1 px stroke + label, Paper / Night Cream bg, 999 px pill, 8 px icon-gap with Lucide `Sparkles` 14 px |
+| Header chip | `<AiProvenanceChip>` (NEW — see § 7) | (chip uses its own key) | `Gerado por IA` — Trust Teal / Mist 1 px stroke + label, Paper / Night Cream bg, 999 px pill, 8 px icon-gap with Lucide `Sparkles` 18 px |
 | Headline | Source Serif 4 24 / 30 weight 500 Forest Ink / Moonpaper | `identify.consent.title` | `Para identificar, precisamos enviar suas fotos` |
 | Body | Plus Jakarta Sans 16 / 24 weight 400 Calm Slate / Lantern Slate | `identify.consent.body` | `Usamos Plant.id (Kindwise) e modelos de visão compatíveis com OpenAI, ambos fora do Brasil (Art. 33 LGPD). Seus dados são usados apenas para identificar plantas.` |
 | Privacy link | Phase 3 `<Button variant="tertiary">` | `identify.consent.privacyLink` | `Política de privacidade` — Canopy / Sprout label, no border, links to `/legal/privacy` (Phase 11 destination; Phase 6 ships placeholder route) |
@@ -363,9 +369,10 @@ type AiProvenanceChipProps = {
 **Visual (PRD §17 line 949):**
 
 - 999 px pill (fully rounded), Paper Cream `#FBF7EF` / Night Cream `#1A1613` bg, 1 px Trust Teal `#2B6F7A` / Trust Mist `#5BA5B0` stroke.
-- Lucide `Sparkles` 14 px Trust Teal / Mist stroke icon at left, 8 px gap.
+- Lucide `Sparkles` 18 px Trust Teal / Mist stroke icon at left (smallest locked Lucide size — Phase 3 D-05; revision pass 1 bumped from 14 px to honor the locked set), 8 px gap.
 - Label `Gerado por IA` Plus Jakarta Sans 12 / 16 weight 600 Trust Teal / Mist (sm) or 14 / 18 (md).
-- Vertical padding 4 px (sm) / 6 px (md), horizontal padding 12 px.
+- Vertical padding 4 px (sm — reuses Phase 3 locked sub-8 token; see Spacing Scale § note) / 8 px (md), horizontal padding 12 px.
+- Resulting geometry: sm chip height = 4 + 18 (icon) + 4 = 26 px; md chip height = 8 + 18 + 8 = 34 px. Label is vertically centered against the icon via `align-items: center` flex.
 
 **A11y:**
 
@@ -385,11 +392,12 @@ Surfaces in state 9 (cap-hit) at top of screen. Reuses notification-chip geometr
 **Visual:**
 
 - 999 px pill, Paper Cream / Night Cream bg, 1 px Overdue Rust `#A14A2C` / Overdue Copper `#C96A44` stroke.
-- Lucide `Clock` 14 px Overdue Rust / Copper stroke icon at left, 8 px gap.
+- Lucide `Clock` 18 px Overdue Rust / Copper stroke icon at left (smallest locked Lucide size — Phase 3 D-05; revision pass 1 bumped from 14 px to honor the locked set), 8 px gap.
 - **Two-line label:**
   - Line 1: `Limite atingido` Plus Jakarta Sans 12 / 16 weight 600 Overdue Rust / Copper.
   - Line 2: ICU `Próximo em {resetTime}` Plus Jakarta Sans 12 / 16 weight 400 Calm Slate / Lantern Slate. `resetTime` is formatted via `Intl.RelativeTimeFormat` pt-BR (e.g. "em 4 horas", "amanhã às 09:00").
-- Vertical padding 6 px, horizontal 12 px.
+- Vertical padding 8 px, horizontal 12 px (revision pass 1: was 6 px vertical, bumped to 8 px to honor 8 pt grid; horizontal already grid-compliant).
+- Resulting geometry: chip height = 8 + (16 + 16) (two-line label, line-height 16 each) + 8 = 48 px. Label block is vertically centered against the 18 px icon via `align-items: center` flex; the two-line label dominates height.
 
 **Props:**
 ```ts
@@ -434,7 +442,7 @@ Lives in `/identify/history` (global) and `/catalog/{plantId}/identifications` (
 |--------|--------|--------------------------|
 | `success` | No badge (success is honest baseline; no celebration). The selected-result content IS the success indicator. | — |
 | `success` + `plantId === null` | Small Calm Slate dot (4 × 4 px circle, Calm Slate / Lantern Slate fill) — ambient signal that this row needs follow-up | (decorative; the re-associate CTA carries the textual cue) |
-| `timeout` | 999 px pill, Paper / Night Cream bg, 1 px Overdue Rust / Copper stroke, Lucide `Clock` 12 px + label | `identify.history.status.timeout`: `Tempo esgotado` |
+| `timeout` | 999 px pill, Paper / Night Cream bg, 1 px Overdue Rust / Copper stroke, Lucide `Clock` 18 px (smallest locked Lucide size — Phase 3 D-05; revision pass 1 bumped from 12 px) + label | `identify.history.status.timeout`: `Tempo esgotado` |
 | `provider_unavailable` | Same geometry as timeout | `identify.history.status.providerUnavailable`: `Indisponível` |
 | `cap_hit` | Same geometry | `identify.history.status.capHit`: `Limite atingido` |
 
@@ -504,7 +512,11 @@ Same composition as global history page, with two differences:
 
 - Title: `Histórico de identificações — {plantName}` (i18n key `identify.plantHistory.titleFormat`).
 - API filter: `GET /api/v1/identifications?plantId={plantId}` per CONTEXT D-21.
-- Empty state copy (i18n key `identify.plantHistory.empty.title`): `Esta planta ainda não tem identificações no histórico.` + hint `As identificações associadas a esta planta aparecem aqui.` + NO primary CTA (this surface is read-only; the user shouldn't be told to start a new identification from a plant profile — the camera button on Identify is the canonical entry point).
+- Empty state: **Raw composition (NOT `<EmptyState>` — read-only-from-this-surface intent; ID flow lives at `/identify`, not on a plant profile).** Same pattern as the offline state at line 121 (revision pass 1 — see Conflicts Resolved). Vertical stack, 16 px gaps:
+  - Sage line-art SVG (Phase 3 D-35 placeholder; founder-asset swap deferred), `aria-hidden="true"`.
+  - Headline (i18n key `identify.plantHistory.empty.title`, Source Serif 4 24 / 30 weight 500 Forest Ink / Moonpaper): `Esta planta ainda não tem identificações no histórico.`
+  - Hint (i18n key `identify.plantHistory.empty.hint`, Plus Jakarta Sans 16 / 24 weight 400 Calm Slate / Lantern Slate): `As identificações associadas a esta planta aparecem aqui.`
+  - **No primary CTA.** The canonical entry point for new identifications is the bottom-nav Identify tab; surfacing a CTA here would imply this surface initiates ID flows (it does not). The user has full discoverability via the persistent bottom nav.
 
 ---
 
@@ -736,6 +748,7 @@ PostHog events fire from these UI moments (server-side via `posthog-node` per Ph
 - **NO mid-session auto-reload** of the identify page. State machine is client-managed.
 - **NO `<Lightbox>` on the multi-photo strip** during selection. Lightbox is for the catalog photo journal (post-association). Pending uploads are a queue, not a gallery.
 - **NO scrim-dismiss on LGPD consent modal or read-only paywall Dialog.** Both override Phase 3 ModalSheet default per Conflicts Resolved table.
+- **NO Lucide icon at sizes outside the locked set 18 / 20 / 24 / 28 px** (Phase 3 D-05). Revision pass 1 confirmed — Phase 6 does NOT expand this set; chip-internal and micro-action icons all bump to 18 px.
 
 ---
 
@@ -761,18 +774,18 @@ Phase 6 inherits Phase 3's lint stack + axe automation. Phase-6-specific gates:
   - Result card single-utterance `aria-label` combines common + scientific + confidence.
   - LGPD modal first-focus = headline (not the primary CTA).
   - Read-only paywall first-focus = primary CTA "Ver assinatura" (per Radix Dialog default + Phase 6 confirms).
-- **Banned-pattern lint:** ESLint custom rule (Phase 3 line 256 banned-patterns snapshot) MUST regress-test that no Phase 6 file references `<Spinner>` or `circular-spinner` class names. CSS Stylelint MUST regress-test absence of `Trust Teal` as `background-color` or `fill`.
+- **Banned-pattern lint:** ESLint custom rule (Phase 3 line 256 banned-patterns snapshot) MUST regress-test that no Phase 6 file references `<Spinner>` or `circular-spinner` class names. CSS Stylelint MUST regress-test absence of `Trust Teal` as `background-color` or `fill`. Additionally: ESLint rule MUST regress-test that no `lucide-react` import is rendered with `size` / `width` / `height` outside the locked set `{18, 20, 24, 28}` (Phase 3 D-05; revision pass 1).
 - **Copy contract test:** Vitest snapshot of `messages/pt-BR.json` `identify.*` namespace asserts every key in this UI-SPEC's Copywriting tables exists with the exact pt-BR copy.
 
 ---
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS — every i18n key declared with locked pt-BR copy; no English strings; CTA verbs specific (`Adicionar à minha estante`, `Entendo e aceito`, `Tentar novamente`, `Associar à planta`, `Ver assinatura`); empty + error + destructive copy contracts honored
-- [ ] Dimension 2 Visuals: PASS — 13 states all defined; new primitives (ConfidenceLadder, CaptureGuide, PhotoStrip, IdentificationResultCard, IdentificationHistoryItem, CapHitChip, AiProvenanceChip) have file paths, props, geometry, A11y, motion specs
+- [ ] Dimension 1 Copywriting: PASS — every i18n key declared with locked pt-BR copy; no English strings; CTA verbs specific (`Adicionar à minha estante`, `Entendo e aceito`, `Tentar novamente`, `Associar à planta`, `Ver assinatura`); empty + error + destructive copy contracts honored. Per-plant history empty state revised to raw composition (NOT `<EmptyState>`) per revision pass 1.
+- [ ] Dimension 2 Visuals: PASS — 13 states all defined; new primitives (ConfidenceLadder, CaptureGuide, PhotoStrip, IdentificationResultCard, IdentificationHistoryItem, CapHitChip, AiProvenanceChip) have file paths, props, geometry, A11y, motion specs. All Lucide icons bumped to locked-set sizes (18 / 20 / 24 / 28 px) per revision pass 1.
 - [ ] Dimension 3 Color: PASS — 60/30/10 inherited from Phase 3; new reserved-for entries declared (Honey Amber confined to confidence bar; Trust Teal confined to AI-provenance chip; Overdue Rust on cap-hit + history failures; Urgent Poppy confined to per-photo remove-X micro-action)
 - [ ] Dimension 4 Typography: PASS — no new tokens; first consumer of `<ScientificName>` declared; result-card name resolved to Source Serif 4 20/26 w500 per Conflicts Resolved
-- [ ] Dimension 5 Spacing: PASS — 8 pt grid inherited; no exceptions; tile sizes (56, 64, 72) all multiples of 4
+- [ ] Dimension 5 Spacing: PASS — 8 pt grid inherited; chip vertical paddings revised to 4 px (sm AiProvenanceChip — reuses Phase 3 locked sub-8 token) / 8 px (md AiProvenanceChip + CapHitChip) per revision pass 1; tile sizes (56, 64, 72) all multiples of 4
 - [ ] Dimension 6 Registry Safety: PASS — no shadcn, no third-party registries, no view-gate required
 
 **Approval:** pending (gsd-ui-checker upgrades to `approved YYYY-MM-DD`)

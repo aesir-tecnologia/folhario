@@ -1093,7 +1093,7 @@ External dependencies are runtime API keys, not local tools. Probed at research 
 
 ---
 
-## Risks + Open Questions
+## Risks + Open Questions (RESOLVED)
 
 ### Risk 1: OpenAI-compat structured output strict-mode model availability
 
@@ -1125,23 +1125,26 @@ External dependencies are runtime API keys, not local tools. Probed at research 
 **What's unclear:** Has Phase 5 / Phase 3 fully resolved this?
 **Recommendation:** Plan adds a prerequisite verification task: "Verify dev-mode service worker is disabled (`disable: process.env.NODE_ENV === 'development'` in `next.config.ts:18` already does this) and run a smoke test confirming `/api/v1/identifications/*` is not cached in any environment." Sw is already disabled in dev per `next.config.ts:18`.
 
-### Open Question 1: Circuit breaker half-open semantics under concurrent traffic
+### Open Question 1: Circuit breaker half-open semantics under concurrent traffic — RESOLVED
 
 **What we know:** D-08 says half-open transitions to closed on first success.
 **What's unclear:** If 5 concurrent requests hit a half-open breaker, do all 5 dispatch to the provider, or only the first?
 **Recommendation:** Plan implements: half-open admits ONE request via optimistic UPDATE `SET state='in_flight'` with a WHERE state='half_open' guard; concurrent half-open dispatches see state='in_flight' and treat as open (skip to fallback). Add `in_flight` to the state CHECK constraint or use a separate `in_flight_at` timestamp. Confirm pattern with planner.
+**RESOLVED:** Implemented via `in_flight_at TIMESTAMPTZ` column added in plan **06-01** (schema migration) and `transitionToHalfOpen` optimistic UPDATE in plan **06-07** (circuit breaker repository). Concurrent half-open dispatches see non-null `in_flight_at` and skip to fallback per D-08.
 
-### Open Question 2: Cost-per-request seed values
+### Open Question 2: Cost-per-request seed values — RESOLVED
 
 **What we know:** D-06 says `cost_per_request_cents` configurable per `ProviderBudget`; CONTEXT discretion item lists this as Claude's choice.
 **What's unclear:** What are reasonable seed values?
 **Recommendation:** Seeds: `plant_id` = 2 cents/req (~$0.02 per Plant.id v3 identification — verify pricing at Kindwise pricing page when deploying); `openai_compat` = 3 cents/req (estimated GPT-4o vision token cost ~2k tokens × $0.015/1k input + 200 tokens × $0.06/1k output ≈ $0.04 worst-case rounded down). Document as initial seeds — operator overrides via `UPDATE provider_budgets`.
+**RESOLVED:** Plan **06-01** seeds `plant_id` at 2 cents/req and `openai_compat` at 3 cents/req via the schema migration's `cost_per_request_cents INT NOT NULL DEFAULT 2` column. Operator overrides via `UPDATE provider_budgets SET cost_per_request_cents = N WHERE provider = 'X'`.
 
-### Open Question 3: Provider seed `is_active`
+### Open Question 3: Provider seed `is_active` — DEFERRED
 
 **What we know:** `provider_budgets.is_active boolean DEFAULT true` already exists.
 **What's unclear:** Is `is_active=false` a router-skip signal (currently only used by Phase 7 care_guide)?
 **Recommendation:** Confirm with planner: yes, router checks `is_active` on each dispatch. If `is_active=false` → skip provider entirely (treat as if breaker open). This gives operators an emergency kill-switch via DB UPDATE.
+**DEFERRED:** Not wired into Phase 6 router (06-06). Operator emergency kill-switch is non-blocking for MVP — circuit breaker + ceiling check already provide failure-mode isolation. Tracked as backlog item ID-v2-03 ("operator kill-switch via `provider_budgets.is_active`"). Re-evaluate during post-launch ops review or after first incident requiring manual provider disable.
 
 ---
 

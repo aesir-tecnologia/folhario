@@ -113,12 +113,12 @@ The Identify screen is a single route (`/identify`) with conditional rendering a
 | 4 | `photos-selected` | After file-picker confirm with ≥1 photo | `<PhotoStrip>` replaces `<CaptureGuide>` middle area; capture guide hint card persists at top; "Identificar" primary CTA appears bottom (sticky-bottom above nav with safe-area inset) | Visible | Hint card only |
 | 5 | `uploading` | User taps "Identificar"; client-side compression + EXIF strip in flight | `<Skeleton>` block (4:5 ratio) replaces photo strip; progress text "Enviando fotos…" Plus Jakarta Sans 16 Calm Slate | Visible | Hidden |
 | 6 | `identifying` | After upload completes, while route handler awaits provider | `<Skeleton>` block + progress text "Identificando sua planta…" — replaces upload state; identical visual but different copy | Visible | Hidden |
-| 7 | `results` (3 confidence tiers) | `POST /v1/identifications` returns ≥1 result above `min_confidence` | Vertical stack of `<IdentificationResultCard>` (1–3 cards) + "Não é nenhuma delas" tertiary text link below cards. Confidence tier (high / medium / low) is per-card; a single result list may mix all three tiers. | Visible | Hidden |
+| 7 | `results` (3 confidence tiers) | `POST /v1/identifications` returns ≥1 result above `min_confidence` | Vertical stack of `<IdentificationResultCard>` (1–3 cards) + "Não é nenhuma delas" tertiary text link below cards + "Ver histórico" tertiary text link bottom-right of the page (i18n key `identify.results.viewHistoryLink`) per CONTEXT D-20. Confidence tier (high / medium / low) is per-card; a single result list may mix all three tiers. | Visible | Hidden |
 | 8 | `zero-results` | Provider returned 0 results above `min_confidence` (Identification row still persisted with `status=success`, empty `results`) | `<EmptyState>` composer: Sage line-art "no-match" sprite + Source Serif headline "Hmm, não conseguimos identificar desta vez." + Calm Slate hint "Tente com mais fotos ou de ângulos diferentes." + primary CTA "Tentar novamente" + tertiary text link "Adicionar manualmente" | Visible | Hidden (empty-state owns the visual) |
 | 9 | `cap-hit` | Server returned `cap_hit` 429 | `<CapHitChip>` at top + headline "Você atingiu o limite de identificações de hoje." + reset-time hint ("Próximo limite em {resetTime}", pt-BR relative time via `Intl.RelativeTimeFormat`) + tertiary text link "Adicionar manualmente". **NO retry button** (per AC-ID-009). | Visible | Hidden |
 | 10 | `provider-unavailable` | Server returned `provider_unavailable` 503 | `<InlineError>` (Phase 3): cause "Identificação temporariamente indisponível." + recovery "Tente novamente em alguns minutos." + retry button "Tentar novamente" (Canopy primary) + tertiary text link "Adicionar manualmente". Selected photos retained client-side (`<PhotoStrip>` persists below the inline error so user can re-submit without re-picking). | Visible | Hidden |
 | 11 | `timeout` | Server returned `timeout` 504 OR client AbortController fires at 48 s | `<InlineError>`: cause "A identificação demorou mais que o esperado." + recovery "Tente novamente com fotos mais nítidas." + retry button "Tentar novamente" + tertiary text link "Adicionar manualmente". Same photo-retain behavior as state 10. | Visible | Hidden |
-| 12 | `offline` | `useOnlineStatus()` returns `false` | `<EmptyState>`: Sage line-art "wifi-off" sprite + Source Serif headline "Identificação requer conexão à internet." + Calm Slate hint "Volte aqui quando sua conexão voltar." + NO primary CTA (the Phase 3 `<EmptyState>` "exactly one CTA" rule yields to PRD §16 line 773 which provides no CTA for this state — single-CTA exception logged). The static `<CaptureGuide>` STAYS VISIBLE ABOVE the empty state so users can study the photo guide while offline (CONTEXT D-24). | Visible | Visible (above empty state) |
+| 12 | `offline` | `useOnlineStatus()` returns `false` | Raw composition (NOT `<EmptyState>` — Phase 3 EmptyState contract requires exactly one Canopy CTA per line 211; PRD §16 line 773 specs offline as a single hint with no CTA, so we compose the parts manually): centered Lucide `WifiOff` 48 px Understory Sage / Dusk Sage + Source Serif 4 24 / 30 weight 500 Forest Ink / Moonpaper headline "Identificação requer conexão à internet." + Plus Jakarta Sans 16 / 24 weight 400 Calm Slate / Lantern Slate hint "Volte aqui quando sua conexão voltar." Vertical stack, 16 px gaps. The static `<CaptureGuide>` STAYS VISIBLE ABOVE this composition so users can study the photo guide while offline (CONTEXT D-24). | Visible | Visible (above empty state) |
 | 13 | `read-only-paywall` | `useSubscription()` returns `{readOnly: true}` AND user taps capture/gallery button | Radix Dialog (NOT ModalSheet — CONTEXT D-25 explicit, mirrors PRD §10 paywall pattern): headline "Reative sua assinatura para identificar novas plantas." + body Calm Slate "Sua assinatura está pausada. Reative para retomar identificações." + primary CTA "Ver assinatura" linking to `/settings/subscription` (Phase 10 destination; Phase 6 lands placeholder) + tertiary text link "Cancelar". `dismissOnScrim={false}`, `dismissOnEsc={true}`. | Visible | Hidden (Dialog overlays) |
 
 **Result-selection sheet** (state 7 follow-up) is a separate `<ModalSheet>` triggered by tapping a result card — not a state of the page itself. Documented in § 4 below.
@@ -284,7 +284,7 @@ Triggered by tapping any `IdentificationResultCard` in state 7. Reuses Phase 3 `
 | Slot | Component | i18n key | pt-BR copy / behavior |
 |------|-----------|----------|------------------------|
 | Headline | Source Serif 4 24 / 30 weight 500 Forest Ink / Moonpaper | `identify.resultSheet.title` | ICU `Adicionar {speciesName}?` (uses pre-filled common name from selected result) |
-| Selected-result preview | Mini IdentificationResultCard variant (no tap, ConfidenceLadder visible) | (composed) | Renders the chosen result so user confirms |
+| Selected-result confirmation row | One-line composition (NOT a card variant — keeps the sheet light) | `identify.resultSheet.selectedPrefix` | `Selecionado: ` Plus Jakarta Sans 14 / 20 weight 600 Calm Slate / Lantern Slate prefix + species common name (Source Serif 4 16 / 24 weight 500 Forest Ink / Moonpaper, single-line ellipsis) + inline `<ConfidenceLadder confidence={result.confidence} />` (compact: bar 80 px wide, percentage label inline) on a single row, 8 px gaps. Renders below headline, above name field. |
 | Name field | Phase 3 `<TextInput>` | `identify.resultSheet.fields.name.label` / `placeholder` | Label `Nome` / placeholder `Como você chama essa planta?`. Pre-filled with `result.speciesName`. Editable. |
 | Apelido field | Phase 3 `<TextInput>` | `identify.resultSheet.fields.nickname.label` | Label `Apelido (opcional)`. |
 | Localização field | Phase 5 `<LocationCombobox>` (Combobox composition) | `identify.resultSheet.fields.location.label` | Label `Local (opcional)`. |
@@ -551,12 +551,14 @@ All keys live under `identify.*` in `src/messages/pt-BR.json`. Plan ships finali
 | `identify.results.tierPrefixLow` | `Pode ser…` |
 | `identify.results.notNoneOfThese` | `Não é nenhuma delas` |
 | `identify.results.notNoneOfTheseManualLink` | `Adicionar manualmente` |
+| `identify.results.viewHistoryLink` | `Ver histórico` |
 
 ### Result-selection sheet
 
 | Key | pt-BR copy |
 |-----|------------|
-| `identify.resultSheet.title` | ICU `Adicionar {speciesName}?` |
+| `identify.resultSheet.title` | ICU `Adicionar {speciesName}?` (Source Serif 4 24/30; if `speciesName` exceeds 1 line, wraps to 2 lines max + ellipsis) |
+| `identify.resultSheet.selectedPrefix` | `Selecionado:` |
 | `identify.resultSheet.fields.name.label` | `Nome` |
 | `identify.resultSheet.fields.name.placeholder` | `Como você chama essa planta?` |
 | `identify.resultSheet.fields.nickname.label` | `Apelido (opcional)` |

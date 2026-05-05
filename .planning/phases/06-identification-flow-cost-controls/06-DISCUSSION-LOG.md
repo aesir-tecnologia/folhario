@@ -3,120 +3,103 @@
 > **Audit trail only.** Do not use as input to planning, research, or execution agents.
 > Decisions are captured in CONTEXT.md — this log preserves the alternatives considered.
 
-**Date:** 2026-05-04
+**Date:** 2026-05-05
 **Phase:** 06-identification-flow-cost-controls
-**Mode:** --auto (fully autonomous — no AskUserQuestion calls; Claude selected recommended options for all areas)
-**Areas discussed:** Provider adapter interface & router, Per-user cap tracking, Circuit breaker state storage, LGPD consent check + version tracking, Identify screen UX, Result selection & plant creation, Identification history screen, Budget ceiling alert, Offline + read-only gates, Telemetry
+**Mode:** `--auto`
+**Areas discussed:** Provider routing and adapters, caps/budgets/counters/breakers, LGPD consent, Identify screen state machine, result confirmation and history, offline/read-only/telemetry/prerequisites
 
 ---
 
-## Provider Adapter Interface & Router
+## Provider Routing and Adapters
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| TypeScript interface at domain level, concrete providers in infrastructure | Stateless providers, router at application layer handles budget+breaker checks and failover logic | ✓ |
-| Router embedded inside each provider | Providers know about each other — tight coupling | |
+| Provider adapter interface | Normalize Plant.id, OpenAI-compatible, and stub providers behind a server-side domain interface. | ✓ |
+| Inline provider calls in route handler | Faster to write but breaks route-handler thinness and provider swap boundaries. | |
+| Client-selected provider | Leaks backend policy and budget routing to the UI. | |
 
-**Auto-selected:** TypeScript interface + stateless providers + separate router class
-**Notes:** Router receives remaining wall-clock time from route handler to enforce ≥10s remaining budget before fallover. `IDENTIFICATION_PROVIDER_MODE=stub` respects Phase 1 requirement.
+**User's choice:** Auto-selected recommended option.
+**Notes:** Preserves the project-level Plant.id primary + OpenAI-compatible fallback decision.
 
 ---
 
-## Per-User Cap Tracking
+## Caps, Budgets, Counters, and Circuit Breaker
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| COUNT on `identifications` table per user/day/period | No new table; atomicity via PostgreSQL advisory lock per user | ✓ |
-| Dedicated user cap counter table with atomic UPSERT | More explicit but adds a table; Phase 2 didn't seed it | |
+| DB-backed atomic controls | Use IdentificationLimit, ProviderBudget, ProviderUsageCounter UPSERTs, advisory lock, and breaker table. | ✓ |
+| In-memory counters | Simpler but unsafe across serverless instances. | |
+| Provider dashboard-only controls | Does not satisfy pre-dispatch budget/cap requirements. | |
 
-**Auto-selected:** COUNT query on existing `identifications` table + `pg_try_advisory_xact_lock` per user for COST-09 serialization
-**Notes:** `IdentificationLimit` rows read with 30s in-process TTL cache to satisfy COST-10 (DB tuning without redeploy).
+**User's choice:** Auto-selected recommended option.
+**Notes:** Adds `cost_per_request_cents`, `last_alerted_at`, and `provider_circuit_breakers`.
 
 ---
 
-## Circuit Breaker State
+## LGPD Consent and Provenance
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| New `provider_circuit_breakers` table (DB-backed, survives redeploys) | Reliable on Vercel serverless; no in-memory state loss | ✓ |
-| In-memory state per process | Resets on Vercel redeploy/cold-start — breaks breaker semantics | |
-| Add columns to `provider_budgets` | Breaker is per-provider, budgets are per-(provider,purpose) — mismatch | |
+| Backend gate before dispatch | Check `identification_third_party` ConsentLog before cap/budget/provider work. | ✓ |
+| Frontend-only consent modal | Easy to bypass and not auditable enough. | |
+| Signup-time blanket consent | Conflicts with contextual Art. 33 transfer consent. | |
 
-**Auto-selected:** New `provider_circuit_breakers` table seeded at migration time
-**Notes:** Thresholds: 5 consecutive failures in 10-minute window → open. 60s cooldown → half-open. First success in half-open → closed. Budget exhaustion (`cost_ceiling_reached`) does NOT count as a failure for breaker purposes.
+**User's choice:** Auto-selected recommended option.
+**Notes:** Consent grant route is `/api/v1/iam/consents`; Identification stores policy version string.
 
 ---
 
-## LGPD Consent Check + Version Tracking
+## Identify Screen State Machine
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Backend check first, return `consent_required` 403, frontend shows modal | Consent gate is authoritative on the server; frontend reacts to 403 code | ✓ |
-| Frontend checks consent state before calling identification endpoint | Race condition risk; consent state could be stale | |
+| Single-route state machine | Replace the placeholder with explicit `/identify` states and inline results. | ✓ |
+| Separate results route | Adds navigation overhead and more restore-state complexity. | |
+| Wizard flow | Higher friction for the under-2-minute first-value promise. | |
 
-**Auto-selected:** Backend check at use-case step 0; frontend shows modal on `consent_required` 403
-**Notes:** `POST /api/v1/iam/consents` is the consent grant endpoint (reuses existing IAM consent pattern from Phase 4). `Identification.consentVersion` stores `policy_versions.version` string at request time.
+**User's choice:** Auto-selected recommended option.
+**Notes:** Covers consent, photo selection, upload, identifying, results, zero-results, cap, timeout, provider-unavailable, offline, and read-only.
 
 ---
 
-## Identify Screen UX
+## Result Confirmation and History
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Single-page state machine (idle→picking→uploading→identifying→results) | No route navigation during flow; results inline; Phase 5 placeholder replaced | ✓ |
-| Separate `/identify/results` route | Back-button semantics are awkward for identification flow | |
+| Confirm endpoint + history | Bottom sheet submits to confirm endpoint, creates Plant transactionally, links Identification, emits event, lists history. | ✓ |
+| Direct client plant creation | Leaks orchestration and breaks atomic linking. | |
+| Defer history | Fails IDENT-08/UI-12. | |
 
-**Auto-selected:** Single page `/identify` with client-side state machine; results rendered inline
-**Notes:** Static capture guide shows in idle+picking states. 2×2 grid with Lucide plant icons as placeholders. Multi-photo: 1-5 photos. 48s AbortController timeout (leaves 2s overhead under 50s wall-clock budget).
+**User's choice:** Auto-selected recommended option.
+**Notes:** Reuses Phase 5 `createPlant` identification branch.
 
 ---
 
-## Result Selection & Plant Creation
+## Offline, Read-Only, Telemetry, and Prerequisites
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| `POST /api/v1/identifications/{id}/confirm` — atomic TX: createPlant + update identification.plant_id | Single TX; Phase 5 createPlant use-case's `source:'identification'` branch ready | ✓ |
-| Two separate calls (create plant then PATCH identification) | Non-atomic; plant could be created without identification link on failure | |
+| Explicit gates and telemetry | Block offline identify, show read-only paywall, keep history viewable, fire server-side privacy-clean telemetry. | ✓ |
+| Queue offline identification | Conflicts with provider network and timing requirements. | |
+| Client-side telemetry | Higher privacy risk and less authoritative. | |
 
-**Auto-selected:** Single `confirm` endpoint with atomic TX using Phase 5 createPlant use-case
-**Notes:** Result selection opens a ModalSheet with pre-filled name (editable). "Não é nenhuma delas" triggers manual correction flow via `POST /api/v1/identifications/{id}/correct`.
-
----
-
-## Identification History Screen
-
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Two surfaces: per-plant at `/catalog/{plantId}/identifications` + global at `/identify/history` | Wires Phase 5 placeholder; global history serves the re-associate use case | ✓ |
-| Per-plant only | Global history inaccessible for identifications that weren't linked to a plant | |
-
-**Auto-selected:** Both surfaces; same API endpoint with optional `?plantId=` filter
-**Notes:** 24h signed URLs for photo thumbnails (same pattern as Phase 5 D-20). Re-associate CTA for success rows with `plantId = null`.
+**User's choice:** Auto-selected recommended option.
+**Notes:** Auto-folded six todo matches into planning inputs, especially visual/E2E and service-worker-cache risks.
 
 ---
 
-## Claude's Discretion
+## Agent Discretion
 
-- Exact Tailwind compositions for confidence ladder bar states
-- Provider timeout values per provider (within 30s per-call cap)
-- Plant.id API request shape + OpenAI-compat system prompt for identification
-- `cost_per_request_cents` seed values (suggested: 2 cents Plant.id, 3 cents OpenAI-compat)
-- Species name matching strategy for manual correction (normalized lowercase exact)
-- Capture guide illustration assets (Lucide icons as placeholders)
-- Exact error state pt-BR copy strings
-- AbortController vs Promise.race for 48s timeout
-- File splits within identification context directories
-
-## Folded Todos (score ≥ 0.4)
-
-- **dev-mode service-worker unregister** — Phase 6 Serwist NetworkOnly setup for identification routes; dev-mode stale cache could interfere.
-- **Offline + axe + bottom-nav E2E failure cluster** — Phase 6 offline gate (IDENT-20) could inherit E2E flakiness if unresolved.
+- Exact provider request shapes after current docs are checked.
+- Exact Tailwind compositions and component file splits.
+- Provider timeout constants within the 30s per-call cap.
+- Stub provider fixture data and provider cost seed refinements.
+- Initial pt-BR copy polish within the contracts captured in `06-CONTEXT.md`.
 
 ## Deferred Ideas
 
-- Re-identification from plant profile ("Identificar novamente") — post-MVP
-- Batch identification / multi-plant session — post-MVP
-- Species search without a photo — Phase 7 or post-MVP
-- Provider cost analytics dashboard — Phase 13
-- Fix gsd-sdk wave misreport — pure tooling (reviewed, not folded)
-- Replace vite-tsconfig-paths plugin — pure tooling (reviewed, not folded)
+- Care-guide rendering: Phase 7.
+- Toxicity badge: Phase 7.
+- Re-identification from an existing plant: post-MVP.
+- Batch identification: post-MVP.
+- Provider cost analytics dashboard: Phase 13.

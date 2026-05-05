@@ -3,7 +3,7 @@ status: resolved
 phase: 05-catalog-meu-jardim
 source: [05-VERIFICATION.md]
 started: "2026-05-01T22:30:00Z"
-updated: "2026-05-03T00:00:00Z"
+updated: "2026-05-04T00:00:00Z"
 ---
 
 ## Current Test
@@ -39,9 +39,8 @@ severity: major
 ### 5. Online → offline transition keeps catalog browseable, blocks identify
 
 expected: Online → offline transition while browsing `/catalog` and `/catalog/[plantId]`. Verify offline banner appears, previously-loaded plants stay visible (Serwist SWR cache), identify is blocked with clear message. OFF-08 catalog browseable + identify blocked banner.
-result: issue
-reported: "no. the banner appears briefly then the whole page goes offline and I get the chrome dino"
-severity: major
+result: pass
+note: "Required production build (pnpm build && pnpm start) — SW is disabled in dev mode by design"
 
 ### 6. Plant-profile delete flow end-to-end (newly unblocked by Plan 05-20)
 
@@ -67,8 +66,8 @@ severity: major
 ## Summary
 
 total: 8
-passed: 2
-issues: 6
+passed: 7
+issues: 1
 pending: 0
 skipped: 0
 blocked: 0

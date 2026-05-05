@@ -1,0 +1,338 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "label": "global-setup.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_global_setup_publishjwks",
+      "label": "publishJwks()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L51"
+    },
+    {
+      "id": "e2e_global_setup_seedtestuser",
+      "label": "seedTestUser()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L82"
+    },
+    {
+      "id": "e2e_global_setup_globalsetup",
+      "label": "globalSetup()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L119"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "node_http",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "node_net",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "promises",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "jose",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "users_machado_projects_folhario_tests_e2e_fixtures_test_jwks",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "fixtures_test_jwks_createtestjwks",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "fixtures_test_jwks_gettestprivatekey",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "e2e_global_setup_publishjwks",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L51",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "e2e_global_setup_seedtestuser",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L82",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_global_setup_ts",
+      "target": "e2e_global_setup_globalsetup",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L119",
+      "weight": 1.0
+    },
+    {
+      "source": "e2e_global_setup_seedtestuser",
+      "target": "supabase_js",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "e2e_global_setup_seedtestuser",
+      "target": "postgres",
+      "relation": "imports_from",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L98",
+      "weight": 1.0
+    },
+    {
+      "source": "e2e_global_setup_globalsetup",
+      "target": "e2e_global_setup_publishjwks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L124",
+      "weight": 1.0
+    },
+    {
+      "source": "e2e_global_setup_globalsetup",
+      "target": "e2e_global_setup_seedtestuser",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L176",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "createClient",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L85"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "catch",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L90"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "deleteUser",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L90"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "createUser",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L91"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "postgres",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L100"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "sql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L102"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "sql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L113"
+    },
+    {
+      "caller_nid": "e2e_global_setup_seedtestuser",
+      "callee": "end",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L115"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "createTestJwks",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L120"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "stringify",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L121"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "fetch",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L129"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L133"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "isArray",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L136"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "getTestPrivateKey",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "exportPKCS8",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L148"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "mkdir",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L149"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "dirname",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L149"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "writeFile",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L150"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "stringify",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L152"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L173"
+    },
+    {
+      "caller_nid": "e2e_global_setup_globalsetup",
+      "callee": "on",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts",
+      "source_location": "L181"
+    }
+  ]
+}

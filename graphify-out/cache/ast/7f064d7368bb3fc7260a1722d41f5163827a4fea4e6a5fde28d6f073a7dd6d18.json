@@ -1,0 +1,167 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "label": "diagnostics-consent.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_diagnostics_consent_spec_readkeydump",
+      "label": "readKeyDump()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L52"
+    },
+    {
+      "id": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "label": "signTestJwtFromDump()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L74"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "target": "node_fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "target": "jose",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "target": "e2e_diagnostics_consent_spec_readkeydump",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L52",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_diagnostics_consent_spec_ts",
+      "target": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L74",
+      "weight": 1.0
+    },
+    {
+      "source": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "target": "e2e_diagnostics_consent_spec_readkeydump",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L75",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_readkeydump",
+      "callee": "readFileSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L54"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_readkeydump",
+      "callee": "parse",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L55"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "importPKCS8",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L76"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "sign",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "setIssuer",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "setAudience",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "setExpirationTime",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "setSubject",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "setIssuedAt",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    },
+    {
+      "caller_nid": "e2e_diagnostics_consent_spec_signtestjwtfromdump",
+      "callee": "setProtectedHeader",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts",
+      "source_location": "L77"
+    }
+  ]
+}

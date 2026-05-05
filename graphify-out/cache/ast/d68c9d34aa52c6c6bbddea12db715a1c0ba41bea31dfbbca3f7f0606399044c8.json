@@ -1,0 +1,54 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_combobox_test_tsx",
+      "label": "combobox.test.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/combobox.test.tsx",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_combobox_test_tsx",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/combobox.test.tsx",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_combobox_test_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/combobox.test.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_combobox_test_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_combobox",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/combobox.test.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_combobox_test_tsx",
+      "target": "ui_combobox_combobox",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/combobox.test.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

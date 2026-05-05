@@ -1,0 +1,178 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "label": "iam-signup.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "integration_iam_signup_integration_test_fixedsignupinput",
+      "label": "fixedSignupInput()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L75"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "node_crypto",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "users_machado_projects_folhario_tests_integration_fixtures_supabase_availability",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_supabase_availability_supabaseauthavailable",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "users_machado_projects_folhario_tests_integration_fixtures_seed_policy_version",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_seed_policy_version_seedcurrentpolicyversions",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "users_machado_projects_folhario_tests_integration_fixtures_seed_partner_code",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_seed_partner_code_seedactivepartnercode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_seed_partner_code_seedinactivepartnercode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "users_machado_projects_folhario_tests_integration_fixtures_mock_inngest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_mock_inngest_inngestsendmock",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_mock_inngest_installinngestmock",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "fixtures_mock_inngest_resetinngestmock",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_signup_integration_test_ts",
+      "target": "integration_iam_signup_integration_test_fixedsignupinput",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L75",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "integration_iam_signup_integration_test_fixedsignupinput",
+      "callee": "randomUUID",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts",
+      "source_location": "L76"
+    }
+  ]
+}

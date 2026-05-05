@@ -1,0 +1,268 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "label": "supabase-storage.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "adapters_supabase_storage_getsupabaseclient",
+      "label": "getSupabaseClient()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L36"
+    },
+    {
+      "id": "adapters_supabase_storage_setsupabaseclientfortests",
+      "label": "__setSupabaseClientForTests()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L53"
+    },
+    {
+      "id": "adapters_supabase_storage_createsupabasestorageadapter",
+      "label": "createSupabaseStorageAdapter()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L57"
+    },
+    {
+      "id": "adapters_supabase_storage_collectobjectsrecursively",
+      "label": "collectObjectsRecursively()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L142"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "supabase_js",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_server_env",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "config_server_env_serverenv",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "users_machado_projects_folhario_src_shared_adapters_storage",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_storageadaptererror",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_bucketsummary",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_createsignedurlinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_createsignedurlresult",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_deleteobjectinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_deleteprefixinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_listobjectsunderprefixinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_storageadapter",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_uploadobjectinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_storage_uploadobjectresult",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_supabase_storage_getsupabaseclient",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_supabase_storage_setsupabaseclientfortests",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L53",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_supabase_storage_createsupabasestorageadapter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L57",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_adapters_supabase_storage_ts",
+      "target": "adapters_supabase_storage_collectobjectsrecursively",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L142",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "adapters_supabase_storage_getsupabaseclient",
+      "callee": "createClient",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L38"
+    },
+    {
+      "caller_nid": "adapters_supabase_storage_collectobjectsrecursively",
+      "callee": "endsWith",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L149"
+    },
+    {
+      "caller_nid": "adapters_supabase_storage_collectobjectsrecursively",
+      "callee": "slice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L149"
+    },
+    {
+      "caller_nid": "adapters_supabase_storage_collectobjectsrecursively",
+      "callee": "list",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L150"
+    },
+    {
+      "caller_nid": "adapters_supabase_storage_collectobjectsrecursively",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L150"
+    },
+    {
+      "caller_nid": "adapters_supabase_storage_collectobjectsrecursively",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L166"
+    },
+    {
+      "caller_nid": "adapters_supabase_storage_collectobjectsrecursively",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts",
+      "source_location": "L168"
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "label": "location-combobox.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "ui_location_combobox_norm",
+      "label": "norm()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L19"
+    },
+    {
+      "id": "ui_location_combobox_locationcombobox",
+      "label": "LocationCombobox()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L27"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "target": "next_intl",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_combobox",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "target": "ui_combobox_combobox",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "target": "ui_combobox_comboboxoption",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "target": "ui_location_combobox_norm",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_location_combobox_tsx",
+      "target": "ui_location_combobox_locationcombobox",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "ui_location_combobox_locationcombobox",
+      "target": "ui_location_combobox_norm",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L45",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "ui_location_combobox_norm",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L20"
+    },
+    {
+      "caller_nid": "ui_location_combobox_norm",
+      "callee": "toLowerCase",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L20"
+    },
+    {
+      "caller_nid": "ui_location_combobox_norm",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L20"
+    },
+    {
+      "caller_nid": "ui_location_combobox_norm",
+      "callee": "normalize",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L20"
+    },
+    {
+      "caller_nid": "ui_location_combobox_locationcombobox",
+      "callee": "useTranslations",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "ui_location_combobox_locationcombobox",
+      "callee": "raw",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L40"
+    },
+    {
+      "caller_nid": "ui_location_combobox_locationcombobox",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L46"
+    },
+    {
+      "caller_nid": "ui_location_combobox_locationcombobox",
+      "callee": "add",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L47"
+    },
+    {
+      "caller_nid": "ui_location_combobox_locationcombobox",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx",
+      "source_location": "L48"
+    }
+  ]
+}

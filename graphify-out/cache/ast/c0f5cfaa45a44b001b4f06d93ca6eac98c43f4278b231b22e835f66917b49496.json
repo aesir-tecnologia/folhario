@@ -1,0 +1,92 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_app_catalog_components_use_sort_preference_ts",
+      "label": "use-sort-preference.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "components_use_sort_preference_readstoredsort",
+      "label": "readStoredSort()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L10"
+    },
+    {
+      "id": "components_use_sort_preference_usesortpreference",
+      "label": "useSortPreference()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L23"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_use_sort_preference_ts",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_use_sort_preference_ts",
+      "target": "components_use_sort_preference_readstoredsort",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_use_sort_preference_ts",
+      "target": "components_use_sort_preference_usesortpreference",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "components_use_sort_preference_readstoredsort",
+      "callee": "getItem",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L13"
+    },
+    {
+      "caller_nid": "components_use_sort_preference_readstoredsort",
+      "callee": "includes",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "components_use_sort_preference_readstoredsort",
+      "callee": "removeItem",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "components_use_sort_preference_usesortpreference",
+      "callee": "useState",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L24"
+    },
+    {
+      "caller_nid": "components_use_sort_preference_usesortpreference",
+      "callee": "useEffect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts",
+      "source_location": "L26"
+    }
+  ]
+}

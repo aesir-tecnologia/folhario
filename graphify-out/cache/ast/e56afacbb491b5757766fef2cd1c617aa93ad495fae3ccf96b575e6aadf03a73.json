@@ -1,0 +1,235 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "label": "route.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "password_route_patch",
+      "label": "PATCH()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L21"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "server",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "config_errors_errorresponse",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_auth",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "api_auth_requireapiuser",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_domain_schemas",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "domain_schemas_changepasswordschema",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_application_change_password",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "application_change_password_changepassword",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_users",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "db_users_getuserbyid",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_iam_me_password_route_ts",
+      "target": "password_route_patch",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "requireApiUser",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L22"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L24"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L29"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L31"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "safeParse",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L33"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L35"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "getUserById",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L41"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L43"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "changePassword",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L46"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L55"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L58"
+    },
+    {
+      "caller_nid": "password_route_patch",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts",
+      "source_location": "L60"
+    }
+  ]
+}

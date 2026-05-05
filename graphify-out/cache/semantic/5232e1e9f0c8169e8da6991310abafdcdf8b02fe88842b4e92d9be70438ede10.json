@@ -1,0 +1,88 @@
+{
+  "nodes": [
+    {
+      "id": "superseded_data_model",
+      "label": "Data Model Conceptual (Superseded)",
+      "file_type": "document",
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "superseded_data_model",
+      "target": "superseded_prd_v11",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "superseded_data_model",
+      "target": "cave_prd_data_model_user",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "superseded_data_model",
+      "target": "cave_prd_data_model_plant",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "superseded_data_model",
+      "target": "cave_prd_data_model_careguide",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "superseded_data_model",
+      "target": "cave_prd_data_model_identification",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "superseded_data_model",
+      "target": "cave_prd_data_model_reminder",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "superseded_data_model",
+      "target": "cave_prd_data_model_subscription",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/superseeded/DATA-MODEL.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

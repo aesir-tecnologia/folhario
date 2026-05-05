@@ -1,0 +1,248 @@
+{
+  "nodes": [
+    {
+      "id": "offline_screen",
+      "label": "Offline Error Screen",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "offline_leaf_icon",
+      "label": "Leaf/Seed Icon (Offline State)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "offline_heading",
+      "label": "Offline Heading: Voc\u00ea est\u00e1 offline.",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "offline_body_text",
+      "label": "Offline Body: Verifique sua conex\u00e3o e tente novamente. Suas plantas salvas continuam dispon\u00edveis em Cat\u00e1logo.",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "offline_retry_button",
+      "label": "CTA Button: Tentar novamente",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "offline_light_theme",
+      "label": "Offline Screen \u2014 Light Theme",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "offline_light_nopref_darwin",
+      "label": "Offline Screen \u2014 Light + no-preference motion (macOS/Chromium)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "light_theme_palette",
+      "label": "Light Theme Palette: cream/off-white background, dark forest green heading, muted grey body, dark green CTA button with white text",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "centered_layout_pattern",
+      "label": "Vertically and Horizontally Centered Layout Pattern",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pwa_offline_support",
+      "label": "PWA Offline Support: catalog remains accessible when offline",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "visual_regression_test_suite",
+      "label": "Visual Regression Test Suite (e2e offline variants)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "offline_screen",
+      "target": "offline_leaf_icon",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_screen",
+      "target": "offline_heading",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_screen",
+      "target": "offline_body_text",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_screen",
+      "target": "offline_retry_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_screen",
+      "target": "centered_layout_pattern",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_light_theme",
+      "target": "light_theme_palette",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_light_nopref_darwin",
+      "target": "offline_screen",
+      "relation": "variant_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_body_text",
+      "target": "pwa_offline_support",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_screen",
+      "target": "pwa_offline_support",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "visual_regression_test_suite",
+      "target": "offline_light_nopref_darwin",
+      "relation": "contains",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_retry_button",
+      "target": "offline_screen",
+      "relation": "part_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_leaf_icon",
+      "target": "offline_screen",
+      "relation": "part_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

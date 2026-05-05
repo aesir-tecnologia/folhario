@@ -1,0 +1,526 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "label": "add-plant-form.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "add_add_plant_form_handlefilechange",
+      "label": "handleFileChange()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L82"
+    },
+    {
+      "id": "add_add_plant_form_openfilepicker",
+      "label": "openFilePicker()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L91"
+    },
+    {
+      "id": "add_add_plant_form_focusfirstinvalid",
+      "label": "focusFirstInvalid()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L95"
+    },
+    {
+      "id": "add_add_plant_form_handlesubmit",
+      "label": "handleSubmit()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L114"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "navigation",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "sonner",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "lucide_react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "image",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_text_input",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "ui_text_input_textinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_location_combobox",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "ui_location_combobox_locationcombobox",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_read_only_banner",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "ui_read_only_banner_readonlybanner",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "users_machado_projects_folhario_src_shared_images_client_compress",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "images_client_compress_compressplantphoto",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "users_machado_projects_folhario_src_contexts_billing_application_use_subscription",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "application_use_subscription_usesubscription",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "add_add_plant_form_handlefilechange",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L82",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "add_add_plant_form_openfilepicker",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L91",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "add_add_plant_form_focusfirstinvalid",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L95",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_add_add_plant_form_tsx",
+      "target": "add_add_plant_form_handlesubmit",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L114",
+      "weight": 1.0
+    },
+    {
+      "source": "add_add_plant_form_handlesubmit",
+      "target": "add_add_plant_form_focusfirstinvalid",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L130",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "add_add_plant_form_handlefilechange",
+      "callee": "setSelectedFile",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L85"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlefilechange",
+      "callee": "revokeObjectURL",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L86"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlefilechange",
+      "callee": "setPreviewUrl",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L87"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlefilechange",
+      "callee": "createObjectURL",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L87"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlefilechange",
+      "callee": "setErrors",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L88"
+    },
+    {
+      "caller_nid": "add_add_plant_form_openfilepicker",
+      "callee": "click",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L92"
+    },
+    {
+      "caller_nid": "add_add_plant_form_focusfirstinvalid",
+      "callee": "requestAnimationFrame",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L96"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "preventDefault",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L115"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L119"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L123"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L128"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "setErrors",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L129"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "setErrors",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L134"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "setSubmitting",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L135"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "randomUUID",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L138"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "compressPlantPhoto",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L142"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "append",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L145"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L145"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "append",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L146"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "append",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L148"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "append",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L148"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L148"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L149"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "append",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L150"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L150"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L151"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "append",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L151"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L151"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "fetch",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L153"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L163"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L165"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "catch",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L169"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L169"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L186"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "setErrors",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L187"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "error",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L191"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "error",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L198"
+    },
+    {
+      "caller_nid": "add_add_plant_form_handlesubmit",
+      "callee": "setSubmitting",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx",
+      "source_location": "L204"
+    }
+  ]
+}

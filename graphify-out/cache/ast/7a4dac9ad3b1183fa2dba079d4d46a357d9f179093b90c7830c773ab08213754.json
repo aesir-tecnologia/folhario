@@ -1,0 +1,151 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_catalog_domain_storage_paths_ts",
+      "label": "storage-paths.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "domain_storage_paths_storagepathvalidationerror",
+      "label": "StoragePathValidationError",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L15"
+    },
+    {
+      "id": "domain_storage_paths_storagepathvalidationerror_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L16"
+    },
+    {
+      "id": "domain_storage_paths_validatestorageobjectkey",
+      "label": "validateStorageObjectKey()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L27"
+    },
+    {
+      "id": "domain_storage_paths_parseplantphotokey",
+      "label": "parsePlantPhotoKey()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L58"
+    },
+    {
+      "id": "domain_storage_paths_validatestoragedeletionprefix",
+      "label": "validateStorageDeletionPrefix()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L72"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_domain_storage_paths_ts",
+      "target": "domain_storage_paths_storagepathvalidationerror",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "domain_storage_paths_storagepathvalidationerror",
+      "target": "domain_storage_paths_storagepathvalidationerror_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_domain_storage_paths_ts",
+      "target": "domain_storage_paths_validatestorageobjectkey",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_domain_storage_paths_ts",
+      "target": "domain_storage_paths_parseplantphotokey",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_domain_storage_paths_ts",
+      "target": "domain_storage_paths_validatestoragedeletionprefix",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L72",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "domain_storage_paths_storagepathvalidationerror_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L17"
+    },
+    {
+      "caller_nid": "domain_storage_paths_validatestorageobjectkey",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L38"
+    },
+    {
+      "caller_nid": "domain_storage_paths_validatestorageobjectkey",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "domain_storage_paths_validatestorageobjectkey",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L43"
+    },
+    {
+      "caller_nid": "domain_storage_paths_parseplantphotokey",
+      "callee": "startsWith",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L60"
+    },
+    {
+      "caller_nid": "domain_storage_paths_parseplantphotokey",
+      "callee": "slice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L61"
+    },
+    {
+      "caller_nid": "domain_storage_paths_parseplantphotokey",
+      "callee": "indexOf",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L62"
+    },
+    {
+      "caller_nid": "domain_storage_paths_parseplantphotokey",
+      "callee": "slice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts",
+      "source_location": "L64"
+    }
+  ]
+}

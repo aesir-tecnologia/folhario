@@ -1,0 +1,34 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_global_setup_ts",
+      "label": "global-setup.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/global-setup.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_global_setup_ts",
+      "target": "node_fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/global-setup.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_global_setup_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/global-setup.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

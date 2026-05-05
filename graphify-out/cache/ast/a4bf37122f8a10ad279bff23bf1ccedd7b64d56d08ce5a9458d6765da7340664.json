@@ -1,0 +1,24 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_use_theme_test_ts",
+      "label": "use-theme.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/use-theme.test.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_use_theme_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/use-theme.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

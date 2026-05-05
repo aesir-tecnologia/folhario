@@ -1,0 +1,260 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "label": "diagnostics-consent.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "integration_diagnostics_consent_integration_test_adapterforuser",
+      "label": "adapterForUser()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L213"
+    },
+    {
+      "id": "integration_diagnostics_consent_integration_test_requrl",
+      "label": "reqUrl()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L256"
+    },
+    {
+      "id": "integration_diagnostics_consent_integration_test_buildrequest",
+      "label": "buildRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L333"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "node_crypto",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "postgres_js",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "drizzle_orm",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "server",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_shared_db_schema_registry",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_schema",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "db_schema_consentlogs",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_application_current_user",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "application_current_user_setcurrentuseradapterfortests",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_auth_auth_adapter",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "auth_auth_adapter_authadapter",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "auth_auth_adapter_verifyresult",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_users",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "db_users_userrow",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "integration_diagnostics_consent_integration_test_adapterforuser",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L213",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "integration_diagnostics_consent_integration_test_requrl",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L256",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_consent_integration_test_ts",
+      "target": "integration_diagnostics_consent_integration_test_buildrequest",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L333",
+      "weight": 1.0
+    },
+    {
+      "source": "integration_diagnostics_consent_integration_test_buildrequest",
+      "target": "integration_diagnostics_consent_integration_test_requrl",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L334",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "integration_diagnostics_consent_integration_test_buildrequest",
+      "callee": "stringify",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts",
+      "source_location": "L341"
+    }
+  ]
+}

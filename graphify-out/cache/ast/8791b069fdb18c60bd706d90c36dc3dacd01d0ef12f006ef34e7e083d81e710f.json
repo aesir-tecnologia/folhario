@@ -1,0 +1,95 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "label": "partner-store.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "db_partner_store_ispartnercodeactive",
+      "label": "isPartnerCodeActive()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L11"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "target": "drizzle_orm",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "target": "users_machado_projects_folhario_src_shared_db_client",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "target": "db_client_db",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_types",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "target": "db_types_dbortx",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store_ts",
+      "target": "db_partner_store_ispartnercodeactive",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "db_partner_store_ispartnercodeactive",
+      "callee": "await dbOrTx.execute",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L12"
+    },
+    {
+      "caller_nid": "db_partner_store_ispartnercodeactive",
+      "callee": "sql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts",
+      "source_location": "L13"
+    }
+  ]
+}

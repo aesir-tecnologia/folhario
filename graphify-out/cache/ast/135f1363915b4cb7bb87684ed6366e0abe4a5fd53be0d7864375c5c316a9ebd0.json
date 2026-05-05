@@ -1,0 +1,60 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_unit_of_work_leak_test_ts",
+      "label": "unit-of-work-leak.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "unit_unit_of_work_leak_test_callback",
+      "label": "callback()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts",
+      "source_location": "L75"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_unit_of_work_leak_test_ts",
+      "target": "node_fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_unit_of_work_leak_test_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_unit_of_work_leak_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_unit_of_work_leak_test_ts",
+      "target": "unit_unit_of_work_leak_test_callback",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts",
+      "source_location": "L75",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

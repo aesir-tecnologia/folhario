@@ -1,0 +1,105 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_messages_coverage_test_ts",
+      "label": "messages-coverage.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "unit_messages_coverage_test_getnested",
+      "label": "getNested()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L43"
+    },
+    {
+      "id": "unit_messages_coverage_test_countleaves",
+      "label": "countLeaves()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L66"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_messages_coverage_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_messages_coverage_test_ts",
+      "target": "node_fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_messages_coverage_test_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_messages_coverage_test_ts",
+      "target": "unit_messages_coverage_test_getnested",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L43",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_messages_coverage_test_ts",
+      "target": "unit_messages_coverage_test_countleaves",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L66",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "unit_messages_coverage_test_getnested",
+      "callee": "reduce",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L44"
+    },
+    {
+      "caller_nid": "unit_messages_coverage_test_getnested",
+      "callee": "split",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L44"
+    },
+    {
+      "caller_nid": "unit_messages_coverage_test_countleaves",
+      "callee": "values",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L68"
+    },
+    {
+      "caller_nid": "unit_messages_coverage_test_countleaves",
+      "callee": "isArray",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts",
+      "source_location": "L69"
+    }
+  ]
+}

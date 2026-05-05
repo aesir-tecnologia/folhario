@@ -1,0 +1,5936 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_public_sw_js",
+      "label": "sw.js",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_i",
+      "label": "i()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_c",
+      "label": "c()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_o",
+      "label": "o()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_l",
+      "label": "l",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_l_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_h",
+      "label": "h()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_d",
+      "label": "d()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_m",
+      "label": "m()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_f",
+      "label": "f",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_f_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_g",
+      "label": "g()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w",
+      "label": "w()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y",
+      "label": "y()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw",
+      "label": "_()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_r",
+      "label": "R()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_q",
+      "label": "q()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_s",
+      "label": "S()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k",
+      "label": "K",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_addentry",
+      "label": ".addEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getfirstentryid",
+      "label": ".getFirstEntryId()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getallentriesbyqueuename",
+      "label": ".getAllEntriesByQueueName()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getentrycountbyqueuename",
+      "label": ".getEntryCountByQueueName()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_deleteentry",
+      "label": ".deleteEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getfirstentrybyqueuename",
+      "label": ".getFirstEntryByQueueName()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getlastentrybyqueuename",
+      "label": ".getLastEntryByQueueName()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getendentryfromindex",
+      "label": ".getEndEntryFromIndex()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_getdb",
+      "label": ".getDb()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_k_upgradedb",
+      "label": "._upgradeDb()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_pushentry",
+      "label": ".pushEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_unshiftentry",
+      "label": ".unshiftEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_popentry",
+      "label": ".popEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_shiftentry",
+      "label": ".shiftEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_getall",
+      "label": ".getAll()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_size",
+      "label": ".size()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_deleteentry",
+      "label": ".deleteEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_w_removeentry",
+      "label": "._removeEntry()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_fromrequest",
+      "label": ".fromRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_toobject",
+      "label": ".toObject()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_torequest",
+      "label": ".toRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_clone",
+      "label": ".clone()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v",
+      "label": "V",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_name",
+      "label": ".name()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_pushrequest",
+      "label": ".pushRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_unshiftrequest",
+      "label": ".unshiftRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_poprequest",
+      "label": ".popRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_shiftrequest",
+      "label": ".shiftRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_getall",
+      "label": ".getAll()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_size",
+      "label": ".size()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_addrequest",
+      "label": "._addRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_removerequest",
+      "label": "._removeRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_replayrequests",
+      "label": ".replayRequests()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_registersync",
+      "label": ".registerSync()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_addsynclistener",
+      "label": "._addSyncListener()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_v_queuenames",
+      "label": "._queueNames()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z",
+      "label": "z",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z_fetchdidfail",
+      "label": ".fetchDidFail()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_x",
+      "label": "X()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_fetch",
+      "label": ".fetch()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_fetchandcacheput",
+      "label": ".fetchAndCachePut()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_cachematch",
+      "label": ".cacheMatch()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_cacheput",
+      "label": ".cachePut()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_getcachekey",
+      "label": ".getCacheKey()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_hascallback",
+      "label": ".hasCallback()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_runcallbacks",
+      "label": ".runCallbacks()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_iteratecallbacks",
+      "label": ".iterateCallbacks()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_waituntil",
+      "label": ".waitUntil()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_donewaiting",
+      "label": ".doneWaiting()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_destroy",
+      "label": ".destroy()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_getpreloadresponse",
+      "label": ".getPreloadResponse()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_y_ensureresponsesafetocache",
+      "label": "._ensureResponseSafeToCache()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z_handle",
+      "label": ".handle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z_handleall",
+      "label": ".handleAll()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z_getresponse",
+      "label": "._getResponse()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_z_awaitcomplete",
+      "label": "._awaitComplete()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ee",
+      "label": "ee",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ee_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ee_handle",
+      "label": "._handle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ee_gettimeoutpromise",
+      "label": "._getTimeoutPromise()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ee_getnetworkpromise",
+      "label": "._getNetworkPromise()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_et",
+      "label": "et",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_et_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_et_handle",
+      "label": "._handle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ea",
+      "label": "ea()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es",
+      "label": "es",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_setcatchhandler",
+      "label": ".setCatchHandler()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_er",
+      "label": "er",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_er_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_er_handle",
+      "label": "._handle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_er_handlefetch",
+      "label": "._handleFetch()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_er_handleinstall",
+      "label": "._handleInstall()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "label": "._useDefaultCacheabilityPluginIfNeeded()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_en",
+      "label": "en",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_en_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_en_match",
+      "label": "._match()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ei",
+      "label": "ei",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ei_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ec",
+      "label": "ec()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_eo",
+      "label": "eo",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_el",
+      "label": "el()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_eu",
+      "label": "eu()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed",
+      "label": "ed",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_getid",
+      "label": "._getId()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_upgradedb",
+      "label": "._upgradeDb()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_upgradedbanddeleteolddbs",
+      "label": "._upgradeDbAndDeleteOldDbs()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_settimestamp",
+      "label": ".setTimestamp()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_gettimestamp",
+      "label": ".getTimestamp()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_expireentries",
+      "label": ".expireEntries()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ed_getdb",
+      "label": ".getDb()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_em",
+      "label": "em",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_em_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_em_expireentries",
+      "label": ".expireEntries()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_em_updatetimestamp",
+      "label": ".updateTimestamp()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_em_isurlexpired",
+      "label": ".isURLExpired()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_em_delete",
+      "label": ".delete()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef",
+      "label": "ef",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_getcacheexpiration",
+      "label": "._getCacheExpiration()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_cachedresponsewillbeused",
+      "label": ".cachedResponseWillBeUsed()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_isresponsedatefresh",
+      "label": "._isResponseDateFresh()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_getdateheadertimestamp",
+      "label": "._getDateHeaderTimestamp()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_cachedidupdate",
+      "label": ".cacheDidUpdate()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ef_deletecacheandmetadata",
+      "label": ".deleteCacheAndMetadata()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ey",
+      "label": "ey()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_e",
+      "label": "e_",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_e_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_e_handlerdiderror",
+      "label": ".handlerDidError()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_eb",
+      "label": "eb()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ex",
+      "label": "ex",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ev",
+      "label": "ev",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ev_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_ev_handle",
+      "label": "._handle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_eq",
+      "label": "eq",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_eq_constructor",
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_precachestrategy",
+      "label": ".precacheStrategy()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_routes",
+      "label": ".routes()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_addeventlisteners",
+      "label": ".addEventListeners()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_addtoprecachelist",
+      "label": ".addToPrecacheList()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "id": "public_sw_es_handleinstall",
+      "label": ".handleInstall()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_registerrequestrules",
+      "label": ".registerRequestRules()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_handleactivate",
+      "label": ".handleActivate()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_handlefetch",
+      "label": ".handleFetch()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_handlecache",
+      "label": ".handleCache()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_setdefaulthandler",
+      "label": ".setDefaultHandler()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_registercapture",
+      "label": ".registerCapture()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_registerroute",
+      "label": ".registerRoute()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_unregisterroute",
+      "label": ".unregisterRoute()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_geturlstoprecachekeys",
+      "label": ".getUrlsToPrecacheKeys()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_getprecachedurls",
+      "label": ".getPrecachedUrls()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_getprecachekeyforurl",
+      "label": ".getPrecacheKeyForUrl()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_getintegrityforprecachekey",
+      "label": ".getIntegrityForPrecacheKey()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_matchprecache",
+      "label": ".matchPrecache()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_createhandlerboundtourl",
+      "label": ".createHandlerBoundToUrl()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_handlerequest",
+      "label": ".handleRequest()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "id": "public_sw_es_findmatchingroute",
+      "label": ".findMatchingRoute()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_i",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_c",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_o",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_l",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_l",
+      "target": "public_sw_l_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_h",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_d",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_m",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_f",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_f",
+      "target": "public_sw_f_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_g",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_w",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_y",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_r",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_q",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_s",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_c",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_f",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_o",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_k",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_addentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getfirstentryid",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getallentriesbyqueuename",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getentrycountbyqueuename",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_deleteentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getfirstentrybyqueuename",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getlastentrybyqueuename",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getendentryfromindex",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_getdb",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k",
+      "target": "public_sw_k_upgradedb",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_w",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_pushentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_unshiftentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_popentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_shiftentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_getall",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_size",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_deleteentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w",
+      "target": "public_sw_w_removeentry",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw",
+      "target": "public_sw_fromrequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw",
+      "target": "public_sw_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw",
+      "target": "public_sw_toobject",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw",
+      "target": "public_sw_torequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw",
+      "target": "public_sw_clone",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_q",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_v",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_name",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_pushrequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_unshiftrequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_poprequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_shiftrequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_getall",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_size",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_addrequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_removerequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_replayrequests",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_registersync",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_addsynclistener",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v",
+      "target": "public_sw_v_queuenames",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_z",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_fetchdidfail",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_x",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_y",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_fetch",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_fetchandcacheput",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_cachematch",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_cacheput",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_getcachekey",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_hascallback",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_runcallbacks",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_waituntil",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_donewaiting",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_destroy",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_getpreloadresponse",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_ensureresponsesafetocache",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_z",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_handle",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_handleall",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_getresponse",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z",
+      "target": "public_sw_z_awaitcomplete",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ee",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee",
+      "target": "public_sw_ee_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee",
+      "target": "public_sw_ee_handle",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee",
+      "target": "public_sw_ee_gettimeoutpromise",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee",
+      "target": "public_sw_ee_getnetworkpromise",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_et",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_et",
+      "target": "public_sw_et_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_et",
+      "target": "public_sw_et_handle",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ea",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_es",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_setcatchhandler",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_er",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er",
+      "target": "public_sw_er_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er",
+      "target": "public_sw_er_handle",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er",
+      "target": "public_sw_er_handlefetch",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er",
+      "target": "public_sw_er_handleinstall",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er",
+      "target": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_en",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_en",
+      "target": "public_sw_en_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_en",
+      "target": "public_sw_en_match",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ei",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ei",
+      "target": "public_sw_ei_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ec",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_eo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_el",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_eu",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ed",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_getid",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_upgradedb",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_upgradedbanddeleteolddbs",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_settimestamp",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_gettimestamp",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_expireentries",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed",
+      "target": "public_sw_ed_getdb",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_em",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em",
+      "target": "public_sw_em_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em",
+      "target": "public_sw_em_expireentries",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em",
+      "target": "public_sw_em_updatetimestamp",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em",
+      "target": "public_sw_em_isurlexpired",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em",
+      "target": "public_sw_em_delete",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ef",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_getcacheexpiration",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_cachedresponsewillbeused",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_isresponsedatefresh",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_getdateheadertimestamp",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_cachedidupdate",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef",
+      "target": "public_sw_ef_deletecacheandmetadata",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ey",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_e",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_e",
+      "target": "public_sw_e_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_e",
+      "target": "public_sw_e_handlerdiderror",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_eb",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ex",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ee",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee",
+      "target": "public_sw_ee_handle",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_ev",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ev",
+      "target": "public_sw_ev_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ev",
+      "target": "public_sw_ev_handle",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_er",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er",
+      "target": "public_sw_er_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_eq",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_eq",
+      "target": "public_sw_eq_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_public_sw_js",
+      "target": "public_sw_es",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_constructor",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_precachestrategy",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_routes",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_addeventlisteners",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_addtoprecachelist",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_handleinstall",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_registerrequestrules",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_handleactivate",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_handlefetch",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_handlecache",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_setdefaulthandler",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_setcatchhandler",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_registercapture",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_registerroute",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_unregisterroute",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_geturlstoprecachekeys",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_getprecachedurls",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_getprecachekeyforurl",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_getintegrityforprecachekey",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_matchprecache",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_createhandlerboundtourl",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_handlerequest",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es",
+      "target": "public_sw_es_findmatchingroute",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_c",
+      "target": "public_sw_i",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_o",
+      "target": "public_sw_i",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_d",
+      "target": "public_sw_em_delete",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_m",
+      "target": "public_sw_d",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_r",
+      "target": "public_sw_q",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_r",
+      "target": "public_sw",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_s",
+      "target": "public_sw_r",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_f",
+      "target": "public_sw",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_o",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_addentry",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getfirstentryid",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getallentriesbyqueuename",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getentrycountbyqueuename",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_deleteentry",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_deleteentry",
+      "target": "public_sw_em_delete",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getfirstentrybyqueuename",
+      "target": "public_sw_k_getendentryfromindex",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getlastentrybyqueuename",
+      "target": "public_sw_k_getendentryfromindex",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getendentryfromindex",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_k_getdb",
+      "target": "public_sw_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_pushentry",
+      "target": "public_sw_k_addentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_unshiftentry",
+      "target": "public_sw_k_getfirstentryid",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_unshiftentry",
+      "target": "public_sw_k_addentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_popentry",
+      "target": "public_sw_w_removeentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_popentry",
+      "target": "public_sw_k_getlastentrybyqueuename",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_shiftentry",
+      "target": "public_sw_w_removeentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_shiftentry",
+      "target": "public_sw_k_getfirstentrybyqueuename",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_getall",
+      "target": "public_sw_k_getallentriesbyqueuename",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_size",
+      "target": "public_sw_k_getentrycountbyqueuename",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_w_removeentry",
+      "target": "public_sw_w_deleteentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_fromrequest",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_clone",
+      "target": "public_sw_toobject",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_q",
+      "target": "public_sw_torequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_constructor",
+      "target": "public_sw_v_addsynclistener",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_pushrequest",
+      "target": "public_sw_v_addrequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_unshiftrequest",
+      "target": "public_sw_v_addrequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_poprequest",
+      "target": "public_sw_v_removerequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_shiftrequest",
+      "target": "public_sw_v_removerequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_getall",
+      "target": "public_sw_w_deleteentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_getall",
+      "target": "public_sw_q",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_addrequest",
+      "target": "public_sw_toobject",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_addrequest",
+      "target": "public_sw_fromrequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_addrequest",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_addrequest",
+      "target": "public_sw_w_pushentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_addrequest",
+      "target": "public_sw_w_unshiftentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_addrequest",
+      "target": "public_sw_v_registersync",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_removerequest",
+      "target": "public_sw_w_popentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_removerequest",
+      "target": "public_sw_w_shiftentry",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_removerequest",
+      "target": "public_sw_q",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_replayrequests",
+      "target": "public_sw_v_shiftrequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_replayrequests",
+      "target": "public_sw_y_fetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_replayrequests",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_v_replayrequests",
+      "target": "public_sw_v_unshiftrequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_fetchdidfail",
+      "target": "public_sw_v_pushrequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_constructor",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_x",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_y_getpreloadresponse",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_y_hascallback",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetch",
+      "target": "public_sw_y_runcallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetchandcacheput",
+      "target": "public_sw_y_fetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetchandcacheput",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetchandcacheput",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_fetchandcacheput",
+      "target": "public_sw_y_cacheput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cachematch",
+      "target": "public_sw_x",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cachematch",
+      "target": "public_sw_y_getcachekey",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cachematch",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_x",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_h",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_y_getcachekey",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_y_ensureresponsesafetocache",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_y_hascallback",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_m",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_g",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_cacheput",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_getcachekey",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_getcachekey",
+      "target": "public_sw_x",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_runcallbacks",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_y_ensureresponsesafetocache",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_constructor",
+      "target": "public_sw_o",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_handle",
+      "target": "public_sw_z_handleall",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_handleall",
+      "target": "public_sw_z_getresponse",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_handleall",
+      "target": "public_sw_z_awaitcomplete",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_getresponse",
+      "target": "public_sw_y_runcallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_getresponse",
+      "target": "public_sw_ev_handle",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_getresponse",
+      "target": "public_sw_y_iteratecallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_getresponse",
+      "target": "public_sw_r",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_awaitcomplete",
+      "target": "public_sw_y_runcallbacks",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_awaitcomplete",
+      "target": "public_sw_y_donewaiting",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_z_awaitcomplete",
+      "target": "public_sw_y_destroy",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_handle",
+      "target": "public_sw_ee_gettimeoutpromise",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_handle",
+      "target": "public_sw_ee_getnetworkpromise",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_handle",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_getnetworkpromise",
+      "target": "public_sw_y_fetchandcacheput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_getnetworkpromise",
+      "target": "public_sw_y_cachematch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_et_handle",
+      "target": "public_sw_y_fetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_et_handle",
+      "target": "public_sw_h",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_constructor",
+      "target": "public_sw_ea",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_setcatchhandler",
+      "target": "public_sw_ea",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_constructor",
+      "target": "public_sw_c",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handle",
+      "target": "public_sw_y_getpreloadresponse",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handle",
+      "target": "public_sw_y_cachematch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handle",
+      "target": "public_sw_er_handleinstall",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handle",
+      "target": "public_sw_er_handlefetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handlefetch",
+      "target": "public_sw_y_fetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handlefetch",
+      "target": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handlefetch",
+      "target": "public_sw_y_cacheput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handlefetch",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handleinstall",
+      "target": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handleinstall",
+      "target": "public_sw_y_fetch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handleinstall",
+      "target": "public_sw_y_cacheput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_er_handleinstall",
+      "target": "public_sw_clone",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_getid",
+      "target": "public_sw_eu",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_upgradedbanddeleteolddbs",
+      "target": "public_sw_ed_upgradedb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_upgradedbanddeleteolddbs",
+      "target": "public_sw_r",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_settimestamp",
+      "target": "public_sw_eu",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_settimestamp",
+      "target": "public_sw_ed_getid",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_settimestamp",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_gettimestamp",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_gettimestamp",
+      "target": "public_sw_ed_getid",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_expireentries",
+      "target": "public_sw_ed_getdb",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_expireentries",
+      "target": "public_sw_em_delete",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ed_getdb",
+      "target": "public_sw_s",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em_expireentries",
+      "target": "public_sw_em_delete",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em_updatetimestamp",
+      "target": "public_sw_ed_settimestamp",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em_isurlexpired",
+      "target": "public_sw_ed_gettimestamp",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_em_delete",
+      "target": "public_sw_em_expireentries",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_getcacheexpiration",
+      "target": "public_sw_o",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_cachedresponsewillbeused",
+      "target": "public_sw_ef_isresponsedatefresh",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_cachedresponsewillbeused",
+      "target": "public_sw_ef_getcacheexpiration",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_cachedresponsewillbeused",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_isresponsedatefresh",
+      "target": "public_sw_ef_getdateheadertimestamp",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_cachedidupdate",
+      "target": "public_sw_ef_getcacheexpiration",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_cachedidupdate",
+      "target": "public_sw_em_updatetimestamp",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_cachedidupdate",
+      "target": "public_sw_em_expireentries",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ef_deletecacheandmetadata",
+      "target": "public_sw_em_delete",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ey",
+      "target": "public_sw_i",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ey",
+      "target": "public_sw_es_registerroute",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_e_handlerdiderror",
+      "target": "public_sw_es_matchprecache",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_handle",
+      "target": "public_sw_y_cachematch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ee_handle",
+      "target": "public_sw_y_fetchandcacheput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ev_handle",
+      "target": "public_sw_y_fetchandcacheput",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ev_handle",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_ev_handle",
+      "target": "public_sw_y_cachematch",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_constructor",
+      "target": "public_sw_es_addtoprecachelist",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_constructor",
+      "target": "public_sw_es_registerroute",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_constructor",
+      "target": "public_sw_es_createhandlerboundtourl",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_constructor",
+      "target": "public_sw_ey",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_constructor",
+      "target": "public_sw_es_registercapture",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_addtoprecachelist",
+      "target": "public_sw_ec",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handleinstall",
+      "target": "public_sw_es_registerrequestrules",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handleinstall",
+      "target": "public_sw_y",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handleactivate",
+      "target": "public_sw_y",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handlefetch",
+      "target": "public_sw_es_handlerequest",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handlecache",
+      "target": "public_sw_y_waituntil",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_setdefaulthandler",
+      "target": "public_sw_ea",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_registercapture",
+      "target": "public_sw_es_registerroute",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_matchprecache",
+      "target": "public_sw_es_getprecachekeyforurl",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_createhandlerboundtourl",
+      "target": "public_sw_es_getprecachekeyforurl",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handlerequest",
+      "target": "public_sw_es_findmatchingroute",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "public_sw_es_handlerequest",
+      "target": "public_sw_z_handle",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "public_sw_i",
+      "callee": "join",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_i",
+      "callee": "filter",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_l_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_l_constructor",
+      "callee": "((e,...t)=>{let a=e;return t.length>0&&(a+=` :: ${JSON.stringify(t)}`),a})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_m",
+      "callee": "match",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_m",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_m",
+      "callee": "match",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_g",
+      "callee": "e",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_w",
+      "callee": "filter",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_w",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_w",
+      "callee": "all",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_w",
+      "callee": "map",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y",
+      "callee": "t",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw",
+      "callee": "some",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "function(e){if(\"function\"==typeof e)return(r||(r=[IDBCursor.prototype.advance,IDBCursor.prototype.continue,IDBCursor.prototype.continuePrimaryKey])).includes(e)?function(...t){return e.apply(q(this),t),R(this.request)}:function(...t){return R(e.apply(q(this),t))};return(e instanceof IDBTransaction&&function(e){if(b.has(e))return;let t=new Promise((t,a)=>{let s=()=>{e.removeEventListener(\"complete\",r),e.removeEventListener(\"error\",n),e.removeEventListener(\"abort\",n)},r=()=>{t(),s()},n=()=>{a(e.error||new DOMException(\"AbortError\",\"AbortError\")),s()};e.addEventListener(\"complete\",r),e.addEventListener(\"error\",n),e.addEventListener(\"abort\",n)});b.set(e,t)}(e),_(e,s||(s=[IDBDatabase,IDBObjectStore,IDBIndex,IDBCursor,IDBTransaction])))?new Proxy(e,v):e}",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "includes",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "apply",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "apply",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "function(e){if(b.has(e))return;let t=new Promise((t,a)=>{let s=()=>{e.removeEventListener(\"complete\",r),e.removeEventListener(\"error\",n),e.removeEventListener(\"abort\",n)},r=()=>{t(),s()},n=()=>{a(e.error||new DOMException(\"AbortError\",\"AbortError\")),s()};e.addEventListener(\"complete\",r),e.addEventListener(\"error\",n),e.addEventListener(\"abort\",n)});b.set(e,t)}",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_r",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_q",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_s",
+      "callee": "open",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_s",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_s",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_s",
+      "callee": "catch",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_s",
+      "callee": "then",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "includes",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "includes",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "transaction",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "index",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "shift",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "all",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "i[a]",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_c",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_o",
+      "callee": "t",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_o",
+      "callee": "function(){if(void 0===a){let e=new Response(\"\");if(\"body\"in e)try{new Response(e.body),a=!0}catch{a=!1}a=!1}return a}",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_o",
+      "callee": "blob",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_addentry",
+      "callee": "transaction",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_addentry",
+      "callee": "add",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getfirstentryid",
+      "callee": "openCursor",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getfirstentryid",
+      "callee": "transaction",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getallentriesbyqueuename",
+      "callee": "getAllFromIndex",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getallentriesbyqueuename",
+      "callee": "only",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getentrycountbyqueuename",
+      "callee": "countFromIndex",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getentrycountbyqueuename",
+      "callee": "only",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getfirstentrybyqueuename",
+      "callee": "only",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getlastentrybyqueuename",
+      "callee": "only",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getendentryfromindex",
+      "callee": "openCursor",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getendentryfromindex",
+      "callee": "index",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_getendentryfromindex",
+      "callee": "transaction",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_upgradedb",
+      "callee": "contains",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_upgradedb",
+      "callee": "deleteObjectStore",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_upgradedb",
+      "callee": "createIndex",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_k_upgradedb",
+      "callee": "createObjectStore",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_fromrequest",
+      "callee": "arrayBuffer",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_fromrequest",
+      "callee": "forEach",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_toobject",
+      "callee": "assign",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_toobject",
+      "callee": "assign",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_toobject",
+      "callee": "slice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_constructor",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_constructor",
+      "callee": "add",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_getall",
+      "callee": "now",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_getall",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_removerequest",
+      "callee": "now",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_registersync",
+      "callee": "register",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_addsynclistener",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_v_addsynclistener",
+      "callee": "_onSync",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_constructor",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_fetch",
+      "callee": "e",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cachematch",
+      "callee": "match",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cachematch",
+      "callee": "e",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cacheput",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cacheput",
+      "callee": "String",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cacheput",
+      "callee": "RegExp",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cacheput",
+      "callee": "open",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cacheput",
+      "callee": "put",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_cacheput",
+      "callee": "e",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_getcachekey",
+      "callee": "e",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_runcallbacks",
+      "callee": "a",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_iteratecallbacks",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_waituntil",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_donewaiting",
+      "callee": "shift",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_destroy",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_y_ensureresponsesafetocache",
+      "callee": "e",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_z_getresponse",
+      "callee": "n",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_constructor",
+      "callee": "some",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_constructor",
+      "callee": "unshift",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_handle",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_handle",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_handle",
+      "callee": "(async()=>await t.waitUntil(Promise.race(r))||await n)",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ee_getnetworkpromise",
+      "callee": "clearTimeout",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_et_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_et_handle",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_et_handle",
+      "callee": "race",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_et_handle",
+      "callee": "Error",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_er_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_er_constructor",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "callee": "entries",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_er_usedefaultcacheabilitypluginifneeded",
+      "callee": "splice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_en_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_en_match",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_en_match",
+      "callee": "some",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ei_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ec",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_el",
+      "callee": "map",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_el",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_el",
+      "callee": "map",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_el",
+      "callee": "sort",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_el",
+      "callee": "flat",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_el",
+      "callee": "all",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedb",
+      "callee": "createObjectStore",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedb",
+      "callee": "createIndex",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedb",
+      "callee": "createIndex",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedbanddeleteolddbs",
+      "callee": "function(e,{blocked:t}={}){let a=indexedDB.deleteDatabase(e);t&&a.addEventListener(\"blocked\",e=>t(e.oldVersion,e)),R(a).then(()=>void 0)}",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedbanddeleteolddbs",
+      "callee": "deleteDatabase",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedbanddeleteolddbs",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_upgradedbanddeleteolddbs",
+      "callee": "then",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_settimestamp",
+      "callee": "transaction",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_settimestamp",
+      "callee": "put",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_gettimestamp",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_expireentries",
+      "callee": "openCursor",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_expireentries",
+      "callee": "index",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_expireentries",
+      "callee": "transaction",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_expireentries",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_expireentries",
+      "callee": "continue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ed_getdb",
+      "callee": "bind",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_em_expireentries",
+      "callee": "now",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_em_expireentries",
+      "callee": "open",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_em_updatetimestamp",
+      "callee": "now",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_em_isurlexpired",
+      "callee": "now",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_constructor",
+      "callee": "(e=>{u.add(e)})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_getcacheexpiration",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_getcacheexpiration",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_cachedresponsewillbeused",
+      "callee": "(async()=>{i&&await n.updateTimestamp(a.url),await n.expireEntries()})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_isresponsedatefresh",
+      "callee": "now",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_getdateheadertimestamp",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_getdateheadertimestamp",
+      "callee": "getTime",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_getdateheadertimestamp",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ef_getdateheadertimestamp",
+      "callee": "isNaN",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_e_handlerdiderror",
+      "callee": "matcher",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "(e=>{let t=e.trim().toLowerCase();if(!t.startsWith(\"bytes=\"))throw new l(\"unit-must-be-bytes\",{normalizedRangeHeader:t});if(t.includes(\",\"))throw new l(\"single-range-only\",{normalizedRangeHeader:t});let a=/(\\d*)-(\\d*)/.exec(t);if(!a||!(a[1]||a[2]))throw new l(\"invalid-range-values\",{normalizedRangeHeader:t});return{start:\"\"===a[1]?void 0:Number(a[1]),end:\"\"===a[2]?void 0:Number(a[2])}})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "blob",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "((e,t,a)=>{let s,r,n=e.size;if(a&&a>n||t&&t<0)throw new l(\"range-not-satisfiable\",{size:n,end:a,start:t});return void 0!==t&&void 0!==a?(s=t,r=a+1):void 0!==t&&void 0===a?(s=t,r=n):void 0!==a&&void 0===t&&(s=n-a,r=n),{start:s,end:r}})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "slice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "String",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_eb",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ev_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ev_constructor",
+      "callee": "some",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ev_constructor",
+      "callee": "unshift",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_ev_handle",
+      "callee": "catch",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_er_constructor",
+      "callee": "super",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "((e,t={})=>{let{cacheName:a,plugins:s=[],fetchOptions:r,matchOptions:n,fallbackToNetwork:i,directoryIndex:o,ignoreURLParametersMatching:l,cleanURLs:h,urlManipulation:u,cleanupOutdatedCaches:d,concurrency:m=10,navigateFallback:f,navigateFallbackAllowlist:g,navigateFallbackDenylist:p}=t??{};return{precacheStrategyOptions:{cacheName:c(a),plugins:[...s,new eq({precacheController:e})],fetchOptions:r,matchOptions:n,fallbackToNetwork:i},precacheRouteOptions:{directoryIndex:o,ignoreURLParametersMatching:l,cleanURLs:h,urlManipulation:u},precacheMiscOptions:{cleanupOutdatedCaches:d,concurrency:m,navigateFallback:f,navigateFallbackAllowlist:g,navigateFallbackDenylist:p}}})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "bind",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "bind",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "bind",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "bind",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "importScripts",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "(e=>{var t=e;for(let e of Object.keys(n))(e=>{let a=t[e];\"string\"==typeof a&&(n[e]=a)})(e)})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "skipWaiting",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "(e=>{self.addEventListener(\"activate\",t=>{t.waitUntil(w(c(e)).then(e=>{}))})})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_constructor",
+      "callee": "forEach",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addeventlisteners",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addeventlisteners",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addeventlisteners",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addeventlisteners",
+      "callee": "addEventListener",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "warn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_addtoprecachelist",
+      "callee": "join",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L1"
+    },
+    {
+      "caller_nid": "public_sw_es_registerrequestrules",
+      "callee": "addRoutes",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlefetch",
+      "callee": "respondWith",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlecache",
+      "callee": "all",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlecache",
+      "callee": "map",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlecache",
+      "callee": "then",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_setdefaulthandler",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_registercapture",
+      "callee": "((e,t,a)=>{if(\"string\"==typeof e){let s=new URL(e,location.href);return new es(({url:e})=>e.href===s.href,t,a)}if(e instanceof RegExp)return new ei(e,t,a);if(\"function\"==typeof e)return new es(e,t,a);if(e instanceof es)return e;throw new l(\"unsupported-route-type\",{moduleName:\"serwist\",funcName:\"parseRoute\",paramName:\"capture\"})})",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_registerroute",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_registerroute",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_registerroute",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_registerroute",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_unregisterroute",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_unregisterroute",
+      "callee": "indexOf",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_unregisterroute",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_unregisterroute",
+      "callee": "splice",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_unregisterroute",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_getprecachedurls",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_getprecachekeyforurl",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_getintegrityforprecachekey",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_matchprecache",
+      "callee": "match",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_matchprecache",
+      "callee": "open",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlerequest",
+      "callee": "startsWith",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlerequest",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlerequest",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlerequest",
+      "callee": "reject",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_handlerequest",
+      "callee": "catch",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_findmatchingroute",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_findmatchingroute",
+      "callee": "match",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_findmatchingroute",
+      "callee": "isArray",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    },
+    {
+      "caller_nid": "public_sw_es_findmatchingroute",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/public/sw.js",
+      "source_location": "L2"
+    }
+  ]
+}

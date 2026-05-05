@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_api_v1_photo_entries_photoentryid_route_ts",
+      "label": "route.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/photo-entries/[photoEntryId]/route.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [],
+  "raw_calls": []
+}

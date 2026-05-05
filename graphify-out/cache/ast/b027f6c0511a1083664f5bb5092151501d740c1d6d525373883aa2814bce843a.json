@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_ui_storage_budget_guard_ts",
+      "label": "storage-budget-guard.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "ui_storage_budget_guard_getstorageusageratio",
+      "label": "getStorageUsageRatio()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L10"
+    },
+    {
+      "id": "ui_storage_budget_guard_checkandevict",
+      "label": "checkAndEvict()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L31"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_storage_budget_guard_ts",
+      "target": "react_query",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_storage_budget_guard_ts",
+      "target": "ui_storage_budget_guard_getstorageusageratio",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_storage_budget_guard_ts",
+      "target": "ui_storage_budget_guard_checkandevict",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L31",
+      "weight": 1.0
+    },
+    {
+      "source": "ui_storage_budget_guard_checkandevict",
+      "target": "ui_storage_budget_guard_getstorageusageratio",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L34",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "ui_storage_budget_guard_getstorageusageratio",
+      "callee": "estimate",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "ui_storage_budget_guard_checkandevict",
+      "callee": "getQueryCache",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L38"
+    },
+    {
+      "caller_nid": "ui_storage_budget_guard_checkandevict",
+      "callee": "sort",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "ui_storage_budget_guard_checkandevict",
+      "callee": "filter",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "ui_storage_budget_guard_checkandevict",
+      "callee": "findAll",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "ui_storage_budget_guard_checkandevict",
+      "callee": "removeQueries",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts",
+      "source_location": "L46"
+    }
+  ]
+}

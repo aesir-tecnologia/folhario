@@ -1,0 +1,268 @@
+{
+  "nodes": [
+    {
+      "id": "behavior_spec",
+      "label": "Behavior & Interaction Specs",
+      "file_type": "document",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_identification_thresholds",
+      "label": "Identification Confidence Thresholds",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_provider_routing",
+      "label": "Provider Routing (Backend Decides)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_care_guide_augmentation",
+      "label": "Care Guide Runtime Augmentation",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_reminder_advance_rules",
+      "label": "Reminder Advance Rules (from_scheduled / from_acted)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_reminder_timezone",
+      "label": "Reminder Timezone Handling",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_subscription_state_machine",
+      "label": "Subscription State Machine (Behavior)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_lgpd_rights",
+      "label": "LGPD Rights (Export, Deletion, Consent Revocation)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_offline_sync",
+      "label": "Offline Sync Behavior (LWW, Idempotent)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_image_handling",
+      "label": "Image Handling Behavior (Compression, EXIF Strip)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "behavior_per_user_caps",
+      "label": "Per-User Identification Caps (trialing 5/day, active 15/day)",
+      "file_type": "rationale",
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "behavior_spec",
+      "target": "behavior_identification_thresholds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_provider_routing",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_care_guide_augmentation",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_reminder_advance_rules",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_reminder_timezone",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_subscription_state_machine",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_lgpd_rights",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_offline_sync",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_image_handling",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_spec",
+      "target": "behavior_per_user_caps",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_identification_thresholds",
+      "target": "cave_prd_data_model_providerbud",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_provider_routing",
+      "target": "cave_prd_circuit_breaker",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_subscription_state_machine",
+      "target": "cave_prd_subscription_state_machine",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "behavior_lgpd_rights",
+      "target": "folhario_lgpd_compliance",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/design/BEHAVIOR.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

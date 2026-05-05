@@ -1,0 +1,84 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_telemetry_posthog_server_ts",
+      "label": "posthog-server.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "telemetry_posthog_server_getposthog",
+      "label": "getPostHog()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L6"
+    },
+    {
+      "id": "telemetry_posthog_server_shutdownposthog",
+      "label": "shutdownPostHog()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L18"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_telemetry_posthog_server_ts",
+      "target": "posthog_node",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_telemetry_posthog_server_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_client_env",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_telemetry_posthog_server_ts",
+      "target": "config_client_env_clientenv",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_telemetry_posthog_server_ts",
+      "target": "telemetry_posthog_server_getposthog",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_telemetry_posthog_server_ts",
+      "target": "telemetry_posthog_server_shutdownposthog",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "telemetry_posthog_server_shutdownposthog",
+      "callee": "shutdown",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts",
+      "source_location": "L22"
+    }
+  ]
+}

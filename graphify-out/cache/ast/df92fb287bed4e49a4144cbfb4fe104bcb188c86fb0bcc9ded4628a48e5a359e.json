@@ -1,0 +1,185 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "label": "hooks.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "queries_hooks_useplants",
+      "label": "usePlants()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L6"
+    },
+    {
+      "id": "queries_hooks_useplant",
+      "label": "usePlant()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L10"
+    },
+    {
+      "id": "queries_hooks_usephotoentries",
+      "label": "usePhotoEntries()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L14"
+    },
+    {
+      "id": "queries_hooks_uselocations",
+      "label": "useLocations()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L18"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "react_query",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_queries_index",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_index_plantskeys",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_index_locationskeys",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_index_plantslistparams",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_hooks_useplants",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_hooks_useplant",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_hooks_usephotoentries",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_hooks_ts",
+      "target": "queries_hooks_uselocations",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "queries_hooks_useplants",
+      "callee": "useQuery",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L7"
+    },
+    {
+      "caller_nid": "queries_hooks_useplants",
+      "callee": "lists",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L7"
+    },
+    {
+      "caller_nid": "queries_hooks_useplant",
+      "callee": "useQuery",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L11"
+    },
+    {
+      "caller_nid": "queries_hooks_useplant",
+      "callee": "detail",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L11"
+    },
+    {
+      "caller_nid": "queries_hooks_usephotoentries",
+      "callee": "useQuery",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "queries_hooks_usephotoentries",
+      "callee": "photoEntries",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "queries_hooks_uselocations",
+      "callee": "useQuery",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L19"
+    },
+    {
+      "caller_nid": "queries_hooks_uselocations",
+      "callee": "all",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts",
+      "source_location": "L19"
+    }
+  ]
+}

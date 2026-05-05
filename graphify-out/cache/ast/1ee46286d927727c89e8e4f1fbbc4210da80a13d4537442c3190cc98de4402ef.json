@@ -1,0 +1,114 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "label": "schemas.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "zod",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "drizzle_zod",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_schema",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_datadeletionrequests",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_dataexportrequests",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_idempotencykeys",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_offlinesyncfailures",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_partnerstores",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_policyversions",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_domain_schemas_ts",
+      "target": "db_schema_users",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

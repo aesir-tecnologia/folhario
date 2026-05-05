@@ -1,0 +1,350 @@
+{
+  "nodes": [
+    {
+      "id": "home_screen_empty_state",
+      "label": "Home Screen - Empty State (In\u00edcio)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "bottom_nav_bar",
+      "label": "Bottom Navigation Bar",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_inicio",
+      "label": "Nav Tab: In\u00edcio (Home)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_catalogo",
+      "label": "Nav Tab: Cat\u00e1logo",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_identificar",
+      "label": "Nav Tab: Identificar",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_perfil",
+      "label": "Nav Tab: Perfil",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "folhario_leaf_logo",
+      "label": "Folhario Leaf/Seed Logo Mark",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cta_button_identificar_planta",
+      "label": "CTA Button: Identificar planta",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "home_headline_text",
+      "label": "Home Headline: Identifique sua primeira planta",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "home_subheadline_text",
+      "label": "Home Subheadline: Use a c\u00e2mera para descobrir o que voc\u00ea tem em casa",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "light_theme",
+      "label": "Light Theme (warm off-white background)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "visual_snapshot_test",
+      "label": "Visual Regression Snapshot Test Suite",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "platform_linux_snapshot",
+      "label": "Linux/Chromium Snapshot Platform",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "home_screen_empty_state",
+      "target": "bottom_nav_bar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "home_screen_empty_state",
+      "target": "folhario_leaf_logo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "home_screen_empty_state",
+      "target": "home_headline_text",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "home_screen_empty_state",
+      "target": "home_subheadline_text",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "home_screen_empty_state",
+      "target": "cta_button_identificar_planta",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav_bar",
+      "target": "nav_tab_inicio",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav_bar",
+      "target": "nav_tab_catalogo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav_bar",
+      "target": "nav_tab_identificar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav_bar",
+      "target": "nav_tab_perfil",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "nav_tab_inicio",
+      "target": "home_screen_empty_state",
+      "relation": "navigates_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "nav_tab_inicio",
+      "target": "nav_tab_catalogo",
+      "relation": "is_active_tab_among",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cta_button_identificar_planta",
+      "target": "nav_tab_identificar",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "home_screen_empty_state",
+      "target": "light_theme",
+      "relation": "rendered_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "light_theme",
+      "target": "color_canopy_green",
+      "relation": "uses_primary_color",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "visual_snapshot_test",
+      "target": "home_screen_empty_state",
+      "relation": "tests",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "visual_snapshot_test",
+      "target": "platform_linux_snapshot",
+      "relation": "runs_on_platform",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "platform_linux_snapshot",
+      "target": "home_screen_empty_state",
+      "relation": "captures_screen",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "home_screen_empty_state",
+      "target": "login_screen",
+      "relation": "is_post_auth_version_of",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "folhario_leaf_logo",
+      "target": "color_canopy_green",
+      "relation": "styled_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav_bar",
+      "target": "nav_tab_inicio",
+      "relation": "has_active_tab",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

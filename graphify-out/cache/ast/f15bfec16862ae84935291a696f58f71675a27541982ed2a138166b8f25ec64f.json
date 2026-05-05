@@ -1,0 +1,64 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_auth_throttle_math_test_ts",
+      "label": "auth-throttle-math.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_auth_throttle_math_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_auth_throttle_math_test_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_auth_throttle",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_auth_throttle_math_test_ts",
+      "target": "db_auth_throttle_computewindowstart",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_auth_throttle_math_test_ts",
+      "target": "db_auth_throttle_islocked",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_auth_throttle_math_test_ts",
+      "target": "db_auth_throttle_extractclientip",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

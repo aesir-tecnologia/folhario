@@ -1,0 +1,48 @@
+{
+  "nodes": [
+    {
+      "id": "offline_light_reduce_darwin",
+      "label": "Offline Screen \u2014 Light + prefers-reduced-motion (macOS/Chromium)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "offline_light_reduce_darwin",
+      "target": "offline_screen",
+      "relation": "variant_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "offline_light_reduce_darwin",
+      "target": "offline_light_nopref_darwin",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 0.8
+    },
+    {
+      "source": "visual_regression_test_suite",
+      "target": "offline_light_reduce_darwin",
+      "relation": "contains",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

@@ -1,0 +1,104 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "label": "auth-jwt.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "node_http",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "node_net",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "jose",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "users_machado_projects_folhario_tests_e2e_fixtures_test_jwks",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "fixtures_test_jwks_test_audience",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "fixtures_test_jwks_test_issuer",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "fixtures_test_jwks_createtestjwks",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_auth_jwt_integration_test_ts",
+      "target": "fixtures_test_jwks_signtestjwt",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

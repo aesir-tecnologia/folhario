@@ -1,0 +1,110 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_banned_patterns_snapshot_test_ts",
+      "label": "banned-patterns-snapshot.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "unit_banned_patterns_snapshot_test_walk",
+      "label": "walk()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L5"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_banned_patterns_snapshot_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_banned_patterns_snapshot_test_ts",
+      "target": "node_fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_banned_patterns_snapshot_test_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_banned_patterns_snapshot_test_ts",
+      "target": "unit_banned_patterns_snapshot_test_walk",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "readdirSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L9"
+    },
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "resolve",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L14"
+    },
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "statSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "isDirectory",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "concat",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L17"
+    },
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L18"
+    },
+    {
+      "caller_nid": "unit_banned_patterns_snapshot_test_walk",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts",
+      "source_location": "L19"
+    }
+  ]
+}

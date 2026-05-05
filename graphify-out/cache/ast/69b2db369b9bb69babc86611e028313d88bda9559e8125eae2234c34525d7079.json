@@ -1,0 +1,66 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_catalog_domain_locations_ts",
+      "label": "locations.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "domain_locations_normalizelocationlabel",
+      "label": "normalizeLocationLabel()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L15"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_domain_locations_ts",
+      "target": "domain_locations_normalizelocationlabel",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "domain_locations_normalizelocationlabel",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "domain_locations_normalizelocationlabel",
+      "callee": "replace",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "domain_locations_normalizelocationlabel",
+      "callee": "normalize",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "domain_locations_normalizelocationlabel",
+      "callee": "toLocaleLowerCase",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "domain_locations_normalizelocationlabel",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts",
+      "source_location": "L16"
+    }
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "nodes": [
+    {
+      "id": "accessibility_spec",
+      "label": "Accessibility & Responsiveness Spec",
+      "file_type": "document",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "accessibility_wcag21_aa",
+      "label": "WCAG 2.1 AA Baseline",
+      "file_type": "rationale",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "accessibility_color_not_sole_signal",
+      "label": "Color Not Sole Signal Principle",
+      "file_type": "rationale",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "accessibility_touch_targets",
+      "label": "44x44px Min Touch Targets",
+      "file_type": "rationale",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "accessibility_reduced_motion",
+      "label": "prefers-reduced-motion Support",
+      "file_type": "rationale",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "accessibility_alt_text_rules",
+      "label": "Alt Text Rules for User Photos",
+      "file_type": "rationale",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "accessibility_pwa_manifest",
+      "label": "PWA Manifest (Installable, Standalone)",
+      "file_type": "rationale",
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "accessibility_spec",
+      "target": "accessibility_wcag21_aa",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "accessibility_spec",
+      "target": "accessibility_color_not_sole_signal",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "accessibility_spec",
+      "target": "accessibility_touch_targets",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "accessibility_spec",
+      "target": "accessibility_reduced_motion",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "accessibility_spec",
+      "target": "accessibility_alt_text_rules",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "accessibility_spec",
+      "target": "accessibility_pwa_manifest",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "accessibility_wcag21_aa",
+      "target": "folhario_wcag_aa",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/design/ACCESSIBILITY.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

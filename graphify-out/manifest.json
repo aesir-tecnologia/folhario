@@ -1,0 +1,1886 @@
+{
+  "/Users/machado/Projects/folhario/stylelint.config.mjs": {
+    "mtime": 1777738127.7720644,
+    "hash": "dcd47e872da158fa07c2da7f198db9e2"
+  },
+  "/Users/machado/Projects/folhario/postcss.config.mjs": {
+    "mtime": 1777738127.7625628,
+    "hash": "f71b80f5685810aa6afdd8c6b4ca0b31"
+  },
+  "/Users/machado/Projects/folhario/next-env.d.ts": {
+    "mtime": 1777949614.633573,
+    "hash": "d0f8375ae1199dc7acd3977fc33b78b8"
+  },
+  "/Users/machado/Projects/folhario/playwright.config.ts": {
+    "mtime": 1777492681.7643456,
+    "hash": "a2737f28f211c66f71617ffa7f6564bd"
+  },
+  "/Users/machado/Projects/folhario/drizzle.config.ts": {
+    "mtime": 1777211261.9629269,
+    "hash": "f333fc513cfa39ef8e9c76e434521454"
+  },
+  "/Users/machado/Projects/folhario/vitest.config.ts": {
+    "mtime": 1777750327.403611,
+    "hash": "9f503934a6e897be1f30aac201e39926"
+  },
+  "/Users/machado/Projects/folhario/eslint.config.mjs": {
+    "mtime": 1777314212.878997,
+    "hash": "f4ce0e09f43ff96481364f3277f068c3"
+  },
+  "/Users/machado/Projects/folhario/next.config.ts": {
+    "mtime": 1777784653.3701088,
+    "hash": "04797ba0e40ce6220ebeecb7ca8b72f6"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/proxy-body-passthrough.test.ts": {
+    "mtime": 1777223940.1130366,
+    "hash": "a7c212af6b708321ed80a437ab40bc37"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/use-theme.test.ts": {
+    "mtime": 1777315672.118741,
+    "hash": "e4274eb05b5879c67804a9c7a5803cc1"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/sentry-scrub.test.ts": {
+    "mtime": 1777065354.4795907,
+    "hash": "4b366d8ad4a7c636295a1504f0df38a4"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/bottom-sheet.test.tsx": {
+    "mtime": 1777601164.4012284,
+    "hash": "72dbc7491dbda3c040223108aae9bc5d"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts": {
+    "mtime": 1777219316.1442394,
+    "hash": "03cb4647990a69458552291794653732"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/server-env.test.ts": {
+    "mtime": 1777218842.3886614,
+    "hash": "13006418ffdf129673cd23523f38292d"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/email-templates.test.ts": {
+    "mtime": 1777351770.5689855,
+    "hash": "230ae7c727b3170df9ff3eb2695d4cfe"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/catalog-sign-photo-url.test.ts": {
+    "mtime": 1777656277.4641905,
+    "hash": "11502989d26c8988a73e75e007004245"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/banned-patterns-snapshot.test.ts": {
+    "mtime": 1777314212.8830156,
+    "hash": "f88f8e1db2d7063a7c9212e57248ccdf"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/catalog-storage-path-validator.test.ts": {
+    "mtime": 1777652561.2946894,
+    "hash": "86555de5fb283569717fb9209e47fee5"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/errors.test.ts": {
+    "mtime": 1777065354.47939,
+    "hash": "2d9e7a0d6a7e61ac77aaaa4179ba86f8"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/lightbox.test.tsx": {
+    "mtime": 1777650333.986388,
+    "hash": "364844841b4539ea5e0cd18c5645a7ff"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/delete-confirm-sheet.test.tsx": {
+    "mtime": 1777738127.7804906,
+    "hash": "fc9f3a15ec3fd39a990872230aa722f8"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/plants-keys.test.ts": {
+    "mtime": 1777660236.6582599,
+    "hash": "72acffcb33b921ea3eaf6ba8404fb7e9"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/iam-signup-schema.test.ts": {
+    "mtime": 1777349932.3016589,
+    "hash": "d280884c3eaf1b27cb3b2d5e0b7dfc39"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/photo-journal.test.tsx": {
+    "mtime": 1777738127.7811503,
+    "hash": "cc5f5fcf54532c54c6718027481cadda"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/setup-idb.ts": {
+    "mtime": 1777598386.0317745,
+    "hash": "dc9b53008b265b99252e0a0527374ae3"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/empty-state.test.tsx": {
+    "mtime": 1777318041.6867006,
+    "hash": "ff10049b8ac409c4ba5581c725d1cfe1"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/storage-budget-guard.test.ts": {
+    "mtime": 1777660239.3625839,
+    "hash": "c8dd53c4549c5560d6fbe131bf14e12c"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/inline-error.test.tsx": {
+    "mtime": 1777318041.6869013,
+    "hash": "be3393a20251f854dbbe875006b067bf"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/scaffold.test.ts": {
+    "mtime": 1777065354.4794743,
+    "hash": "36551b3b04eb9376b66b95d4d7591cda"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/sw-skip-waiting.test.ts": {
+    "mtime": 1777665288.1015186,
+    "hash": "ddd2d3fd65ff051d0f0417415000d360"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/catalog-locations-normalize.test.ts": {
+    "mtime": 1777651661.1270018,
+    "hash": "594b8b4d84d3a0f17d2f5304b3e62412"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/client-env.test.ts": {
+    "mtime": 1777065354.4791896,
+    "hash": "bb26e1969e4ba458fc18202ccb14a4be"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/app-update-toast.test.tsx": {
+    "mtime": 1777320838.7414627,
+    "hash": "5c22e91d5f0838856864ddb80e48070b"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/format.test.ts": {
+    "mtime": 1777315672.1181045,
+    "hash": "6abea2be08d631047a5a7d401c89dd3c"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/unit-of-work-leak.test.ts": {
+    "mtime": 1777271735.8668299,
+    "hash": "2866da8d8e691df1a401142ee69f6881"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/use-online-status.test.tsx": {
+    "mtime": 1777320838.742331,
+    "hash": "4d769964423f09363d37a2070af16dac"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/ci.test.ts": {
+    "mtime": 1777075325.6446183,
+    "hash": "26e44d588bb94801e69904347b40782a"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/iam-login-logout.test.ts": {
+    "mtime": 1777352108.4366066,
+    "hash": "daf7391c1811397a9d959ebea1e5d83a"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/setup-env.ts": {
+    "mtime": 1777600501.161473,
+    "hash": "100137f8f1c239893eabe984c0781027"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/auth-adapter-phase4.test.ts": {
+    "mtime": 1777504624.4449396,
+    "hash": "6a3f8f783d1a522677886cc93f6d6653"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/no-drizzle-in-routes.test.ts": {
+    "mtime": 1777222624.6033206,
+    "hash": "cfc36084e3998f9aafa3bb6e4ddd8450"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/journal-add-sheet-idempotency-retry.test.tsx": {
+    "mtime": 1777745300.1686652,
+    "hash": "0fcd8dfc512444a669c4464a376d4424"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/api-conventions.test.ts": {
+    "mtime": 1777249515.0190115,
+    "hash": "45d4218e0f34e579278e4638f72cc87e"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/add-plant-form.test.tsx": {
+    "mtime": 1777663289.4480379,
+    "hash": "b249a4e582388f4207702ed867a5baa3"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/use-plant-profile-mutations.test.tsx": {
+    "mtime": 1777672148.641511,
+    "hash": "d1f4360636aec3e3f5057e4c5057a5a0"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/db-client.test.ts": {
+    "mtime": 1777222624.603067,
+    "hash": "7052fee1e5237923da2f23a064b9ece4"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/journal-add-sheet.test.tsx": {
+    "mtime": 1777738127.7809649,
+    "hash": "3b19753e33c63dce0ee168681b1c9c4c"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/idb-keyval-storage-adapter.test.ts": {
+    "mtime": 1777659960.7519286,
+    "hash": "e45506a40c3ec0976c78cb58b6df8927"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/sw-runtime-cache.test.ts": {
+    "mtime": 1777665288.1011777,
+    "hash": "64bee6d9182ff2636362813acb441312"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/messages-coverage.test.ts": {
+    "mtime": 1777665288.1010826,
+    "hash": "6eb84bc30b681dbfe15cf31dfb862da7"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/breathing-loop.test.tsx": {
+    "mtime": 1777318041.6864812,
+    "hash": "1c3445c3c85c4cf92a439cc8837f5781"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/supabase-middleware-update-session.test.ts": {
+    "mtime": 1777504281.6769981,
+    "hash": "7c6679be978e21c1092c80205f6a645b"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/combobox.test.tsx": {
+    "mtime": 1777600649.7587485,
+    "hash": "563f5fb0b4d0e2ea4079032ddbf37576"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/skeleton-group.test.tsx": {
+    "mtime": 1777318041.6870728,
+    "hash": "01308a668928d95ad7b9279e0db067f3"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/proxy-supabase-refresh.test.ts": {
+    "mtime": 1777489341.8554354,
+    "hash": "8223131aad51028a9e281efd671f2b54"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/auth-throttle-math.test.ts": {
+    "mtime": 1777349932.3014464,
+    "hash": "af0f2cb08f096c2e6d536d266aabc93c"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/env-example.test.ts": {
+    "mtime": 1777065354.4792979,
+    "hash": "e5cb1889aba45c79675050a39a746035"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/create-plant.unit.test.ts": {
+    "mtime": 1777653107.702367,
+    "hash": "e3f9aa3575f26f1bc037f815fba03fcc"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/auth-adapter.test.ts": {
+    "mtime": 1777349932.3012679,
+    "hash": "5dfe68604767453ccad4abfbe16b7934"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/manifest-shape.test.ts": {
+    "mtime": 1777320838.7416692,
+    "hash": "e6f11d6fcef007df211d0ec9eb90a799"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/should-persist-query.test.ts": {
+    "mtime": 1777659973.067498,
+    "hash": "6bc882b074aa7b2e563c0d30af52356d"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/location-combobox.test.tsx": {
+    "mtime": 1777659901.0286338,
+    "hash": "fa010ae0079179a4078d97639b699c99"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/catalog-schemas.test.ts": {
+    "mtime": 1777652561.2944634,
+    "hash": "81b1a078ed0d39bd1f9ec17082f1f106"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/inline-edit-field.test.tsx": {
+    "mtime": 1777738127.7807531,
+    "hash": "606a22155ba3f1591c22daa18f20fc5f"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/plant-profile-photo-composition.test.tsx": {
+    "mtime": 1777745447.113825,
+    "hash": "4a26c6fa7630e33e94983bc585bcad1e"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/image-pipeline.test.ts": {
+    "mtime": 1777226771.7449238,
+    "hash": "a231a5150f6af3e70b489e5ef9a07779"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/scroll-restore.test.ts": {
+    "mtime": 1777320838.7418685,
+    "hash": "7e8365f1c761bc811b2ba26a84c9bda3"
+  },
+  "/Users/machado/Projects/folhario/tests/unit/heartbeat-route-contract.test.ts": {
+    "mtime": 1777324870.4482214,
+    "hash": "41f355f09464249ad34e033f490f4698"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-list-plants.integration.test.ts": {
+    "mtime": 1777738127.7739701,
+    "hash": "c06e2cce05fd77f29263df43293a01d9"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-resend-verification.integration.test.ts": {
+    "mtime": 1777738127.779055,
+    "hash": "f7f448066746ff735a0d3fa715b19b2d"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts": {
+    "mtime": 1777672148.6408596,
+    "hash": "447b5e29e0ac44c00d73c40aa65d2261"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/storage-buckets.integration.test.ts": {
+    "mtime": 1777222611.8716211,
+    "hash": "70b6bfe7ca6fc2889059892cd0c7ab0f"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-list-photo-entries.integration.test.ts": {
+    "mtime": 1777738127.7737372,
+    "hash": "7057878a04c2f10d2db7833ed93adc1b"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-list-locations.integration.test.ts": {
+    "mtime": 1777750484.4637134,
+    "hash": "6596db53f32efdad3a2ee1204cddc028"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/unit-of-work.integration.test.ts": {
+    "mtime": 1777229876.3434238,
+    "hash": "6acdb8395b87af4123d1e79626b5dc21"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/delete-plant.integration.test.ts": {
+    "mtime": 1777738127.7766688,
+    "hash": "3d09b799f7b214749fcea906f1b53e44"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-verification-gate.integration.test.ts": {
+    "mtime": 1777738127.77963,
+    "hash": "9d63367e277c4335cdde55b6341f776b"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-mutate-delete-routes.integration.test.ts": {
+    "mtime": 1777750567.480701,
+    "hash": "971ea9e9f7c26704433c15611b0aaf1f"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-oauth.integration.test.ts": {
+    "mtime": 1777738127.777651,
+    "hash": "7d6896907a3b6295de2b23b2184005fe"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/create-plant.integration.test.ts": {
+    "mtime": 1777653062.4164433,
+    "hash": "8045b2e7729be824599f213588fc4a02"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/sharp-smoke.integration.test.ts": {
+    "mtime": 1777226771.744396,
+    "hash": "ae0822787e137d2a504a7c6ed2a6576d"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/notifications-send-email.integration.test.ts": {
+    "mtime": 1777654851.8495274,
+    "hash": "b9f052af7183ab7b13c21c982ba5c4b3"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-login.integration.test.ts": {
+    "mtime": 1777352503.066933,
+    "hash": "18c0726e21fe2304f4f4f6ce82ff201a"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-phase5-rls.integration.test.ts": {
+    "mtime": 1777738127.775102,
+    "hash": "1a75a2fb61869c6219d340494e1618d3"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-create-photo-entry.integration.test.ts": {
+    "mtime": 1777738127.7726693,
+    "hash": "b372b7897601c2c017fbd9817d287c16"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/cleanup-storage.integration.test.ts": {
+    "mtime": 1777738127.7764828,
+    "hash": "5f63ccd5641e15736342b44e82165522"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/proxy-auth.integration.test.ts": {
+    "mtime": 1777223940.1126301,
+    "hash": "f27f5ca8c5206622863f7f1b5987dd77"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/global-setup.ts": {
+    "mtime": 1777749496.679239,
+    "hash": "afbe90e333e2c4af118b11cbb1fb176d"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts": {
+    "mtime": 1777429877.1682665,
+    "hash": "50b01d0985cb24acbe565ce194cab234"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/postgres-connection.integration.test.ts": {
+    "mtime": 1777065354.4790359,
+    "hash": "9e8b38800061e5efd5ac1b79c6990b99"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/inngest-serve.integration.test.ts": {
+    "mtime": 1777654851.848816,
+    "hash": "c4b69fa9fdf278ed8e0f8e2827b06dc8"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts": {
+    "mtime": 1777248107.7333703,
+    "hash": "dc4518d15681c94334a0bb283a80f895"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-plants-repo.integration.test.ts": {
+    "mtime": 1777738127.7757096,
+    "hash": "8724774891d052c1194f6d690ccd2266"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-delete-photo-entry.integration.test.ts": {
+    "mtime": 1777738127.7730079,
+    "hash": "46d9df3fc92e5aec91a883123b24393b"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-get-plant.integration.test.ts": {
+    "mtime": 1777738127.7733996,
+    "hash": "d374a1dd1f278828a732b06ce9d9b1ca"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/idempotency.integration.test.ts": {
+    "mtime": 1777230168.4728096,
+    "hash": "3203726290bc605c5f735b811a88275e"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/diagnostics-consent.integration.test.ts": {
+    "mtime": 1777349932.2978752,
+    "hash": "17aa248aeb67bfc0c1aced40937e7921"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-schema-phase4.integration.test.ts": {
+    "mtime": 1777348077.9160726,
+    "hash": "58eb1f91ec9c8c0cdbda36a1f728566b"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-pending-storage-deletions-repo.integration.test.ts": {
+    "mtime": 1777738127.774896,
+    "hash": "0d6dfbba93155f93c6519dec77459fba"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/rls-real-jwt.integration.test.ts": {
+    "mtime": 1777738127.7801104,
+    "hash": "26ad0e1ffdbfc2cada2c8fe7317d25a7"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-consent-log.integration.test.ts": {
+    "mtime": 1777738127.777439,
+    "hash": "e5b45991c7fc8df1b3d9c07a4f41f3c0"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/iam-signup.integration.test.ts": {
+    "mtime": 1777738127.779405,
+    "hash": "fbfee72a4893cdd363632bb5529f7f65"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/diagnostics-server-probe.integration.test.ts": {
+    "mtime": 1777065354.4789374,
+    "hash": "47a987c3ed98db5dabf1f25a300593ad"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/seed-data.integration.test.ts": {
+    "mtime": 1777222611.8714025,
+    "hash": "10613fa380b7cdb06e8d68ac69846492"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-location-suggestions-repo.integration.test.ts": {
+    "mtime": 1777738127.7743225,
+    "hash": "5dd6de56d5f8c6f85a18dacd530cad06"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/storage-adapter.integration.test.ts": {
+    "mtime": 1777226771.7446735,
+    "hash": "c2800dfff02c565fb37fc3b06ea9d400"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/auth-jwt.integration.test.ts": {
+    "mtime": 1777247697.395403,
+    "hash": "a136a113c12e9a062a89446b8ede77ff"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-routes-read-create.integration.test.ts": {
+    "mtime": 1777738127.7760704,
+    "hash": "9dc573126b31306b3c4430614af75037"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-update-plant.integration.test.ts": {
+    "mtime": 1777738127.7762642,
+    "hash": "9bf42eba6db240cf33b05ccda0410548"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/schema-rls.integration.test.ts": {
+    "mtime": 1777221255.513955,
+    "hash": "76ab8edf32c349553e1d4f571cad3547"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/setup-supabase-truncate.ts": {
+    "mtime": 1777353753.0181978,
+    "hash": "03844d5bed77b7c9081e9f64f5c9d331"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/catalog-photo-entries-repo.integration.test.ts": {
+    "mtime": 1777738127.7754288,
+    "hash": "5814dd20b21fbb752df12a81b21f49e0"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-resend.ts": {
+    "mtime": 1777349932.298334,
+    "hash": "4aa5de31de885a615332725130129622"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts": {
+    "mtime": 1777349932.2981365,
+    "hash": "9ce4785f01b48ae77a53784107fd0fb6"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/seed-partner-code.ts": {
+    "mtime": 1777349932.298969,
+    "hash": "5e70213ac51bc0d06f10d1e41c4ad209"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/seed-user.ts": {
+    "mtime": 1777349932.2996771,
+    "hash": "dd9e31b9cd7d3e6db23e34b54da805ba"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/seed-policy-version.ts": {
+    "mtime": 1777353753.0170083,
+    "hash": "df5a64243335c91bb74dc5073f1a7b86"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/use-in-memory-storage-adapter.ts": {
+    "mtime": 1777598483.3011515,
+    "hash": "ab8f41941b6becc4b9f9a5a83c47ef08"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/supabase-availability.ts": {
+    "mtime": 1777738127.7768657,
+    "hash": "d0ed30bce5ffd2d299c13a83cf9ffb52"
+  },
+  "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts": {
+    "mtime": 1777598478.6665397,
+    "hash": "d4a4f723cda22349e3ec4443e1c4328e"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-combobox.spec.ts": {
+    "mtime": 1777600813.3387158,
+    "hash": "93ca4d188574f5e3e3a42bcb5073e801"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts": {
+    "mtime": 1777321486.5757608,
+    "hash": "d5ff4491eaf43e484b4f364df2090f45"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/diagnostics-sentry.spec.ts": {
+    "mtime": 1777065354.4785225,
+    "hash": "2fd9afa8427e157386d1861a0dcca39e"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/catalog-offline.spec.ts": {
+    "mtime": 1777780218.226409,
+    "hash": "a4427aa24036d1e15f6584962de11d12"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts": {
+    "mtime": 1777664283.0061035,
+    "hash": "22ab961ccb3eaf8727b8901369fce458"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/iam-me-shape.spec.ts": {
+    "mtime": 1777491694.0577538,
+    "hash": "aab8d65e6d0ad2d51dac4e98ebad9512"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/diagnostics-consent.spec.ts": {
+    "mtime": 1777247697.3664746,
+    "hash": "1b4be69d99c43297c5f4aa9a2ec7729c"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-inline-edit-field.spec.ts": {
+    "mtime": 1777650783.5899553,
+    "hash": "43875921a6e4adcf43a2967e7dff066a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts": {
+    "mtime": 1777491728.6400018,
+    "hash": "e9e4fcfc2a3572e2f6dcdb1a9fe33938"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-cold-start-stale-cookie.spec.ts": {
+    "mtime": 1777489358.6795666,
+    "hash": "cab59307d4f91500fdfef2a9b237655c"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/security-headers.spec.ts": {
+    "mtime": 1777065354.478702,
+    "hash": "91db0570ad5e1d1b61ea46f0862266f3"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-google-oauth.spec.ts": {
+    "mtime": 1777355454.2148125,
+    "hash": "bae03c97f783c5bc6eb3a519538f8782"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-bottom-sheet.spec.ts": {
+    "mtime": 1777601305.792904,
+    "hash": "e6977462a0cf11bf3f8ca62db22c4ecd"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/legal-links.spec.ts": {
+    "mtime": 1777424608.130469,
+    "hash": "4bd671bd9f3649855f62172a85a1dae4"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/pwa-smoke.spec.ts": {
+    "mtime": 1777065354.4786093,
+    "hash": "aafd3c1e1763ce094a293d81d133b1e5"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/bottom-nav-scroll-restore.spec.ts": {
+    "mtime": 1777780206.175257,
+    "hash": "7b2e4d68e5c21916c357673d94dcb24a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/iam-me-update-timezone.spec.ts": {
+    "mtime": 1777491706.1779993,
+    "hash": "6a4fe3ceb3a8f3630548d09211d888db"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/iam-unverified-blocker.spec.ts": {
+    "mtime": 1777425052.4775596,
+    "hash": "4b5f11d341989e8dffe771de58781f43"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts": {
+    "mtime": 1777491719.1780894,
+    "hash": "df0fe9160db9859ea9a3b42890f33a15"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-login-rate-limit-trip.spec.ts": {
+    "mtime": 1777491642.1693532,
+    "hash": "7eec8852a8e86e450e3e2572dc4dfd2d"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/global-setup.ts": {
+    "mtime": 1777780192.32661,
+    "hash": "1d55a85baa99e29b2276283ac91c86fd"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-modal-focus-trap.spec.ts": {
+    "mtime": 1777323179.7942371,
+    "hash": "1c0e02df2fd6935e2cecc36b0dd4a4a9"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/horizontal-scroll-guard.spec.ts": {
+    "mtime": 1777321486.5755367,
+    "hash": "3d8b48fb78ec2f63df7adaea56d65672"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/diagnostics-posthog.spec.ts": {
+    "mtime": 1777065354.4784346,
+    "hash": "fc5c9d91731c943874254b2d287330aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-login-logout.spec.ts": {
+    "mtime": 1777482011.0050871,
+    "hash": "1e388ada9e4b3f2a726161b136898b75"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-placeholder-pages.spec.ts": {
+    "mtime": 1777780206.1560125,
+    "hash": "9e422c6219355841873345166abed8e3"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts": {
+    "mtime": 1777491610.2611408,
+    "hash": "feb70d61ee792253fc5e1c5f8b424f0f"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/catalog-grid-sort.spec.ts": {
+    "mtime": 1777661185.037065,
+    "hash": "e8f3f15a5ab59756b6093f577db3b0dc"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/sentry-local-mode.spec.ts": {
+    "mtime": 1777065354.4788017,
+    "hash": "2f05d6bf2c6c45216268c9f98e0ee0b7"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/catalog-uat-cycle-2.spec.ts": {
+    "mtime": 1777760807.6483274,
+    "hash": "688b0b0579e3583085aeffc1938af6ef"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/offline-fallback.spec.ts": {
+    "mtime": 1777780218.2337885,
+    "hash": "54075bcd3c34192f8f887e38dbd90e9f"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts": {
+    "mtime": 1777491589.485279,
+    "hash": "2577193f009edd5c4619d127bd4b0767"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/settings-account.spec.ts": {
+    "mtime": 1777424341.4663615,
+    "hash": "2d2490d5342daea6c16eee11b32dd8c3"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-skip-to-main.spec.ts": {
+    "mtime": 1777780206.166016,
+    "hash": "6182c47f892d467c32b1c17ba6ae2880"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/plant-profile.spec.ts": {
+    "mtime": 1777662204.8979902,
+    "hash": "2bf9b1597e4490ded63ff19113a47061"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/auth-signup-verification.spec.ts": {
+    "mtime": 1777481312.211705,
+    "hash": "0f693e411eec8c3c985c793a579e4fd1"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-lightbox.spec.ts": {
+    "mtime": 1777650607.9551966,
+    "hash": "bc5b282486de9766ec2144847f8832e4"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/axe-route-focus-move.spec.ts": {
+    "mtime": 1777780206.161327,
+    "hash": "9fc83ad467c97c3d2ebe35b6be25ca0b"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/catalog-manual-add.spec.ts": {
+    "mtime": 1777663289.447794,
+    "hash": "a251d4b3e7a981b1e886e01be068d128"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/fixtures/authed-user.ts": {
+    "mtime": 1777746735.1609838,
+    "hash": "30f451555258ec91e728a9e3827b73f5"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/fixtures/read-only.ts": {
+    "mtime": 1777780206.184016,
+    "hash": "60e8a784701ba5cb105d62f54eb6836b"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/fixtures/test-jwks.ts": {
+    "mtime": 1777247579.9923234,
+    "hash": "e3c994afcde65e43825f67a2419bd9a5"
+  },
+  "/Users/machado/Projects/folhario/public/sw.js": {
+    "mtime": 1777949278.2431138,
+    "hash": "c646244bc67da2cdbc0d4b7384a8010e"
+  },
+  "/Users/machado/Projects/folhario/scripts/migrate.ts": {
+    "mtime": 1777738127.7628007,
+    "hash": "50a6f8685151861c2718ced45078de06"
+  },
+  "/Users/machado/Projects/folhario/scripts/seed.ts": {
+    "mtime": 1777222611.8702989,
+    "hash": "83d58c0683c7c7d4aa4c461b964d5a0c"
+  },
+  "/Users/machado/Projects/folhario/scripts/check-rls.ts": {
+    "mtime": 1777221255.509232,
+    "hash": "c3bf08f807bb5ae53ce6c7200275dd89"
+  },
+  "/Users/machado/Projects/folhario/scripts/check-seeds.ts": {
+    "mtime": 1777222611.8701303,
+    "hash": "b484743a279b986dc7027b7b28e383de"
+  },
+  "/Users/machado/Projects/folhario/src/sentry.server.config.ts": {
+    "mtime": 1777065354.476789,
+    "hash": "952842e95982c5e7e4e82100f8fe0729"
+  },
+  "/Users/machado/Projects/folhario/src/sentry.edge.config.ts": {
+    "mtime": 1777065354.4766822,
+    "hash": "62cdad69ca46d9278045fb322b147334"
+  },
+  "/Users/machado/Projects/folhario/src/instrumentation-client.ts": {
+    "mtime": 1777065354.476225,
+    "hash": "f6c1c12f37e470cfe9279b6987088ace"
+  },
+  "/Users/machado/Projects/folhario/src/proxy.ts": {
+    "mtime": 1777747296.484176,
+    "hash": "89f86dcb2f09524bbb8095440df1a293"
+  },
+  "/Users/machado/Projects/folhario/src/instrumentation.ts": {
+    "mtime": 1777065354.4763243,
+    "hash": "0bd4e0ec2ef8ba75755e09558ae5bf2e"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/inngest/functions.ts": {
+    "mtime": 1777738127.7691855,
+    "hash": "3926323d5ec52fbecb27463b94a68df7"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts": {
+    "mtime": 1777738127.7693105,
+    "hash": "ae1486aec8dd581301b57a703e105951"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/queries/hooks.ts": {
+    "mtime": 1777660118.3646908,
+    "hash": "1060001c90c00dbf2ff5d38ff8701104"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/api/snake-case.ts": {
+    "mtime": 1777672479.8695579,
+    "hash": "74350e9db6095fb9dca9d3568f3de3fd"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/api/route-handlers/delete-plant-handler.ts": {
+    "mtime": 1777738127.7678459,
+    "hash": "4550dc5641069b19a70257e17c4d16a3"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/api/route-handlers/_shared.ts": {
+    "mtime": 1777659343.841999,
+    "hash": "b0091da5a18e3754ba4d44f9441c9d31"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/api/route-handlers/update-plant-handler.ts": {
+    "mtime": 1777738127.768227,
+    "hash": "ab12023df1ae172904d41febd51798e6"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/api/route-handlers/delete-photo-entry-handler.ts": {
+    "mtime": 1777738127.7675717,
+    "hash": "4ce4da8c3fb2c806e549fdce9a4ba6ec"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/get-plant.ts": {
+    "mtime": 1777656277.4602606,
+    "hash": "d8202530d713a8aa5876110937849961"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/list-plants.ts": {
+    "mtime": 1777656277.4606855,
+    "hash": "59ea3ae1b4eb3eb064a41edc95ef2383"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/update-plant.ts": {
+    "mtime": 1777656277.4609585,
+    "hash": "201512ecb72b01ddc8922669b2df67a9"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/create-plant.ts": {
+    "mtime": 1777653026.376062,
+    "hash": "ac87b9ed2adbe0005158a9d2d691f95f"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/create-photo-entry.ts": {
+    "mtime": 1777656922.2137513,
+    "hash": "fac0f3755e02f087c3b6bad757580819"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/delete-plant.ts": {
+    "mtime": 1777659261.9642513,
+    "hash": "d081e5b1bedd4b48707e751249869e3d"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts": {
+    "mtime": 1777652561.292626,
+    "hash": "af6162df19f63d16633f913ab1dd9130"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/delete-photo-entry.ts": {
+    "mtime": 1777738127.768426,
+    "hash": "6fca53212b67e9d40b2eece216dd3ca3"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/list-photo-entries.ts": {
+    "mtime": 1777672472.7861514,
+    "hash": "ccee33830125de83ab069805663fdc4f"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/application/list-locations.ts": {
+    "mtime": 1777656277.4605117,
+    "hash": "09ed5241a8e0b1bf96ef90019f655f61"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/infrastructure/photo-storage.ts": {
+    "mtime": 1777738127.769038,
+    "hash": "593eb39649674b7079b650c74daaa96c"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/infrastructure/db/schema.ts": {
+    "mtime": 1777738127.768903,
+    "hash": "b4a7fe831b52138ac8651ba93efefa70"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/infrastructure/db/photo-entries.ts": {
+    "mtime": 1777651638.8065333,
+    "hash": "4e313464d762da62614d26b96162f0f4"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/infrastructure/db/pending-storage-deletions.ts": {
+    "mtime": 1777654851.8467927,
+    "hash": "9835d8a6ed24be7aed0b04c6035847ac"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/infrastructure/db/location-suggestions.ts": {
+    "mtime": 1777651848.506785,
+    "hash": "2a57eb10ccc9129f9dc4c33a6282c3e9"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/infrastructure/db/plants.ts": {
+    "mtime": 1777651548.1388733,
+    "hash": "26df1de62b159682310e13f94649977b"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/domain/locations.ts": {
+    "mtime": 1777651808.2385044,
+    "hash": "802a4c952bb3cf02a6c8c05481073839"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/domain/storage-paths.ts": {
+    "mtime": 1777738127.768574,
+    "hash": "ed2e243b1d3fb5c824e77ef91b76dd01"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/domain/schemas.ts": {
+    "mtime": 1777652561.2932339,
+    "hash": "16369e9e8f12c452e31f6a2d8290baf6"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/catalog/domain/events.ts": {
+    "mtime": 1777654851.8465407,
+    "hash": "b7f2c2484dfc48630bbc69026ec15ebf"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/inngest/functions.ts": {
+    "mtime": 1777355453.4331622,
+    "hash": "f764250afa53e78f1ee42c19df8b976e"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/consent-route.ts": {
+    "mtime": 1777251495.9397237,
+    "hash": "23f98098b7aa6bee40d7a3a802eb0546"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/logout-link.tsx": {
+    "mtime": 1777660139.4751096,
+    "hash": "e55ffd5f173f58ea32634215e6ed8adb"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/account-section.tsx": {
+    "mtime": 1777423984.354938,
+    "hash": "3c06e53d7fe91bfc2fac75932fbb3047"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/resend-verification-button.tsx": {
+    "mtime": 1777423822.226765,
+    "hash": "2c1a534de7c0baa28f560ccf7d6abfe7"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts": {
+    "mtime": 1777423809.4285913,
+    "hash": "e3f0c4262490f8fdd19636e707c38752"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/em-breve-card.tsx": {
+    "mtime": 1777424022.302699,
+    "hash": "61f561b4da36031060014f1069e0aa5c"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/oauth-complete-form.tsx": {
+    "mtime": 1777424022.3027196,
+    "hash": "15512cea8eb24e44ba3393481b41a879"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/login-form.tsx": {
+    "mtime": 1777424022.3027132,
+    "hash": "b819d7864a19e58bef0c6522ab573490"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/signup-form.tsx": {
+    "mtime": 1777480525.9261289,
+    "hash": "8dbd4c72c7b361417e4540e4a97051d1"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/unverified-blocker.tsx": {
+    "mtime": 1777425167.352728,
+    "hash": "044d3ad12a81322c5ab1ef92a8958d1c"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/api/components/timezone-form.tsx": {
+    "mtime": 1777423971.9647784,
+    "hash": "b33f5fa55bc3150e12c5e35e1ccfb6c8"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/resend-verification.ts": {
+    "mtime": 1777478643.7000859,
+    "hash": "cd9a2e768cc31450040e113493038f2b"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/login.ts": {
+    "mtime": 1777352168.6617336,
+    "hash": "b35e8fa614ac9133e34ddd9e19b1385a"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/verify-email.ts": {
+    "mtime": 1777353753.014649,
+    "hash": "3de11d44634ad18a5b803c0335c237b1"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/current-user.ts": {
+    "mtime": 1777429385.7864413,
+    "hash": "5b231932206e6b01e0732d5a86fd456a"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/user-query-service.ts": {
+    "mtime": 1777222624.601993,
+    "hash": "d9e117a94fc741fa688e435c2d994588"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/record-consent.ts": {
+    "mtime": 1777348077.9143991,
+    "hash": "a39d958a5f8853bb1fef07943ff5d6b3"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/update-me.ts": {
+    "mtime": 1777355454.214098,
+    "hash": "2df80cf8a7dac05c5421d2bd918d85b6"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/signup.ts": {
+    "mtime": 1777478643.6977873,
+    "hash": "c07b0c49b53dca46e6ffdbd5c1fdd49e"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts": {
+    "mtime": 1777429630.232763,
+    "hash": "6dd46db9615d1a449706d1457f70927e"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/require-verified.ts": {
+    "mtime": 1777349932.294372,
+    "hash": "7b1144f172fa3cbba7147141b7a130ae"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts": {
+    "mtime": 1777352193.7485304,
+    "hash": "3254b03a2ea73f37df8063f1fd37b3aa"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/supabase-admin.ts": {
+    "mtime": 1777349932.2957635,
+    "hash": "01543ea39d74f2e5452c179bb2a56c66"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/supabase-server.ts": {
+    "mtime": 1777504365.8616915,
+    "hash": "57fbb154e199f65cdf7cdeb97247f563"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/posthog-bridge.ts": {
+    "mtime": 1777353753.0165224,
+    "hash": "1f5eaf434c5df39342c63e6c52043d78"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/auth/auth-adapter.ts": {
+    "mtime": 1777504614.156527,
+    "hash": "180d8551b6c734306d7888a058375a13"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/schema.ts": {
+    "mtime": 1777348077.914972,
+    "hash": "cb363f658be5e5fef784a0a742f09bb4"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/consent-logs.ts": {
+    "mtime": 1777353753.0150306,
+    "hash": "be641ad6464a78322c5aa490fb1b622b"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts": {
+    "mtime": 1777353753.01539,
+    "hash": "387f2e6c2ee5bdb63ae0ccffebcc3692"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/test-helpers.ts": {
+    "mtime": 1777355453.4328701,
+    "hash": "d035501c60613e6a62c259a0f78916e4"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/types.ts": {
+    "mtime": 1777353753.0157807,
+    "hash": "b07206e1d4498a486e939a5115b5428a"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/subscriptions.ts": {
+    "mtime": 1777353753.015615,
+    "hash": "7805ec1b11e638a27bc4e1934d936295"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/partner-store.ts": {
+    "mtime": 1777353753.0151842,
+    "hash": "335fd5b35e3e6611bc86426bb6182d55"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/users.ts": {
+    "mtime": 1777355454.2143972,
+    "hash": "1fe150de1b0de7d8c6fe447c0d57d272"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/auth-throttle.ts": {
+    "mtime": 1777429968.3918118,
+    "hash": "0ad804ba1e22e5e5f918eb105f81a480"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/domain/schemas.ts": {
+    "mtime": 1777349932.294821,
+    "hash": "e0e474e9c5d8b1ac712188d8991b2c02"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/domain/consent-schemas.ts": {
+    "mtime": 1777249262.9226298,
+    "hash": "2f73720678c7074a341573694cdb19d9"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/iam/domain/events.ts": {
+    "mtime": 1777221255.5107515,
+    "hash": "55686ecd87abbb88c8fba2f75e5dd842"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/species-care/inngest/functions.ts": {
+    "mtime": 1777350724.9505548,
+    "hash": "f118e23be5df6030f5621a628eaf336a"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/species-care/infrastructure/db/schema.ts": {
+    "mtime": 1777219230.3779037,
+    "hash": "ceeb222b4e92ba40a8aab93e78911fbc"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/species-care/domain/schemas.ts": {
+    "mtime": 1777251570.3136969,
+    "hash": "88fe8ffd1e3dfb60a6eb70190e420a2a"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/species-care/domain/events.ts": {
+    "mtime": 1777221255.513331,
+    "hash": "d62abfeda1c8886546a66330f33572bd"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/identification/inngest/functions.ts": {
+    "mtime": 1777350724.950178,
+    "hash": "b35ec1f480d8d0d90da0889c630ed326"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/identification/infrastructure/db/schema.ts": {
+    "mtime": 1777221255.5121465,
+    "hash": "9cd2e388d5c4ae0f4141728419c16289"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/identification/domain/schemas.ts": {
+    "mtime": 1777251556.4612863,
+    "hash": "52ec4aed9ec1f9918f9c26e0166a4183"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/identification/domain/events.ts": {
+    "mtime": 1777221255.5117638,
+    "hash": "ebd0c96bf5be25b684913b3fdeee4172"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/inngest/functions.ts": {
+    "mtime": 1777429326.295211,
+    "hash": "f445879748405c0ec0febcd793ba977d"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/application/send-email.ts": {
+    "mtime": 1777351770.566812,
+    "hash": "e819d1aba4a7a012bf5d5b46957e1297"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/resend-adapter.ts": {
+    "mtime": 1777429328.1232476,
+    "hash": "23286db004a26df6c2a7537f5e33151d"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/email-templates/verification.tsx": {
+    "mtime": 1777351770.5675254,
+    "hash": "177aae3c7f46416013561de649fb7a5f"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/email-templates/welcome-back.tsx": {
+    "mtime": 1777351770.567726,
+    "hash": "b538b98545cf390928d396fe6ab7a5d7"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/db/schema.ts": {
+    "mtime": 1777221255.512706,
+    "hash": "380bece67abe5b684528c30d961d963a"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/domain/schemas.ts": {
+    "mtime": 1777251562.3048875,
+    "hash": "49e99de68514f22fcc0d63a37c4daf47"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/notifications/domain/events.ts": {
+    "mtime": 1777351770.5671036,
+    "hash": "eec26bae28d75c527ecb8b55fbe2c9ff"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/reminders/inngest/functions.ts": {
+    "mtime": 1777350724.9504325,
+    "hash": "95dc73c876a35c4f18a6dac2e9faebc4"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/reminders/infrastructure/db/schema.ts": {
+    "mtime": 1777221255.513181,
+    "hash": "dcff749143358086f24fb0b146d5ddfe"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/reminders/domain/schemas.ts": {
+    "mtime": 1777251566.3287032,
+    "hash": "5d7010fd78781c44947320ff89c6d1eb"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/reminders/domain/events.ts": {
+    "mtime": 1777221255.5128624,
+    "hash": "4c7504b93f409ce1203323c54ea4cce2"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/inngest/functions.ts": {
+    "mtime": 1777350724.9499214,
+    "hash": "ebfb46bcf717527d2d70003ecfe08182"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/application/use-subscription.ts": {
+    "mtime": 1777599688.0634499,
+    "hash": "b66cd557e037751c6794ba5337ec1dc5"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/application/subscription-provider.tsx": {
+    "mtime": 1777599772.6763005,
+    "hash": "57721ccb50f26f1253fd6af383de7f59"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/application/subscription-provider.client.tsx": {
+    "mtime": 1777599878.012056,
+    "hash": "1bad3d37a3e87c13a1123e8c87e84f3c"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/application/use-subscription.unit.test.tsx": {
+    "mtime": 1777599746.9717069,
+    "hash": "179bdd8b7c65dfff78869ba81e98be90"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/infrastructure/db/schema.ts": {
+    "mtime": 1777221255.5102377,
+    "hash": "b0928d55adf122126f515913ab9488a5"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/domain/schemas.ts": {
+    "mtime": 1777251543.0767734,
+    "hash": "cbd49a8e51901042d9fa6da74fc196a7"
+  },
+  "/Users/machado/Projects/folhario/src/contexts/billing/domain/events.ts": {
+    "mtime": 1777221255.5095477,
+    "hash": "f1ab323eff9b7d72a6bb61248417d31d"
+  },
+  "/Users/machado/Projects/folhario/src/app/sw.ts": {
+    "mtime": 1777787877.834544,
+    "hash": "66767acc99b106b271450d0e2e1b3abd"
+  },
+  "/Users/machado/Projects/folhario/src/app/posthog-provider.tsx": {
+    "mtime": 1777065354.4712143,
+    "hash": "53aae113b63ab436d3ca192e438653fb"
+  },
+  "/Users/machado/Projects/folhario/src/app/layout.tsx": {
+    "mtime": 1777780160.6020625,
+    "hash": "52246304d342cd717a453a5e7a38d988"
+  },
+  "/Users/machado/Projects/folhario/src/app/not-found.tsx": {
+    "mtime": 1777065354.4710171,
+    "hash": "a6b0e1bf0fa83c9ee8fa7542601b1a3c"
+  },
+  "/Users/machado/Projects/folhario/src/app/diag/layout.tsx": {
+    "mtime": 1777065354.4706726,
+    "hash": "09690f0deb1eb75a0251bebc280c9384"
+  },
+  "/Users/machado/Projects/folhario/src/app/diag/page.tsx": {
+    "mtime": 1777065354.4707704,
+    "hash": "673933bf6a4be9701d5b364989b082dc"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/layout.tsx": {
+    "mtime": 1777660131.2309244,
+    "hash": "7cc36c2a9e65acbbb15a3e995c128e6e"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/page.tsx": {
+    "mtime": 1777738127.7661648,
+    "hash": "4d6196b1772a0ec776c972b8593e40f1"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/app-shell.tsx": {
+    "mtime": 1777777222.3807964,
+    "hash": "7382d59fd5552a3f696c4a38127dc497"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/identify/_identify-placeholder.tsx": {
+    "mtime": 1777738127.7657745,
+    "hash": "545241159b10c543cb9885957a7e6e3a"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/identify/page.tsx": {
+    "mtime": 1777665288.1000159,
+    "hash": "6330d96d2147191e6665f2afaf625fc5"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/settings/layout.tsx": {
+    "mtime": 1777424198.76148,
+    "hash": "749af10d53deed58e99a2a650065640b"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/settings/page.tsx": {
+    "mtime": 1777424151.9149961,
+    "hash": "9876cd17ea8ad55dcb8df56f3b8ebe5e"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/settings/[section]/page.tsx": {
+    "mtime": 1777424171.2596328,
+    "hash": "ae4760715cc54063d4072649e3e5c053"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/page.tsx": {
+    "mtime": 1777661050.5257246,
+    "hash": "9dbf2fa355884a74ded39753ec074e2e"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/page.tsx": {
+    "mtime": 1777738127.7656252,
+    "hash": "bd9914ae6a0ef40aeca8e6c5f0f62ca2"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/add/add-plant-form.tsx": {
+    "mtime": 1777780147.3328974,
+    "hash": "eebf0670ec9f103e1c9b7ce48a191a0f"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/use-plant-profile-mutations.ts": {
+    "mtime": 1777787615.1534882,
+    "hash": "2361732a6baecd2f0520708429a6fa27"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/page.tsx": {
+    "mtime": 1777662204.8974187,
+    "hash": "2e52b0d5c461dcbb1e9a96c806ec24b3"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/plant-profile.tsx": {
+    "mtime": 1777738127.7649837,
+    "hash": "851e08464ebe80dfe5648f0beae2417b"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/delete-confirm-sheet.tsx": {
+    "mtime": 1777760607.3886194,
+    "hash": "1f7c2d3df2c9c5f1bada19e878f87ea3"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/journal/journal-add-sheet.tsx": {
+    "mtime": 1777738127.763736,
+    "hash": "83b7ca5d64cee639a75620365e679b5f"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/journal/photo-journal.tsx": {
+    "mtime": 1777738127.7643244,
+    "hash": "18a35044cc80938cc74fca66c30670e4"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/[plantId]/journal/page.tsx": {
+    "mtime": 1777787895.0396905,
+    "hash": "9db7b32c5d691bad57c57823cad1d2c3"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.unit.test.tsx": {
+    "mtime": 1777660773.8709743,
+    "hash": "9da651af9f8b3b70516a16567ceae712"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-empty.tsx": {
+    "mtime": 1777660843.6386878,
+    "hash": "90d6e7f9faf0306031d79ad40455e70c"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/use-sort-preference.ts": {
+    "mtime": 1777787824.0496628,
+    "hash": "47cfe4e20583c979db4c2cc411c5630d"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-grid.tsx": {
+    "mtime": 1777660965.675369,
+    "hash": "c9270bbc3d7e953dec1bbc6684393313"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx": {
+    "mtime": 1777661007.127771,
+    "hash": "d5942a25d031d59bf8ac3607ff6e4a50"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/plant-card.tsx": {
+    "mtime": 1777660965.6753535,
+    "hash": "f8f87e8b11732c8a856c7fb3df386809"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/profile/profile-theme-toggle.tsx": {
+    "mtime": 1777320838.7388647,
+    "hash": "e627e7e6f3344f9f4e742fb85281f570"
+  },
+  "/Users/machado/Projects/folhario/src/app/(app)/profile/page.tsx": {
+    "mtime": 1777320838.7387428,
+    "hash": "2441946400579b625f9d2b1f33bbe7ec"
+  },
+  "/Users/machado/Projects/folhario/src/app/auth/verify/route.ts": {
+    "mtime": 1777353753.0140462,
+    "hash": "4d05699489b49526d4983a97f41e1ad7"
+  },
+  "/Users/machado/Projects/folhario/src/app/auth/callback/route.ts": {
+    "mtime": 1777355454.213472,
+    "hash": "6cf2f54d18de5a7d56e33195b75c66ef"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/inline-edit-field/harness.tsx": {
+    "mtime": 1777738127.7665052,
+    "hash": "c27ac174b7d130ff631eb31caea77324"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/inline-edit-field/page.tsx": {
+    "mtime": 1777650579.0615952,
+    "hash": "5929ca2b105c512f650bce3c596c07b1"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/lightbox/harness.tsx": {
+    "mtime": 1777738127.7667422,
+    "hash": "c63894d4939cb0651e5dabb96e9f5b4b"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/lightbox/page.tsx": {
+    "mtime": 1777650561.5069115,
+    "hash": "bfbc754dea60ed1ce813fbe9c2d81080"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx": {
+    "mtime": 1777600816.5802867,
+    "hash": "7785391b610f53578877cd7e37f1c002"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/combobox/page.tsx": {
+    "mtime": 1777600666.14367,
+    "hash": "88fc0786d1b6363e9efb37f4db38bf4e"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/bottom-sheet/harness.tsx": {
+    "mtime": 1777602065.949747,
+    "hash": "63a66a55baf5bc8f0c6572a5ebe53b43"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/bottom-sheet/page.tsx": {
+    "mtime": 1777601279.4761605,
+    "hash": "3110e097d24c26705b3b7480f619374c"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx": {
+    "mtime": 1777738127.7669725,
+    "hash": "ed6574fcec3a1d402bcaab6d5dc2f4e6"
+  },
+  "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/page.tsx": {
+    "mtime": 1777429834.1418045,
+    "hash": "74567c7dd4efd300d5213255e494b50d"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/layout.tsx": {
+    "mtime": 1777424100.8008642,
+    "hash": "dc86958d0da9a47eb172ce92a2c4014c"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/oauth-complete/page.tsx": {
+    "mtime": 1777424198.7614686,
+    "hash": "e18fd6c2f7bc59fac524c9e5edc8843b"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/check-email/page.tsx": {
+    "mtime": 1777480156.5843441,
+    "hash": "940ba09377c3efec316e39767b89571a"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/signup/page.tsx": {
+    "mtime": 1777424198.7614746,
+    "hash": "a80de550b21419ecc45cd021602563ee"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/reset/page.tsx": {
+    "mtime": 1777424198.761471,
+    "hash": "25e74c754a7c044957715e478e686f20"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/verify-error/page.tsx": {
+    "mtime": 1777424198.7614958,
+    "hash": "a971784d7ef3b905d6f71f261bc780ca"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/forgot-password/page.tsx": {
+    "mtime": 1777424198.7614646,
+    "hash": "e4725bef4f463342129fed8a63e5e568"
+  },
+  "/Users/machado/Projects/folhario/src/app/(public)/auth/login/page.tsx": {
+    "mtime": 1777424198.7614572,
+    "hash": "c9c3b3d8209f540eeb5b6a354a1d8687"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/photo-entries/[photoEntryId]/route.ts": {
+    "mtime": 1777659417.9336226,
+    "hash": "c056736395d0ef60942bb84c2cc6e590"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts": {
+    "mtime": 1777658583.9256105,
+    "hash": "3b34c82d6ec605abaee04294addff5be"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/plants/[plantId]/route.ts": {
+    "mtime": 1777672148.6391098,
+    "hash": "95852371c9b40e4ee6b8ba1002068297"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/plants/[plantId]/photo-entries/route.ts": {
+    "mtime": 1777672484.7936258,
+    "hash": "ebb19fc607a1677dcdd07341cf67a64e"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/health/connectivity/route.ts": {
+    "mtime": 1777315672.1163974,
+    "hash": "1405044ea77babe487835ab5df08b2c2"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/password/reset/route.ts": {
+    "mtime": 1777355453.4321523,
+    "hash": "3c4fc5f2ea7bdd30497653e15aebe285"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/password/reset-request/route.ts": {
+    "mtime": 1777355453.4319994,
+    "hash": "245058f460253124fa9a429e144d2a28"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/oauth/complete/route.ts": {
+    "mtime": 1777434977.2771335,
+    "hash": "849dbdb34776c4c937f8d740c02ec370"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/resend-verification/route.ts": {
+    "mtime": 1777434967.8642771,
+    "hash": "3e7b8afa1c7d6bf5e0ae80a2a0744f3a"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/signup/route.ts": {
+    "mtime": 1777434920.4321303,
+    "hash": "de2db037c28b040912fdf05205576229"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/logout/route.ts": {
+    "mtime": 1777429689.1270065,
+    "hash": "2ae75289904bdfb6856e27f0312a02c8"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/route.ts": {
+    "mtime": 1777355454.2130163,
+    "hash": "f8b5bfe887bde0c3c9700215d5adc3c4"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/me/password/route.ts": {
+    "mtime": 1777355454.2128346,
+    "hash": "94d4eeb3a6170a5c00f7966d14231b4d"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/iam/login/route.ts": {
+    "mtime": 1777352363.1190135,
+    "hash": "3234fa98326018ecd755a60a969961f2"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/locations/route.ts": {
+    "mtime": 1777658583.9247112,
+    "hash": "51e46dba6808177c14c1d6677bb2a258"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/ping/route.ts": {
+    "mtime": 1777065354.4705334,
+    "hash": "04822efaeab368c370877f74628ade2b"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/nullify-password/route.ts": {
+    "mtime": 1777491904.4092195,
+    "hash": "fc3180a2b7d89d5cfa947f94e0eca912"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/seed-verified-user/route.ts": {
+    "mtime": 1777429743.921189,
+    "hash": "48e1a02bedcbd984f9f10f3b1bb1e391"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/seed-oauth-incomplete-user/route.ts": {
+    "mtime": 1777430000.063481,
+    "hash": "b16cf66ec9264c9a844313b8c1cceb9f"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-reset-token/route.ts": {
+    "mtime": 1777429762.5180795,
+    "hash": "0786f6e08bf1530f02e977869d7f5611"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts": {
+    "mtime": 1777429755.7430859,
+    "hash": "1f0f81c66a92774763a7d8e7681ddc61"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/consent/route.ts": {
+    "mtime": 1777226772.9554396,
+    "hash": "c8b194eaddf6e28b5a33362d5b3e8118"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/v1/photos/upload/route.ts": {
+    "mtime": 1777257958.2087533,
+    "hash": "d8e043ab5b322e48406f9c6394472884"
+  },
+  "/Users/machado/Projects/folhario/src/app/api/inngest/route.ts": {
+    "mtime": 1777350724.949765,
+    "hash": "49e43e4fc3aad86bf0c6cc976413bfc6"
+  },
+  "/Users/machado/Projects/folhario/src/app/legal/privacy/page.tsx": {
+    "mtime": 1777424198.7614882,
+    "hash": "8c4274b509fe9381491855aac1297e08"
+  },
+  "/Users/machado/Projects/folhario/src/app/legal/terms/page.tsx": {
+    "mtime": 1777424198.7615125,
+    "hash": "e97807609da0fcf00da184bb5e190bbc"
+  },
+  "/Users/machado/Projects/folhario/src/app/offline/offline-fallback.tsx": {
+    "mtime": 1777738127.7672012,
+    "hash": "5cd80b499453b12f660cb64950654138"
+  },
+  "/Users/machado/Projects/folhario/src/app/offline/page.tsx": {
+    "mtime": 1777320838.7392223,
+    "hash": "d8baa958620d774f214e67813e8cb088"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/bottom-nav.tsx": {
+    "mtime": 1777738127.7698174,
+    "hash": "2e6317b9f31ba477115877ec9b23c4a4"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/app-update-toast.tsx": {
+    "mtime": 1777320838.7400448,
+    "hash": "b0292946ef507c704631195406b9628b"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/location-combobox.tsx": {
+    "mtime": 1777659897.980378,
+    "hash": "e2db497a8491a4917edee2aed554f269"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/offline-banner.tsx": {
+    "mtime": 1777780172.5280228,
+    "hash": "657daada49267c84256ba3034edadd3d"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx": {
+    "mtime": 1777601247.4627776,
+    "hash": "8061c616709bf9e213520f63d2b7c1c0"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/storage-budget-guard.ts": {
+    "mtime": 1777660016.4102838,
+    "hash": "d4c8d85540185bde65bcbe1472c179c4"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/empty-state.tsx": {
+    "mtime": 1777738127.77033,
+    "hash": "fa30d8018718e4569c348461827c9874"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/capture-button.tsx": {
+    "mtime": 1777738127.7701433,
+    "hash": "eae483336d44794215b2c83f0915540a"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/read-only-banner.tsx": {
+    "mtime": 1777738127.7713535,
+    "hash": "d056eb7cbfc5761402a7dfcb3e7badd6"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/combobox.tsx": {
+    "mtime": 1777787817.7061868,
+    "hash": "44b22b4cc5a0d158fef507370c17e95f"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/text-input.tsx": {
+    "mtime": 1777325672.3926377,
+    "hash": "387dcd09e8110ee6d4ebfe66fb039b81"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/inline-edit-field.tsx": {
+    "mtime": 1777738127.770589,
+    "hash": "e6768cce05b624f9065ee1f14839d559"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/discard-summary-toast.tsx": {
+    "mtime": 1777320838.7405224,
+    "hash": "01e8bc561c6941fcc04117e5172db88a"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/button.tsx": {
+    "mtime": 1777318041.6846454,
+    "hash": "91de888aa3432107b33237bbe77aef02"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/toggle.tsx": {
+    "mtime": 1777738127.7717655,
+    "hash": "0d1700826d920fb0096a25dec719126a"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/query-provider.tsx": {
+    "mtime": 1777660035.2545965,
+    "hash": "8cd9a087dacfccb9cf7bd384cebad51e"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx": {
+    "mtime": 1777780147.3329065,
+    "hash": "fd0ac38f07d940dbedb29a04bb17f5e9"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/select.tsx": {
+    "mtime": 1777738127.771523,
+    "hash": "1908c9705297d9c6311bede08797e16e"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/lightbox.tsx": {
+    "mtime": 1777738127.7711287,
+    "hash": "beb2b9864b8ca01eca78fba68f2c49c6"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/skeleton.tsx": {
+    "mtime": 1777318041.6858459,
+    "hash": "63374f3f39581fdd746341f1082d6271"
+  },
+  "/Users/machado/Projects/folhario/src/shared/ui/inline-error.tsx": {
+    "mtime": 1777738127.7708423,
+    "hash": "c8c1fc819aaaf7e8ac8cbdf38a031c07"
+  },
+  "/Users/machado/Projects/folhario/src/shared/config/client-env.ts": {
+    "mtime": 1777065354.4771233,
+    "hash": "fb73c2b17d2b239dc5cf937f9f0dda47"
+  },
+  "/Users/machado/Projects/folhario/src/shared/config/errors.ts": {
+    "mtime": 1777065354.4772344,
+    "hash": "7a86f1915927b6dcace39db26f0e295f"
+  },
+  "/Users/machado/Projects/folhario/src/shared/config/server-env.ts": {
+    "mtime": 1777429805.6429355,
+    "hash": "2c4b52cd876aaf38698eb08b3a802e83"
+  },
+  "/Users/machado/Projects/folhario/src/shared/images/client-compress.ts": {
+    "mtime": 1777226771.7432165,
+    "hash": "c850e822b332c46e3855cc9171a84f06"
+  },
+  "/Users/machado/Projects/folhario/src/shared/images/server-validate.ts": {
+    "mtime": 1777226771.7437725,
+    "hash": "a72a654510bef004dcc57df2b8337f06"
+  },
+  "/Users/machado/Projects/folhario/src/shared/images/limits.ts": {
+    "mtime": 1777652561.294121,
+    "hash": "36177adbc97290850f43d7861a0d9175"
+  },
+  "/Users/machado/Projects/folhario/src/shared/inngest/client.ts": {
+    "mtime": 1777350724.9507792,
+    "hash": "1e6f189c38db8f4994c6c37b2a452977"
+  },
+  "/Users/machado/Projects/folhario/src/shared/inngest/registry.ts": {
+    "mtime": 1777654851.8477008,
+    "hash": "1b430ca989d97862b92c72ba060d7735"
+  },
+  "/Users/machado/Projects/folhario/src/shared/motion/use-reduced-motion.ts": {
+    "mtime": 1777318041.6841786,
+    "hash": "a30d121c7d63661e6ed00a7d24439b9f"
+  },
+  "/Users/machado/Projects/folhario/src/shared/motion/springs.ts": {
+    "mtime": 1777318041.6839848,
+    "hash": "4bab542c70e4c5f18de83a99bfc16737"
+  },
+  "/Users/machado/Projects/folhario/src/shared/adapters/storage.ts": {
+    "mtime": 1777247223.3694546,
+    "hash": "bf61a63d212d502582b77167318c5b3b"
+  },
+  "/Users/machado/Projects/folhario/src/shared/adapters/supabase-storage.ts": {
+    "mtime": 1777247359.14158,
+    "hash": "23a851cede133865b4ac31eae846570e"
+  },
+  "/Users/machado/Projects/folhario/src/shared/theme/use-theme.ts": {
+    "mtime": 1777315672.1175416,
+    "hash": "f20e65f0f264738ab8396782739eb270"
+  },
+  "/Users/machado/Projects/folhario/src/shared/typography/scientific-name.tsx": {
+    "mtime": 1777315672.117845,
+    "hash": "32da35078ff5df543e32c68e2fa1346a"
+  },
+  "/Users/machado/Projects/folhario/src/shared/db/migration-client.ts": {
+    "mtime": 1777211261.9656491,
+    "hash": "3f8435641c4b2bcac588f47704585cbf"
+  },
+  "/Users/machado/Projects/folhario/src/shared/db/unit-of-work.ts": {
+    "mtime": 1777271712.022278,
+    "hash": "297d12bda2fbc896d609faa906b6da94"
+  },
+  "/Users/machado/Projects/folhario/src/shared/db/schema-registry.ts": {
+    "mtime": 1777599002.9014127,
+    "hash": "5eea577d77c84460470e95c35d180852"
+  },
+  "/Users/machado/Projects/folhario/src/shared/db/client.ts": {
+    "mtime": 1777222624.6024723,
+    "hash": "b08b8869db31568b9796c01ef2de3df1"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/cursor.ts": {
+    "mtime": 1777599155.9633245,
+    "hash": "22ca16eec6c0abda938c3e9268820e94"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/throttle.ts": {
+    "mtime": 1777429720.2790647,
+    "hash": "c383746291d51de1af0fd35f6a08fc55"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/idempotency-hash.ts": {
+    "mtime": 1777658583.9261,
+    "hash": "d6f07d99491925ac4ec7e676964f29aa"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/request.ts": {
+    "mtime": 1777223939.3863676,
+    "hash": "1e40af91601dbfae46da5f3073934442"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/idempotency.ts": {
+    "mtime": 1777750539.5247495,
+    "hash": "1996e89e9ffb1134602818c8e3a2a616"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/cursor.test.ts": {
+    "mtime": 1777599096.0208678,
+    "hash": "780ca1f66eb2680d296680c20514eaed"
+  },
+  "/Users/machado/Projects/folhario/src/shared/api/auth.ts": {
+    "mtime": 1777349932.2967052,
+    "hash": "97ce8fe586431c1cf54bb53cd61c3ce3"
+  },
+  "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-server.ts": {
+    "mtime": 1777065354.4778905,
+    "hash": "b1fe12c2bc3b21350ab0c4db864fdd6e"
+  },
+  "/Users/machado/Projects/folhario/src/shared/telemetry/sentry-scrub.ts": {
+    "mtime": 1777065354.477995,
+    "hash": "86b1c1824b2be3b8dce01abd06cf8087"
+  },
+  "/Users/machado/Projects/folhario/src/shared/telemetry/posthog-client.ts": {
+    "mtime": 1777065354.4777882,
+    "hash": "e3d65f90e205b97aa64a0e7227bf8e0d"
+  },
+  "/Users/machado/Projects/folhario/src/shared/online/use-online-status.ts": {
+    "mtime": 1777782263.4345827,
+    "hash": "dd283d6e3144fc52424e81d5d6f4e872"
+  },
+  "/Users/machado/Projects/folhario/src/shared/i18n/format.ts": {
+    "mtime": 1777315672.1174161,
+    "hash": "cd52093b13fd7ed0cb85dab676eb7818"
+  },
+  "/Users/machado/Projects/folhario/src/i18n/routing.ts": {
+    "mtime": 1777065354.476111,
+    "hash": "fcd7ce6eb03e4862b1297aedfbd854d0"
+  },
+  "/Users/machado/Projects/folhario/src/i18n/request.ts": {
+    "mtime": 1777065354.4759886,
+    "hash": "a74e394c9a419a42a67d4030fc9929b1"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0000_phase_02_initial_schema.sql": {
+    "mtime": 1777221255.5077791,
+    "hash": "d11bdf399040f88e90d89a4c5bc26408"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0004_add_pending_storage_deletions.sql": {
+    "mtime": 1777598935.0034924,
+    "hash": "5e4546f0daf3508c7f21f81d081dd20c"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0003_phase04_iam_extensions.sql": {
+    "mtime": 1777738127.7606099,
+    "hash": "a676107c27a3ddc316170e6a259c2bb7"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0005_add_location_suggestions.sql": {
+    "mtime": 1777598964.613951,
+    "hash": "0e40b4e530a8a1f76f2dc7f7dcdd00e5"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0002_unique_current_policy_per_doc_type.sql": {
+    "mtime": 1777251594.9567156,
+    "hash": "254385979b74c1d3f6bf69b6e79be242"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0001_phase_02_rls_policies.sql": {
+    "mtime": 1777738127.760066,
+    "hash": "33b071d0ddeab57ce75e5f0b76517264"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0006_add_pending_deletion_kind.sql": {
+    "mtime": 1777670307.151522,
+    "hash": "1a69387c432ae434f4eefb9dbac11835"
+  },
+  "/Users/machado/Projects/folhario/drizzle/migrations/0007_lyrical_ikaris.sql": {
+    "mtime": 1777738127.7612062,
+    "hash": "fc25ac276397dcaa8f73cc20520118a2"
+  },
+  "/Users/machado/Projects/folhario/drizzle/seeds/phase-02.sql": {
+    "mtime": 1777222611.8694534,
+    "hash": "6ec6b8c94e3dec6655238b6ceee5fb86"
+  },
+  "/Users/machado/Projects/folhario/DEPLOY.md": {
+    "mtime": 1777954871.1724348,
+    "hash": "ba9de4daf9e0f64f7876ad50d1571f2c"
+  },
+  "/Users/machado/Projects/folhario/AGENTS.md": {
+    "mtime": 1777141454.3096986,
+    "hash": "246c778c1939972d67cc0c406c6742b0"
+  },
+  "/Users/machado/Projects/folhario/CLAUDE.md": {
+    "mtime": 1777065354.4677138,
+    "hash": "aab8c51d7cf422207efe128cef6ef9b1"
+  },
+  "/Users/machado/Projects/folhario/SECURITY.md": {
+    "mtime": 1777271404.7415931,
+    "hash": "435b773a62238c0d8c08eac6987d713b"
+  },
+  "/Users/machado/Projects/folhario/docs/CAVE-PRD.md": {
+    "mtime": 1777426403.6071403,
+    "hash": "68b310000a93b57670305977107825dd"
+  },
+  "/Users/machado/Projects/folhario/docs/design/USER-FLOWS.md": {
+    "mtime": 1776036129.9135325,
+    "hash": "3b50df1b24fcd14316dd77df471c91fd"
+  },
+  "/Users/machado/Projects/folhario/docs/design/ACCESSIBILITY.md": {
+    "mtime": 1776036322.5222495,
+    "hash": "5ca66d8faeaea29061e5cff6480c7312"
+  },
+  "/Users/machado/Projects/folhario/docs/design/SCREENS.md": {
+    "mtime": 1776036186.7941108,
+    "hash": "4cc74b544309e20f40c575f7250b0e63"
+  },
+  "/Users/machado/Projects/folhario/docs/design/UX-GOALS.md": {
+    "mtime": 1776036069.5714939,
+    "hash": "0ddc18a399521b8f8c37852ff41e7058"
+  },
+  "/Users/machado/Projects/folhario/docs/design/BEHAVIOR.md": {
+    "mtime": 1776036285.9618285,
+    "hash": "645bce642385944ddbc94dd846acabc2"
+  },
+  "/Users/machado/Projects/folhario/docs/design/COPY.md": {
+    "mtime": 1776036406.1576512,
+    "hash": "3dd3592b582bbf7ab537956db5e69ffb"
+  },
+  "/Users/machado/Projects/folhario/docs/superseeded/ACCEPTANCE-CRITERIA.md": {
+    "mtime": 1776030660.7382119,
+    "hash": "611cb758ecf92a5522dada976e7bc4c0"
+  },
+  "/Users/machado/Projects/folhario/docs/superseeded/API-CONTRACT.md": {
+    "mtime": 1776024581.6452549,
+    "hash": "00137a2f647f6299d97bdeccf7f1b7b8"
+  },
+  "/Users/machado/Projects/folhario/docs/superseeded/HIGH-LEVEL-DESIGN.md": {
+    "mtime": 1776030676.7418935,
+    "hash": "349c9e8175960a69987b46eab64c6284"
+  },
+  "/Users/machado/Projects/folhario/docs/superseeded/PRD-V1.1.md": {
+    "mtime": 1776030567.8776898,
+    "hash": "ce89bcd1149d4e588c6e9d0dd3ce5bf2"
+  },
+  "/Users/machado/Projects/folhario/docs/superseeded/DATA-MODEL.md": {
+    "mtime": 1776030593.1713192,
+    "hash": "407978c143ee73a040101de2da94e0d4"
+  },
+  "/Users/machado/Projects/folhario/docs/superseeded/DESIGN.md": {
+    "mtime": 1776034975.5593867,
+    "hash": "746c20f1992c9ae0e764598a00168d50"
+  },
+  "/Users/machado/Projects/folhario/public/robots.txt": {
+    "mtime": 1777065354.4700384,
+    "hash": "d6c06625b055f92f2a5b9cce2f81cfa9"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480422.104387,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-light-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480421.6142561,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png": {
+    "mtime": 1777321887.6918244,
+    "hash": "8c10ed83198610c2b09b0bbd6fe7e5ea"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-dark-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480425.001241,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-dark-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321886.15907,
+    "hash": "da5a1220414eb00eb467f0474228a765"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480425.5573158,
+    "hash": "17c2b5cc2b0904180fd70931b9605e6f"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-dark-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480420.5694356,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321888.1921446,
+    "hash": "10ea1b646743525ca240df905d5d184e"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-linux.png": {
+    "mtime": 1777321889.1726007,
+    "hash": "0b4f7e79aaec11d68e202bdddd48df55"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-light-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321887.6647937,
+    "hash": "5716076b622fb6636126c07162a69368"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-light-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480421.3456552,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321888.6629794,
+    "hash": "0b4f7e79aaec11d68e202bdddd48df55"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-dark-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321889.6202762,
+    "hash": "02e5bad5a49b27997e88e4bd573278d8"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480422.408998,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-reduce-1-chromium-linux.png": {
+    "mtime": 1777321885.6309626,
+    "hash": "382d157d3437ab1e23f26cbac7cd2029"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480423.7923543,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-dark-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480426.264965,
+    "hash": "051a3e6244e13364fc4498a550811a21"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-dark-reduce-1-chromium-linux.png": {
+    "mtime": 1777321889.7918794,
+    "hash": "02e5bad5a49b27997e88e4bd573278d8"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-reduce-1-chromium-linux.png": {
+    "mtime": 1777321889.3652716,
+    "hash": "60de309fdd5b7beadecb3897f3efd34c"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-light-reduce-1-chromium-linux.png": {
+    "mtime": 1777321888.8572798,
+    "hash": "5716076b622fb6636126c07162a69368"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-dark-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480420.8332727,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321889.4480858,
+    "hash": "60de309fdd5b7beadecb3897f3efd34c"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-light-reduce-1-chromium-linux.png": {
+    "mtime": 1777321886.7206204,
+    "hash": "0dfedea5c92482a995057b1dd6c2177e"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-reduce-1-chromium-linux.png": {
+    "mtime": 1777321888.6881223,
+    "hash": "10ea1b646743525ca240df905d5d184e"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-dark-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480425.9166515,
+    "hash": "051a3e6244e13364fc4498a550811a21"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-dark-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321889.9133968,
+    "hash": "8cd67a487df7b0ffabad19edb369ed2a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480424.6617665,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-dark-reduce-1-chromium-linux.png": {
+    "mtime": 1777321889.2766771,
+    "hash": "8cd67a487df7b0ffabad19edb369ed2a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480424.0995755,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-light-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480422.9011223,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480419.7127569,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321887.2225387,
+    "hash": "8c10ed83198610c2b09b0bbd6fe7e5ea"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-offline-light-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480425.5572038,
+    "hash": "17c2b5cc2b0904180fd70931b9605e6f"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-dark-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480424.6622796,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321885.636462,
+    "hash": "382d157d3437ab1e23f26cbac7cd2029"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-darwin.png": {
+    "mtime": 1777480423.79236,
+    "hash": "5a2d0158be1ce5e9e61aea1b913b32aa"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-light-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480423.2190878,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-light-reduce-1-chromium-darwin.png": {
+    "mtime": 1777480420.0256293,
+    "hash": "2ad33387b4653f2c73fbbf66f875730a"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-dark-reduce-1-chromium-linux.png": {
+    "mtime": 1777321886.124057,
+    "hash": "da5a1220414eb00eb467f0474228a765"
+  },
+  "/Users/machado/Projects/folhario/tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-light-no-preference-1-chromium-linux.png": {
+    "mtime": 1777321886.6328058,
+    "hash": "0dfedea5c92482a995057b1dd6c2177e"
+  },
+  "/Users/machado/Projects/folhario/public/brand/logo.svg": {
+    "mtime": 1777320838.73612,
+    "hash": "f3114141835ed8196051e3865cc43499"
+  },
+  "/Users/machado/Projects/folhario/public/icons/apple-icon-180.png": {
+    "mtime": 1777320838.73638,
+    "hash": "f9a65187ac67e631e46077e5f34f4efa"
+  },
+  "/Users/machado/Projects/folhario/public/icons/manifest-icon-192.maskable.png": {
+    "mtime": 1777320838.7365181,
+    "hash": "90508f583b0035e00422f02fa6296942"
+  },
+  "/Users/machado/Projects/folhario/public/icons/manifest-icon-512.maskable.png": {
+    "mtime": 1777320838.7366838,
+    "hash": "d7362a9195c4e90f88f01cd44d848a16"
+  }
+}

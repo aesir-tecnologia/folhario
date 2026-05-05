@@ -1,0 +1,446 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "label": "in-memory-storage-adapter.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "label": "InMemoryStorageAdapter",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L17"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listbuckets",
+      "label": ".listBuckets()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L20"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "label": ".uploadObject()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L24"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_createsignedurl",
+      "label": ".createSignedUrl()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L37"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "label": ".deletePrefix()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L50"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteobject",
+      "label": ".deleteObject()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L63"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "label": ".listObjectsUnderPrefix()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L69"
+    },
+    {
+      "id": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_clear",
+      "label": ".clear()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L77"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "users_machado_projects_folhario_src_shared_adapters_storage",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_bucketsummary",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_storageadapter",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_uploadobjectinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_uploadobjectresult",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_createsignedurlinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_createsignedurlresult",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_deleteprefixinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_deleteobjectinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "adapters_storage_listobjectsunderprefixinput",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_in_memory_storage_adapter_ts",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listbuckets",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_createsignedurl",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L37",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteobject",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L63",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L69",
+      "weight": 1.0
+    },
+    {
+      "source": "fixtures_in_memory_storage_adapter_inmemorystorageadapter",
+      "target": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_clear",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L77",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listbuckets",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L21"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listbuckets",
+      "callee": "map",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L21"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listbuckets",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L21"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L26"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L27"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L29"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L29"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L30"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_uploadobject",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L34"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_createsignedurl",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_createsignedurl",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L40"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_createsignedurl",
+      "callee": "reject",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L41"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_createsignedurl",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L45"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "endsWith",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L52"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L52"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L53"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L54"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L55"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "startsWith",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L56"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "delete",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L57"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteprefix",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L60"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteobject",
+      "callee": "delete",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L65"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteobject",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L65"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_deleteobject",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L66"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L71"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L72"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "callee": "filter",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L73"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "callee": "keys",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L73"
+    },
+    {
+      "caller_nid": "fixtures_in_memory_storage_adapter_inmemorystorageadapter_listobjectsunderprefix",
+      "callee": "resolve",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/in-memory-storage-adapter.ts",
+      "source_location": "L74"
+    }
+  ]
+}

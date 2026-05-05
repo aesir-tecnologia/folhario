@@ -1,0 +1,162 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_catalog_photo_journal_spec_ts",
+      "label": "catalog-photo-journal.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "label": "seedPlantViaForm()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L9"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_catalog_photo_journal_spec_ts",
+      "target": "users_machado_projects_folhario_tests_e2e_fixtures_authed_user",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_catalog_photo_journal_spec_ts",
+      "target": "fixtures_authed_user_test",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_catalog_photo_journal_spec_ts",
+      "target": "fixtures_authed_user_expect",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_catalog_photo_journal_spec_ts",
+      "target": "playwright",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_catalog_photo_journal_spec_ts",
+      "target": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L14"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "goto",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L16"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "waitForSelector",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L17"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "fill",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L19"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "getByLabel",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L19"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "locator",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L21"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "setInputFiles",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L22"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "waitForSelector",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L28"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "click",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L29"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "getByRole",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L29"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "waitForURL",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L30"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "match",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L32"
+    },
+    {
+      "caller_nid": "e2e_catalog_photo_journal_spec_seedplantviaform",
+      "callee": "url",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/catalog-photo-journal.spec.ts",
+      "source_location": "L32"
+    }
+  ]
+}

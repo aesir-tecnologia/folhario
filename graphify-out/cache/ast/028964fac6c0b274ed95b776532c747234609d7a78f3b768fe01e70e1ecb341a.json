@@ -1,0 +1,44 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_i18n_request_ts",
+      "label": "request.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/i18n/request.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_i18n_request_ts",
+      "target": "server",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/i18n/request.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_i18n_request_ts",
+      "target": "users_machado_projects_folhario_src_i18n_routing",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/i18n/request.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_i18n_request_ts",
+      "target": "i18n_routing_routing",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/i18n/request.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

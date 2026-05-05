@@ -1,0 +1,183 @@
+{
+  "nodes": [
+    {
+      "id": "login_form",
+      "label": "Login Form with E-mail and Senha (Password) Fields",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "entrar_button",
+      "label": "Entrar (Login) CTA Button in Forest Green",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "forgot_password_link",
+      "label": "Esqueci minha senha (Forgot Password) Link",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "create_account_link",
+      "label": "Ainda n\u00e3o tem conta? Criar conta (Sign Up) Link",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "profile_route",
+      "label": "Profile Route (/perfil) - Guards to Login When Unauthenticated",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "auth_guard",
+      "label": "Authentication Guard - Redirects Unauthenticated Users to Login",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "login_screen",
+      "target": "login_form",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "login_screen",
+      "target": "entrar_button",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "login_screen",
+      "target": "forgot_password_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "login_screen",
+      "target": "create_account_link",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "profile_route",
+      "target": "auth_guard",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "auth_guard",
+      "target": "login_screen",
+      "relation": "navigates_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "login_screen",
+      "target": "light_theme",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "login_screen",
+      "target": "mobile_first_layout",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "entrar_button",
+      "target": "forest_green_primary",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "forgot_password_link",
+      "target": "login_screen",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "create_account_link",
+      "target": "login_screen",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-profile-light-reduce-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

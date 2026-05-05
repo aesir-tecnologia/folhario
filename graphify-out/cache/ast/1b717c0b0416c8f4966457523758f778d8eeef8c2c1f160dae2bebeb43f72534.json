@@ -1,0 +1,199 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "label": "route.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "latest_token_route_isenabled",
+      "label": "isEnabled()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L25"
+    },
+    {
+      "id": "latest_token_route_get",
+      "label": "GET()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L35"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "server",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "config_errors_errorresponse",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_server_env",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "config_server_env_serverenv",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_users",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "db_users_getuserbyemail",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_verification_tokens",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "db_verification_tokens_mintverificationtoken",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "latest_token_route_isenabled",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_diagnostics_iam_test_helpers_latest_token_route_ts",
+      "target": "latest_token_route_get",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "latest_token_route_get",
+      "target": "latest_token_route_isenabled",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L36",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "latest_token_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L37"
+    },
+    {
+      "caller_nid": "latest_token_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L43"
+    },
+    {
+      "caller_nid": "latest_token_route_get",
+      "callee": "getUserByEmail",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L46"
+    },
+    {
+      "caller_nid": "latest_token_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L48"
+    },
+    {
+      "caller_nid": "latest_token_route_get",
+      "callee": "mintVerificationToken",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L51"
+    },
+    {
+      "caller_nid": "latest_token_route_get",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/diagnostics/iam-test-helpers/latest-token/route.ts",
+      "source_location": "L55"
+    }
+  ]
+}

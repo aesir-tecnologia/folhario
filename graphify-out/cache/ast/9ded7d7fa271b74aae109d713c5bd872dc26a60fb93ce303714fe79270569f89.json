@@ -1,0 +1,34 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_auth_login_rate_limit_trip_spec_ts",
+      "label": "auth-login-rate-limit-trip.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-login-rate-limit-trip.spec.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_login_rate_limit_trip_spec_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-login-rate-limit-trip.spec.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_login_rate_limit_trip_spec_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-login-rate-limit-trip.spec.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

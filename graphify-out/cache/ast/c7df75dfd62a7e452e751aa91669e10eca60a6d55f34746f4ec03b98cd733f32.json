@@ -1,0 +1,72 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_auth_signup_active_partner_code_spec_ts",
+      "label": "auth-signup-active-partner-code.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_auth_signup_active_partner_code_spec_seedactivepartner",
+      "label": "seedActivePartner()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L20"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_active_partner_code_spec_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_active_partner_code_spec_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_active_partner_code_spec_ts",
+      "target": "e2e_auth_signup_active_partner_code_spec_seedactivepartner",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_auth_signup_active_partner_code_spec_seedactivepartner",
+      "callee": "postgres",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L23"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_active_partner_code_spec_seedactivepartner",
+      "callee": "sql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L25"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_active_partner_code_spec_seedactivepartner",
+      "callee": "end",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-active-partner-code.spec.ts",
+      "source_location": "L32"
+    }
+  ]
+}

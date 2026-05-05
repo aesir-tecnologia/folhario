@@ -1,0 +1,58 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_iam_application_logout_ts",
+      "label": "logout.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "application_logout_logoutuser",
+      "label": "logoutUser()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts",
+      "source_location": "L14"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_logout_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_auth_auth_adapter",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_logout_ts",
+      "target": "auth_auth_adapter_authadapter",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_logout_ts",
+      "target": "application_logout_logoutuser",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "application_logout_logoutuser",
+      "callee": "signOutLocal",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/logout.ts",
+      "source_location": "L15"
+    }
+  ]
+}

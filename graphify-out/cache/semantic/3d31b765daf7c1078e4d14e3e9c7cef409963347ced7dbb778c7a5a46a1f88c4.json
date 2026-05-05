@@ -1,0 +1,16 @@
+{
+  "nodes": [],
+  "edges": [
+    {
+      "source": "login_screen",
+      "target": "dark_theme",
+      "relation": "rendered_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-dark-no-preference-1-chromium-darwin.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

@@ -1,0 +1,239 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "label": "schema-registry.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "unit_schema_registry_test_collectfiles",
+      "label": "collectFiles()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L32"
+    },
+    {
+      "id": "unit_schema_registry_test_collectcontextfiles",
+      "label": "collectContextFiles()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L50"
+    },
+    {
+      "id": "unit_schema_registry_test_findoffenders",
+      "label": "findOffenders()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L64"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "target": "node_fs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "target": "node_path",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "target": "unit_schema_registry_test_collectfiles",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L32",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "target": "unit_schema_registry_test_collectcontextfiles",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_unit_schema_registry_test_ts",
+      "target": "unit_schema_registry_test_findoffenders",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L64",
+      "weight": 1.0
+    },
+    {
+      "source": "unit_schema_registry_test_collectcontextfiles",
+      "target": "unit_schema_registry_test_collectfiles",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "unit_schema_registry_test_findoffenders",
+      "target": "unit_schema_registry_test_collectcontextfiles",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L66",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "existsSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L33"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "statSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L34"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "isDirectory",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L35"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "readdirSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L38"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "isFile",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L40"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L41"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L45"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectfiles",
+      "callee": "join",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L45"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectcontextfiles",
+      "callee": "join",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L51"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectcontextfiles",
+      "callee": "existsSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L52"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectcontextfiles",
+      "callee": "readdirSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L53"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectcontextfiles",
+      "callee": "isDirectory",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L56"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectcontextfiles",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L58"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_collectcontextfiles",
+      "callee": "join",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L58"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_findoffenders",
+      "callee": "flatMap",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L66"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_findoffenders",
+      "callee": "readFileSync",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L68"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_findoffenders",
+      "callee": "test",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L69"
+    },
+    {
+      "caller_nid": "unit_schema_registry_test_findoffenders",
+      "callee": "push",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/unit/schema-registry.test.ts",
+      "source_location": "L70"
+    }
+  ]
+}

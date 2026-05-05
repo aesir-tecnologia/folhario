@@ -1,0 +1,109 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "label": "policy-versions.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "db_policy_versions_getcurrentpolicyversions",
+      "label": "getCurrentPolicyVersions()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L20"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "target": "drizzle_orm",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "target": "users_machado_projects_folhario_src_shared_db_client",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "target": "db_client_db",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_types",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "target": "db_types_dbortx",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions_ts",
+      "target": "db_policy_versions_getcurrentpolicyversions",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "db_policy_versions_getcurrentpolicyversions",
+      "callee": "await dbOrTx.execute",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L23"
+    },
+    {
+      "caller_nid": "db_policy_versions_getcurrentpolicyversions",
+      "callee": "sql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L28"
+    },
+    {
+      "caller_nid": "db_policy_versions_getcurrentpolicyversions",
+      "callee": "find",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L33"
+    },
+    {
+      "caller_nid": "db_policy_versions_getcurrentpolicyversions",
+      "callee": "find",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/infrastructure/db/policy-versions.ts",
+      "source_location": "L34"
+    }
+  ]
+}

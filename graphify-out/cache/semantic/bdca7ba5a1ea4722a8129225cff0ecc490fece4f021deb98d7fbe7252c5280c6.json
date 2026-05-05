@@ -1,0 +1,320 @@
+{
+  "nodes": [
+    {
+      "id": "catalog_screen",
+      "label": "Catalog Screen (Cat\u00e1logo)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "bottom_nav",
+      "label": "Bottom Navigation Bar",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_inicio",
+      "label": "Nav Tab \u2014 In\u00edcio (Home)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_catalogo",
+      "label": "Nav Tab \u2014 Cat\u00e1logo (active)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_identificar",
+      "label": "Nav Tab \u2014 Identificar (Identify)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "nav_tab_perfil",
+      "label": "Nav Tab \u2014 Perfil (Profile)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "leaf_logo_icon",
+      "label": "Leaf Logo / Brand Icon",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "adicionar_planta_cta",
+      "label": "CTA Button \u2014 Adicionar planta",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "dark_mode_theme",
+      "label": "Dark Mode Theme",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "reduce_motion_variant",
+      "label": "Reduced Motion Variant",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "green_accent_color",
+      "label": "Green Accent Color (Canopy green / sage)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pwa_mobile_layout",
+      "label": "Mobile-first PWA Layout",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "visual_regression_test",
+      "label": "Visual Regression Test Suite",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "catalog_screen",
+      "target": "catalog_empty_state",
+      "relation": "displays",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_screen",
+      "target": "bottom_nav",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav",
+      "target": "nav_tab_inicio",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav",
+      "target": "nav_tab_catalogo",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav",
+      "target": "nav_tab_identificar",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "bottom_nav",
+      "target": "nav_tab_perfil",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_empty_state",
+      "target": "leaf_logo_icon",
+      "relation": "displays",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_empty_state",
+      "target": "adicionar_planta_cta",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "nav_tab_catalogo",
+      "target": "catalog_screen",
+      "relation": "navigates_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_screen",
+      "target": "dark_mode_theme",
+      "relation": "supports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_screen",
+      "target": "reduce_motion_variant",
+      "relation": "supports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "adicionar_planta_cta",
+      "target": "green_accent_color",
+      "relation": "styled_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "nav_tab_catalogo",
+      "target": "green_accent_color",
+      "relation": "styled_with",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_screen",
+      "target": "pwa_mobile_layout",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "visual_regression_test",
+      "target": "catalog_screen",
+      "relation": "validates",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "catalog_empty_state",
+      "target": "pwa_mobile_layout",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "adicionar_planta_cta",
+      "target": "nav_tab_identificar",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-catalog-dark-reduce-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

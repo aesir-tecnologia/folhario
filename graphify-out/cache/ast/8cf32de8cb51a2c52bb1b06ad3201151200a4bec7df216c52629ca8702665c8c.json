@@ -1,0 +1,55 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_iam_api_components_use_auth_form_ts",
+      "label": "use-auth-form.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "components_use_auth_form_useauthform",
+      "label": "useAuthForm()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts",
+      "source_location": "L42"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_api_components_use_auth_form_ts",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_api_components_use_auth_form_ts",
+      "target": "components_use_auth_form_useauthform",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts",
+      "source_location": "L42",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "components_use_auth_form_useauthform",
+      "callee": "useState",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts",
+      "source_location": "L43"
+    },
+    {
+      "caller_nid": "components_use_auth_form_useauthform",
+      "callee": "useState",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/api/components/use-auth-form.ts",
+      "source_location": "L44"
+    }
+  ]
+}

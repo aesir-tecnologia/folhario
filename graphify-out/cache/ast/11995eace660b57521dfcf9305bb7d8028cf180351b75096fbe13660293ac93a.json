@@ -1,0 +1,130 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "label": "catalog-header.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "components_catalog_header_sortidtokey",
+      "label": "sortIdToKey()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L13"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "link",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "next_intl",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_select",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "ui_select_select",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "users_machado_projects_folhario_src_contexts_billing_application_use_subscription",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "application_use_subscription_usesubscription",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "users_machado_projects_folhario_src_app_app_catalog_components_use_sort_preference",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "components_use_sort_preference_usesortpreference",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "components_use_sort_preference_sort_ids",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "components_use_sort_preference_sortid",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_app_catalog_components_catalog_header_tsx",
+      "target": "components_catalog_header_sortidtokey",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(app)/catalog/_components/catalog-header.tsx",
+      "source_location": "L13",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

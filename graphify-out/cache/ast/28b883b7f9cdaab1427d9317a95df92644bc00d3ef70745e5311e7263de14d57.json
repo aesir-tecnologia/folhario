@@ -1,0 +1,54 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_sentry_server_config_ts",
+      "label": "sentry.server.config.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/sentry.server.config.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_sentry_server_config_ts",
+      "target": "nextjs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/sentry.server.config.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_sentry_server_config_ts",
+      "target": "users_machado_projects_folhario_src_shared_telemetry_sentry_scrub",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/sentry.server.config.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_sentry_server_config_ts",
+      "target": "telemetry_sentry_scrub_makebeforesend",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/sentry.server.config.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_sentry_server_config_ts",
+      "target": "telemetry_sentry_scrub_makebeforebreadcrumb",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/sentry.server.config.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

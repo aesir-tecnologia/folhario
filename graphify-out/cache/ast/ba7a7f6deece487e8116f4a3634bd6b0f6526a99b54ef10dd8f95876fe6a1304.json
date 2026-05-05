@@ -1,0 +1,24 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_notifications_send_email_integration_test_ts",
+      "label": "notifications-send-email.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/notifications-send-email.integration.test.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_notifications_send_email_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/notifications-send-email.integration.test.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

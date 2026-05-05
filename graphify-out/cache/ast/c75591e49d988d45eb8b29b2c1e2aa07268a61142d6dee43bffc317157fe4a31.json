@@ -1,0 +1,483 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "label": "route.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "plants_route_post",
+      "label": "POST()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L28"
+    },
+    {
+      "id": "plants_route_get",
+      "label": "GET()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L167"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "nextjs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "config_errors_errorresponse",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_auth",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_auth_requireverifieduser",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_idempotency",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_idempotency_withidempotency",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_idempotency_hash",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_idempotency_hash_computemultipartrequesthash",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_cursor",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_cursor_decodesortcursor",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_cursor_normalizelimit",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_cursor_sort_ids",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_application_create_plant",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "application_create_plant_createplant",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_application_list_plants",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "application_list_plants_listplants",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_api_snake_case",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_snake_case_toplantsnakecase",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_snake_case_toplantwithsignedurlsnakecase",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_cursor",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "api_cursor_sortid",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "plants_route_post",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L28",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_api_v1_plants_route_ts",
+      "target": "plants_route_get",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L167",
+      "weight": 1.0
+    },
+    {
+      "source": "plants_route_post",
+      "target": "plants_route_get",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L42",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "requireVerifiedUser",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L30"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L33"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L42"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L44"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "computeMultipartRequestHash",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L48"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L50"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "formData",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L57"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L60"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L67"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L68"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L74"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L79"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "arrayBuffer",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L79"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "withIdempotency",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L97"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "capturedPostCommit",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L148"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "captureException",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L151"
+    },
+    {
+      "caller_nid": "plants_route_post",
+      "callee": "stringify",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L155"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "requireVerifiedUser",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L168"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L170"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L180"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L181"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "decodeSortCursor",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L188"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L190"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "normalizeLimit",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L194"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "listPlants",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L198"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L207"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "map",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L215"
+    },
+    {
+      "caller_nid": "plants_route_get",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/app/api/v1/plants/route.ts",
+      "source_location": "L223"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_photo_upload_integration_test_ts",
+      "label": "photo-upload.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "integration_photo_upload_integration_test_makefakeadapter",
+      "label": "makeFakeAdapter()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L73"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_photo_upload_integration_test_ts",
+      "target": "node_crypto",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_photo_upload_integration_test_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_photo_upload_integration_test_ts",
+      "target": "sharp",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_photo_upload_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_photo_upload_integration_test_ts",
+      "target": "integration_photo_upload_integration_test_makefakeadapter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L73",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "integration_photo_upload_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L84"
+    },
+    {
+      "caller_nid": "integration_photo_upload_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L90"
+    },
+    {
+      "caller_nid": "integration_photo_upload_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L93"
+    },
+    {
+      "caller_nid": "integration_photo_upload_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L111"
+    },
+    {
+      "caller_nid": "integration_photo_upload_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L116"
+    },
+    {
+      "caller_nid": "integration_photo_upload_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/photo-upload.integration.test.ts",
+      "source_location": "L119"
+    }
+  ]
+}

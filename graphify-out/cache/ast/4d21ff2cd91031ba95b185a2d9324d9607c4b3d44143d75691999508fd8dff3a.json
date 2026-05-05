@@ -1,0 +1,226 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "label": "cleanup-storage-reconciler.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "label": "makeFakeAdapter()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L46"
+    },
+    {
+      "id": "integration_cleanup_storage_reconciler_integration_test_makefakestep",
+      "label": "makeFakeStep()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L61"
+    },
+    {
+      "id": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "label": "insertPsdRow()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L131"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "target": "node_crypto",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "target": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L46",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "target": "integration_cleanup_storage_reconciler_integration_test_makefakestep",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_cleanup_storage_reconciler_integration_test_ts",
+      "target": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L131",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "mockResolvedValue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L47"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L47"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "mockResolvedValue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L50"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L50"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "mockResolvedValue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L51"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L51"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "mockResolvedValue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L53"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L53"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "mockResolvedValue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L54"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L54"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "mockResolvedValue",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L55"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_makefakeadapter",
+      "callee": "fn",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L55"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "driver",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L144"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "driver",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L152"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "toISOString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L157"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "toISOString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L158"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "driver",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L164"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "driver",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L171"
+    },
+    {
+      "caller_nid": "integration_cleanup_storage_reconciler_integration_test_insertpsdrow",
+      "callee": "toISOString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/cleanup-storage-reconciler.integration.test.ts",
+      "source_location": "L175"
+    }
+  ]
+}

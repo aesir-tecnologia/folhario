@@ -1,0 +1,96 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_ui_modal_sheet_tsx",
+      "label": "modal-sheet.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "ui_modal_sheet_handleopenautofocus",
+      "label": "handleOpenAutoFocus()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L72"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_modal_sheet_tsx",
+      "target": "react_dialog",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_modal_sheet_tsx",
+      "target": "lucide_react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_modal_sheet_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_modal_sheet_tsx",
+      "target": "ui_modal_sheet_handleopenautofocus",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L72",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "ui_modal_sheet_handleopenautofocus",
+      "callee": "onOpenAutoFocus",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L74"
+    },
+    {
+      "caller_nid": "ui_modal_sheet_handleopenautofocus",
+      "callee": "querySelector",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L82"
+    },
+    {
+      "caller_nid": "ui_modal_sheet_handleopenautofocus",
+      "callee": "querySelector",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L83"
+    },
+    {
+      "caller_nid": "ui_modal_sheet_handleopenautofocus",
+      "callee": "preventDefault",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L87"
+    },
+    {
+      "caller_nid": "ui_modal_sheet_handleopenautofocus",
+      "callee": "focus",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/modal-sheet.tsx",
+      "source_location": "L88"
+    }
+  ]
+}

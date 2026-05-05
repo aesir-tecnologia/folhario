@@ -1,0 +1,95 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "label": "harness.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "combobox_harness_comboboxtestharness",
+      "label": "ComboboxTestHarness()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L7"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_combobox",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "target": "ui_combobox_combobox",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_location_combobox",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "target": "ui_location_combobox_locationcombobox",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_combobox_harness_tsx",
+      "target": "combobox_harness_comboboxtestharness",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L7",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "combobox_harness_comboboxtestharness",
+      "callee": "useState",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L8"
+    },
+    {
+      "caller_nid": "combobox_harness_comboboxtestharness",
+      "callee": "useState",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/combobox/harness.tsx",
+      "source_location": "L9"
+    }
+  ]
+}

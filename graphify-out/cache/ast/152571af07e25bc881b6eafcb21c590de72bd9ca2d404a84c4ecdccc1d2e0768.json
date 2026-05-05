@@ -1,0 +1,455 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "label": "upload-photo.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "application_upload_photo_isallowedmime",
+      "label": "isAllowedMime()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L47"
+    },
+    {
+      "id": "application_upload_photo_extfrommime",
+      "label": "extFromMime()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L51"
+    },
+    {
+      "id": "application_upload_photo_uploadphoto",
+      "label": "uploadPhoto()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L91"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "node_crypto",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "sharp",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_shared_db_client",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "db_client_db",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_shared_db_unit_of_work",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "db_unit_of_work_withunitofwork",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_shared_images_limits",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "images_limits_allowed_mime_types",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "images_limits_allowedmime",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_shared_images_server_validate",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "images_server_validate_rejectgpsmetadata",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "images_server_validate_rejectoversizebuffer",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_infrastructure_db_plants",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_infrastructure_db_photo_entries",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_infrastructure_photo_storage",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_buildplantphotoobjectkey",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_buildplantthumbnailobjectkey",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_deletesingleplantphotobesteffort",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_plant_photos_bucket",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_plant_thumbnails_bucket",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_uploadoriginalplantphoto",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "infrastructure_photo_storage_uploadplantthumbnail",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "users_machado_projects_folhario_src_contexts_catalog_infrastructure_db_photo_entries",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "db_photo_entries_photoentryrow",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "application_upload_photo_isallowedmime",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L47",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "application_upload_photo_extfrommime",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L51",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_application_upload_photo_ts",
+      "target": "application_upload_photo_uploadphoto",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L91",
+      "weight": 1.0
+    },
+    {
+      "source": "application_upload_photo_uploadphoto",
+      "target": "application_upload_photo_isallowedmime",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L93",
+      "weight": 1.0
+    },
+    {
+      "source": "application_upload_photo_uploadphoto",
+      "target": "application_upload_photo_extfrommime",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L158",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "application_upload_photo_isallowedmime",
+      "callee": "has",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L48"
+    },
+    {
+      "caller_nid": "application_upload_photo_extfrommime",
+      "callee": "String",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L61"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "rejectOversizeBuffer",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L103"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "rejectGpsMetadata",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L114"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "findByIdForUser",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L125"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "toBuffer",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L138"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "jpeg",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L138"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "resize",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L138"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "sharp",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L138"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "randomUUID",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L157"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "buildPlantPhotoObjectKey",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L163"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "uploadOriginalPlantPhoto",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L169"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "buildPlantThumbnailObjectKey",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L177"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "uploadPlantThumbnail",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L183"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "withUnitOfWork",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L206"
+    },
+    {
+      "caller_nid": "application_upload_photo_uploadphoto",
+      "callee": "deleteSinglePlantPhotoBestEffort",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/application/upload-photo.ts",
+      "source_location": "L216"
+    }
+  ]
+}

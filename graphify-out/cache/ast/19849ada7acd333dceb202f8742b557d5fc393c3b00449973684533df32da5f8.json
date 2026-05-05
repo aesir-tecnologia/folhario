@@ -1,0 +1,24 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_diagnostics_server_probe_integration_test_ts",
+      "label": "diagnostics-server-probe.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-server-probe.integration.test.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_diagnostics_server_probe_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/diagnostics-server-probe.integration.test.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

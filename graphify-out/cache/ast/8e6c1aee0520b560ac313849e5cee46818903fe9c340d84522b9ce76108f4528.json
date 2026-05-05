@@ -1,0 +1,144 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_auth_signup_invalid_partner_code_spec_ts",
+      "label": "auth-signup-invalid-partner-code.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_auth_signup_invalid_partner_code_spec_seedinactivepartner",
+      "label": "seedInactivePartner()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L18"
+    },
+    {
+      "id": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "label": "expectNoUserRow()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L34"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_invalid_partner_code_spec_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_invalid_partner_code_spec_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_invalid_partner_code_spec_ts",
+      "target": "e2e_auth_signup_invalid_partner_code_spec_seedinactivepartner",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_invalid_partner_code_spec_ts",
+      "target": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L34",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_seedinactivepartner",
+      "callee": "postgres",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L21"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_seedinactivepartner",
+      "callee": "sql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L23"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_seedinactivepartner",
+      "callee": "end",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L30"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "postgres",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L36"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "await sql<{ id: string }[]>",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L38"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "toBe",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L41"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "expect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L41"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "await sql<{ id: string }[]>",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L43"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "toBe",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L46"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "expect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L46"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_invalid_partner_code_spec_expectnouserrow",
+      "callee": "end",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-invalid-partner-code.spec.ts",
+      "source_location": "L48"
+    }
+  ]
+}

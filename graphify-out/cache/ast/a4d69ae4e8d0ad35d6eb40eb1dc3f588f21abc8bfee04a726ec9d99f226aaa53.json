@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_ui_bottom_sheet_tsx",
+      "label": "bottom-sheet.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "ui_bottom_sheet_bottomsheet",
+      "label": "BottomSheet()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L50"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_bottom_sheet_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_bottom_sheet_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_modal_sheet",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_bottom_sheet_tsx",
+      "target": "ui_modal_sheet_modalsheet",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_bottom_sheet_tsx",
+      "target": "ui_modal_sheet_modalsheetprops",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_ui_bottom_sheet_tsx",
+      "target": "ui_bottom_sheet_bottomsheet",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/ui/bottom-sheet.tsx",
+      "source_location": "L50",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

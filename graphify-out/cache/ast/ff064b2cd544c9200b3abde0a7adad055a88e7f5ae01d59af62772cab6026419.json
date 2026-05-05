@@ -1,0 +1,173 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_catalog_queries_index_ts",
+      "label": "index.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "queries_index_fetchplantslist",
+      "label": "fetchPlantsList()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L62"
+    },
+    {
+      "id": "queries_index_fetchplantdetail",
+      "label": "fetchPlantDetail()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L72"
+    },
+    {
+      "id": "queries_index_fetchphotoentries",
+      "label": "fetchPhotoEntries()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L78"
+    },
+    {
+      "id": "queries_index_fetchlocations",
+      "label": "fetchLocations()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L84"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_index_ts",
+      "target": "react_query",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_index_ts",
+      "target": "queries_index_fetchplantslist",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L62",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_index_ts",
+      "target": "queries_index_fetchplantdetail",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L72",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_index_ts",
+      "target": "queries_index_fetchphotoentries",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L78",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_catalog_queries_index_ts",
+      "target": "queries_index_fetchlocations",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L84",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "queries_index_fetchplantslist",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L64"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantslist",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L65"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantslist",
+      "callee": "set",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L66"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantslist",
+      "callee": "fetch",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L67"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantslist",
+      "callee": "toString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L67"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantslist",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L69"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantdetail",
+      "callee": "fetch",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L73"
+    },
+    {
+      "caller_nid": "queries_index_fetchplantdetail",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L75"
+    },
+    {
+      "caller_nid": "queries_index_fetchphotoentries",
+      "callee": "fetch",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L79"
+    },
+    {
+      "caller_nid": "queries_index_fetchphotoentries",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L81"
+    },
+    {
+      "caller_nid": "queries_index_fetchlocations",
+      "callee": "fetch",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L85"
+    },
+    {
+      "caller_nid": "queries_index_fetchlocations",
+      "callee": "json",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/catalog/queries/index.ts",
+      "source_location": "L87"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_resend_adapter_ts",
+      "label": "resend-adapter.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/resend-adapter.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_resend_adapter_ts",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/resend-adapter.ts",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_resend_adapter_ts",
+      "target": "resend",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/resend-adapter.ts",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_resend_adapter_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_server_env",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/resend-adapter.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_resend_adapter_ts",
+      "target": "config_server_env_serverenv",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/resend-adapter.ts",
+      "source_location": "L19",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

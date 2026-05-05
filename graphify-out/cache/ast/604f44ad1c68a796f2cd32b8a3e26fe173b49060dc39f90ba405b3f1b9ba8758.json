@@ -1,0 +1,303 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "label": "throttle.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "api_throttle_iscurrentlylocked",
+      "label": "isCurrentlyLocked()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L44"
+    },
+    {
+      "id": "api_throttle_bumpthrottle",
+      "label": "bumpThrottle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L53"
+    },
+    {
+      "id": "api_throttle_isoauthcallbackfailure",
+      "label": "isOauthCallbackFailure()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L58"
+    },
+    {
+      "id": "api_throttle_isauthfailure",
+      "label": "isAuthFailure()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L65"
+    },
+    {
+      "id": "api_throttle_withthrottle",
+      "label": "withThrottle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L70"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "config_errors_errorresponse",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_auth_throttle",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "db_auth_throttle_bumpthrottlerow",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "db_auth_throttle_extractclientip",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "db_auth_throttle_getcurrentlockoutend",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "db_auth_throttle_islocked",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "api_throttle_iscurrentlylocked",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L44",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "api_throttle_bumpthrottle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L53",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "api_throttle_isoauthcallbackfailure",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "api_throttle_isauthfailure",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L65",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_throttle_ts",
+      "target": "api_throttle_withthrottle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "api_throttle_isauthfailure",
+      "target": "api_throttle_isoauthcallbackfailure",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L67",
+      "weight": 1.0
+    },
+    {
+      "source": "api_throttle_withthrottle",
+      "target": "api_throttle_iscurrentlylocked",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L81",
+      "weight": 1.0
+    },
+    {
+      "source": "api_throttle_withthrottle",
+      "target": "api_throttle_isauthfailure",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L94",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "api_throttle_iscurrentlylocked",
+      "callee": "getCurrentLockoutEnd",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L45"
+    },
+    {
+      "caller_nid": "api_throttle_bumpthrottle",
+      "callee": "bumpThrottleRow",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L54"
+    },
+    {
+      "caller_nid": "api_throttle_bumpthrottle",
+      "callee": "isLocked",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L55"
+    },
+    {
+      "caller_nid": "api_throttle_isoauthcallbackfailure",
+      "callee": "get",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L61"
+    },
+    {
+      "caller_nid": "api_throttle_isoauthcallbackfailure",
+      "callee": "includes",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L62"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "extractClientIp",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L76"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L82"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "bumpThrottleRow",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L86"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "isLocked",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L87"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L88"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "fn",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L92"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "bumpThrottleRow",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L95"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "isLocked",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L96"
+    },
+    {
+      "caller_nid": "api_throttle_withthrottle",
+      "callee": "errorResponse",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/throttle.ts",
+      "source_location": "L97"
+    }
+  ]
+}

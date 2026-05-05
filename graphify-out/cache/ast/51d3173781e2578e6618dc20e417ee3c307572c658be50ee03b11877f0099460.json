@@ -1,0 +1,54 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_instrumentation_client_ts",
+      "label": "instrumentation-client.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/instrumentation-client.ts",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_instrumentation_client_ts",
+      "target": "nextjs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/instrumentation-client.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_instrumentation_client_ts",
+      "target": "users_machado_projects_folhario_src_shared_telemetry_sentry_scrub",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/instrumentation-client.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_instrumentation_client_ts",
+      "target": "telemetry_sentry_scrub_makebeforesend",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/instrumentation-client.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_instrumentation_client_ts",
+      "target": "telemetry_sentry_scrub_makebeforebreadcrumb",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/instrumentation-client.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

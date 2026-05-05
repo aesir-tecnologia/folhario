@@ -1,0 +1,71 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_fixtures_mock_inngest_ts",
+      "label": "mock-inngest.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "fixtures_mock_inngest_installinngestmock",
+      "label": "installInngestMock()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L13"
+    },
+    {
+      "id": "fixtures_mock_inngest_resetinngestmock",
+      "label": "resetInngestMock()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L21"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_mock_inngest_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_mock_inngest_ts",
+      "target": "fixtures_mock_inngest_installinngestmock",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_fixtures_mock_inngest_ts",
+      "target": "fixtures_mock_inngest_resetinngestmock",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "fixtures_mock_inngest_installinngestmock",
+      "callee": "mock",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L14"
+    },
+    {
+      "caller_nid": "fixtures_mock_inngest_resetinngestmock",
+      "callee": "mockClear",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/fixtures/mock-inngest.ts",
+      "source_location": "L22"
+    }
+  ]
+}

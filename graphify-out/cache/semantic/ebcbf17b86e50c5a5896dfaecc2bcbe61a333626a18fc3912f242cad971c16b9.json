@@ -1,0 +1,593 @@
+{
+  "nodes": [
+    {
+      "id": "cave_prd",
+      "label": "CAVE-PRD Folh\u00e1rio MVP",
+      "file_type": "document",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_bounded_contexts",
+      "label": "Bounded Contexts (DDD)",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_iam_context",
+      "label": "IAM Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_catalog_context",
+      "label": "Catalog Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_species_care_context",
+      "label": "Species & Care Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_identification_context",
+      "label": "Identification Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_reminders_context",
+      "label": "Reminders Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_billing_context",
+      "label": "Billing Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_notifications_context",
+      "label": "Notifications Bounded Context",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_user",
+      "label": "User Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_plant",
+      "label": "Plant Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_species",
+      "label": "Species Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_careguide",
+      "label": "CareGuide Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_identification",
+      "label": "Identification Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_reminder",
+      "label": "Reminder Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_subscription",
+      "label": "Subscription Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_consentlog",
+      "label": "ConsentLog Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_providerbud",
+      "label": "ProviderBudget Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_data_model_pushsub",
+      "label": "PushSubscription Entity",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_identification_provider",
+      "label": "IdentificationProvider Interface",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_circuit_breaker",
+      "label": "Circuit Breaker (Identification Router)",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_subscription_state_machine",
+      "label": "Subscription State Machine",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_readonly_catalog_mode",
+      "label": "Read-Only Catalog Mode",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_partner_codes",
+      "label": "Partner Codes (Trial Extension)",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_image_handling",
+      "label": "Image Handling (Client Compression + EXIF Strip)",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "cave_prd_offline_sync",
+      "label": "Offline Sync Queue",
+      "file_type": "rationale",
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_bounded_contexts",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_iam_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_catalog_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_species_care_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_identification_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_reminders_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_billing_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_notifications_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_user",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_plant",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_species",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_careguide",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_identification",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_reminder",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_subscription",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_consentlog",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_providerbud",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_data_model_pushsub",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_identification_provider",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_circuit_breaker",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_subscription_state_machine",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_readonly_catalog_mode",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_partner_codes",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_image_handling",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "cave_prd_offline_sync",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "folhario_inngest",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "folhario_error_code_registry",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "folhario_lgpd_compliance",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "folhario_two_minute_value",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "cave_prd",
+      "target": "superseded_prd_v11",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "docs/CAVE-PRD.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

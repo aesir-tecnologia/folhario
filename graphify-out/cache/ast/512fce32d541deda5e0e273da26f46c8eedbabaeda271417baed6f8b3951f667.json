@@ -1,0 +1,44 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_email_templates_welcome_back_tsx",
+      "label": "welcome-back.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/email-templates/welcome-back.tsx",
+      "source_location": "L1"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_email_templates_welcome_back_tsx",
+      "target": "components",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/email-templates/welcome-back.tsx",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_email_templates_welcome_back_tsx",
+      "target": "users_machado_projects_folhario_src_contexts_notifications_domain_events",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/email-templates/welcome-back.tsx",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_notifications_infrastructure_email_templates_welcome_back_tsx",
+      "target": "domain_events_welcomebackprops",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/notifications/infrastructure/email-templates/welcome-back.tsx",
+      "source_location": "L20",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": []
+}

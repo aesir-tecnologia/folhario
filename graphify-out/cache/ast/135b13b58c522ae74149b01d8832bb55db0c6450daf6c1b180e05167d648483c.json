@@ -1,0 +1,82 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_app_test_modal_sheet_harness_tsx",
+      "label": "harness.tsx",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "modal_sheet_harness_modalsheettestharness",
+      "label": "ModalSheetTestHarness()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L6"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_app_test_modal_sheet_harness_tsx",
+      "target": "react",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_modal_sheet_harness_tsx",
+      "target": "users_machado_projects_folhario_src_shared_ui_modal_sheet",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_modal_sheet_harness_tsx",
+      "target": "ui_modal_sheet_modalsheet",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_app_test_modal_sheet_harness_tsx",
+      "target": "modal_sheet_harness_modalsheettestharness",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L6",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "modal_sheet_harness_modalsheettestharness",
+      "callee": "useState",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L7"
+    },
+    {
+      "caller_nid": "modal_sheet_harness_modalsheettestharness",
+      "callee": "useRef",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L8"
+    },
+    {
+      "caller_nid": "modal_sheet_harness_modalsheettestharness",
+      "callee": "useEffect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/app/(test)/modal-sheet/harness.tsx",
+      "source_location": "L12"
+    }
+  ]
+}

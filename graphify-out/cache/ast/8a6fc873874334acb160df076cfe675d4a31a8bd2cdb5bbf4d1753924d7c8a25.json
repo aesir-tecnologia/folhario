@@ -1,0 +1,97 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_auth_public_redirect_when_verified_spec_ts",
+      "label": "auth-public-redirect-when-verified.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "label": "seedAndLogin()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L8"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_public_redirect_when_verified_spec_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_public_redirect_when_verified_spec_ts",
+      "target": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "post",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "toBe",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L19"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "expect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L19"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "status",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L19"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "post",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L21"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "toBe",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L25"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "expect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L25"
+    },
+    {
+      "caller_nid": "e2e_auth_public_redirect_when_verified_spec_seedandlogin",
+      "callee": "status",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-public-redirect-when-verified.spec.ts",
+      "source_location": "L25"
+    }
+  ]
+}

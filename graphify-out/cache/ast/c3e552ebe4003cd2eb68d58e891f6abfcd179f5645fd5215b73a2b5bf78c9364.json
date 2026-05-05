@@ -1,0 +1,236 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "label": "oauth-complete.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "application_oauth_complete_completeoauthsignup",
+      "label": "completeOauthSignup()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L34"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_shared_db_unit_of_work",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_unit_of_work_withunitofwork",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_users",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_users_getuserbyid",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_users_setoauthcompletionfields",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_partner_store",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_partner_store_ispartnercodeactive",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_policy_versions",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_policy_versions_getcurrentpolicyversions",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_consent_logs",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_consent_logs_insertsignupconsents",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_subscriptions",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "db_subscriptions_inserttrialingsubscription",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_posthog_bridge",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "infrastructure_posthog_bridge_capturesignupcompleted",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_domain_schemas",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "domain_schemas_oauthcomplete",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_contexts_iam_application_oauth_complete_ts",
+      "target": "application_oauth_complete_completeoauthsignup",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L34",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "application_oauth_complete_completeoauthsignup",
+      "callee": "getUserById",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L39"
+    },
+    {
+      "caller_nid": "application_oauth_complete_completeoauthsignup",
+      "callee": "trim",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L48"
+    },
+    {
+      "caller_nid": "application_oauth_complete_completeoauthsignup",
+      "callee": "isPartnerCodeActive",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L51"
+    },
+    {
+      "caller_nid": "application_oauth_complete_completeoauthsignup",
+      "callee": "withUnitOfWork",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L67"
+    },
+    {
+      "caller_nid": "application_oauth_complete_completeoauthsignup",
+      "callee": "captureSignupCompleted",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/contexts/iam/application/oauth-complete.ts",
+      "source_location": "L102"
+    }
+  ]
+}

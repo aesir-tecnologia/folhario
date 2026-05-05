@@ -1,0 +1,81 @@
+{
+  "nodes": [
+    {
+      "id": "identify_screen",
+      "label": "Identify Screen (Pronto para identificar)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "identify_screen_dark_mode",
+      "label": "Identify Screen Dark Mode",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "identify_test_chromium_linux",
+      "label": "Visual Snapshot Test: identify on Chromium/Linux",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "dark_background_color",
+      "label": "Design Token: Dark Background (near-black, ~#1a1714)",
+      "file_type": "image",
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "identify_screen_dark_mode",
+      "target": "identify_screen",
+      "relation": "is_variant_of",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "identify_screen_dark_mode",
+      "target": "dark_background_color",
+      "relation": "uses",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "identify_test_chromium_linux",
+      "target": "identify_screen",
+      "relation": "renders",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/e2e/visual-snapshots.spec.ts-snapshots/visual-snapshot-identify-dark-no-preference-1-chromium-linux.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

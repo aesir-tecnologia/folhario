@@ -1,0 +1,244 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "label": "cursor.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "api_cursor_encodecursor",
+      "label": "encodeCursor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L48"
+    },
+    {
+      "id": "api_cursor_decodecursor",
+      "label": "decodeCursor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L64"
+    },
+    {
+      "id": "api_cursor_normalizelimit",
+      "label": "normalizeLimit()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L94"
+    },
+    {
+      "id": "api_cursor_encodesortcursor",
+      "label": "encodeSortCursor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L146"
+    },
+    {
+      "id": "api_cursor_decodesortcursor",
+      "label": "decodeSortCursor()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L150"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "zod",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "users_machado_projects_folhario_src_shared_config_errors",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "config_errors_errorcode",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "api_cursor_encodecursor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L48",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "api_cursor_decodecursor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L64",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "api_cursor_normalizelimit",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L94",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "api_cursor_encodesortcursor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L146",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_src_shared_api_cursor_ts",
+      "target": "api_cursor_decodesortcursor",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L150",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "api_cursor_encodecursor",
+      "callee": "toString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L49"
+    },
+    {
+      "caller_nid": "api_cursor_encodecursor",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L49"
+    },
+    {
+      "caller_nid": "api_cursor_encodecursor",
+      "callee": "stringify",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L49"
+    },
+    {
+      "caller_nid": "api_cursor_decodecursor",
+      "callee": "toString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L67"
+    },
+    {
+      "caller_nid": "api_cursor_decodecursor",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L67"
+    },
+    {
+      "caller_nid": "api_cursor_decodecursor",
+      "callee": "parse",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L74"
+    },
+    {
+      "caller_nid": "api_cursor_decodecursor",
+      "callee": "safeParse",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L79"
+    },
+    {
+      "caller_nid": "api_cursor_normalizelimit",
+      "callee": "Number",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L99"
+    },
+    {
+      "caller_nid": "api_cursor_normalizelimit",
+      "callee": "isFinite",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L100"
+    },
+    {
+      "caller_nid": "api_cursor_normalizelimit",
+      "callee": "floor",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L104"
+    },
+    {
+      "caller_nid": "api_cursor_encodesortcursor",
+      "callee": "toString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "api_cursor_encodesortcursor",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "api_cursor_encodesortcursor",
+      "callee": "stringify",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L147"
+    },
+    {
+      "caller_nid": "api_cursor_decodesortcursor",
+      "callee": "toString",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L153"
+    },
+    {
+      "caller_nid": "api_cursor_decodesortcursor",
+      "callee": "from",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L153"
+    },
+    {
+      "caller_nid": "api_cursor_decodesortcursor",
+      "callee": "parse",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L160"
+    },
+    {
+      "caller_nid": "api_cursor_decodesortcursor",
+      "callee": "safeParse",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/src/shared/api/cursor.ts",
+      "source_location": "L165"
+    }
+  ]
+}

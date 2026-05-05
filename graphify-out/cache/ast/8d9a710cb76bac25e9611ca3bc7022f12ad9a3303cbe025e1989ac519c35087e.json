@@ -1,0 +1,166 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "label": "iam-throttle.integration.test.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "integration_iam_throttle_integration_test_clearauththrottle",
+      "label": "clearAuthThrottle()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L45"
+    },
+    {
+      "id": "integration_iam_throttle_integration_test_inner",
+      "label": "inner()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L154"
+    },
+    {
+      "id": "integration_iam_throttle_integration_test_failingredirect",
+      "label": "failingRedirect()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L224"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "vitest",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_contexts_iam_infrastructure_db_auth_throttle",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "db_auth_throttle_bumpthrottlerow",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "db_auth_throttle_getcurrentlockoutend",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "users_machado_projects_folhario_src_shared_api_throttle",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "api_throttle_iscurrentlylocked",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "api_throttle_withthrottle",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "integration_iam_throttle_integration_test_clearauththrottle",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "integration_iam_throttle_integration_test_inner",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L154",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "integration_iam_throttle_integration_test_inner",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L168",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_integration_iam_throttle_integration_test_ts",
+      "target": "integration_iam_throttle_integration_test_failingredirect",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L224",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "integration_iam_throttle_integration_test_clearauththrottle",
+      "callee": "cleanupSql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L47"
+    },
+    {
+      "caller_nid": "integration_iam_throttle_integration_test_clearauththrottle",
+      "callee": "cleanupSql",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/integration/iam-throttle.integration.test.ts",
+      "source_location": "L49"
+    }
+  ]
+}

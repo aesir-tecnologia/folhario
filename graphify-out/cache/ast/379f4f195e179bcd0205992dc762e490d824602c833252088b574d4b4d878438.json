@@ -1,0 +1,107 @@
+{
+  "nodes": [
+    {
+      "id": "users_machado_projects_folhario_tests_e2e_auth_signup_blocks_without_consent_spec_ts",
+      "label": "auth-signup-blocks-without-consent.spec.ts",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L1"
+    },
+    {
+      "id": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "label": "expectNoUserRow()",
+      "file_type": "code",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L13"
+    }
+  ],
+  "edges": [
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_blocks_without_consent_spec_ts",
+      "target": "test",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_blocks_without_consent_spec_ts",
+      "target": "postgres",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "users_machado_projects_folhario_tests_e2e_auth_signup_blocks_without_consent_spec_ts",
+      "target": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L13",
+      "weight": 1.0
+    }
+  ],
+  "raw_calls": [
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "postgres",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L15"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "await sql<{ id: string }[]>",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L17"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "toBe",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L20"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "expect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L20"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "await sql<{ id: string }[]>",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L22"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "toBe",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L25"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "expect",
+      "is_member_call": false,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L25"
+    },
+    {
+      "caller_nid": "e2e_auth_signup_blocks_without_consent_spec_expectnouserrow",
+      "callee": "end",
+      "is_member_call": true,
+      "source_file": "/Users/machado/Projects/folhario/tests/e2e/auth-signup-blocks-without-consent.spec.ts",
+      "source_location": "L27"
+    }
+  ]
+}

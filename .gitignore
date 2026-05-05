@@ -44,3 +44,4 @@ supabase/.branches/
 
 # Local-only Playwright snapshots (CI uses linux baselines from Docker)
 tests/e2e/visual-snapshots.spec.ts-snapshots/*darwin*.png
+.vercel

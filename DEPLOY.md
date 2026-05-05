@@ -40,38 +40,65 @@ push to main
 
 ### 1. `deploy-preview.yml`
 
-**Trigger:** `workflow_run` on `CI` workflow, `types: [completed]`, on any branch except `main`.
-Exits early if `github.event.workflow_run.conclusion != 'success'`.
+**Trigger:** `workflow_run` on `CI` workflow, `types: [completed]`, `branches-ignore: [main]`.
+Job-level guard skips runs that aren't tied to a PR:
 
-> **Note:** `workflow_run` always executes the workflow file from the **default branch** (`main`). Changes to `deploy-preview.yml` in a PR do not take effect until the PR is merged.
-> **Fork PRs:** `github.event.workflow_run.pull_requests[0]` is empty for forks. Preview deploys are not supported for fork PRs.
+```yaml
+if: >-
+  github.event.workflow_run.conclusion == 'success' &&
+  github.event.workflow_run.event == 'pull_request' &&
+  github.event.workflow_run.pull_requests[0] != null
+```
 
-**Concurrency:** group `deploy-preview-${{ github.event.workflow_run.pull_requests[0].number }}`, `cancel-in-progress: true`.
-The latest push to a PR wins; the older run is cancelled immediately.
+> **Note:** `workflow_run` always executes the workflow file from the **default branch** (`main`). Changes to `deploy-preview.yml` in a PR do not take effect until the PR is merged. The CI workflow at `.github/workflows/ci.yml` runs on both `pull_request` and `push` to `main`; the `event == 'pull_request'` guard above prevents preview deploys from firing on the `main`-push CI run (which `deploy-production.yml` handles separately).
+> **Fork PRs:** `github.event.workflow_run.pull_requests[0]` is empty for forks (and for any branch push not associated with an open PR). The guard above skips both cases. Preview deploys are not supported for fork PRs.
+
+**Concurrency:** group `deploy-preview-pr-${{ github.event.workflow_run.pull_requests[0].number }}`, `cancel-in-progress: true`.
+The latest push to a PR wins; the older preview-deploy run is cancelled immediately. (The CI run that triggered the older preview is governed by `ci.yml`'s own concurrency, not this group.)
 
 **Steps:**
 
 1. **Install dependencies** — `pnpm install --frozen-lockfile` (pnpm store cached by lockfile hash, same pattern as `ci.yml`).
-2. **DB setup** — `pnpm db:setup` using `DATABASE_URL` from the shared preview Supabase project (injected via `vercel pull` below — preview environment variables in Vercel). Runs migrate + seed + check-rls + check-seeds. The last PR to deploy wins; Drizzle won't re-apply already-applied migrations.
+2. **Vercel pull (preview)** — `vercel pull --yes --environment=preview --token=$VERCEL_TOKEN`. Writes `.vercel/.env.preview.local`. Then export those values into the shell so subsequent steps (notably `db:setup`) can see `DATABASE_URL`/`DATABASE_POOL_URL`/`NEXT_PUBLIC_*`:
+
+   ```bash
+   set -a
+   source .vercel/.env.preview.local
+   set +a
+   ```
+
+   `vercel pull` itself does **not** export env vars to the shell; only `vercel build` reads the file automatically. The explicit `source` step is required for `pnpm db:setup` below.
+
+3. **DB setup** — `pnpm db:setup` against the shared preview Supabase project (`DATABASE_URL` now in the shell from step 2). Runs migrate + seed + check-rls + check-seeds. The last PR to deploy wins; Drizzle won't re-apply already-applied migrations.
    - ⚠️ **Shared DB tradeoff:** Two PRs deploying simultaneously could race the `db:setup` step. Acceptable for a small team. If it becomes an issue, add a global `concurrency: deploy-preview, cancel-in-progress: false` to serialize all preview deploys.
-3. **Vercel build**
-   - `vercel pull --yes --environment=preview --token=$VERCEL_TOKEN` — fetches preview env vars from Vercel (including `DATABASE_URL`/`DATABASE_POOL_URL` for the shared preview project); `NEXT_PUBLIC_*` values will be the real preview values, not localhost CI stubs.
+4. **Vercel build + deploy**
    - `vercel build --token=$VERCEL_TOKEN`
-   - `vercel deploy --prebuilt --meta githubPrNumber=${{ github.event.workflow_run.pull_requests[0].number }} --meta githubCommitSha=${{ github.event.workflow_run.head_sha }} --token=$VERCEL_TOKEN`
-   - Capture the returned preview URL.
-4. **Playwright smoke** — `pnpm test:e2e:smoke` with `PLAYWRIGHT_TEST_BASE_URL` set to the preview URL.
-5. **PR comment** — upsert a comment on the PR identified by the HTML marker `<!-- folhario-preview-deploy -->`. Content: preview URL + commit SHA. If smoke failed, include a failure note. Uses `actions/github-script`.
+   - Capture the deployment URL into a step output:
+
+     ```bash
+     URL=$(vercel deploy --prebuilt \
+       --meta githubPrNumber=${{ github.event.workflow_run.pull_requests[0].number }} \
+       --meta githubCommitSha=${{ github.event.workflow_run.head_sha }} \
+       --token=$VERCEL_TOKEN)
+     echo "url=$URL" >> "$GITHUB_OUTPUT"
+     ```
+
+5. **Playwright smoke** — `pnpm test:e2e:smoke` with `PLAYWRIGHT_TEST_BASE_URL=${{ steps.deploy.outputs.url }}`.
+   > **Note:** `test:e2e:smoke` resolves to `playwright test security-headers pwa-smoke legal-links horizontal-scroll-guard`. Confirm these specs are environment-agnostic before pointing them at the real preview URL — they were originally written against the local `db:start` + stub identification setup. Specs that touch `/login` or any auth flow may behave differently against a real Supabase preview project.
+6. **PR comment** — upsert a comment on the PR identified by the HTML marker `<!-- folhario-preview-deploy -->`. Content: preview URL + commit SHA. If smoke failed, include a failure note. Uses `actions/github-script`.
 
 **GH secrets used:** `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `SENTRY_DSN_CI`, `POSTHOG_KEY_CI`
 
-**Preview DB credentials** are stored in Vercel's **preview** environment variables (`DATABASE_URL`, `DATABASE_POOL_URL`) and injected via `vercel pull`. They are not GH secrets.
+**Preview DB credentials** are stored in Vercel's **preview** environment variables (`DATABASE_URL`, `DATABASE_POOL_URL`) and made available to the workflow by `vercel pull` writing `.vercel/.env.preview.local`, which step 2 then sources into the shell. They are not GH secrets.
 
 ---
 
 ### 2. `deploy-production.yml`
 
 **Trigger:** `workflow_run` on `CI` workflow, `types: [completed]`, `branches: [main]`.
-Exits early if `github.event.workflow_run.conclusion != 'success'`.
+Job-level guard: `if: github.event.workflow_run.conclusion == 'success'`.
+
+**Job-level gate:** the deploy job declares `environment: production` (a job-level key, not a step). GitHub pauses the _entire job_ before any step runs and requires a reviewer to approve. All steps below execute only after approval.
 
 **Concurrency:** group `deploy-production`, `cancel-in-progress: false` (serialized — prevents a second deploy from racing a migration mid-flight).
 
@@ -79,24 +106,42 @@ Exits early if `github.event.workflow_run.conclusion != 'success'`.
 
 **Steps:**
 
-1. **environment: production gate** — GitHub environment with required reviewers configured in repo settings. The workflow pauses here; a reviewer approves before any migration or deploy runs.
-2. **Install dependencies** — `pnpm install --frozen-lockfile`.
-3. **Destructive migration check** — grep migration files for `DROP`, `ALTER TABLE.*DROP COLUMN`, `TRUNCATE`. Write a warning to `$GITHUB_STEP_SUMMARY` if found. This is a soft warning — the human at the environment gate makes the final call.
-4. **Production DB migration** — `pnpm db:migrate` with production `DATABASE_URL` (direct URL from GH secret, not pooler — migrations require DDL transactions; do not use the pooler URL from `vercel pull`).
+1. **Install dependencies** — `pnpm install --frozen-lockfile`.
+2. **Destructive migration check** — grep migration files for `DROP`, `ALTER TABLE.*DROP COLUMN`, `TRUNCATE`. Write a warning to `$GITHUB_STEP_SUMMARY` if found. This is a soft warning — the human at the environment gate (already passed by this point) is also notified by re-running this against the merge commit; the destructive output appears in the summary regardless.
+3. **Production DB migration** — `pnpm db:migrate` with `DATABASE_URL=${{ secrets.PROD_DATABASE_DIRECT_URL }}` (direct URL, port 5432 — migrations require DDL transactions; the pooler URL is rejected). `scripts/migrate.ts` reads `DATABASE_URL` directly. Also set `DATABASE_POOL_URL` to the same direct URL for this step if `serverEnv` schema validation requires both — they are validated at module import time even if only one is used.
+4. **Vercel pull (production)** — `vercel pull --yes --environment=production --token=$VERCEL_TOKEN`. Writes `.vercel/.env.production.local`. `vercel build` will read it automatically; no `source` step required here because no other step in this workflow needs the runtime env in the shell (migrations use the GH secret directly).
 5. **Vercel build + deploy**
-   - `vercel pull --yes --environment=production --token=$VERCEL_TOKEN` — fetches production env vars; `NEXT_PUBLIC_*` values will be the real production values.
    - `vercel build --token=$VERCEL_TOKEN`
-   - `vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN`
-6. **Playwright smoke** — `pnpm test:e2e:smoke` with `PLAYWRIGHT_TEST_BASE_URL=https://folhario.vercel.app`. Confirms production edge config, headers, and PWA manifest.
-7. **Sentry release**
-   - `sentry-cli releases new ${{ github.sha }}`
-   - `sentry-cli releases files ${{ github.sha }} upload-sourcemaps .next/`
-   - `sentry-cli releases finalize ${{ github.sha }}`
-8. **Inngest sync** — `curl -X POST https://folhario.vercel.app/api/inngest`. Triggers Inngest to re-register functions from the new deploy.
+   - Capture the deployment URL:
+
+     ```bash
+     URL=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN)
+     echo "url=$URL" >> "$GITHUB_OUTPUT"
+     ```
+
+   The `--prod` flag promotes this deployment to the production alias. The alias swap can lag a few seconds; subsequent steps that need the _new_ build should hit `$URL` (the deployment URL), not the production hostname.
+
+6. **Playwright smoke** — `pnpm test:e2e:smoke` with `PLAYWRIGHT_TEST_BASE_URL=${{ steps.deploy.outputs.url }}`. Confirms production edge config, headers, and PWA manifest. Use the deployment URL captured in step 5, not the production alias, to avoid racing the alias swap. **Same environment-agnostic caveat as preview step 5** — confirm the four smoke specs work against a real Supabase production project.
+7. **Sentry release** — gated on smoke success (`if: success()`) so a failed deploy does not pollute Sentry releases. Pass org/project via env:
+
+   ```yaml
+   env:
+     SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+     SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+     SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+   run: |
+     sentry-cli releases new "${{ github.sha }}"
+     sentry-cli releases files "${{ github.sha }}" upload-sourcemaps .vercel/output --url-prefix '~/_next'
+     sentry-cli releases finalize "${{ github.sha }}"
+   ```
+
+   > Source-map path: `vercel build --prebuilt` writes to `.vercel/output/`, not `.next/`. Verify the exact location of client-side maps before merging — depending on Turbopack config (`productionBrowserSourceMaps`, `widenClientFileUpload`), maps may live under `.vercel/output/static/_next/` or `.next/static/`. Keep `--url-prefix '~/_next'` so Sentry can match URLs at runtime.
+
+8. **Inngest sync** — `curl -X POST "${{ steps.deploy.outputs.url }}/api/inngest"` against the new deployment URL (not the production alias) so re-registration targets the build that just shipped, even if alias swap is still in flight.
 
 **GH secrets used:** `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PROD_DATABASE_DIRECT_URL`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN_CI`, `POSTHOG_KEY_CI`
 
-**Production DB connection** — step 4 uses `${{ secrets.PROD_DATABASE_DIRECT_URL }}` as `DATABASE_URL`. Do not use `vercel pull` output here — it returns the pooler URL, which does not support DDL transactions required by migrations.
+**Production DB connection** — step 3 uses `${{ secrets.PROD_DATABASE_DIRECT_URL }}` as `DATABASE_URL`. The pooler URL from Vercel is the _runtime_ connection (used by the deployed app via `vercel pull` → build-time injection → Vercel runtime injection). It is not used by the deploy workflow's migration step.
 
 ---
 
@@ -108,9 +153,19 @@ Exits early if `github.event.workflow_run.conclusion != 'success'`.
 
 **Steps:**
 
-1. **Delete Vercel preview deployment**
-   - `vercel list --meta githubPrNumber=${{ github.event.pull_request.number }} --token=$VERCEL_TOKEN` → extract deployment URL(s)
-   - `vercel remove <url> --yes --token=$VERCEL_TOKEN` for each result
+1. **Delete Vercel preview deployment(s)** — `vercel list` returns a human-readable table by default; pass `--json` (or use `--meta` + a JSON-aware parser) to extract URLs reliably:
+
+   ```bash
+   vercel list \
+     --meta githubPrNumber=${{ github.event.pull_request.number }} \
+     --token=$VERCEL_TOKEN --json |
+     jq -r '.[].url' |
+     while read -r u; do
+       vercel remove "$u" --yes --token=$VERCEL_TOKEN
+     done
+   ```
+
+   If `vercel list` does not support `--json` in the installed CLI version, use `vercel inspect` per deployment ID, or pin the CLI version in the workflow.
 
 No Supabase cleanup needed — all PRs share the same preview project; there is no per-PR DB to delete.
 
@@ -134,11 +189,11 @@ All secrets are stored as GitHub Actions repo secrets (Settings → Secrets and 
 | `POSTHOG_KEY_CI`           | preview, production          | PostHog key for build-time config                      |
 | `PROD_DATABASE_DIRECT_URL` | production                   | Direct (non-pooler) Postgres URL for `pnpm db:migrate` |
 
-Runtime app secrets (`DATABASE_URL`, `DATABASE_POOL_URL`, API keys, etc.) are stored in Vercel environment variables — separately configured for `preview` and `production` environments — and injected via `vercel pull`. They are **not** GH secrets.
+Runtime app secrets (`DATABASE_URL`, `DATABASE_POOL_URL`, API keys, etc.) are stored in Vercel environment variables — separately configured for `preview` and `production` environments. `vercel pull` writes them to `.vercel/.env.<environment>.local`; `vercel build` reads that file automatically. The deploy workflow `source`s the file into the shell only when a non-build step needs the values (currently just preview `db:setup`). On Vercel itself, the runtime injects these env vars into the deployed app. They are **not** GH secrets.
 
-- **Preview** `DATABASE_URL`/`DATABASE_POOL_URL` → shared preview Supabase project credentials, set in Vercel preview env vars.
-- **Production** `DATABASE_URL`/`DATABASE_POOL_URL` → production Supabase project pooler URL, set in Vercel production env vars.
-- **`PROD_DATABASE_DIRECT_URL`** is a GH secret (not a Vercel env var) because `pnpm db:migrate` needs a direct connection for DDL, and `vercel pull` only returns the pooler URL.
+- **Preview** `DATABASE_URL`/`DATABASE_POOL_URL` → shared preview Supabase project credentials, set in Vercel preview env vars. Both point at the Supavisor transaction-mode pooler (port 6543) — the app is the only consumer at runtime, and the pooler is what `postgres-js` with `{ prepare: false }` is configured for.
+- **Production** `DATABASE_URL`/`DATABASE_POOL_URL` → production Supabase project pooler URL (port 6543), set in Vercel production env vars. Same rationale as preview.
+- **`PROD_DATABASE_DIRECT_URL`** is a GH secret (not a Vercel env var) because `pnpm db:migrate` needs a direct connection (port 5432) for DDL transactions. The pooler URL stored in Vercel does not support DDL.
 
 ---
 
@@ -147,22 +202,23 @@ Runtime app secrets (`DATABASE_URL`, `DATABASE_POOL_URL`, API keys, etc.) are st
 **Vercel**
 
 - [ ] Create Vercel project for Folhário; confirm git integration is **OFF** in project settings
-- [ ] Run `vercel link` locally to obtain `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`; add both as GH secrets
+- [ ] Claim the production alias (custom domain or `<project>.vercel.app`) and record it — production smoke tests target the deployment URL captured from `vercel deploy --prod`, but external monitoring and the Inngest webhook (if registered with Inngest cloud) need a stable hostname
+- [ ] Run `pnpm dlx vercel@latest login` then `pnpm dlx vercel@latest link` locally to obtain `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`; add both as GH secrets
 - [ ] Generate a Vercel token (Account Settings → Tokens); add as `VERCEL_TOKEN` GH secret
-- [ ] Configure all app runtime env vars in Vercel for both `preview` and `production` environments (DATABASE_URL, DATABASE_POOL_URL, RESEND_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SENTRY_DSN, NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST, IDENTIFICATION_PROVIDER_MODE, etc.)
+- [ ] Configure all app runtime env vars in Vercel for both `preview` and `production` environments (DATABASE*URL, DATABASE_POOL_URL, RESEND_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SENTRY_DSN, NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST, IDENTIFICATION_PROVIDER_MODE, etc.). `SUPABASE_SERVICE_ROLE_KEY` must NOT be `NEXT_PUBLIC*\*` — it's server-only.
 
 **Supabase**
 
-- [ ] Create a **second** Supabase project (free plan allows 2) as the shared preview environment
-- [ ] Set preview project's `DATABASE_URL` and `DATABASE_POOL_URL` as Vercel **preview** environment variables
-- [ ] Set production project's `DATABASE_URL` and `DATABASE_POOL_URL` as Vercel **production** environment variables
-- [ ] Add production project's direct connection URL as `PROD_DATABASE_DIRECT_URL` GH secret
+- [ ] Create a **second** Supabase project as the shared preview environment (free tier currently allows 2 projects per org; verify before assuming)
+- [ ] Set preview project's transaction-pooler URL (port 6543) as both `DATABASE_URL` and `DATABASE_POOL_URL` in Vercel **preview** environment variables — append `?pgbouncer=true` if not already present in the copied string
+- [ ] Set production project's transaction-pooler URL (port 6543) as both `DATABASE_URL` and `DATABASE_POOL_URL` in Vercel **production** environment variables — same `?pgbouncer=true` requirement
+- [ ] Add production project's **direct** connection URL (port 5432) as `PROD_DATABASE_DIRECT_URL` GH secret — used by `pnpm db:migrate` for DDL transactions, never by the runtime app
 
 **GitHub**
 
 - [ ] Create a GitHub Actions environment named `production` (Settings → Environments); add required reviewers
 - [ ] Add `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` as GH secrets
-- [ ] Add `SENTRY_DSN_CI` and `POSTHOG_KEY_CI` as GH secrets (already present from Phase 1 if CI is passing)
+- [ ] `SENTRY_DSN_CI` and `POSTHOG_KEY_CI` should already exist from CI setup (`ci.yml` references them at build/smoke time); add them now if missing
 
 ---
 
@@ -179,50 +235,71 @@ Runtime app secrets (`DATABASE_URL`, `DATABASE_POOL_URL`, API keys, etc.) are st
 ### 2. Run `vercel link` and add Vercel secrets to GitHub
 
 ```bash
-pnpm add -g vercel
-vercel link   # follow prompts; creates .vercel/project.json
-cat .vercel/project.json   # copy projectId and orgId
+pnpm dlx vercel@latest login   # interactive browser login
+pnpm dlx vercel@latest link    # follow prompts; creates .vercel/project.json
+cat .vercel/project.json       # copy projectId and orgId
 ```
 
+Pipe each value via stdin so `gh secret set` doesn't open an editor:
+
 ```bash
-gh secret set VERCEL_ORG_ID --repo aesir-tecnologia/folhario
-gh secret set VERCEL_PROJECT_ID --repo aesir-tecnologia/folhario
+printf '%s' "<orgId>"     | gh secret set VERCEL_ORG_ID     --repo aesir-tecnologia/folhario
+printf '%s' "<projectId>" | gh secret set VERCEL_PROJECT_ID --repo aesir-tecnologia/folhario
 ```
 
 Then generate a token: **vercel.com → Account Settings → Tokens → Create** (scope: your team, no expiry).
 
 ```bash
-gh secret set VERCEL_TOKEN --repo aesir-tecnologia/folhario
+printf '%s' "<token>" | gh secret set VERCEL_TOKEN --repo aesir-tecnologia/folhario
 ```
 
 ---
 
 ### 3. Create two Supabase cloud projects
 
-1. Go to [supabase.com](https://supabase.com) → **New project**
-2. Create **`folhario-production`** — choose a strong DB password, save it.
-3. Create **`folhario-preview`** — separate project, different password.
+If both projects already exist, run the interactive script and skip to Section 5:
 
-For **each project**, go to **Settings → Database** and note:
+```bash
+pnpm db:setup-cloud           # full flow
+pnpm db:setup-cloud --dry-run # preview values without pushing
+```
 
-- **Connection string → Transaction pooler** (port `6543`) → this is `DATABASE_URL` / `DATABASE_POOL_URL`
-- **Connection string → Direct connection** (port `5432`) → this is the direct URL for migrations
+The script discovers your projects via `supabase projects list`, prompts for each project's role (production / preview) and DB password, fetches anon + service-role keys, constructs Supavisor pooler + direct URLs, verifies them with `psql`, then offers to:
 
-Also note from **Settings → API**:
+1. Push `DATABASE_URL`, `DATABASE_POOL_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` to Vercel preview + production env vars.
+2. Push `PROD_DATABASE_DIRECT_URL` to GitHub Actions secrets.
+3. Run `pnpm db:setup` against each project (the deploy-preview workflow re-runs this on every PR; the manual run is the initial bootstrap).
+
+Each push step is gated behind a `[y/N]` prompt — defaults are no for Vercel/GH (explicit yes pushes) and yes for `db:setup`. Passwords are read with echo disabled and never persisted.
+
+**Preflight requirements:** `pnpm install` (Supabase CLI 2.95.0 is a devDep), `vercel` and `gh` CLIs on PATH, `psql` on PATH (or pass `--skip-verify`), `gh auth login`, `./node_modules/.bin/supabase login`, and `.vercel/project.json` (Section 2).
+
+If you don't have the projects yet, create them at [supabase.com](https://supabase.com) → **New project** first (one for production, one as the shared preview environment), then run the script.
+
+<details>
+<summary>Manual fallback (script unavailable)</summary>
+
+For each project, go to **Settings → Database** and note:
+
+- **Transaction pooler** (port `6543`) → Vercel `DATABASE_URL` and `DATABASE_POOL_URL`. Append `?pgbouncer=true` if missing.
+- **Direct connection** (port `5432`) → only for `pnpm db:migrate` / `pnpm db:setup`. For production, store as GH secret `PROD_DATABASE_DIRECT_URL`.
+
+From **Settings → API**:
 
 - **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
 - **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- **service_role** key → `SUPABASE_SERVICE_ROLE_KEY`
+- **service_role** key → `SUPABASE_SERVICE_ROLE_KEY` ⚠️ server-only; never `NEXT_PUBLIC_*`
 
-Initialize both projects (run locally with each project's direct URL):
+Bootstrap each project's schema:
 
 ```bash
-# Production
-DATABASE_URL=<prod-direct-url> pnpm db:setup
-
-# Preview
-DATABASE_URL=<preview-direct-url> pnpm db:setup
+DATABASE_URL=<prod-direct-url> DATABASE_POOL_URL=<prod-direct-url> pnpm db:setup
+DATABASE_URL=<preview-direct-url> DATABASE_POOL_URL=<preview-direct-url> pnpm db:setup
 ```
+
+`DATABASE_POOL_URL` is duplicated to the direct URL only here because `serverEnv` validates both at module import time. The runtime app on Vercel uses the pooler URL for both.
+
+</details>
 
 ---
 
@@ -232,31 +309,31 @@ Go to **vercel.com → folhario project → Settings → Environment Variables**
 
 Add each variable and select the correct environment scope (`Preview` or `Production`):
 
-| Variable                        | Preview value                            | Production value                          |
-| ------------------------------- | ---------------------------------------- | ----------------------------------------- |
-| `DATABASE_URL`                  | preview project transaction-pooler URL   | production project transaction-pooler URL |
-| `DATABASE_POOL_URL`             | same as `DATABASE_URL`                   | same as `DATABASE_URL`                    |
-| `NEXT_PUBLIC_SUPABASE_URL`      | preview project URL                      | production project URL                    |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | preview anon key                         | production anon key                       |
-| `SUPABASE_SERVICE_ROLE_KEY`     | preview service_role key                 | production service_role key               |
-| `IDENTIFICATION_PROVIDER_MODE`  | `stub`                                   | `real`                                    |
-| `RESEND_API_KEY`                | _(leave blank or use test key)_          | production Resend key                     |
-| `RESEND_FROM_ADDRESS`           | _(leave blank — defaults to resend.dev)_ | your verified sender address              |
-| `INNGEST_EVENT_KEY`             | _(leave blank until Phase 4 wired)_      | Inngest event key                         |
-| `INNGEST_SIGNING_KEY`           | _(leave blank until Phase 4 wired)_      | Inngest signing key                       |
-| `NEXT_PUBLIC_SENTRY_DSN`        | your Sentry DSN                          | your Sentry DSN                           |
-| `NEXT_PUBLIC_POSTHOG_KEY`       | your PostHog key                         | your PostHog key                          |
-| `NEXT_PUBLIC_POSTHOG_HOST`      | `https://us.i.posthog.com`               | `https://us.i.posthog.com`                |
+| Variable                        | Scope         | Preview value                                      | Production value                              |
+| ------------------------------- | ------------- | -------------------------------------------------- | --------------------------------------------- |
+| `DATABASE_URL`                  | server-only   | preview transaction-pooler URL (port 6543)         | production transaction-pooler URL (port 6543) |
+| `DATABASE_POOL_URL`             | server-only   | same as `DATABASE_URL`                             | same as `DATABASE_URL`                        |
+| `NEXT_PUBLIC_SUPABASE_URL`      | public        | preview project URL                                | production project URL                        |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | public        | preview anon key                                   | production anon key                           |
+| `SUPABASE_SERVICE_ROLE_KEY`     | server-only ⚠ | preview service_role key                           | production service_role key                   |
+| `IDENTIFICATION_PROVIDER_MODE`  | server-only   | `stub`                                             | `real`                                        |
+| `RESEND_API_KEY`                | server-only   | `ci-build-placeholder` (or a real Resend test key) | production Resend key                         |
+| `RESEND_FROM_ADDRESS`           | server-only   | _(leave blank — defaults to resend.dev)_           | your verified sender address                  |
+| `INNGEST_EVENT_KEY`             | server-only   | _(leave blank until Inngest wiring lands)_         | Inngest event key                             |
+| `INNGEST_SIGNING_KEY`           | server-only   | _(leave blank until Inngest wiring lands)_         | Inngest signing key                           |
+| `NEXT_PUBLIC_SENTRY_DSN`        | public        | your Sentry DSN                                    | your Sentry DSN                               |
+| `NEXT_PUBLIC_POSTHOG_KEY`       | public        | your PostHog key                                   | your PostHog key                              |
+| `NEXT_PUBLIC_POSTHOG_HOST`      | public        | `https://us.i.posthog.com`                         | `https://us.i.posthog.com`                    |
 
-> `DATABASE_URL` must include `?pgbouncer=true` if using Supavisor transaction mode with `postgres-js`. Confirm the connection string format in the Supabase dashboard — it is already formatted correctly if you copy from "Transaction pooler".
+> `RESEND_API_KEY` cannot be empty in any environment that runs `next build` or `next start` (including preview deploys), because `serverEnv` requires it under `NODE_ENV=production`. Use `ci-build-placeholder` for preview if you don't have a real Resend test key yet — same pattern `ci.yml` uses for unit/integration runs.
 
 ---
 
 ### 5. Add production direct URL as a GitHub secret
 
 ```bash
-gh secret set PROD_DATABASE_DIRECT_URL --repo aesir-tecnologia/folhario
-# paste the production direct connection URL (port 5432) when prompted
+printf '%s' "<prod-direct-url-port-5432>" |
+  gh secret set PROD_DATABASE_DIRECT_URL --repo aesir-tecnologia/folhario
 ```
 
 ---
@@ -273,27 +350,31 @@ gh secret set PROD_DATABASE_DIRECT_URL --repo aesir-tecnologia/folhario
 ### 7. Add remaining GitHub secrets
 
 ```bash
-gh secret set SENTRY_AUTH_TOKEN --repo aesir-tecnologia/folhario
-gh secret set SENTRY_ORG --repo aesir-tecnologia/folhario
-gh secret set SENTRY_PROJECT --repo aesir-tecnologia/folhario
+printf '%s' "<auth-token>"   | gh secret set SENTRY_AUTH_TOKEN --repo aesir-tecnologia/folhario
+printf '%s' "<org-slug>"     | gh secret set SENTRY_ORG        --repo aesir-tecnologia/folhario
+printf '%s' "<project-slug>" | gh secret set SENTRY_PROJECT    --repo aesir-tecnologia/folhario
 ```
 
-`SENTRY_DSN_CI` and `POSTHOG_KEY_CI` are already present from Phase 1.
+`SENTRY_DSN_CI` and `POSTHOG_KEY_CI` should already exist from CI setup (`ci.yml` references them). Add them now if missing, same `printf | gh secret set` pattern.
 
 ---
 
 ## Rollback
 
-**Fast rollback (no DB changes):** In Vercel dashboard → Deployments, promote a prior deployment to production. Or via CLI: `vercel promote <deployment-url> --scope=<org>`.
+**Fast rollback (no DB changes):** In Vercel dashboard → Deployments, promote a prior deployment to production. Or via CLI: `vercel promote <deployment-url-or-id> --token=$VERCEL_TOKEN` (add `--scope <team-slug>` if your token has multi-team access). The target deployment must already be in the production target (i.e. originally created with `vercel deploy --prod`).
 
-**Rollback with DB migration:** Revert the commit, push to a new branch, open a PR. The deploy pipeline will apply any down-migrations included in the revert before deploying. There is no automatic migration rollback — ensure every destructive migration ships with a corresponding down-migration.
+**Rollback with DB migration:** Revert the commit, push to a new branch, open a PR. The deploy pipeline will apply whatever migrations the revert contains before deploying. **Drizzle does not auto-generate down-migrations** — every destructive migration must ship with a hand-written paired migration that reverses it (added to the same PR or a follow-up). There is no automatic rollback.
 
 ---
 
 ## Notes
 
-**Supabase free plan — no branch DBs:** INFRA-13 in REQUIREMENTS.md originally specified per-PR Supabase branch DBs. Branching requires a paid plan. Phase 12 uses a shared preview Supabase project instead. Per-PR isolation is the upgrade path when budget allows.
+**Supabase free plan — no branch DBs:** REQUIREMENTS.md (INFRA-13) originally specified per-PR Supabase branch DBs. Branching requires a paid plan. The deploy pipeline uses a shared preview Supabase project instead. Per-PR isolation is the upgrade path when budget allows.
 
 **Shared preview DB race condition:** If two PRs deploy simultaneously, `pnpm db:setup` can run concurrently against the shared preview DB. Drizzle migrations are idempotent (won't re-apply), so concurrent runs of identical migrations are safe. Structural conflicts between two PRs' migrations are not protected against — acceptable for a small team. Mitigation if needed: change preview concurrency to a single global group with `cancel-in-progress: false`.
 
 **No build artifact reuse between CI and deploy:** `vercel build` runs `next build` internally and injects `NEXT_PUBLIC_*` values from the Vercel environment at build time. The CI build uses localhost stub values (`NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321`, etc.) that must not ship to preview or production. Each deploy workflow runs its own full install + `vercel pull` + `vercel build` to get the correct env-specific bundle.
+
+**`vercel pull` shell semantics:** `vercel pull` writes `.vercel/.env.<environment>.local` but does **not** export the values into the calling shell. `vercel build` in the same job reads the file automatically. Any other command that needs those env vars (e.g. `pnpm db:setup` in the preview workflow) must explicitly source the file: `set -a; source .vercel/.env.preview.local; set +a`.
+
+**Production alias vs deployment URL:** `vercel deploy --prod` returns a deployment URL like `<project>-<hash>-<team>.vercel.app` and _also_ swaps the production alias to point at it. The alias swap can lag by a few seconds. Steps that need to talk to the _new_ build (smoke tests, Inngest sync) should use the deployment URL captured from `vercel deploy --prod` stdout, not a hardcoded hostname.

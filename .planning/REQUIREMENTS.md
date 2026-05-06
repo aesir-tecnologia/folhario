@@ -28,14 +28,14 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### IDENT — Identification flow, providers, caps, failure modes
 
-- [ ] **IDENT-01**: Authed, consented, trialing/active, below caps → `POST /v1/identifications` returns ≤3 results above `min_confidence` ordered desc; persists `Identification status=success` with provider/model/latency/consent_version/photo_urls; emits `identification.succeeded` (AC-ID-001)
+- [x] **IDENT-01**: Authed, consented, trialing/active, below caps → `POST /v1/identifications` returns ≤3 results above `min_confidence` ordered desc; persists `Identification status=success` with provider/model/latency/consent_version/photo_urls; emits `identification.succeeded` (AC-ID-001)
 - [x] **IDENT-02**: First identification ever without `identification_third_party` consent triggers the LGPD consent modal disclosing Plant ID + OpenAI-compat providers and Art. 33 transfer; no provider call until granted (AC-ID-002, §13)
 - [ ] **IDENT-03**: Consent revoked or never granted → `consent_required` 403; no provider call; no Identification row (AC-ID-003)
 - [ ] **IDENT-04**: Backend filters results below `ProviderBudget.min_confidence` (seed 0.30); only above-threshold results returned, max 3 (AC-ID-004, §6)
 - [ ] **IDENT-05**: Zero results above threshold → "could not identify" UI + retake guidance; Identification row persisted with raw provider results for history (AC-ID-005)
 - [ ] **IDENT-06**: User selects a result and confirms → Plant created linked to Species, name pre-filled, `Identification.plant_id` FK set (AC-ID-006)
 - [ ] **IDENT-07**: Manual correction stored in `manual_correction`; Species resolved by name match if possible, else null + flagged (AC-ID-007)
-- [ ] **IDENT-08**: Identification history lists success + timeout + provider_unavailable attempts with `status` + `failure_reason`; success shows results + selection; re-associate-with-catalog link available (AC-ID-008, §6)
+- [x] **IDENT-08**: Identification history lists success + timeout + provider_unavailable attempts with `status` + `failure_reason`; success shows results + selection; re-associate-with-catalog link available (AC-ID-008, §6)
 - [ ] **IDENT-09**: Trialing user over daily cap (5) or period cap (75) → `cap_hit` 429 with reset time; no provider call; no counter increment; UI shows manual entry link, no retry button (AC-ID-009, AC-COST-001)
 - [ ] **IDENT-10**: Active user over daily cap (15) or period cap (200 per billing period) → `cap_hit` 429 (AC-ID-010, AC-COST-002)
 - [ ] **IDENT-11**: Primary provider at cost ceiling, fallback available → router skips primary, logs `cost_ceiling_reached`, dispatches fallback, client gets success (AC-ID-011, AC-COST-006)
@@ -194,16 +194,16 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **UI-03**: Global focus ring: 3px Canopy @ 40% opacity, 2px offset, 8px corner radius; tab order matches visual reading order; focus moves to main content region on route change (§17, §18)
 - [ ] **UI-04**: Home screen — empty (zero plants): full-bleed "Identifique sua primeira planta" CTA + camera button + "Adicionar manualmente" text link; nothing else (§16)
 - [ ] **UI-05**: Home screen — default (≥1 plant): "Hoje" section listing reminders due + overdue, quick "Identificar planta" action, Catalog nav (§16)
-- [ ] **UI-06**: Identify screen — picker with capture guide, loading, results (top 3 cards), no-results, cap reached, provider unavailable, offline, read-only paywall, first-time consent modal (§16)
+- [x] **UI-06**: Identify screen — picker with capture guide, loading, results (top 3 cards), no-results, cap reached, provider unavailable, offline, read-only paywall, first-time consent modal (§16)
 - [ ] **UI-07**: Catalog grid responsive breakpoints (2/3/4 cols at 375/600/900) with card: 4:5 photo + name + nickname + location; sort control (§16)
 - [ ] **UI-08**: Plant profile screen — cover + thumbnail gallery, inline-edit name/nickname, room, acquisition_date, notes, care card (or hidden), active reminders, photo journal preview, ID history link, delete overflow; augmented / no-care / read-only variants (§16)
 - [ ] **UI-09**: Care guide screen — visual icons per dimension, toxicity badge prominent at top, first-view toxicity modal, "Gerado por IA" chip when augmented, seasonal tips, compatibility block (§16, §17)
 - [ ] **UI-10**: Reminders management screen per §16 + first-reminder push-permission prompt (§16)
 - [ ] **UI-11**: Photo journal screen — per-plant chronological list with add entry flow; read-only variant (§16)
-- [ ] **UI-12**: Identification history screen — per-user list with thumbnails, results, selected/manual/failed status; detail view with re-associate action (§16)
+- [x] **UI-12**: Identification history screen — per-user list with thumbnails, results, selected/manual/failed status; detail view with re-associate action (§16)
 - [ ] **UI-13**: Settings screen — account, notifications, subscription & billing, privacy & LGPD, needs attention (sync failures), app info sections (§16)
 - [ ] **UI-14**: Bottom navigation: 4 items (Home, Catálogo, Identificar, Perfil), 28px Lucide + label always, Canopy active indicator bar, 56px + safe-area padding, per-tab scroll preservation (§17)
-- [ ] **UI-15**: Confidence ladder: 3 states (high ≥70%, medium 40–69%, low threshold–39%) with redundant signals (bar, segments, percentage, SR label) (§17, §18)
+- [x] **UI-15**: Confidence ladder: 3 states (high ≥70%, medium 40–69%, low threshold–39%) with redundant signals (bar, segments, percentage, SR label) (§17, §18)
 - [ ] **UI-16**: Toxicity badge composition (non-negotiable 7-part spec): filled rounded-rect, 18px paw+child icon, literal text, 3px diagonal striped accent border, disclaimer line, SR `role="alert"` full phrase, haptic warning on first reveal per session (§17, §18)
 - [ ] **UI-17**: Skeletal shimmer loading (never circular spinners) with 300ms delay threshold and 120ms fade-in for faster ops; static block + 80ms fade under reduced motion (§17)
 - [ ] **UI-18**: Empty states — composed invitations with Sage line-art illustration + Source Serif headline + Calm Slate hint + exactly one Canopy primary CTA (§17)
@@ -339,14 +339,14 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | AUTH-13 | Phase 4 | Complete (Plan 09) |
 | AUTH-14 | Phase 4 | Complete (Plan 07) |
 | AUTH-15 | Phase 4 | Complete (Plan 10) |
-| IDENT-01 | Phase 6 | Pending |
+| IDENT-01 | Phase 6 | Complete |
 | IDENT-02 | Phase 6 | Complete |
 | IDENT-03 | Phase 6 | Pending |
 | IDENT-04 | Phase 6 | Pending |
 | IDENT-05 | Phase 6 | Pending |
 | IDENT-06 | Phase 6 | Pending |
 | IDENT-07 | Phase 6 | Pending |
-| IDENT-08 | Phase 6 | Pending |
+| IDENT-08 | Phase 6 | Complete |
 | IDENT-09 | Phase 6 | Pending |
 | IDENT-10 | Phase 6 | Pending |
 | IDENT-11 | Phase 6 | Pending |
@@ -475,16 +475,16 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | UI-03 | Phase 3 | Pending |
 | UI-04 | Phase 5 | Pending |
 | UI-05 | Phase 8 | Pending |
-| UI-06 | Phase 6 | Pending |
+| UI-06 | Phase 6 | Complete |
 | UI-07 | Phase 5 | Pending |
 | UI-08 | Phase 5 | Pending |
 | UI-09 | Phase 7 | Pending |
 | UI-10 | Phase 8 | Pending |
 | UI-11 | Phase 5 | Pending |
-| UI-12 | Phase 6 | Pending |
+| UI-12 | Phase 6 | Complete |
 | UI-13 | Phase 4 | Complete (Plan 10) |
 | UI-14 | Phase 3 | Pending |
-| UI-15 | Phase 6 | Pending |
+| UI-15 | Phase 6 | Complete |
 | UI-16 | Phase 7 | Pending |
 | UI-17 | Phase 3 | Pending |
 | UI-18 | Phase 3 | Pending |

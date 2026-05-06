@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-05-06T06:17:02.622Z"
+last_updated: "2026-05-06T06:26:55.758Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 78
-  completed_plans: 65
-  percent: 83
+  completed_plans: 66
+  percent: 85
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 06 (identification-flow-cost-controls) — EXECUTING
-Plan: 4 of 16
+Plan: 5 of 16
 Status: Ready to execute
 Last activity: 2026-05-06
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [████████░░] 83%
 | Phase 05-catalog-meu-jardim P12 | 11 | 3 tasks | 9 files |
 | Phase 05-catalog-meu-jardim P24 | 437 | 4 tasks | 6 files |
 | Phase 06 P06-03 | estimated | 3 tasks | 13 files |
+| Phase 06-identification-flow-cost-controls P04 | 20 | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - Plan 05-02: Two separate drizzle-kit generate invocations (one table per pass) to produce two distinct named migration files; REFACTOR phase skipped (duplication ~6 lines)
 - Plan 05-12: Ghost row uses __ghost__ value prefix to prevent React key collision with real options sharing the same string value; commitOption strips prefix before calling onChange
 - Plan 05-12: @testing-library/jest-dom/vitest wired into unit test setup (Rule 2 — was installed but not imported; enables toHaveAttribute matcher across all unit-dom tests)
+- Plan 06-04: messages file is at src/messages/pt-BR.json not messages/pt-BR.json — plan frontmatter had wrong path; all reads/writes use real path
+- Plan 06-04: identificationKeys.detail() stubs fetchIdentificationDetail with throw — GET-by-id route post-phase-6; history modal renders from list-row data per UI-SPEC line 449
+- Plan 06-04: catalog.profile.sections.idHistory added alongside existing sections.history to avoid breaking Phase 5 consumers
 
 - Phase 1: Next 16 App Router + Serwist (not next-pwa), GitHub Actions as sole deploy pipeline (Vercel git integration OFF)
 - Phase 1: Drizzle + `postgres-js` + `{ prepare: false }` mandatory for Supavisor txn pooler (stack lock-in from CLAUDE.md)
@@ -160,6 +164,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-06T06:16:56.522Z
+Last session: 2026-05-06T06:26:55.749Z
 Stopped at: Completed 06-03-PLAN.md
 Resume file: None

@@ -219,7 +219,7 @@ Plans:
 - [x] 06-01-PLAN.md -- Schema migration + identification-photos bucket + circuit_breakers table [BLOCKING db migrate]
 - [x] 06-02-PLAN.md -- Wave 0 test infra (consentedUser fixture + provider fetch-mock helpers + stub mode in playwright config)
 - [x] 06-03-PLAN.md -- IdentificationProvider interface + Plant.id + OpenAI-compat + Stub provider + factory (TDD)
-- [ ] 06-04-PLAN.md -- i18n pt-BR namespace + snake-case mappers + Zod request/response schemas + TanStack Query factory
+- [x] 06-04-PLAN.md -- i18n pt-BR namespace + snake-case mappers + Zod request/response schemas + TanStack Query factory
 
 **Wave 2** _(blocked on Wave 1; UI primitives parallel with repositories — no file overlap)_
 - [ ] 06-05-PLAN.md -- Identification + IAM repositories (atomic UPSERT + TTL cache + hasActiveConsent + getCurrentPolicyVersionString)

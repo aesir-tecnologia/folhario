@@ -112,10 +112,15 @@
         "photoIndexOf": "Foto {index} de {name}",
         "photoFallbackAlt": "Foto {index}"
       },
+      "idHistory": {
+        "empty": "Esta planta foi adicionada manualmente.",
+        "viewAll": "Ver tudo"
+      },
       "sections": {
-        "reminders": "LEMBRETES ATIVOS",
+        "history": "HISTÓRICO DE IDENTIFICAÇÃO",
+        "idHistory": "HISTÓRICO DE IDENTIFICAÇÃO",
         "journal": "DIÁRIO DE FOTOS",
-        "history": "HISTÓRICO DE IDENTIFICAÇÃO"
+        "reminders": "LEMBRETES ATIVOS"
       },
       "reminders": {
         "empty": "Você ainda não tem lembretes para esta planta.",
@@ -198,10 +203,141 @@
     }
   },
   "identify": {
+    "capHit": {
+      "chipPrimary": "Limite atingido",
+      "chipSecondary": "Próximo em {resetTime}",
+      "manualLink": "Adicionar manualmente",
+      "resetHint": "Próximo limite em {resetTime}",
+      "title": "Você atingiu o limite de identificações de hoje."
+    },
+    "captureGuide": {
+      "flower": "Flor (se houver)",
+      "leaf": "Folha próxima",
+      "morePhotos": "Mais fotos melhoram a precisão",
+      "whole": "Planta inteira"
+    },
+    "consent": {
+      "accept": "Entendo e aceito",
+      "body": "Usamos Plant.id (Kindwise) e modelos de visão compatíveis com OpenAI, ambos fora do Brasil (Art. 33 LGPD). Seus dados são usados apenas para identificar plantas.",
+      "cancel": "Cancelar",
+      "chipLabel": "Gerado por IA",
+      "privacyLink": "Política de privacidade",
+      "title": "Para identificar, precisamos enviar suas fotos"
+    },
+    "header": {
+      "history": "Histórico"
+    },
+    "history": {
+      "empty": {
+        "cta": "Identificar planta",
+        "hint": "Use o botão de identificar para começar.",
+        "title": "Você ainda não identificou nenhuma planta."
+      },
+      "failures": {
+        "capHit": "Falhou: limite atingido",
+        "providerUnavailable": "Falhou: indisponível",
+        "timeout": "Falhou: tempo esgotado"
+      },
+      "itemAriaLabel": "Identificação de {date}, {statusLabel}",
+      "reassociate": "Associar à planta",
+      "status": {
+        "capHit": "Limite atingido",
+        "providerUnavailable": "Indisponível",
+        "timeout": "Tempo esgotado"
+      },
+      "suggestionPrefix": "Sugestão:",
+      "title": "Histórico de identificações"
+    },
+    "loading": {
+      "identifying": "Identificando sua planta…",
+      "uploading": "Enviando fotos…"
+    },
+    "offline": {
+      "hint": "Volte aqui quando sua conexão voltar.",
+      "title": "Identificação requer conexão à internet."
+    },
+    "paywall": {
+      "body": "Sua assinatura está pausada. Reative para retomar identificações.",
+      "cancelCta": "Cancelar",
+      "primaryCta": "Ver assinatura",
+      "title": "Reative sua assinatura para identificar novas plantas."
+    },
+    "picker": {
+      "addMore": "Adicionar mais fotos",
+      "cameraCta": "Câmera",
+      "galleryCta": "Galeria",
+      "identifyCta": "Identificar",
+      "photoCount": "{n}/{max}",
+      "removePhoto": "Remover foto {n}"
+    },
     "placeholder": {
-      "title": "Em breve",
       "hint": "Esta é a etapa onde a identificação por foto chega. Por enquanto, adicione plantas manualmente pelo catálogo.",
-      "offlineBlocked": "Identificação requer conexão à internet."
+      "offlineBlocked": "Identificação requer conexão à internet.",
+      "title": "Em breve"
+    },
+    "plantHistory": {
+      "empty": {
+        "hint": "As identificações associadas a esta planta aparecem aqui.",
+        "title": "Esta planta ainda não tem identificações no histórico."
+      },
+      "titleFormat": "Histórico de identificações — {plantName}"
+    },
+    "providerUnavailable": {
+      "hint": "Tente novamente em alguns minutos.",
+      "manualLink": "Adicionar manualmente",
+      "retryCta": "Tentar novamente",
+      "title": "Identificação temporariamente indisponível."
+    },
+    "resultSheet": {
+      "failure": "Não conseguimos adicionar agora. Tente novamente.",
+      "fields": {
+        "acquisitionDate": {
+          "label": "Adicionada em (opcional)"
+        },
+        "location": {
+          "label": "Local (opcional)"
+        },
+        "name": {
+          "label": "Nome",
+          "placeholder": "Como você chama essa planta?"
+        },
+        "nickname": {
+          "label": "Apelido (opcional)",
+          "placeholder": "Um nome carinhoso"
+        }
+      },
+      "selectedPrefix": "Selecionado:",
+      "submit": "Adicionar à minha estante",
+      "submitting": "Adicionando…",
+      "title": "Adicionar {speciesName}?"
+    },
+    "results": {
+      "confidenceHigh": "Confiança alta",
+      "confidenceLow": "Confiança baixa",
+      "confidenceMedium": "Confiança média",
+      "heading": "Encontramos:",
+      "notNoneOfThese": "Não é nenhuma delas",
+      "notNoneOfTheseManualLink": "Adicionar manualmente",
+      "tierPrefixLow": "Pode ser…",
+      "tierPrefixMedium": "Pode ser…",
+      "viewHistoryLink": "Ver histórico"
+    },
+    "timeout": {
+      "hint": "Tente novamente com fotos mais nítidas.",
+      "manualLink": "Adicionar manualmente",
+      "retryCta": "Tentar novamente",
+      "title": "A identificação demorou mais que o esperado."
+    },
+    "toast": {
+      "consentRequired": "Precisamos da sua autorização antes de identificar.",
+      "gpsRejected": "Removemos a localização das suas fotos antes de enviar.",
+      "validationFailed": "Não conseguimos enviar suas fotos. Tente fotos diferentes."
+    },
+    "zeroResults": {
+      "hint": "Tente com mais fotos ou de ângulos diferentes.",
+      "manualLink": "Adicionar manualmente",
+      "retryCta": "Tentar novamente",
+      "title": "Hmm, não conseguimos identificar desta vez."
     }
   },
   "profile": {

@@ -164,10 +164,12 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     "utf8",
   );
 
-  // 4. Seed a deterministic test users row. Skip seeding if no
-  //    DATABASE_POOL_URL is set (developer running E2E without a
-  //    local DB) — the spec will fail loudly on the route's
-  //    getUserById step.
+  // 4. Seed a deterministic test users row. CI smoke runs against vanilla
+  //    postgres without Supabase Auth; those specs do not exercise auth, so
+  //    they opt out of auth seeding explicitly. Full E2E still seeds and
+  //    fails loudly if the local Supabase Auth stack is unavailable.
+  if (process.env.PLAYWRIGHT_SKIP_AUTH_SEED === "1") return;
+
   const dbUrl = process.env.DATABASE_POOL_URL ?? process.env.DATABASE_URL;
   if (dbUrl) {
     if (/supabase\.co/.test(dbUrl)) {

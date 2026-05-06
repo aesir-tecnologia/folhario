@@ -140,6 +140,14 @@ file_size_limit = "100MiB"
 allowed_mime_types = ["application/zip", "application/json"]
 objects_path = "./storage/data-exports"
 
+# Identification photos for history thumbnails (D-21); private, signed 24h URLs only.
+# Object keyspace: {userId}/{identificationId}/{n}.jpg (n = 0-indexed photo position).
+[storage.buckets.identification-photos]
+public = false
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+objects_path = "./storage/identification-photos"
+
 # Allow connections via S3 compatible clients
 [storage.s3_protocol]
 enabled = false

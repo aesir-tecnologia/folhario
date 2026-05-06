@@ -45,3 +45,8 @@ supabase/.branches/
 # Local-only Playwright snapshots (CI uses linux baselines from Docker)
 tests/e2e/visual-snapshots.spec.ts-snapshots/*darwin*.png
 .vercel
+
+# graphify — commit the graph, skip local-only artifacts
+graphify-out/manifest.json
+graphify-out/cost.json
+graphify-out/cache/

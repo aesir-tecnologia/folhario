@@ -84,9 +84,7 @@ export const identificationLimits = pgTable("identification_limits", {
     .unique(),
   dailyCap: integer("daily_cap").notNull(),
   periodCap: integer("period_cap").notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
-    .notNull()
-    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
   updatedBy: varchar("updated_by", { length: 128 }),
 });
 
@@ -103,6 +101,8 @@ export const providerBudgets = pgTable(
     alertThresholdPct: integer("alert_threshold_pct").notNull().default(80),
     minConfidence: numeric("min_confidence", { precision: 3, scale: 2 }),
     isActive: boolean("is_active").notNull().default(true),
+    costPerRequestCents: integer("cost_per_request_cents").notNull().default(2),
+    lastAlertedAt: date("last_alerted_at"),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
       .notNull()
       .defaultNow(),
@@ -137,3 +137,15 @@ export const providerUsageCounters = pgTable(
     ),
   ],
 );
+
+export const providerCircuitBreakers = pgTable("provider_circuit_breakers", {
+  provider: varchar("provider", { length: 64 }).primaryKey(),
+  state: varchar("state", { length: 16, enum: ["closed", "open", "half_open"] as const })
+    .notNull()
+    .default("closed"),
+  consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+  openedAt: timestamp("opened_at", { withTimezone: true, mode: "string" }),
+  lastFailureAt: timestamp("last_failure_at", { withTimezone: true, mode: "string" }),
+  inFlightAt: timestamp("in_flight_at", { withTimezone: true, mode: "string" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }).notNull().defaultNow(),
+});

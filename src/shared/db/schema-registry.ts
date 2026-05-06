@@ -41,6 +41,7 @@ export {
   identificationLimits,
   identifications,
   providerBudgets,
+  providerCircuitBreakers,
   providerUsageCounters,
 } from "@contexts/identification/infrastructure/db/schema";
 

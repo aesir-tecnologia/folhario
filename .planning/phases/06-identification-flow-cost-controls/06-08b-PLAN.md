@@ -14,7 +14,7 @@ requirements:
 must_haves:
   truths:
     - "After a successful provider call, identify use-case calls atomicUpsertAndCheck on provider_usage_counters with cost = ProviderBudget.costPerRequestCents"
-    - "Counter UPSERT runs OUTSIDE the main TX (per D-06: 'separate non-transactional call after success'); failure path does NOT increment (RESEARCH Pitfall 4)"
+    - "Counter UPSERT runs inside the main identify TX immediately after a successful provider call while the provider/day budget advisory lock is still held; failure path does NOT increment (RESEARCH Pitfall 4)"
     - "After UPSERT, identify checks: estimatedCostCents / dailyCostCapCents >= alertThresholdPct/100 → emit provider.ceiling_reached Inngest event AND UPDATE provider_budgets.last_alerted_at = today"
     - "Debounce: if last_alerted_at == today, no second alert is emitted for the same provider+purpose+UTC-day"
     - "care_guide vs identification budgets are independent (COST-06): exhausting plant_id identification ceiling does not trigger care_guide alert and vice versa"
@@ -39,7 +39,7 @@ must_haves:
 <objective>
 TDD the counter UPSERT + 80% ceiling alert step that 06-08 deferred. This plan EDITS the same `src/contexts/identification/application/identify.ts` file from 06-08 to ADD steps 7-8 to the use-case body:
 
-- **Step 7 (post-commit, success-only):** atomic UPSERT on `provider_usage_counters` with cost = ProviderBudget.costPerRequestCents. RUNS OUTSIDE the main TX per D-06 ("separate non-transactional call after success"). Failure path does NOT increment (RESEARCH Pitfall 4 — counter inversion bug).
+- **Step 7 (success-only, before TX commit):** atomic UPSERT on `provider_usage_counters` with cost = ProviderBudget.costPerRequestCents while the provider/day budget lock is still held. Failure path does NOT increment (RESEARCH Pitfall 4 — counter inversion bug).
 - **Step 8 (post-commit, conditional):** if newTotalCents crosses 80% threshold AND `last_alerted_at < CURRENT_DATE`, emit `provider.ceiling_reached` Inngest event + UPDATE `provider_budgets.last_alerted_at` to today (D-23 debounce).
 
 Purpose: The split keeps each TDD plan within ~40% context budget. The counter+alert logic is small (~30 lines of code) but its integration tests are heavy (~200 lines covering threshold-cross + debounce + cross-purpose isolation + failure-not-incremented). Splitting also means a regression in counter logic won't blow up the entire use-case test suite — 06-08's tests stay green and 06-08b's tests fail in isolation.
@@ -77,17 +77,17 @@ Output: Edited use-case (~30 LOC additive) + ~200-line integration test file cov
     6. Pre-seed counter for `(provider='plant_id', purpose='care_guide')` at 90% of cap; successful identification call → no alert emitted for `care_guide` (the use-case only checks the `identification` purpose budget)
   </behavior>
   <implementation>
-    Implementation outline — EDIT the existing `identify.ts` to add steps 7+8 inside the `postCommit` callback. The pattern: counter UPSERT is `defaultDb` (NOT `tx`) because D-06 says "separate non-transactional call after success" — this lets the main TX commit BEFORE the counter increments, so a counter UPSERT failure doesn't roll back the Identification row.
+    Implementation outline — EDIT the existing `identify.ts` to add steps 7+8 inside the main `withUnitOfWork` body, immediately after `routerResult.ok` is known and before the Identification row is returned. The router has already acquired the provider/day budget advisory lock via the tx-bound budgetRepo, so the ceiling check, provider call, and success counter increment are serialized per provider/purpose/UTC-day.
 
-    Inside `postCommit`, BEFORE the existing PostHog/inngest blocks:
+    Inside the main TX, before building `postCommit`:
 
     ```typescript
     // Step 7: Counter UPSERT (success path only — RESEARCH Pitfall 4)
     if (routerResult.ok) {
       try {
-        const budget = await budgetsRepo.findByProviderAndPurpose(defaultDb, routerResult.result.provider, "identification");
+        const budget = await budgetsRepo.findByProviderAndPurpose(tx, routerResult.result.provider, "identification");
         if (budget) {
-          const upsert = await countersRepo.atomicUpsertAndCheck(defaultDb, {
+          const upsert = await countersRepo.atomicUpsertAndCheck(tx, {
             provider: routerResult.result.provider,
             purpose: "identification",
             utcDate,
@@ -98,7 +98,7 @@ Output: Edited use-case (~30 LOC additive) + ~200-line integration test file cov
           if (upsert.newTotalCents >= alertThresholdCents) {
             const todayLastAlerted = budget.lastAlertedAt; // YYYY-MM-DD or null
             if (!todayLastAlerted || todayLastAlerted < utcDate) {
-              await budgetsRepo.updateLastAlertedAt(defaultDb, routerResult.result.provider, "identification", utcDate);
+              await budgetsRepo.updateLastAlertedAt(tx, routerResult.result.provider, "identification", utcDate);
               await inngest.send({
                 name: "provider.ceiling_reached",
                 data: {
@@ -118,19 +118,20 @@ Output: Edited use-case (~30 LOC additive) + ~200-line integration test file cov
     }
     ```
 
-    The counter and alert sit INSIDE `postCommit` so:
-    - The main TX commits the Identification row first (audit trail honest)
-    - If counter UPSERT throws, Sentry captures but doesn't roll back the Identification row
-    - Alert emission is best-effort (Inngest events are durable; one missed event during a network blip is acceptable for an operator alert)
+    The counter update sits INSIDE the main TX so:
+    - The provider/day budget lock remains held until after the success counter is incremented
+    - Cross-user races cannot all pass a below-cap check against the same remaining slot
+    - If counter UPSERT throws, return provider_unavailable and capture Sentry; this is preferable to silently under-counting a paid provider call
+    - Alert emission uses `inngest.send` after `last_alerted_at` is updated; if event send fails, capture Sentry but keep the counter committed
 
-    The `lastAlertedAt` field (DATE column) is read from the `budget` snapshot the use-case fetched. To ensure a fresh read (not a stale Drizzle cache), the use-case re-fetches `budget` inside `postCommit` BEFORE the threshold check rather than relying on a value captured upstream. This is more correct for tight test 5 (between two consecutive identifies, the field has just been written).
+    The `lastAlertedAt` field (DATE column) is read from a fresh tx-bound budget lookup immediately before the threshold check rather than from any TTL/cache snapshot. This is required for tight test 5 (between two consecutive identifies, the field has just been written).
 
-    Refinement: the `postCommit` callback already runs once per request. The counter UPSERT is therefore once per successful request. The threshold check fires the alert at most once per UTC day per (provider, purpose) due to the `last_alerted_at` write — even with a multi-process Vercel function fleet, two concurrent requests both seeing `last_alerted_at < today` will both attempt the UPDATE; the second one finds `last_alerted_at = today` and the `IS DISTINCT FROM` predicate makes it a no-op (or it succeeds with a same-value write — both are idempotent). Inngest event de-dup is NOT in this plan; if two events fire on the same day the operator may receive two emails — acceptable per RESEARCH §State of the Art line 932 ("step.sleepUntil deferred — date column is one comparison, not perfectly de-duped"). Document this in SUMMARY.
+    Refinement: the counter UPSERT runs once per successful provider call. The threshold check fires the alert at most once per UTC day per (provider, purpose) because `last_alerted_at` is updated while the provider/day budget lock is held. If Inngest send fails after the date update, Sentry captures the miss and the committed counter remains the audit source.
 
     The TDD cycle:
     - **RED:** Write all 6 tests in `tests/integration/identification/identify-counter-and-ceiling.integration.test.ts`. They all fail (no counter step in identify.ts yet from 06-08). Commit `test(06-08b): add failing tests for counter UPSERT and 80% alert`.
-    - **GREEN:** Edit identify.ts to add the counter+alert step inside `postCommit`. Commit `feat(06-08b): wire counter UPSERT and 80% ceiling alert into identify use-case`.
-    - **REFACTOR:** If `postCommit` body grows past ~80 lines, extract `runCounterUpsertAndAlert(routerResult)` as a private helper. Otherwise skip.
+    - **GREEN:** Edit identify.ts to add the counter+alert step inside the main TX while the provider/day budget lock is held. Commit `feat(06-08b): wire counter UPSERT and 80% ceiling alert into identify use-case`.
+    - **REFACTOR:** If the main identify use-case body grows past ~250 lines, extract `runCounterUpsertAndAlert(tx, routerResult)` as a private helper. Otherwise skip.
   </implementation>
 </feature>
 
@@ -151,8 +152,8 @@ Output: Edited use-case (~30 LOC additive) + ~200-line integration test file cov
 | T-06-08b-01 | T (Tampering) | Counter inflation via failure-path increment | mitigate | Wrap step 7 in `if (routerResult.ok)`; test 3 verifies failure path leaves counter unchanged |
 | T-06-08b-02 | T | Counter inflation via concurrent UPSERT | mitigate | atomicUpsertAndCheck uses ON CONFLICT DO UPDATE — Postgres atomicity guarantees no lost writes (proven in 06-05 task 2) |
 | T-06-08b-03 | I (Information Disclosure) | provider.ceiling_reached event payload | accept | Numeric cost cents + provider name + UTC date — no PII; operator-facing |
-| T-06-08b-04 | D (Denial of Service) | Excess alert emails on multi-process race | accept | Two emails on the same day is acceptable — better than missing the alert. Bounded by N processes; in practice ≤ 2 emails per day per provider |
-| T-06-08b-05 | E (Elevation) | budget.lastAlertedAt read from stale cache | mitigate | Re-fetch budget INSIDE postCommit just before threshold check — eliminates stale-cache window for the debounce |
+| T-06-08b-04 | D (Denial of Service) | Excess alert emails on multi-process race | mitigate | Provider/day budget advisory lock serializes threshold check + `last_alerted_at` update, so normal cross-process races emit once per day |
+| T-06-08b-05 | E (Elevation) | budget.lastAlertedAt read from stale cache | mitigate | Re-fetch budget inside the tx just before threshold check — eliminates stale-cache window for the debounce |
 | T-06-08b-06 | T | care_guide budget exhausting identification ceiling | mitigate | Use-case only fetches and increments the `identification` purpose budget; test 6 verifies care_guide budget at 90% does NOT trigger an identification alert |
 
 </threat_model>
@@ -171,14 +172,14 @@ Output: Edited use-case (~30 LOC additive) + ~200-line integration test file cov
 - COST-06 (purpose isolation) covered by test 6
 - Counter UPSERT runs ONLY on success (RESEARCH Pitfall 4 mitigated by test 3)
 - Inngest event payload matches the ProviderCeilingReachedPayload type (existing in domain/events.ts)
-- No regression in 06-08's existing 16 tests
+- No regression in 06-08's existing 17 tests
 </success_criteria>
 
 <output>
 After completion, create `.planning/phases/06-identification-flow-cost-controls/06-08b-SUMMARY.md`. SUMMARY MUST note:
 1. TDD commits (test, feat, optional refactor)
-2. Test count (6) + confirmation that 06-08's 16 tests still pass
-3. Counter UPSERT runs OUTSIDE main TX (per D-06)
-4. Alert debouncing semantics: best-effort de-dup via `last_alerted_at` DATE; multi-process races CAN produce up to N emails per day, bounded by Vercel function concurrency. Acceptable per RESEARCH §State of the Art note. If de-dup hardening becomes necessary post-launch, add Inngest `step.run` idempotency key to the consumer (Phase 7+).
+2. Test count (6) + confirmation that 06-08's 17 tests still pass
+3. Counter UPSERT runs inside main TX while provider/day budget lock is held
+4. Alert debouncing semantics: `last_alerted_at` DATE is updated while the provider/day budget lock is held, so normal cross-process races are serialized. If Inngest send fails after the date update, Sentry captures and operators can inspect the counter manually.
 5. Reminder for plan 06-12 (Inngest functions): `notifyCeiling` is the consumer of `provider.ceiling_reached`; that plan implements the Resend dispatch.
 </output>

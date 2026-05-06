@@ -14,6 +14,12 @@ export const serverSchema = z.object({
   SENTRY_ORG: optional(z.string().min(1)),
   SENTRY_PROJECT: optional(z.string().min(1)),
   IDENTIFICATION_PROVIDER_MODE: z.enum(["stub", "real"]).default("stub"),
+  // Phase 6 — Identification providers (D-02 / T-06-03-03: server-only, no NEXT_PUBLIC_ prefix).
+  OPENAI_API_KEY: optional(z.string().min(1)),
+  OPENAI_BASE_URL: z.string().url().default("https://api.openai.com"),
+  OPENAI_MODEL: z.string().default("gpt-4o-2024-08-06"),
+  OPERATOR_ALERT_EMAIL: optional(z.string().email()),
+  PLANT_ID_API_KEY: optional(z.string().min(1)),
   // Phase 4 — Inngest (D-16: notifications/send-email is the first async consumer)
   INNGEST_EVENT_KEY: optional(z.string().min(1)),
   INNGEST_SIGNING_KEY: optional(z.string().min(1)),

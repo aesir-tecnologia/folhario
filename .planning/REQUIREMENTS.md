@@ -149,8 +149,8 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **COST-05**: Provider counter at daily ceiling → provider marked unavailable rest of UTC day; router skips it; fallover engaged (AC-COST-005)
 - [ ] **COST-06**: Per-provider ceilings keyed `(provider, purpose)` — `identification` and `care_guide` are independent budgets/counters; care_guide exhaustion never affects identification (AC-COST-006, §6, §8)
 - [ ] **COST-07**: Only `provider_unavailable` surfaces to clients; internal reasons (`cost_ceiling_reached`, `breaker_open`) persisted in `Identification.failure_reason` but never returned (AC-COST-007)
-- [ ] **COST-08**: Circuit breaker per provider: opens after N consecutive failures within window, half-open after cooldown, close on success; trips logged with `breaker_open` (AC-COST-008, §6)
-- [ ] **COST-09**: Two concurrent identification requests to the same provider → `ProviderUsageCounter` increments serialized atomically; no lost writes (AC-COST-009)
+- [x] **COST-08**: Circuit breaker per provider: opens after N consecutive failures within window, half-open after cooldown, close on success; trips logged with `breaker_open` (AC-COST-008, §6)
+- [x] **COST-09**: Two concurrent identification requests to the same provider → `ProviderUsageCounter` increments serialized atomically; no lost writes (AC-COST-009)
 - [ ] **COST-10**: Operator updates to `IdentificationLimit` or `ProviderBudget` in DB take effect on next request past in-memory cache TTL; no redeploy (AC-COST-010)
 
 ### LGPD — Data rights, deletion grace, consent
@@ -163,7 +163,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **LGPD-06**: Grace elapsed without cancellation → function resumes, hard-deletes photos, plants, ID history, reminder logs, consent rows (except minimal deletion-audit record); "deletion complete" email sent (AC-LGPD-006)
 - [ ] **LGPD-07**: Hard-deleted account reflected in next full backup cycle within 30 days (AC-LGPD-007)
 - [ ] **LGPD-08**: Consent revocation from Settings records in ConsentLog; existing catalog access preserved; only affected processing activity blocked going forward (AC-LGPD-008)
-- [ ] **LGPD-09**: Successful identification captures `consent_version` of the policy active at request time (AC-LGPD-009)
+- [x] **LGPD-09**: Successful identification captures `consent_version` of the policy active at request time (AC-LGPD-009)
 - [ ] **LGPD-10**: Privacy policy version bump flagged material for an activity → on next use of that activity, a new consent prompt appears before proceeding; new `policy_version` recorded on grant (AC-LGPD-011)
 - [ ] **LGPD-11**: `iam/process-deletion` uses `step.sleepUntil(grace_period_ends_at)` with `grace_period_ends_at` embedded in the event payload (not fetched at wake time) — survives cancellation races (§13, stack notes)
 - [ ] **LGPD-12**: Privacy policy + ToS published and versioned before launch; DPO contact info surfaced in privacy policy + Settings (§13)
@@ -442,8 +442,8 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | COST-05 | Phase 6 | Pending |
 | COST-06 | Phase 6 | Pending |
 | COST-07 | Phase 6 | Pending |
-| COST-08 | Phase 6 | Pending |
-| COST-09 | Phase 6 | Pending |
+| COST-08 | Phase 6 | Complete |
+| COST-09 | Phase 6 | Complete |
 | COST-10 | Phase 6 | Pending |
 | LGPD-01 | Phase 11 | Pending |
 | LGPD-02 | Phase 11 | Pending |
@@ -453,7 +453,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | LGPD-06 | Phase 11 | Pending |
 | LGPD-07 | Phase 11 | Pending |
 | LGPD-08 | Phase 11 | Pending |
-| LGPD-09 | Phase 6 | Pending |
+| LGPD-09 | Phase 6 | Complete |
 | LGPD-10 | Phase 11 | Pending |
 | LGPD-11 | Phase 11 | Pending |
 | LGPD-12 | Phase 11 | Pending |

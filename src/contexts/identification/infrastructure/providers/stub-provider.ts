@@ -28,12 +28,20 @@ export const stubProvider: IdentificationProvider = {
   model: "stub-v1",
   async identify({ signal }) {
     const start = Date.now();
+    if (signal.aborted) {
+      throw new DOMException("aborted", "AbortError");
+    }
+
     await new Promise<void>((resolve, reject) => {
       const t = setTimeout(resolve, 800);
-      signal.addEventListener("abort", () => {
-        clearTimeout(t);
-        reject(new DOMException("aborted", "AbortError"));
-      });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(t);
+          reject(new DOMException("aborted", "AbortError"));
+        },
+        { once: true },
+      );
     });
     return {
       results: STUB_RESULTS.map((r) => ({ ...r })),

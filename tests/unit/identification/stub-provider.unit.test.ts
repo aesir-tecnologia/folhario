@@ -75,11 +75,13 @@ describe("stubProvider", () => {
       signal: controller.signal,
     });
 
+    const rejectionExpectation = expect(identifyPromise).rejects.toMatchObject({
+      name: "AbortError",
+    });
+
     controller.abort();
     await vi.advanceTimersByTimeAsync(800);
 
-    await expect(identifyPromise).rejects.toMatchObject({
-      name: "AbortError",
-    });
+    await rejectionExpectation;
   });
 });

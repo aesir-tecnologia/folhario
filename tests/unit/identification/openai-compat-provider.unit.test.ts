@@ -41,7 +41,7 @@ describe("createOpenAICompatProvider", () => {
 
   beforeEach(async () => {
     mockFetch = vi.fn();
-    vi.spyOn(global, "fetch").mockImplementation(mockFetch);
+    vi.spyOn(global, "fetch").mockImplementation(mockFetch as unknown as typeof global.fetch);
     ({ createOpenAICompatProvider } =
       await import("@contexts/identification/infrastructure/providers/openai-compat-provider"));
     ({ InvalidProviderResponseError } = await import("@contexts/identification/domain/provider"));
@@ -97,8 +97,8 @@ describe("createOpenAICompatProvider", () => {
     expect(result.provider).toBe("openai_compat");
     expect(result.model).toBe("gpt-4o-2024-08-06");
     expect(result.results).toHaveLength(2);
-    expect(result.results[0].confidence).toBe(0.74);
-    expect(result.results[0].scientificName).toBe("Monstera deliciosa");
+    expect(result.results[0]!.confidence).toBe(0.74);
+    expect(result.results[0]!.scientificName).toBe("Monstera deliciosa");
   });
 
   it("Test 3: content is not a string → throws InvalidProviderResponseError", async () => {

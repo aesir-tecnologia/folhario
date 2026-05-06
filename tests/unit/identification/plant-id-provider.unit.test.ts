@@ -48,7 +48,7 @@ describe("createPlantIdProvider", () => {
 
   beforeEach(async () => {
     mockFetch = vi.fn();
-    vi.spyOn(global, "fetch").mockImplementation(mockFetch);
+    vi.spyOn(global, "fetch").mockImplementation(mockFetch as unknown as typeof global.fetch);
     ({ createPlantIdProvider } =
       await import("@contexts/identification/infrastructure/providers/plant-id-provider"));
     ({ InvalidProviderResponseError } = await import("@contexts/identification/domain/provider"));
@@ -92,10 +92,10 @@ describe("createPlantIdProvider", () => {
 
     expect(result.provider).toBe("plant_id");
     expect(result.results).toHaveLength(3);
-    expect(result.results[0].confidence).toBe(0.91);
-    expect(result.results[0].speciesName).toBe("Costela-de-adão");
-    expect(result.results[0].scientificName).toBe("Monstera deliciosa");
-    expect(result.results[2].speciesName).toBe("Sansevieria trifasciata");
+    expect(result.results[0]!.confidence).toBe(0.91);
+    expect(result.results[0]!.speciesName).toBe("Costela-de-adão");
+    expect(result.results[0]!.scientificName).toBe("Monstera deliciosa");
+    expect(result.results[2]!.speciesName).toBe("Sansevieria trifasciata");
   });
 
   it("Test 3: non-2xx HTTP → throws InvalidProviderResponseError", async () => {

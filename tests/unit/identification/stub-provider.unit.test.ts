@@ -31,12 +31,12 @@ describe("stubProvider", () => {
     const result = await identifyPromise;
 
     expect(result.results).toHaveLength(3);
-    expect(result.results[0].scientificName).toBe("Monstera deliciosa");
-    expect(result.results[0].confidence).toBe(0.85);
-    expect(result.results[1].scientificName).toBe("Epipremnum aureum");
-    expect(result.results[1].confidence).toBe(0.62);
-    expect(result.results[2].scientificName).toBe("Sansevieria trifasciata");
-    expect(result.results[2].confidence).toBe(0.35);
+    expect(result.results[0]!.scientificName).toBe("Monstera deliciosa");
+    expect(result.results[0]!.confidence).toBe(0.85);
+    expect(result.results[1]!.scientificName).toBe("Epipremnum aureum");
+    expect(result.results[1]!.confidence).toBe(0.62);
+    expect(result.results[2]!.scientificName).toBe("Sansevieria trifasciata");
+    expect(result.results[2]!.confidence).toBe(0.35);
   });
 
   it("Test 2: name === 'stub', model === 'stub-v1'", async () => {

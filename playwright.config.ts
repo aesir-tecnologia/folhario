@@ -90,6 +90,9 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     env: {
+      // Phase 6: identification e2e specs MUST run against stub providers
+      // (RESEARCH §Risk 2 + Phase 1 D-05 SC-4). Real providers (Plant.id,
+      // OpenAI-compat) are bypassed via IDENTIFICATION_PROVIDER_MODE=stub.
       IDENTIFICATION_PROVIDER_MODE: "stub",
       AUTH_JWKS_OVERRIDE_URL: TEST_JWKS_URL,
       AUTH_AUDIENCE_OVERRIDE: TEST_AUDIENCE,

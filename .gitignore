@@ -47,6 +47,8 @@ tests/e2e/visual-snapshots.spec.ts-snapshots/*darwin*.png
 .vercel
 
 # graphify — commit the graph, skip local-only artifacts
+graphify-out/.graphify_*.json
+graphify-out/.graphify_python
 graphify-out/manifest.json
 graphify-out/cost.json
 graphify-out/cache/

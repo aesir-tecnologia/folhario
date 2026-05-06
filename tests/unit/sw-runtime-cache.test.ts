@@ -3,10 +3,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 const CATALOG_API_CACHE_VALUE = "folhario-catalog-api-v1";
 
 type CaptureArgs = { url: URL; request: Request };
-type RegisterCaptureCall = [
-  matcher: (args: CaptureArgs) => boolean,
-  strategy: object,
-];
+type RegisterCaptureCall = [matcher: (args: CaptureArgs) => boolean, strategy: object];
 
 const registerCaptureMock = vi.fn();
 
@@ -19,16 +16,18 @@ const staleWhileRevalidateInstances: Array<{
   cacheName?: string;
   plugins?: unknown[];
 }> = [];
+const serwistConstructorOptions: Array<{
+  runtimeCaching?: Array<{
+    matcher?: (args: CaptureArgs) => boolean;
+    handler?: object;
+  }>;
+}> = [];
 
 class MockExpirationPlugin {
   maxAgeSeconds?: number;
   maxEntries?: number;
   purgeOnQuotaError?: boolean;
-  constructor(opts: {
-    maxAgeSeconds?: number;
-    maxEntries?: number;
-    purgeOnQuotaError?: boolean;
-  }) {
+  constructor(opts: { maxAgeSeconds?: number; maxEntries?: number; purgeOnQuotaError?: boolean }) {
     this.maxAgeSeconds = opts?.maxAgeSeconds;
     this.maxEntries = opts?.maxEntries;
     this.purgeOnQuotaError = opts?.purgeOnQuotaError;
@@ -52,7 +51,13 @@ class MockNetworkFirst {}
 class MockSerwist {
   registerCapture: Mock;
   addEventListeners: Mock;
-  constructor() {
+  constructor(opts?: {
+    runtimeCaching?: Array<{
+      matcher?: (args: CaptureArgs) => boolean;
+      handler?: object;
+    }>;
+  }) {
+    serwistConstructorOptions.push(opts ?? {});
     this.registerCapture = registerCaptureMock;
     this.addEventListeners = vi.fn();
   }
@@ -86,6 +91,7 @@ beforeEach(async () => {
   registerCaptureMock.mockReset();
   expirationPluginInstances.length = 0;
   staleWhileRevalidateInstances.length = 0;
+  serwistConstructorOptions.length = 0;
 
   vi.resetModules();
 
@@ -98,14 +104,20 @@ describe("sw.ts — StaleWhileRevalidate catalog runtime cache (D-19/D-20)", () 
     expect(CATALOG_API_CACHE).toBe(CATALOG_API_CACHE_VALUE);
   });
 
-  it("registerCapture is called at least 3 times (SWR, NetworkOnly, NetworkFirst)", () => {
-    expect(registerCaptureMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+  it("registers catalog/API captures and navigation NetworkFirst runtime cache", () => {
+    expect(registerCaptureMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    const opts = serwistConstructorOptions[serwistConstructorOptions.length - 1];
+    const runtimeCaching = opts?.runtimeCaching ?? [];
+    expect(runtimeCaching.some((entry) => entry.handler instanceof MockNetworkFirst)).toBe(true);
   });
 
   it("SWR capture is registered BEFORE the NetworkOnly /api/* catch-all (first-match-wins)", () => {
     const calls = registerCaptureMock.mock.calls as RegisterCaptureCall[];
 
-    const swrIndex = calls.findIndex(([, strategy]) => strategy instanceof MockStaleWhileRevalidate);
+    const swrIndex = calls.findIndex(
+      ([, strategy]) => strategy instanceof MockStaleWhileRevalidate,
+    );
     const networkOnlyApiIndex = calls.findIndex(([matcher, strategy]) => {
       if (!(strategy instanceof MockNetworkOnly)) return false;
       if (typeof matcher !== "function") return false;

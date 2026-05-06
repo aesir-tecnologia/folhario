@@ -217,7 +217,7 @@ Plans:
 Plans:
 **Wave 1** (parallel — schema + test infra + providers + i18n/contracts)
 - [x] 06-01-PLAN.md -- Schema migration + identification-photos bucket + circuit_breakers table [BLOCKING db migrate]
-- [ ] 06-02-PLAN.md -- Wave 0 test infra (consentedUser fixture + provider fetch-mock helpers + stub mode in playwright config)
+- [x] 06-02-PLAN.md -- Wave 0 test infra (consentedUser fixture + provider fetch-mock helpers + stub mode in playwright config)
 - [ ] 06-03-PLAN.md -- IdentificationProvider interface + Plant.id + OpenAI-compat + Stub provider + factory (TDD)
 - [ ] 06-04-PLAN.md -- i18n pt-BR namespace + snake-case mappers + Zod request/response schemas + TanStack Query factory
 
@@ -359,7 +359,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Design System & App Shell | 0/5 | Ready to execute | - |
 | 4. IAM — Auth, Verification, Consent | 13/13 | Complete | 2026-04-29 |
 | 5. Catalog — Meu Jardim | 24/24 | Complete   | 2026-05-03 |
-| 6. Identification Flow & Cost Controls | 1/16 | In Progress|  |
+| 6. Identification Flow & Cost Controls | 2/16 | In Progress|  |
 | 7. Species, Care Guides & Augmentation | 0/TBD | Not started | - |
 | 8. Reminders & Single Daily Push Nudge | 0/TBD | Not started | - |
 | 9. Offline Queue & Sync Resilience | 0/TBD | Not started | - |

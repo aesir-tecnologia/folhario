@@ -29,7 +29,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 ### IDENT — Identification flow, providers, caps, failure modes
 
 - [ ] **IDENT-01**: Authed, consented, trialing/active, below caps → `POST /v1/identifications` returns ≤3 results above `min_confidence` ordered desc; persists `Identification status=success` with provider/model/latency/consent_version/photo_urls; emits `identification.succeeded` (AC-ID-001)
-- [ ] **IDENT-02**: First identification ever without `identification_third_party` consent triggers the LGPD consent modal disclosing Plant ID + OpenAI-compat providers and Art. 33 transfer; no provider call until granted (AC-ID-002, §13)
+- [x] **IDENT-02**: First identification ever without `identification_third_party` consent triggers the LGPD consent modal disclosing Plant ID + OpenAI-compat providers and Art. 33 transfer; no provider call until granted (AC-ID-002, §13)
 - [ ] **IDENT-03**: Consent revoked or never granted → `consent_required` 403; no provider call; no Identification row (AC-ID-003)
 - [ ] **IDENT-04**: Backend filters results below `ProviderBudget.min_confidence` (seed 0.30); only above-threshold results returned, max 3 (AC-ID-004, §6)
 - [ ] **IDENT-05**: Zero results above threshold → "could not identify" UI + retake guidance; Identification row persisted with raw provider results for history (AC-ID-005)
@@ -46,7 +46,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **IDENT-16**: Photos with EXIF GPS tags are rejected by the server as `validation_failed`; client-side strip is the primary defense (AC-ID-016, §11)
 - [ ] **IDENT-17**: Identification accepts 1..N photos (camera/gallery multipart) with static capture guide visible (leaf + flower + whole plant + "Mais fotos melhoram a precisão") (§16)
 - [ ] **IDENT-18**: Vercel function budget for identification: total wall-clock 50s, per-call cap 30s, fallover requires ≥10s remaining budget else short-circuit `provider_unavailable` (§6)
-- [ ] **IDENT-19**: `IdentificationProvider` adapter interface with Plant ID + OpenAI-compat connectors; backend chooses active provider, not client; prompts + config versioned with app deploy (§6)
+- [x] **IDENT-19**: `IdentificationProvider` adapter interface with Plant ID + OpenAI-compat connectors; backend chooses active provider, not client; prompts + config versioned with app deploy (§6)
 - [ ] **IDENT-20**: Offline identification blocked with clear "Identificação requer conexão à internet." message (§10, §16)
 - [ ] **IDENT-21**: Read-only catalog mode shows paywall modal on identify attempt: "Reative sua assinatura para identificar novas plantas." (§12, §16)
 
@@ -340,7 +340,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | AUTH-14 | Phase 4 | Complete (Plan 07) |
 | AUTH-15 | Phase 4 | Complete (Plan 10) |
 | IDENT-01 | Phase 6 | Pending |
-| IDENT-02 | Phase 6 | Pending |
+| IDENT-02 | Phase 6 | Complete |
 | IDENT-03 | Phase 6 | Pending |
 | IDENT-04 | Phase 6 | Pending |
 | IDENT-05 | Phase 6 | Pending |
@@ -357,7 +357,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | IDENT-16 | Phase 6 | Pending |
 | IDENT-17 | Phase 6 | Pending |
 | IDENT-18 | Phase 6 | Pending |
-| IDENT-19 | Phase 6 | Pending |
+| IDENT-19 | Phase 6 | Complete |
 | IDENT-20 | Phase 6 | Pending |
 | IDENT-21 | Phase 6 | Pending |
 | CAT-01 | Phase 5 | Pending |

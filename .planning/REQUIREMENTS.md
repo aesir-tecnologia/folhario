@@ -42,7 +42,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **IDENT-12**: All providers exhausted → `provider_unavailable` 503; Identification row persisted `status=failed` with most specific internal `failure_reason`; internal reason never leaks to client; photo retained in IndexedDB while on screen (AC-ID-012, AC-COST-007)
 - [ ] **IDENT-13**: Provider call exceeds backend timeout → `timeout` 504; row persisted `status=failed`, `failure_reason=timeout`; visible in history (AC-ID-013)
 - [ ] **IDENT-14**: User navigates away mid-request → request completes server-side, row persisted; no in-flight UI restored on return (AC-ID-014)
-- [ ] **IDENT-15**: Malformed/empty provider response → `failure_reason=invalid_response`, breaker counter incremented, fallover to next provider (AC-ID-015)
+- [x] **IDENT-15**: Malformed/empty provider response → `failure_reason=invalid_response`, breaker counter incremented, fallover to next provider (AC-ID-015)
 - [ ] **IDENT-16**: Photos with EXIF GPS tags are rejected by the server as `validation_failed`; client-side strip is the primary defense (AC-ID-016, §11)
 - [ ] **IDENT-17**: Identification accepts 1..N photos (camera/gallery multipart) with static capture guide visible (leaf + flower + whole plant + "Mais fotos melhoram a precisão") (§16)
 - [ ] **IDENT-18**: Vercel function budget for identification: total wall-clock 50s, per-call cap 30s, fallover requires ≥10s remaining budget else short-circuit `provider_unavailable` (§6)
@@ -353,7 +353,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | IDENT-12 | Phase 6 | Pending |
 | IDENT-13 | Phase 6 | Pending |
 | IDENT-14 | Phase 6 | Pending |
-| IDENT-15 | Phase 6 | Pending |
+| IDENT-15 | Phase 6 | Complete |
 | IDENT-16 | Phase 6 | Pending |
 | IDENT-17 | Phase 6 | Pending |
 | IDENT-18 | Phase 6 | Pending |

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-05-06T06:03:49.577Z"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-05-06T06:17:02.622Z"
 last_activity: 2026-05-06
 progress:
   total_phases: 13
   completed_phases: 5
   total_plans: 78
-  completed_plans: 64
-  percent: 82
+  completed_plans: 65
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 06 (identification-flow-cost-controls) — EXECUTING
-Plan: 3 of 16
+Plan: 4 of 16
 Status: Ready to execute
 Last activity: 2026-05-06
 
-Progress: [████████░░] 82%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [████████░░] 82%
 | Phase 05-catalog-meu-jardim P11 | 4 | 2 tasks | 6 files |
 | Phase 05-catalog-meu-jardim P12 | 11 | 3 tasks | 9 files |
 | Phase 05-catalog-meu-jardim P24 | 437 | 4 tasks | 6 files |
+| Phase 06 P06-03 | estimated | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,9 @@ Recent decisions affecting current work:
 - Plan 01-08: First PR CI run (https://github.com/aesir-tecnologia/folhario/actions/runs/24911496475) completed green in 2m43s on the first attempt post-checkpoint-unblock; all 15 workflow steps passed including Playwright smoke (7 passed + 1 expected local-mode skip). GitHub emitted a deprecation annotation: `actions/cache@v4` and `actions/upload-artifact@v4` run on Node 20, forced to Node 24 on 2026-06-02, removed 2026-09-16 — captured as tooling todo at `.planning/todos/pending/2026-04-24-bump-github-actions-to-v5-v7-to-escape-node-20-deprecation.md`.
 - Post-Phase-1 (2026-04-24): **Reversed Action 6 on `next-env.d.ts` handling.** Original Action 6 (from `/gsd-plan-phase 1 --reviews` resolution pass) landed on "untracked AND not gitignored" to reconcile a textual contradiction between 01-01-PLAN (gitignore) and 01-03-PLAN (track). The Codex review that surfaced the contradiction (`01-REVIEWS.md:269`) asked for a clean binary — track OR gitignore — and the resolution invented a third option neither reviewer argued for. Next 16 docs (verified via context7 against `/vercel/next.js` canary — `docs/01-app/03-api-reference/05-config/02-typescript.mdx` and `06-cli/next.mdx`) explicitly recommend gitignoring and regenerating via `next typegen` before typecheck: *"We recommend adding `next-env.d.ts` to your `.gitignore` file"*. `next typegen` exists specifically so CI can hydrate the file cheaply before `tsc --noEmit` without paying for a full build. Resolution: added `next-env.d.ts` to `.gitignore`; inserted `pnpm exec next typegen` step in `ci.yml` between Lint and Typecheck; updated `01-CONTEXT.md` with supersedes-note pointing back to this decision. Historical references to "Action 6" in completed plan/summary artifacts left intact as frozen audit trail — current behavior is the STATE/CONTEXT decision, not the old Action 6 text.
 - [Phase ?]: Plan 05-11: subscription stub shipped; .unit.test.tsx for colocated React tests; async SubscriptionProvider; production static rendering preserved
+- [Phase ?]: No zod-to-json-schema: inline JSON Schema used per RESEARCH §Standard Stack zero-new-deps constraint
+- [Phase ?]: Provider factory throws at first call (not module load) so unit tests can import without real-mode env keys
+- [Phase ?]: errors.ts re-exports InvalidProviderResponseError from provider.ts as canonical import location (06-03)
 
 ### Pending Todos
 
@@ -156,6 +160,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-05-06T06:03:49.569Z
-Stopped at: Phase 6 context gathered
+Last session: 2026-05-06T06:16:56.522Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None

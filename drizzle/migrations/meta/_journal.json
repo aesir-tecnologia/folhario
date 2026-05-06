@@ -57,6 +57,13 @@
       "when": 1777694042601,
       "tag": "0007_lyrical_ikaris",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1778046202097,
+      "tag": "0008_phase06_identification",
+      "breakpoints": true
     }
   ]
 }

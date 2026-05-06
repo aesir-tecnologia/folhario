@@ -1,15 +1,14 @@
 #!/usr/bin/env tsx
 /**
- * Phase-2 Plan 04: seed runner.
+ * Seed runner — applies all phase seed files in order.
  *
- * Reads `drizzle/seeds/phase-02.sql` and executes it through the migration
- * client (D-14: direct DATABASE_URL, no pooler). The seed file uses
- * `INSERT ... ON CONFLICT DO NOTHING`, so re-running this script is safe
- * and idempotent.
+ * Each seed file uses `INSERT ... ON CONFLICT DO NOTHING` (or idempotent
+ * UPDATE), so re-running this script is safe (D-14: direct DATABASE_URL,
+ * no pooler).
  *
  * Exit codes:
- *  0 — seed file applied without error.
- *  1 — seed file is missing.
+ *  0 — all seed files applied without error.
+ *  1 — a seed file is missing.
  *  2 — connection or unexpected SQL error.
  */
 
@@ -18,30 +17,35 @@ import { resolve } from "node:path";
 
 import { closeMigrationSql, getMigrationSql } from "../src/shared/db/migration-client";
 
-const SEED_FILE_PATH = resolve(process.cwd(), "drizzle/seeds/phase-02.sql");
+const SEED_FILES: Array<{ path: string; label: string }> = [
+  { path: "drizzle/seeds/phase-02.sql", label: "phase-02" },
+  { path: "drizzle/seeds/phase-06.sql", label: "phase-06" },
+];
 
 async function main(): Promise<void> {
-  let seedSql: string;
-  try {
-    seedSql = await readFile(SEED_FILE_PATH, "utf8");
-  } catch (err) {
-    console.error(
-      `[seed] could not read seed file at ${SEED_FILE_PATH}. ` +
-        "Plan 02-04 ships drizzle/seeds/phase-02.sql; ensure it is committed.",
-      err,
-    );
-    process.exit(1);
-  }
-
-  if (seedSql.trim().length === 0) {
-    console.error(`[seed] seed file ${SEED_FILE_PATH} is empty. Refusing to no-op.`);
-    process.exit(1);
-  }
-
   const sql = getMigrationSql();
   try {
-    await sql.unsafe(seedSql);
-    console.log("[seed] applied drizzle/seeds/phase-02.sql successfully (idempotent).");
+    for (const { path, label } of SEED_FILES) {
+      const filePath = resolve(process.cwd(), path);
+      let seedSql: string;
+      try {
+        seedSql = await readFile(filePath, "utf8");
+      } catch (err) {
+        console.error(
+          `[seed] could not read seed file at ${filePath}. Ensure it is committed.`,
+          err,
+        );
+        process.exit(1);
+      }
+
+      if (seedSql.trim().length === 0) {
+        console.error(`[seed] seed file ${filePath} is empty. Refusing to no-op.`);
+        process.exit(1);
+      }
+
+      await sql.unsafe(seedSql);
+      console.log(`[seed] applied drizzle/seeds/${label}.sql successfully (idempotent).`);
+    }
   } catch (err) {
     console.error("[seed] error applying seed SQL:", err);
     process.exit(2);

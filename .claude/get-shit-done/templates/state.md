@@ -169,7 +169,7 @@ Updated after each plan completion.
 
 - Count of pending todos
 - Reference to .planning/todos/pending/
-- Brief list if few, count if many (e.g., "5 pending todos — see /gsd-check-todos")
+- Brief list if few, count if many (e.g., "5 pending todos — see /gsd-capture --list")
 
 **Blockers/Concerns:** From "Next Phase Readiness" sections
 

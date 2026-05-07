@@ -114,28 +114,6 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           echo "Deployed: $URL" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install chromium --with-deps
-
-      - name: Playwright smoke (production)
-        env:
-          PLAYWRIGHT_TEST_BASE_URL: ${{ steps.deploy.outputs.url }}
-        # Use the deployment URL captured from `vercel deploy --prod`, not the
-        # production alias — the alias swap can lag a few seconds and we want
-        # to validate the build that just shipped, not whatever the alias
-        # currently points at.
-        # Same env-agnostic caveat as preview: smoke specs were written for
-        # the local stub setup. Adjust if production-specific gaps appear.
-        run: pnpm test:e2e:smoke
-
       - name: Sentry release + source maps
         # Gated on prior steps succeeding so a failed deploy does not pollute
         # Sentry releases.

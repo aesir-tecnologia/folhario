@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 6 context gathered
-last_updated: "2026-05-05T08:01:47.678Z"
-last_activity: 2026-05-05 -- Phase 06 planning complete
+last_updated: "2026-05-07T04:36:15.422Z"
+last_activity: 2026-05-07 - Completed quick task 260507-287: Fix prod deploy — inline narrow DATABASE_URL parse in scripts/migrate.ts
 progress:
   total_phases: 13
   completed_phases: 5
@@ -145,6 +145,12 @@ Launch-blocker dependencies tracked in ROADMAP.md "Launch-Blocker Dependencies" 
 3. DPO appointment (blocks Phase 4 consent flow going live)
 4. Privacy policy + ToS authoring (blocks Phase 4 consent flow going live)
 5. ≥200 curated care guides (Phase 7 dev ships empty; launch needs the corpus)
+
+### Quick Tasks Completed
+
+| #          | Description                                                          | Date       | Commit  | Directory                                                                                                       |
+| ---------- | -------------------------------------------------------------------- | ---------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| 260507-287 | Fix prod deploy — inline narrow DATABASE_URL parse in scripts/migrate.ts | 2026-05-07 | 855e82f | [260507-287-fix-prod-deploy-refactor-scripts-migrate](./quick/260507-287-fix-prod-deploy-refactor-scripts-migrate/) |
 
 ## Deferred Items
 

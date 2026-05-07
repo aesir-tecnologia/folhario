@@ -132,8 +132,10 @@ jobs:
           # virtual prefix at runtime, NOT a filesystem tilde — single quotes
           # are intentional to prevent shell expansion.
           # shellcheck disable=SC2088
-          pnpm dlx @sentry/cli@latest releases files "${{ github.sha }}" \
-            upload-sourcemaps .vercel/output --url-prefix '~/_next'
+          pnpm dlx @sentry/cli@latest sourcemaps upload .vercel/output \
+            --release "${{ github.sha }}" \
+            --url-prefix '~/_next'
+          pnpm dlx @sentry/cli@latest releases set-commits "${{ github.sha }}" --auto
           pnpm dlx @sentry/cli@latest releases finalize "${{ github.sha }}"
 
       - name: Inngest function sync

@@ -141,11 +141,12 @@ jobs:
       - name: Inngest function sync
         if: success()
         env:
-          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
-        # Hit the deployment URL (not the production alias) so re-registration
-        # targets the build that just shipped, even if alias swap is in
-        # flight. Inngest serve() uses PUT for deployment sync; POST is reserved
-        # for signed function invocation and returns 401 when called directly.
+          INNGEST_SYNC_URL: https://folhario.vercel.app/api/inngest
+        # Vercel's generated deployment URLs may be protected and return 401
+        # to external callers. After `vercel deploy --prod` completes it prints
+        # `Aliased`, so sync against the stable production alias. Inngest
+        # serve() uses PUT for deployment sync; POST is reserved for signed
+        # function invocation and returns 401 when called directly.
         run: |
-          curl -fsSL -X PUT "${DEPLOY_URL}/api/inngest" -o /dev/null
-          echo "Inngest sync PUT sent to ${DEPLOY_URL}/api/inngest" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsSL -X PUT "${INNGEST_SYNC_URL}" -o /dev/null
+          echo "Inngest sync PUT sent to ${INNGEST_SYNC_URL}" >> "$GITHUB_STEP_SUMMARY"

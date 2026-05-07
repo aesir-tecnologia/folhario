@@ -73,8 +73,10 @@ pnpm --version
 # Install dependencies
 pnpm install --frozen-lockfile
 
-# Useful CLIs used via pnpm dlx or local node_modules
-pnpm dlx vercel@latest --version
+# Required CLIs
+# Install the Vercel CLI once if `vercel --version` is not found.
+npm install -g vercel@latest
+vercel --version
 ./node_modules/.bin/supabase --version
 pnpm dlx @sentry/cli@latest --version
 ```
@@ -93,10 +95,6 @@ Example local operator file:
 
 ```bash
 # .env.deploy.local — do not commit
-export VERCEL_TOKEN="..."
-export VERCEL_ORG_ID="..."
-export VERCEL_PROJECT_ID="..."
-
 export PREVIEW_DATABASE_MIGRATION_URL="postgresql://postgres.<preview-ref>:<pw>@aws-N-<region>.pooler.supabase.com:5432/postgres"
 export PROD_DATABASE_MIGRATION_URL="postgresql://postgres.<prod-ref>:<pw>@aws-N-<region>.pooler.supabase.com:5432/postgres"
 
@@ -141,11 +139,11 @@ Configure these in **Vercel → Project → Settings → Environment Variables**
 | `NEXT_PUBLIC_POSTHOG_HOST`      | `https://us.i.posthog.com`                          | `https://us.i.posthog.com`                    | Public constant.                                              |
 | `ENABLE_TEST_ROUTES`            | `1` only when diagnostics are intentionally enabled | blank                                         | Never enable in production.                                   |
 
-Vercel CLI setup:
+Vercel CLI setup (the authenticated CLI handles Vercel credentials, so do not pass `--token`):
 
 ```bash
-pnpm dlx vercel@latest login
-pnpm dlx vercel@latest link
+vercel login
+vercel link
 cat .vercel/project.json
 ```
 
@@ -153,8 +151,8 @@ You may add env vars via dashboard or CLI:
 
 ```bash
 # Example; repeat for each key/environment.
-printf '%s' "$NEXT_PUBLIC_SUPABASE_URL" | pnpm dlx vercel@latest env add NEXT_PUBLIC_SUPABASE_URL preview --token="$VERCEL_TOKEN"
-printf '%s' "$NEXT_PUBLIC_SUPABASE_URL" | pnpm dlx vercel@latest env add NEXT_PUBLIC_SUPABASE_URL production --token="$VERCEL_TOKEN"
+printf '%s' "$NEXT_PUBLIC_SUPABASE_URL" | vercel env add NEXT_PUBLIC_SUPABASE_URL preview
+printf '%s' "$NEXT_PUBLIC_SUPABASE_URL" | vercel env add NEXT_PUBLIC_SUPABASE_URL production
 ```
 
 ---
@@ -290,10 +288,9 @@ pnpm db:setup
 ### 2. Pull Vercel preview env
 
 ```bash
-pnpm dlx vercel@latest pull \
+vercel pull \
   --yes \
-  --environment=preview \
-  --token="$VERCEL_TOKEN"
+  --environment=preview
 ```
 
 This writes `.vercel/.env.preview.local`. `vercel build` reads it automatically.
@@ -301,17 +298,16 @@ This writes `.vercel/.env.preview.local`. `vercel build` reads it automatically.
 ### 3. Build preview artifact
 
 ```bash
-pnpm dlx vercel@latest build --token="$VERCEL_TOKEN"
+vercel build
 ```
 
 ### 4. Deploy preview artifact
 
 ```bash
-PREVIEW_URL=$(pnpm dlx vercel@latest deploy \
+PREVIEW_URL=$(vercel deploy \
   --prebuilt \
   --meta localDeploy=true \
-  --meta gitCommitSha="$(git rev-parse HEAD)" \
-  --token="$VERCEL_TOKEN")
+  --meta gitCommitSha="$(git rev-parse HEAD)")
 
 echo "$PREVIEW_URL"
 ```
@@ -374,10 +370,9 @@ pnpm db:setup
 ### 4. Pull Vercel production env
 
 ```bash
-pnpm dlx vercel@latest pull \
+vercel pull \
   --yes \
-  --environment=production \
-  --token="$VERCEL_TOKEN"
+  --environment=production
 ```
 
 This writes `.vercel/.env.production.local`.
@@ -385,16 +380,15 @@ This writes `.vercel/.env.production.local`.
 ### 5. Build production artifact
 
 ```bash
-pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+vercel build --prod
 ```
 
 ### 6. Deploy production artifact
 
 ```bash
-PROD_DEPLOY_URL=$(pnpm dlx vercel@latest deploy \
+PROD_DEPLOY_URL=$(vercel deploy \
   --prebuilt \
-  --prod \
-  --token="$VERCEL_TOKEN")
+  --prod)
 
 echo "$PROD_DEPLOY_URL"
 ```
@@ -483,7 +477,7 @@ curl -I "$DEPLOY_URL" | grep -Ei 'strict-transport-security|x-frame-options|x-co
 If no database rollback is needed, promote an older Vercel production deployment:
 
 ```bash
-pnpm dlx vercel@latest promote <deployment-url-or-id> --token="$VERCEL_TOKEN"
+vercel promote <deployment-url-or-id>
 ```
 
 Or use Vercel Dashboard → Project → Deployments → select previous deployment → Promote.
@@ -518,9 +512,9 @@ Preview:
 
 ```bash
 DATABASE_URL="$PREVIEW_DATABASE_MIGRATION_URL" DATABASE_POOL_URL="$PREVIEW_DATABASE_MIGRATION_URL" pnpm db:setup
-pnpm dlx vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
-pnpm dlx vercel@latest build --token="$VERCEL_TOKEN"
-PREVIEW_URL=$(pnpm dlx vercel@latest deploy --prebuilt --token="$VERCEL_TOKEN")
+vercel pull --yes --environment=preview
+vercel build
+PREVIEW_URL=$(vercel deploy --prebuilt)
 PLAYWRIGHT_TEST_BASE_URL="$PREVIEW_URL" pnpm test:e2e:smoke
 curl -fsSL -X POST "$PREVIEW_URL/api/inngest" -o /dev/null || true
 ```
@@ -530,9 +524,9 @@ Production:
 ```bash
 RELEASE_SHA=$(git rev-parse HEAD)
 DATABASE_URL="$PROD_DATABASE_MIGRATION_URL" DATABASE_POOL_URL="$PROD_DATABASE_MIGRATION_URL" pnpm db:migrate
-pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
-pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
-PROD_DEPLOY_URL=$(pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+vercel pull --yes --environment=production
+vercel build --prod
+PROD_DEPLOY_URL=$(vercel deploy --prebuilt --prod)
 PLAYWRIGHT_TEST_BASE_URL="$PROD_DEPLOY_URL" pnpm test:e2e:smoke
 pnpm dlx @sentry/cli@latest releases new "$RELEASE_SHA"
 pnpm dlx @sentry/cli@latest releases files "$RELEASE_SHA" upload-sourcemaps .vercel/output --url-prefix '~/_next'

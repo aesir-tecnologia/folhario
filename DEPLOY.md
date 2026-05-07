@@ -108,7 +108,7 @@ Job-level guard: `if: github.event.workflow_run.conclusion == 'success'`.
 
 1. **Install dependencies** — `pnpm install --frozen-lockfile`.
 2. **Destructive migration check** — grep migration files for `DROP`, `ALTER TABLE.*DROP COLUMN`, `TRUNCATE`. Write a warning to `$GITHUB_STEP_SUMMARY` if found. This is a soft warning — the human at the environment gate (already passed by this point) is also notified by re-running this against the merge commit; the destructive output appears in the summary regardless.
-3. **Production DB migration** — `pnpm db:migrate` with `DATABASE_URL=${{ secrets.PROD_DATABASE_DIRECT_URL }}` (direct URL, port 5432 — migrations require DDL transactions; the pooler URL is rejected). `scripts/migrate.ts` reads `DATABASE_URL` directly. Also set `DATABASE_POOL_URL` to the same direct URL for this step if `serverEnv` schema validation requires both — they are validated at module import time even if only one is used.
+3. **Production DB migration** — `pnpm db:migrate` with `DATABASE_URL=${{ secrets.PROD_DATABASE_MIGRATION_URL }}` (session-pooler URL, port 5432 on `aws-N-<region>.pooler.supabase.com`). The session pooler is used because GitHub Actions runners are IPv4-only by default and Supabase's direct connection is IPv6-only on free tier; the **transaction** pooler at port 6543 is unsafe for migrations because pgbouncer transaction mode breaks session-scoped features the migration runner can rely on, but the **session** pooler at port 5432 has full Postgres semantics. `scripts/migrate.ts` reads `DATABASE_URL` directly. Also set `DATABASE_POOL_URL` to the same URL for this step — `serverEnv` validates both at module import time even if only one is used.
 4. **Vercel pull (production)** — `vercel pull --yes --environment=production --token=$VERCEL_TOKEN`. Writes `.vercel/.env.production.local`. `vercel build` will read it automatically; no `source` step required here because no other step in this workflow needs the runtime env in the shell (migrations use the GH secret directly).
 5. **Vercel build + deploy**
    - `vercel build --token=$VERCEL_TOKEN`
@@ -139,9 +139,9 @@ Job-level guard: `if: github.event.workflow_run.conclusion == 'success'`.
 
 8. **Inngest sync** — `curl -X POST "${{ steps.deploy.outputs.url }}/api/inngest"` against the new deployment URL (not the production alias) so re-registration targets the build that just shipped, even if alias swap is still in flight.
 
-**GH secrets used:** `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PROD_DATABASE_DIRECT_URL`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN_CI`, `POSTHOG_KEY_CI`
+**GH secrets used:** `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `PROD_DATABASE_MIGRATION_URL`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_DSN_CI`, `POSTHOG_KEY_CI`
 
-**Production DB connection** — step 3 uses `${{ secrets.PROD_DATABASE_DIRECT_URL }}` as `DATABASE_URL`. The pooler URL from Vercel is the _runtime_ connection (used by the deployed app via `vercel pull` → build-time injection → Vercel runtime injection). It is not used by the deploy workflow's migration step.
+**Production DB connection** — step 3 uses `${{ secrets.PROD_DATABASE_MIGRATION_URL }}` as `DATABASE_URL` (session-pooler URL, port 5432). The transaction-pooler URL from Vercel is the _runtime_ connection (used by the deployed app via `vercel pull` → build-time injection → Vercel runtime injection). It is not used by the deploy workflow's migration step.
 
 ---
 
@@ -177,23 +177,23 @@ No Supabase cleanup needed — all PRs share the same preview project; there is 
 
 All secrets are stored as GitHub Actions repo secrets (Settings → Secrets and variables → Actions).
 
-| Secret                     | Used by                      | Purpose                                                |
-| -------------------------- | ---------------------------- | ------------------------------------------------------ |
-| `VERCEL_TOKEN`             | preview, production, cleanup | Vercel CLI authentication                              |
-| `VERCEL_ORG_ID`            | preview, production, cleanup | Vercel org scope                                       |
-| `VERCEL_PROJECT_ID`        | preview, production, cleanup | Vercel project scope                                   |
-| `SENTRY_AUTH_TOKEN`        | production                   | Source map upload via sentry-cli                       |
-| `SENTRY_ORG`               | production                   | Sentry org slug                                        |
-| `SENTRY_PROJECT`           | production                   | Sentry project slug                                    |
-| `SENTRY_DSN_CI`            | preview, production          | Sentry DSN for build-time config                       |
-| `POSTHOG_KEY_CI`           | preview, production          | PostHog key for build-time config                      |
-| `PROD_DATABASE_DIRECT_URL` | production                   | Direct (non-pooler) Postgres URL for `pnpm db:migrate` |
+| Secret                        | Used by                      | Purpose                                                                                                                                             |
+| ----------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VERCEL_TOKEN`                | preview, production, cleanup | Vercel CLI authentication                                                                                                                           |
+| `VERCEL_ORG_ID`               | preview, production, cleanup | Vercel org scope                                                                                                                                    |
+| `VERCEL_PROJECT_ID`           | preview, production, cleanup | Vercel project scope                                                                                                                                |
+| `SENTRY_AUTH_TOKEN`           | production                   | Source map upload via sentry-cli                                                                                                                    |
+| `SENTRY_ORG`                  | production                   | Sentry org slug                                                                                                                                     |
+| `SENTRY_PROJECT`              | production                   | Sentry project slug                                                                                                                                 |
+| `SENTRY_DSN_CI`               | preview, production          | Sentry DSN for build-time config                                                                                                                    |
+| `POSTHOG_KEY_CI`              | preview, production          | PostHog key for build-time config                                                                                                                   |
+| `PROD_DATABASE_MIGRATION_URL` | production                   | Session-pooler Postgres URL (port 5432 on `aws-N-<region>.pooler.supabase.com`) for `pnpm db:migrate` — IPv4-compatible from GitHub Actions runners |
 
 Runtime app secrets (`DATABASE_URL`, `DATABASE_POOL_URL`, API keys, etc.) are stored in Vercel environment variables — separately configured for `preview` and `production` environments. `vercel pull` writes them to `.vercel/.env.<environment>.local`; `vercel build` reads that file automatically. The deploy workflow `source`s the file into the shell only when a non-build step needs the values (currently just preview `db:setup`). On Vercel itself, the runtime injects these env vars into the deployed app. They are **not** GH secrets.
 
 - **Preview** `DATABASE_URL`/`DATABASE_POOL_URL` → shared preview Supabase project credentials, set in Vercel preview env vars. Both point at the Supavisor transaction-mode pooler (port 6543) — the app is the only consumer at runtime, and the pooler is what `postgres-js` with `{ prepare: false }` is configured for.
 - **Production** `DATABASE_URL`/`DATABASE_POOL_URL` → production Supabase project pooler URL (port 6543), set in Vercel production env vars. Same rationale as preview.
-- **`PROD_DATABASE_DIRECT_URL`** is a GH secret (not a Vercel env var) because `pnpm db:migrate` needs a direct connection (port 5432) for DDL transactions. The pooler URL stored in Vercel does not support DDL.
+- **`PROD_DATABASE_MIGRATION_URL`** is a GH secret (not a Vercel env var) because `pnpm db:migrate` needs a non-transaction-pooled connection. The session pooler (port 5432 on `aws-N-<region>.pooler.supabase.com`) is used because it is IPv4-compatible (GitHub Actions runners are IPv4-only by default; Supabase's direct connection is IPv6-only on free tier) and provides full Postgres semantics. The transaction-pooler URL stored in Vercel as `DATABASE_URL` is unsafe for migrations.
 
 ---
 
@@ -210,9 +210,9 @@ Runtime app secrets (`DATABASE_URL`, `DATABASE_POOL_URL`, API keys, etc.) are st
 **Supabase**
 
 - [ ] Create a **second** Supabase project as the shared preview environment (free tier currently allows 2 projects per org; verify before assuming)
-- [ ] Set preview project's transaction-pooler URL (port 6543) as both `DATABASE_URL` and `DATABASE_POOL_URL` in Vercel **preview** environment variables — append `?pgbouncer=true` if not already present in the copied string
-- [ ] Set production project's transaction-pooler URL (port 6543) as both `DATABASE_URL` and `DATABASE_POOL_URL` in Vercel **production** environment variables — same `?pgbouncer=true` requirement
-- [ ] Add production project's **direct** connection URL (port 5432) as `PROD_DATABASE_DIRECT_URL` GH secret — used by `pnpm db:migrate` for DDL transactions, never by the runtime app
+- [ ] Set preview project's **transaction-pooler** URL (port 6543 on `aws-N-<region>.pooler.supabase.com`) as both `DATABASE_URL` and `DATABASE_POOL_URL` in Vercel **preview** environment variables — append `?pgbouncer=true` if not already present in the copied string. Copy the exact hostname from Supabase dashboard → **Connect** → Direct → Transaction pooler (the `aws-N` cluster prefix varies per project)
+- [ ] Set production project's **transaction-pooler** URL (port 6543) as both `DATABASE_URL` and `DATABASE_POOL_URL` in Vercel **production** environment variables — same `?pgbouncer=true` requirement
+- [ ] Add production project's **session-pooler** URL (port 5432 on `aws-N-<region>.pooler.supabase.com`) as `PROD_DATABASE_MIGRATION_URL` GH secret — used by `pnpm db:migrate` from CI, never by the runtime app. (Not the IPv6 direct URL — GitHub Actions runners are IPv4-only.)
 
 **GitHub**
 
@@ -267,37 +267,48 @@ pnpm db:setup-cloud --dry-run # preview values without pushing
 The script discovers your projects via `supabase projects list`, prompts for each project's role (production / preview) and DB password, fetches anon + service-role keys, constructs Supavisor pooler + direct URLs, verifies them with `psql`, then offers to:
 
 1. Push `DATABASE_URL`, `DATABASE_POOL_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` to Vercel preview + production env vars.
-2. Push `PROD_DATABASE_DIRECT_URL` to GitHub Actions secrets.
+2. Push `PROD_DATABASE_MIGRATION_URL` to GitHub Actions secrets.
 3. Run `pnpm db:setup` against each project (the deploy-preview workflow re-runs this on every PR; the manual run is the initial bootstrap).
 
 Each push step is gated behind a `[y/N]` prompt — defaults are no for Vercel/GH (explicit yes pushes) and yes for `db:setup`. Passwords are read with echo disabled and never persisted.
+
+> **Script status (pending follow-up):** the deterministic pooler hostname in `scripts/setup-supabase-cloud.ts` hardcodes the `aws-0` cluster prefix; for projects on `aws-1` or higher (most current Supabase projects) the psql verify step will fail and prompt for a manual paste from the dashboard — the fallback works correctly. The script also still pushes the GH secret under the old name `PROD_DATABASE_DIRECT_URL` and constructs an IPv6-only direct URL for it (see manual fallback below for the correct values). Both are slated for an update; until then, prefer the manual fallback or fix up the pushed values afterwards.
 
 **Preflight requirements:** `pnpm install` (Supabase CLI 2.95.0 is a devDep), `vercel` and `gh` CLIs on PATH, `psql` on PATH (or pass `--skip-verify`), `gh auth login`, `./node_modules/.bin/supabase login`, and `.vercel/project.json` (Section 2).
 
 If you don't have the projects yet, create them at [supabase.com](https://supabase.com) → **New project** first (one for production, one as the shared preview environment), then run the script.
 
 <details>
-<summary>Manual fallback (script unavailable)</summary>
+<summary>Manual fallback (script unavailable, or you want to verify each value)</summary>
 
-For each project, go to **Settings → Database** and note:
+For each project, open the dashboard's **Connect** dialog (top of any project page) → **Direct** tab. Three connection methods are exposed; copy each connection string verbatim and substitute the password (the password isn't shown in the dashboard — Settings → Database → **Reset database password** if you don't have it saved):
 
-- **Transaction pooler** (port `6543`) → Vercel `DATABASE_URL` and `DATABASE_POOL_URL`. Append `?pgbouncer=true` if missing.
-- **Direct connection** (port `5432`) → only for `pnpm db:migrate` / `pnpm db:setup`. For production, store as GH secret `PROD_DATABASE_DIRECT_URL`.
+- **Direct connection** (`db.<ref>.supabase.co:5432`) — IPv6-only on free tier. Only useful from a developer machine with IPv6 enabled. **Do not use** as the GH Actions migration secret (runners are IPv4-only).
+- **Transaction pooler** (`aws-N-<region>.pooler.supabase.com:6543`) — IPv4-compatible. Use as Vercel `DATABASE_URL` and `DATABASE_POOL_URL`. Append `?pgbouncer=true` if missing.
+- **Session pooler** (`aws-N-<region>.pooler.supabase.com:5432`) — IPv4-compatible, full Postgres semantics. Use for migrations: production goes into GH secret `PROD_DATABASE_MIGRATION_URL`; local `pnpm db:setup` from your laptop should also use this.
 
-From **Settings → API**:
+> The cluster prefix (`aws-0`, `aws-1`, …) varies per project and isn't predictable — copy the actual hostname from the dashboard.
 
-- **Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
-- **anon public** key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- **service_role** key → `SUPABASE_SERVICE_ROLE_KEY` ⚠️ server-only; never `NEXT_PUBLIC_*`
+From **Settings → API → Project API keys**:
 
-Bootstrap each project's schema:
+- **Project URL** (deterministic: `https://<ref>.supabase.co`) → `NEXT_PUBLIC_SUPABASE_URL`
+- **anon public** (legacy key) → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **service_role** (legacy key) → `SUPABASE_SERVICE_ROLE_KEY` ⚠️ server-only; never `NEXT_PUBLIC_*`
+
+> Supabase has rolled out new `sb_publishable_*` / `sb_secret_*` keys. The codebase still uses the legacy JWT format — pick the entries labelled **Legacy anon API key** / **Legacy service_role API key**. The keys can also be fetched non-interactively (legacy keys are returned in full; new secret keys are masked):
+>
+> ```bash
+> ./node_modules/.bin/supabase projects api-keys --project-ref <ref> --output json
+> ```
+
+Bootstrap each project's schema using the **session-pooler** URL:
 
 ```bash
-DATABASE_URL=<prod-direct-url> DATABASE_POOL_URL=<prod-direct-url> pnpm db:setup
-DATABASE_URL=<preview-direct-url> DATABASE_POOL_URL=<preview-direct-url> pnpm db:setup
+DATABASE_URL=<prod-session-pooler-url> DATABASE_POOL_URL=<prod-session-pooler-url> pnpm db:setup
+DATABASE_URL=<preview-session-pooler-url> DATABASE_POOL_URL=<preview-session-pooler-url> pnpm db:setup
 ```
 
-`DATABASE_POOL_URL` is duplicated to the direct URL only here because `serverEnv` validates both at module import time. The runtime app on Vercel uses the pooler URL for both.
+`DATABASE_POOL_URL` is duplicated to the session-pooler URL here because `serverEnv` validates both at module import time. The runtime app on Vercel uses the transaction-pooler URL for both.
 
 </details>
 
@@ -329,11 +340,13 @@ Add each variable and select the correct environment scope (`Preview` or `Produc
 
 ---
 
-### 5. Add production direct URL as a GitHub secret
+### 5. Add production migration URL as a GitHub secret
+
+Use the production project's **session-pooler** URL (port 5432 on `aws-N-<region>.pooler.supabase.com`) — IPv4-compatible from GitHub Actions runners and provides full Postgres semantics for migrations. Copy from Supabase dashboard → **Connect** → Direct → Session pooler.
 
 ```bash
-printf '%s' "<prod-direct-url-port-5432>" |
-  gh secret set PROD_DATABASE_DIRECT_URL --repo aesir-tecnologia/folhario
+printf '%s' "<prod-session-pooler-url-port-5432>" |
+  gh secret set PROD_DATABASE_MIGRATION_URL --repo aesir-tecnologia/folhario
 ```
 
 ---
@@ -378,3 +391,11 @@ printf '%s' "<project-slug>" | gh secret set SENTRY_PROJECT    --repo aesir-tecn
 **`vercel pull` shell semantics:** `vercel pull` writes `.vercel/.env.<environment>.local` but does **not** export the values into the calling shell. `vercel build` in the same job reads the file automatically. Any other command that needs those env vars (e.g. `pnpm db:setup` in the preview workflow) must explicitly source the file: `set -a; source .vercel/.env.preview.local; set +a`.
 
 **Production alias vs deployment URL:** `vercel deploy --prod` returns a deployment URL like `<project>-<hash>-<team>.vercel.app` and _also_ swaps the production alias to point at it. The alias swap can lag by a few seconds. Steps that need to talk to the _new_ build (smoke tests, Inngest sync) should use the deployment URL captured from `vercel deploy --prod` stdout, not a hardcoded hostname.
+
+**Direct connection is IPv6-only on Supabase free tier:** `db.<ref>.supabase.co:5432` cannot be reached from IPv4-only networks, including default GitHub Actions runners and many Brazilian residential ISPs. The session pooler (`aws-N-<region>.pooler.supabase.com:5432`) is IPv4-compatible and is what `PROD_DATABASE_MIGRATION_URL` should hold. Local `pnpm db:setup` from a laptop on an IPv4-only network should also use the session pooler. Supabase offers a paid IPv4 add-on that would let direct connections work — not currently planned.
+
+**Preview workflow uses the transaction pooler for migrations:** the deploy-preview workflow runs `pnpm db:setup` (which calls `db:migrate`) using the `DATABASE_URL` from Vercel — the transaction pooler at port 6543. Drizzle's migration runner uses transaction-scoped advisory locks and single-statement-per-file transactions, which **should** work in pgbouncer transaction mode, but this hasn't been validated against a real Supabase project yet. If preview migrations fail, switch the preview workflow to a separate `PREVIEW_DATABASE_MIGRATION_URL` GH secret containing the preview project's session-pooler URL — same pattern as production.
+
+**Supabase pooler hostname format:** `aws-N-<region>.pooler.supabase.com` — the cluster prefix (`aws-0`, `aws-1`, …) varies per project and isn't predictable from the region alone. Always copy the exact hostname from the dashboard's **Connect** dialog.
+
+**Supabase API key naming (legacy vs publishable/secret):** Supabase rolled out new `sb_publishable_*` / `sb_secret_*` keys, but the legacy JWT-format keys (`eyJ…`) are still issued to every project and are what the codebase consumes (`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). Use the entries explicitly labelled **Legacy anon API key** / **Legacy service_role API key** in the dashboard or in `supabase projects api-keys --output json` output. Migration to the new key system is a separate future task.

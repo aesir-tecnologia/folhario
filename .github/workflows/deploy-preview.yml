@@ -1,0 +1,183 @@
+name: Deploy Preview
+
+# Triggered after CI passes on a PR push. workflow_run always executes the
+# workflow file from the default branch (main); changes to this file in a PR
+# do not take effect until the PR is merged.
+#
+# branches-ignore: [main] avoids re-firing on CI's main-push run, which is
+# handled by deploy-production.yml. The job-level guard below also skips the
+# main-push case (event != pull_request) and fork PRs (empty pull_requests[]).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches-ignore: [main]
+
+concurrency:
+  group: deploy-preview-pr-${{ github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    name: Deploy preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0] != null
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Vercel CLI
+        run: pnpm dlx vercel@latest --version
+
+      - name: Vercel pull (preview)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          pnpm dlx vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
+          # vercel pull writes .vercel/.env.preview.local but does NOT export it
+          # to the shell. Translate it into $GITHUB_ENV so db:setup and later
+          # steps see DATABASE_URL, DATABASE_POOL_URL, NEXT_PUBLIC_*, etc.
+          # Multiline values are not expected for these keys; if that changes,
+          # switch to the heredoc form (KEY<<EOF\n...\nEOF) here.
+          while IFS='=' read -r key value; do
+            [[ -z "$key" || "$key" == \#* ]] && continue
+            value="${value%\"}"; value="${value#\"}"
+            echo "${key}=${value}" >> "$GITHUB_ENV"
+          done < .vercel/.env.preview.local
+
+      - name: DB setup (migrate + seed + RLS check + seed check)
+        run: pnpm db:setup
+
+      - name: Vercel build
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@latest build --token="$VERCEL_TOKEN"
+
+      - name: Vercel deploy
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          URL=$(pnpm dlx vercel@latest deploy --prebuilt \
+            --meta githubPrNumber="$PR_NUMBER" \
+            --meta githubCommitSha="$COMMIT_SHA" \
+            --token="$VERCEL_TOKEN")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Playwright smoke
+        id: smoke
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: ${{ steps.deploy.outputs.url }}
+        # NOTE: test:e2e:smoke = security-headers, pwa-smoke, legal-links,
+        # horizontal-scroll-guard. These were originally written for the local
+        # `db:start` + stub identification setup. First runs against a real
+        # preview Supabase project may surface env-specific gaps — adjust
+        # spec selectors / fixtures as needed.
+        # continue-on-error so the PR comment step still fires on failure;
+        # the explicit "Fail run if smoke failed" step below propagates the
+        # non-zero exit so the workflow run is marked failed.
+        continue-on-error: true
+        run: pnpm test:e2e:smoke
+
+      - name: Upsert PR comment
+        if: ${{ !cancelled() }}
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+          SMOKE_FAILED: ${{ steps.smoke.outcome == 'failure' }}
+        with:
+          script: |
+            const marker = '<!-- folhario-preview-deploy -->';
+            const prNumber = Number(process.env.PR_NUMBER);
+            const sha = process.env.COMMIT_SHA;
+            const url = process.env.DEPLOY_URL || '_(deploy step did not produce a URL)_';
+            const smokeFailed = process.env.SMOKE_FAILED === 'true';
+
+            const lines = [
+              marker,
+              '### Folhário preview deploy',
+              '',
+              `- Preview URL: ${url}`,
+              `- Commit: \`${sha}\``,
+            ];
+            if (smokeFailed) {
+              lines.push('- Smoke tests: ❌ failing — check the workflow run');
+            } else {
+              lines.push('- Smoke tests: ✅');
+            }
+            const body = lines.join('\n');
+
+            const { owner, repo } = context.repo;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body });
+            }
+
+      - name: Fail run if smoke failed
+        if: steps.smoke.outcome == 'failure'
+        run: |
+          echo "Smoke tests failed. PR comment was posted; failing the run."
+          exit 1

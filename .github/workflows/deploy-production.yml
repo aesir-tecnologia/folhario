@@ -1,0 +1,170 @@
+name: Deploy Production
+
+# Triggered after CI passes on a push to main. workflow_run always executes
+# the workflow file from the default branch (main).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  # Serialize: never let a second deploy race a migration mid-flight.
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy production
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Job-level environment gate. GitHub pauses the entire job before any step
+    # runs and requires a reviewer to approve. All steps below execute only
+    # after approval.
+    environment: production
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get pnpm store path
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Destructive migration check (advisory)
+        # Soft warning — the human at the environment gate has already
+        # approved by this point. The output exists so a reviewer rerunning
+        # against the merge commit can see what landed.
+        run: |
+          DESTRUCTIVE=$(grep -lE 'DROP\s|ALTER\s+TABLE\s+.*DROP\s+COLUMN|TRUNCATE' drizzle/migrations/*.sql 2>/dev/null || true)
+          if [ -n "$DESTRUCTIVE" ]; then
+            {
+              echo "## :warning: Destructive migrations detected";
+              echo "";
+              echo "Files containing potentially destructive SQL:";
+              echo "";
+              for f in $DESTRUCTIVE; do echo "- \`$f\`"; done
+              echo "";
+              echo "Drizzle does not auto-generate down-migrations. Confirm a paired down migration ships with this PR or that data loss is intentional.";
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No destructive migration patterns detected." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Production DB migration
+        env:
+          # Session-pooler URL (port 5432, IPv4-compatible). Set both because
+          # serverEnv validates DATABASE_URL and DATABASE_POOL_URL at module
+          # import time.
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_MIGRATION_URL }}
+          DATABASE_POOL_URL: ${{ secrets.PROD_DATABASE_MIGRATION_URL }}
+        run: pnpm db:migrate
+
+      - name: Vercel pull (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          pnpm dlx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+          # vercel build reads .vercel/.env.production.local automatically;
+          # no source-into-shell step needed because no later step in this
+          # workflow consumes the runtime env in the shell (the migration
+          # step uses the GH secret directly).
+
+      - name: Vercel build
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: pnpm dlx vercel@latest build --prod --token="$VERCEL_TOKEN"
+
+      - name: Vercel deploy
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          URL=$(pnpm dlx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Playwright smoke (production)
+        env:
+          PLAYWRIGHT_TEST_BASE_URL: ${{ steps.deploy.outputs.url }}
+        # Use the deployment URL captured from `vercel deploy --prod`, not the
+        # production alias — the alias swap can lag a few seconds and we want
+        # to validate the build that just shipped, not whatever the alias
+        # currently points at.
+        # Same env-agnostic caveat as preview: smoke specs were written for
+        # the local stub setup. Adjust if production-specific gaps appear.
+        run: pnpm test:e2e:smoke
+
+      - name: Sentry release + source maps
+        # Gated on prior steps succeeding so a failed deploy does not pollute
+        # Sentry releases.
+        if: success()
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          pnpm dlx @sentry/cli@latest releases new "${{ github.sha }}"
+          # Source-map path: vercel build --prebuilt writes to .vercel/output/.
+          # Verify the exact subpath of client maps when first running this —
+          # depending on Turbopack config (productionBrowserSourceMaps,
+          # widenClientFileUpload) maps may live under .vercel/output/static/_next
+          # or .next/static. The url-prefix '~/_next' below is the Sentry
+          # virtual prefix at runtime, NOT a filesystem tilde — single quotes
+          # are intentional to prevent shell expansion.
+          # shellcheck disable=SC2088
+          pnpm dlx @sentry/cli@latest releases files "${{ github.sha }}" \
+            upload-sourcemaps .vercel/output --url-prefix '~/_next'
+          pnpm dlx @sentry/cli@latest releases finalize "${{ github.sha }}"
+
+      - name: Inngest function sync
+        if: success()
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        # Hit the deployment URL (not the production alias) so re-registration
+        # targets the build that just shipped, even if alias swap is in
+        # flight.
+        run: |
+          curl -fsSL -X POST "${DEPLOY_URL}/api/inngest" -o /dev/null
+          echo "Inngest sync POSTed to ${DEPLOY_URL}/api/inngest" >> "$GITHUB_STEP_SUMMARY"

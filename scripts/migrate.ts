@@ -11,21 +11,33 @@
  * Identical contract to `drizzle-kit migrate` — reads
  * `drizzle/migrations/meta/_journal.json` and applies anything not yet in
  * `drizzle.__drizzle_migrations`.
+ *
+ * Deliberately does NOT import `src/shared/db/migration-client` (and therefore
+ * not `serverEnv`): the production migration job in
+ * `.github/workflows/deploy-production.yml` only sets DATABASE_URL — it must
+ * not be coupled to the full Supabase server-env schema. Postgres options are
+ * duplicated verbatim from migration-client.ts to keep migrator behavior
+ * identical (T-02-02: read only DATABASE_URL).
  */
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
+import postgres from "postgres";
+import { z } from "zod";
 
-import { closeMigrationSql, getMigrationSql } from "../src/shared/db/migration-client";
+const migrationEnv = z.object({ DATABASE_URL: z.string().url() }).parse(process.env);
 
 async function main(): Promise<void> {
-  const sql = getMigrationSql();
+  const sql = postgres(migrationEnv.DATABASE_URL, {
+    max: 1,
+    idle_timeout: 5,
+  });
   const db = drizzle(sql);
   try {
     await migrate(db, { migrationsFolder: "./drizzle/migrations" });
     console.log("[migrate] OK — all migrations applied.");
   } finally {
-    await closeMigrationSql(sql);
+    await sql.end({ timeout: 5 });
   }
 }
 

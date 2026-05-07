@@ -25,7 +25,7 @@ export const runtime = "nodejs";
 // POST /api/v1/plants
 // ============================================================================
 
-export async function POST(request: Request): Promise<Response> {
+async function postImpl(request: Request): Promise<Response> {
   // D-21 gate — requireVerifiedUser (first route consumer).
   const auth = await requireVerifiedUser(request);
   if (!auth.ok) {
@@ -156,6 +156,36 @@ export async function POST(request: Request): Promise<Response> {
     status: idempotencyResult.status,
     headers: { "content-type": "application/json" },
   });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  try {
+    return await postImpl(request);
+  } catch (err) {
+    const url = new URL(request.url);
+    const eventId = Sentry.captureException(err, {
+      tags: { route: "api.v1.plants", method: "POST" },
+      extra: {
+        pathname: url.pathname,
+        contentType: request.headers.get("content-type"),
+        contentLength: request.headers.get("content-length"),
+        hasIdempotencyKey: Boolean(request.headers.get("idempotency-key")),
+      },
+    });
+
+    console.error("[api/v1/plants] POST failed", {
+      eventId,
+      pathname: url.pathname,
+      contentType: request.headers.get("content-type"),
+      contentLength: request.headers.get("content-length"),
+      hasIdempotencyKey: Boolean(request.headers.get("idempotency-key")),
+      err,
+    });
+
+    return errorResponse(ErrorCode.InternalError, "Erro interno ao salvar a planta.", {
+      event_id: eventId,
+    });
+  }
 }
 
 // ============================================================================

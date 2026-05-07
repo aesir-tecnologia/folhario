@@ -27,7 +27,6 @@
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "db:setup": "pnpm db:migrate && pnpm db:seed && pnpm db:check-rls && pnpm db:check-seeds",
-    "db:setup-cloud": "tsx --env-file-if-exists=.env.local scripts/setup-supabase-cloud.ts",
     "db:check-rls": "tsx --env-file-if-exists=.env.local scripts/check-rls.ts",
     "db:check-seeds": "tsx --env-file-if-exists=.env.local scripts/check-seeds.ts",
     "supabase": "supabase",

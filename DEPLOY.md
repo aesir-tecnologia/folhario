@@ -257,29 +257,7 @@ printf '%s' "<token>" | gh secret set VERCEL_TOKEN --repo aesir-tecnologia/folha
 
 ### 3. Create two Supabase cloud projects
 
-If both projects already exist, run the interactive script and skip to Section 5:
-
-```bash
-pnpm db:setup-cloud           # full flow
-pnpm db:setup-cloud --dry-run # preview values without pushing
-```
-
-The script discovers your projects via `supabase projects list`, prompts for each project's role (production / preview) and DB password, fetches anon + service-role keys, constructs Supavisor pooler + direct URLs, verifies them with `psql`, then offers to:
-
-1. Push `DATABASE_URL`, `DATABASE_POOL_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` to Vercel preview + production env vars.
-2. Push `PROD_DATABASE_MIGRATION_URL` to GitHub Actions secrets.
-3. Run `pnpm db:setup` against each project (the deploy-preview workflow re-runs this on every PR; the manual run is the initial bootstrap).
-
-Each push step is gated behind a `[y/N]` prompt — defaults are no for Vercel/GH (explicit yes pushes) and yes for `db:setup`. Passwords are read with echo disabled and never persisted.
-
-> **Script status (pending follow-up):** the deterministic pooler hostname in `scripts/setup-supabase-cloud.ts` hardcodes the `aws-0` cluster prefix; for projects on `aws-1` or higher (most current Supabase projects) the psql verify step will fail and prompt for a manual paste from the dashboard — the fallback works correctly. The script also still pushes the GH secret under the old name `PROD_DATABASE_DIRECT_URL` and constructs an IPv6-only direct URL for it (see manual fallback below for the correct values). Both are slated for an update; until then, prefer the manual fallback or fix up the pushed values afterwards.
-
-**Preflight requirements:** `pnpm install` (Supabase CLI 2.95.0 is a devDep), `vercel` and `gh` CLIs on PATH, `psql` on PATH (or pass `--skip-verify`), `gh auth login`, `./node_modules/.bin/supabase login`, and `.vercel/project.json` (Section 2).
-
-If you don't have the projects yet, create them at [supabase.com](https://supabase.com) → **New project** first (one for production, one as the shared preview environment), then run the script.
-
-<details>
-<summary>Manual fallback (script unavailable, or you want to verify each value)</summary>
+If you don't have the projects yet, create them at [supabase.com](https://supabase.com) → **New project** first — one for production, one as the shared preview environment.
 
 For each project, open the dashboard's **Connect** dialog (top of any project page) → **Direct** tab. Three connection methods are exposed; copy each connection string verbatim and substitute the password (the password isn't shown in the dashboard — Settings → Database → **Reset database password** if you don't have it saved):
 
@@ -301,6 +279,14 @@ From **Settings → API → Project API keys**:
 > ./node_modules/.bin/supabase projects api-keys --project-ref <ref> --output json
 > ```
 
+Optionally verify each pooler URL with `psql` before pushing to Vercel — pass the password via `PGPASSWORD` env var rather than embedding in the URL (the latter leaks via `ps`):
+
+```bash
+PGPASSWORD='<pw>' psql "postgresql://postgres.<ref>@aws-N-<region>.pooler.supabase.com:6543/postgres" -c 'select 1'
+```
+
+> Drop `?pgbouncer=true` for the psql probe — it's a postgres-js / pgbouncer-aware driver hint and libpq rejects it as an unknown URI parameter. Keep it in the value pushed to Vercel.
+
 Bootstrap each project's schema using the **session-pooler** URL:
 
 ```bash
@@ -309,8 +295,6 @@ DATABASE_URL=<preview-session-pooler-url> DATABASE_POOL_URL=<preview-session-poo
 ```
 
 `DATABASE_POOL_URL` is duplicated to the session-pooler URL here because `serverEnv` validates both at module import time. The runtime app on Vercel uses the transaction-pooler URL for both.
-
-</details>
 
 ---
 

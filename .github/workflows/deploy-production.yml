@@ -144,7 +144,8 @@ jobs:
           DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         # Hit the deployment URL (not the production alias) so re-registration
         # targets the build that just shipped, even if alias swap is in
-        # flight.
+        # flight. Inngest serve() uses PUT for deployment sync; POST is reserved
+        # for signed function invocation and returns 401 when called directly.
         run: |
-          curl -fsSL -X POST "${DEPLOY_URL}/api/inngest" -o /dev/null
-          echo "Inngest sync POSTed to ${DEPLOY_URL}/api/inngest" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsSL -X PUT "${DEPLOY_URL}/api/inngest" -o /dev/null
+          echo "Inngest sync PUT sent to ${DEPLOY_URL}/api/inngest" >> "$GITHUB_STEP_SUMMARY"

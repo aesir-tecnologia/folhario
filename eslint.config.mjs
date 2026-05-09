@@ -102,6 +102,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     "node_modules",
     ".next/**",
+    ".vercel/**",
     "out/**",
     "build/**",
     "coverage",

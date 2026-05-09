@@ -83,9 +83,9 @@ jobs:
         env:
           # Session-pooler URL (port 5432, IPv4-compatible). Set both because
           # serverEnv validates DATABASE_URL and DATABASE_POOL_URL at module
-          # import time.
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_MIGRATION_URL }}
-          DATABASE_POOL_URL: ${{ secrets.PROD_DATABASE_MIGRATION_URL }}
+          # import time. Resolves to the `production` environment secret.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POOL_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm db:migrate
 
       - name: Vercel pull (production)

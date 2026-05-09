@@ -29,6 +29,7 @@ jobs:
     name: Deploy preview
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: preview
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -71,20 +72,15 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          pnpm dlx vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
-          # vercel pull writes .vercel/.env.preview.local but does NOT export it
-          # to the shell. Translate it into $GITHUB_ENV so db:setup and later
-          # steps see DATABASE_URL, DATABASE_POOL_URL, NEXT_PUBLIC_*, etc.
-          # Multiline values are not expected for these keys; if that changes,
-          # switch to the heredoc form (KEY<<EOF\n...\nEOF) here.
-          while IFS='=' read -r key value; do
-            [[ -z "$key" || "$key" == \#* ]] && continue
-            value="${value%\"}"; value="${value#\"}"
-            echo "${key}=${value}" >> "$GITHUB_ENV"
-          done < .vercel/.env.preview.local
+        # vercel build reads .vercel/.env.preview.local automatically; no
+        # source-into-shell step needed because db:setup gets DATABASE_URL
+        # from the `preview` GitHub environment secret directly.
+        run: pnpm dlx vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: DB setup (migrate + seed + RLS check + seed check)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POOL_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm db:setup
 
       - name: Vercel build

@@ -174,3 +174,4 @@ pnpm dlx vercel@latest promote <deployment-url-or-id> --token="$VERCEL_TOKEN"
 - CI builds use stub env and are not deployed; deploy workflows always rebuild.
 - Inngest sync URL `https://folhario.vercel.app/api/inngest` is hardcoded — update if the production domain changes.
 - Preview cleanup matches deployments by `githubPrNumber` metadata; keep the meta key in sync if it ever changes.
+- Preview deploy verified via test PR (2026-05-09).

@@ -7,9 +7,10 @@ allowed-tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
   - Write
 ---
+
 <objective>
 Verify milestone achieved its definition of done. Check requirements coverage, cross-phase integration, and end-to-end flows.
 
@@ -26,11 +27,11 @@ Version: $ARGUMENTS (optional — defaults to current milestone)
 Core planning files are resolved in-workflow (`init milestone-op`) and loaded only as needed.
 
 **Completed Work:**
-Glob: .planning/phases/*/*-SUMMARY.md
-Glob: .planning/phases/*/*-VERIFICATION.md
+Glob: .planning/phases/_/_-SUMMARY.md
+Glob: .planning/phases/_/_-VERIFICATION.md
 </context>
 
 <process>
-Execute the audit-milestone workflow from @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/audit-milestone.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (scope determination, verification reading, integration check, requirements coverage, routing).
 </process>

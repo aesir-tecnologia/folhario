@@ -8,11 +8,12 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - WebFetch
   - AskUserQuestion
   - mcp__context7__*
 ---
+
 <objective>
 Create a UI design contract (UI-SPEC.md) for a frontend phase.
 Orchestrates gsd-ui-researcher and gsd-ui-checker.
@@ -29,6 +30,6 @@ Phase number: $ARGUMENTS — optional, auto-detects next unplanned phase if omit
 </context>
 
 <process>
-Execute @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/ui-phase.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates.
 </process>

@@ -9,15 +9,16 @@ allowed-tools:
   - Glob
   - Grep
   - AskUserQuestion
-  - Task
   - Agent
 ---
+
 <objective>
 Execute all remaining milestone phases autonomously. For each phase: discuss → plan → execute. Pauses only for user decisions (grey area acceptance, blockers, validation requests).
 
 Uses ROADMAP.md phase discovery and Skill() flat invocations for each phase command. After all phases complete: milestone audit → complete → cleanup.
 
 **Creates/Updates:**
+
 - `.planning/STATE.md` — updated after each phase
 - `.planning/ROADMAP.md` — progress updated after each phase
 - Phase artifacts — CONTEXT.md, PLANs, SUMMARYs per phase
@@ -41,6 +42,6 @@ Project context, phase list, and state are resolved inside the workflow using in
 </context>
 
 <process>
-Execute the autonomous workflow from @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/autonomous.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (phase discovery, per-phase execution, blocker handling, progress display).
 </process>

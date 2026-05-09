@@ -1,6 +1,7 @@
 ---
 name: gsd:manager
 description: Interactive command center for managing multiple phases from one terminal
+argument-hint: "[--analyze-deps]"
 allowed-tools:
   - Read
   - Write
@@ -9,14 +10,16 @@ allowed-tools:
   - Grep
   - AskUserQuestion
   - Skill
-  - Task
+  - Agent
 ---
+
 <objective>
 Single-terminal command center for managing a milestone. Shows a dashboard of all phases with visual status indicators, recommends optimal next actions, and dispatches work — discuss runs inline, plan/execute run as background agents.
 
 Designed for power users who want to parallelize work across phases from one terminal: discuss a phase while another plans or executes in the background.
 
 **Creates/Updates:**
+
 - No files created directly — dispatches to existing GSD commands via Skill() and background Task agents.
 - Reads `.planning/STATE.md`, `.planning/ROADMAP.md`, phase directories for status.
 
@@ -35,6 +38,9 @@ Project context, phase list, dependencies, and recommendations are resolved insi
 </context>
 
 <process>
-Execute the manager workflow from @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/manager.md end-to-end.
+If `--analyze-deps` is in $ARGUMENTS:
+Read and execute `/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/analyze-dependencies.md` end-to-end.
+
+Execute end-to-end.
 Maintain the dashboard refresh loop until the user exits or all phases complete.
 </process>

@@ -33,14 +33,16 @@ Output: MILESTONE_SUMMARY written to `.planning/reports/`, presented inline, opt
 - `.planning/phases/*-*/` (SUMMARY.md, VERIFICATION.md, CONTEXT.md, RESEARCH.md)
 
 **User input:**
+
 - Version: $ARGUMENTS (optional — defaults to current/latest milestone)
-</context>
+  </context>
 
 <process>
-Read and execute the milestone-summary workflow from @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/milestone-summary.md end-to-end.
+Execute end-to-end.
 </process>
 
 <success_criteria>
+
 - Milestone version resolved (from args, STATE.md, or archive scan)
 - All available artifacts read (ROADMAP, REQUIREMENTS, CONTEXT, SUMMARY, VERIFICATION, RESEARCH, RETROSPECTIVE)
 - Summary document written to `.planning/reports/MILESTONE_SUMMARY-v{version}.md`
@@ -48,4 +50,4 @@ Read and execute the milestone-summary workflow from @/Users/machado/Projects/fo
 - Summary presented inline to user
 - Interactive Q&A offered
 - STATE.md updated
-</success_criteria>
+  </success_criteria>

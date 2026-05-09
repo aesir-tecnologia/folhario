@@ -9,9 +9,10 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - AskUserQuestion
 ---
+
 <objective>
 Audit Nyquist validation coverage for a completed phase. Three states:
 - (A) VALIDATION.md exists — audit and fill gaps
@@ -30,6 +31,6 @@ Phase: $ARGUMENTS — optional, defaults to last completed phase.
 </context>
 
 <process>
-Execute @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/validate-phase.md.
+Execute end-to-end.
 Preserve all workflow gates.
 </process>

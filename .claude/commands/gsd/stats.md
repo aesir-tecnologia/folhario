@@ -5,6 +5,7 @@ allowed-tools:
   - Read
   - Bash
 ---
+
 <objective>
 Display comprehensive project statistics including phase progress, plan execution metrics, requirements completion, git history stats, and project timeline.
 </objective>
@@ -14,5 +15,5 @@ Display comprehensive project statistics including phase progress, plan executio
 </execution_context>
 
 <process>
-Execute the stats workflow from @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/stats.md end-to-end.
+Execute end-to-end.
 </process>

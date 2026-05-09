@@ -8,9 +8,10 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - AskUserQuestion
 ---
+
 <objective>
 Conduct a retroactive 6-pillar visual audit. Produces UI-REVIEW.md with
 graded assessment (1-4 per pillar). Works on any project.
@@ -27,6 +28,6 @@ Phase: $ARGUMENTS — optional, defaults to last completed phase.
 </context>
 
 <process>
-Execute @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/ui-review.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates.
 </process>

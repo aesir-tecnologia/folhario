@@ -7,6 +7,7 @@ allowed-tools:
   - Bash
   - AskUserQuestion
 ---
+
 <objective>
 Archive phase directories from completed milestones into `.planning/milestones/v{X.Y}-phases/`.
 
@@ -18,6 +19,6 @@ Use when `.planning/phases/` has accumulated directories from past milestones.
 </execution_context>
 
 <process>
-Follow the cleanup workflow at @/Users/machado/Projects/folhario/.claude/get-shit-done/workflows/cleanup.md.
+Execute end-to-end.
 Identify completed milestones, show a dry-run summary, and archive on confirmation.
 </process>

@@ -251,10 +251,9 @@ export function AddPlantForm({
               )}
               {errors.acquisitionDate && (
                 <li>
-                  <a
-                    href={`#${acquisitionDateId}`}
-                    className="text-rust underline"
-                  >
+                  <a href={`#${acquisitionDateId}`} className="
+                    text-rust underline
+                  ">
                     {labels.fieldNames.acquisitionDate}
                   </a>
                 </li>
@@ -288,7 +287,6 @@ export function AddPlantForm({
                 tabIndex={readOnly ? -1 : 0}
                 role="button"
                 aria-label={labels.photoLabel}
-                aria-invalid={errors.photo ? true : undefined}
                 aria-describedby={errors.photo ? photoErrorId : undefined}
                 onKeyDown={(e) => {
                   if (!readOnly && (e.key === "Enter" || e.key === " ")) openFilePicker();
@@ -305,11 +303,9 @@ export function AddPlantForm({
           </div>
 
           {errors.photo && (
-            <p
-              id={photoErrorId}
-              role="alert"
-              className="flex items-center gap-1 text-sm text-rust"
-            >
+            <p id={photoErrorId} role="alert" className="
+              flex items-center gap-1 text-sm text-rust
+            ">
               <AlertCircle strokeWidth={1.5} size={16} aria-hidden="true" />
               {errors.photo}
             </p>
@@ -378,10 +374,9 @@ export function AddPlantForm({
         />
 
         <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`${formId}-notes`}
-            className="text-sm font-semibold text-forest"
-          >
+          <label htmlFor={`${formId}-notes`} className="
+            text-sm font-semibold text-forest
+          ">
             {labels.notes}
           </label>
           <textarea

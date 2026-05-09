@@ -78,9 +78,16 @@ jobs:
         run: pnpm dlx vercel@latest pull --yes --environment=preview --token="$VERCEL_TOKEN"
 
       - name: DB setup (migrate + seed + RLS check + seed check)
+        # db:setup runs migrate + seed + check-rls + check-seeds. The seed and
+        # check scripts import serverEnv, which validates the full server-side
+        # schema (DATABASE_URL, DATABASE_POOL_URL, NEXT_PUBLIC_SUPABASE_URL,
+        # SUPABASE_SERVICE_ROLE_KEY). Production avoids this because its
+        # workflow only runs db:migrate (narrow migrationEnv = DATABASE_URL).
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DATABASE_POOL_URL: ${{ secrets.DATABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: pnpm db:setup
 
       - name: Vercel build

@@ -91,8 +91,17 @@ jobs:
         run: pnpm db:setup
 
       - name: Vercel build
+        # next build does page-data collection on server routes, which imports
+        # server-env.ts and parses serverSchema at module load. The Vercel-pulled
+        # .env.preview.local has DATABASE_POOL_URL and SUPABASE_SERVICE_ROLE_KEY
+        # empty (Vercel strips sensitive values from pull), so we re-supply them
+        # from GH preview-environment secrets/vars here, mirroring db:setup.
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POOL_URL: ${{ secrets.DATABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: pnpm dlx vercel@latest build --token="$VERCEL_TOKEN"
 
       - name: Vercel deploy

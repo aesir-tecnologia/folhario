@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 
@@ -65,9 +66,7 @@ export function LoginForm() {
         inputMode="email"
         required
         value={form.email}
-        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-          setForm({ ...form, email: e.target.value })
-        }
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setForm({ ...form, email: e.target.value })}
       />
 
       <TextInput
@@ -87,12 +86,12 @@ export function LoginForm() {
       </Button>
 
       <div className="flex flex-col gap-2 text-center text-sm">
-        <a href="/auth/forgot-password" className="text-canopy underline">
+        <Link href="/auth/forgot-password" className="text-canopy underline">
           {t("forgotPassword")}
-        </a>
-        <a href="/auth/signup" className="text-canopy underline">
+        </Link>
+        <Link href="/auth/signup" className="text-canopy underline">
           {t("noAccount")}
-        </a>
+        </Link>
       </div>
     </form>
   );

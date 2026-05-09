@@ -1,4 +1,5 @@
 import { ErrorCode } from "@shared/config/errors";
+import { timeServer } from "@shared/telemetry/server-timing";
 import { authAdapter, type AuthAdapter } from "@contexts/iam/infrastructure/auth/auth-adapter";
 import type { UserRow } from "@contexts/iam/infrastructure/db/users";
 
@@ -48,11 +49,15 @@ export async function getCurrentUser(
   authorizationHeader: string | null | undefined,
 ): Promise<CurrentUserResult> {
   const adapterInstance = adapter();
-  const verify = await adapterInstance.verifyBearer(authorizationHeader);
+  const verify = await timeServer("iam.verifyBearer", () =>
+    adapterInstance.verifyBearer(authorizationHeader),
+  );
   if (!verify.ok) {
     return verify;
   }
-  const user = await adapterInstance.getUserById(verify.userId);
+  const user = await timeServer("iam.getUserById", () =>
+    adapterInstance.getUserById(verify.userId),
+  );
   if (!user) {
     return {
       ok: false,
@@ -76,7 +81,9 @@ export async function getCurrentUser(
  */
 export async function getCurrentUserFromSession(): Promise<CurrentUserResult> {
   const adapterInstance = adapter();
-  const session = await adapterInstance.getUserBySession({ readOnly: false });
+  const session = await timeServer("iam.getUserBySession", () =>
+    adapterInstance.getUserBySession({ readOnly: false }),
+  );
   if (!session) {
     return {
       ok: false,
@@ -84,7 +91,7 @@ export async function getCurrentUserFromSession(): Promise<CurrentUserResult> {
       reason: "no_session",
     };
   }
-  const user = await adapterInstance.getUserById(session.id);
+  const user = await timeServer("iam.getUserById", () => adapterInstance.getUserById(session.id));
   if (!user) {
     return {
       ok: false,
@@ -102,7 +109,11 @@ export async function getCurrentUserFromSession(): Promise<CurrentUserResult> {
  */
 export async function getCurrentUserFromSessionReadOnly(): Promise<CurrentUserResult> {
   const adapterInstance = adapter();
-  const session = await adapterInstance.getUserBySession({ readOnly: true });
+  const session = await timeServer(
+    "iam.getUserBySession",
+    () => adapterInstance.getUserBySession({ readOnly: true }),
+    { readOnly: true },
+  );
   if (!session) {
     return {
       ok: false,
@@ -110,7 +121,7 @@ export async function getCurrentUserFromSessionReadOnly(): Promise<CurrentUserRe
       reason: "no_session",
     };
   }
-  const user = await adapterInstance.getUserById(session.id);
+  const user = await timeServer("iam.getUserById", () => adapterInstance.getUserById(session.id));
   if (!user) {
     return {
       ok: false,

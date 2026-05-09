@@ -5,6 +5,7 @@ import { isAuthSessionMissingError } from "@supabase/supabase-js";
 import { ErrorCode } from "@shared/config/errors";
 import { serverEnv } from "@shared/config/server-env";
 import { db, type DbClient } from "@shared/db/client";
+import { timeServer } from "@shared/telemetry/server-timing";
 import { findById, type UserRow } from "@contexts/iam/infrastructure/db/users";
 import {
   getReadOnlySupabaseServerClient,
@@ -231,7 +232,11 @@ export function createAuthAdapter(options: AuthAdapterFactoryOptions = {}): Auth
       //
       // CLAUDE.md hard rule: never include email in Sentry payloads —
       // tags-only, no `extra.email`, no `setUser({ email })`.
-      const { data, error } = await supabase.auth.getUser();
+      const { data, error } = await timeServer(
+        "supabase.auth.getUser",
+        () => supabase.auth.getUser(),
+        { readOnly },
+      );
       if (error) {
         if (!isAuthSessionMissingError(error)) {
           Sentry.captureException(error, {

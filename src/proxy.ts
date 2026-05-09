@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { updateSessionInMiddleware } from "@contexts/iam/infrastructure/supabase-server";
+import { timeServer } from "@shared/telemetry/server-timing";
 
 /**
  * Folhário Next 16 proxy — Plan 02-07 Task 3 + Plan 04-12 (gap closure).
@@ -126,6 +127,13 @@ function unauthenticatedResponse(): NextResponse {
   );
 }
 
+function timingPath(pathname: string): string {
+  return pathname.replace(
+    /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\/|$)/gi,
+    "/:id",
+  );
+}
+
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
@@ -157,7 +165,9 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
   //   time PublicLayout / AppLayout call getCurrentUserFromSessionReadOnly,
   //   auth-js no longer attempts the failed refresh + console.error
   //   that surfaces in the Next 16 dev overlay.
-  return updateSessionInMiddleware(request);
+  return timeServer("proxy.updateSessionInMiddleware", () => updateSessionInMiddleware(request), {
+    pathname: timingPath(pathname),
+  });
 }
 
 /**

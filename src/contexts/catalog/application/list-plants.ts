@@ -1,5 +1,6 @@
 import { ErrorCode } from "@shared/config/errors";
 import { db as defaultDb } from "@shared/db/client";
+import { timeServer } from "@shared/telemetry/server-timing";
 import {
   decodeSortCursor,
   encodeSortCursor,
@@ -44,31 +45,43 @@ export async function listPlants(input: ListPlantsInput): Promise<ListPlantsResu
     cursorPayload = decoded.value;
   }
 
-  const { rows, nextCursor: nextRaw } = await plantsRepo.list(defaultDb, {
-    userId: input.userId,
-    sort: input.sort,
-    cursor: cursorPayload,
-    limit,
-  });
+  const { rows, nextCursor: nextRaw } = await timeServer(
+    "catalog.plants.list",
+    () =>
+      plantsRepo.list(defaultDb, {
+        userId: input.userId,
+        sort: input.sort,
+        cursor: cursorPayload,
+        limit,
+      }),
+    { sort: input.sort, cursor: input.cursor !== null, limit },
+  );
 
   const nextCursor = nextRaw === null ? null : encodeSortCursor(nextRaw);
 
   // MEDIUM-3: batch-sign cover storage keys in parallel (up to page size per request).
   // All sign calls initiated before any resolves — true parallel (Promise.all).
-  const signedItems = await Promise.all(
-    rows.map(async (row) => {
-      if (!row.coverPhotoUrl) return { ...row, coverSignedUrl: null };
-      const signed = await signCatalogPhotoUrl({
-        storedUrl: row.coverPhotoUrl,
-        ttlSeconds: 24 * 3600, // D-20: 24h TTL in caller, not baked into helper
-      });
-      return { ...row, coverSignedUrl: signed.ok ? signed.signedUrl : null };
-    }),
+  const signedItems = await timeServer(
+    "catalog.plants.signCoverUrls",
+    () =>
+      Promise.all(
+        rows.map(async (row) => {
+          if (!row.coverPhotoUrl) return { ...row, coverSignedUrl: null };
+          const signed = await signCatalogPhotoUrl({
+            storedUrl: row.coverPhotoUrl,
+            ttlSeconds: 24 * 3600, // D-20: 24h TTL in caller, not baked into helper
+          });
+          return { ...row, coverSignedUrl: signed.ok ? signed.signedUrl : null };
+        }),
+      ),
+    { rows: rows.length, withCover: rows.filter((row) => row.coverPhotoUrl).length },
   );
 
   // D-12: total_count only when includeCount AND first page (cursor === null).
   if (input.includeCount && input.cursor === null) {
-    const totalCount = await plantsRepo.countForUser(defaultDb, input.userId);
+    const totalCount = await timeServer("catalog.plants.countForUser", () =>
+      plantsRepo.countForUser(defaultDb, input.userId),
+    );
     return { ok: true, items: signedItems, nextCursor, totalCount };
   }
 

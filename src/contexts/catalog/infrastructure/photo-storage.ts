@@ -9,6 +9,7 @@ import type {
   StorageAdapter,
   UploadObjectResult,
 } from "@shared/adapters/storage";
+import { timeServer } from "@shared/telemetry/server-timing";
 
 /**
  * Catalog context's photo-storage helper.
@@ -186,11 +187,16 @@ export async function signCatalogPhotoUrl(input: {
   if (!(KNOWN_BUCKETS as Set<string>).has(bucket)) {
     return { ok: false, reason: "unknown_bucket" };
   }
-  const result = await getAdapter().createSignedUrl({
-    bucket,
-    objectKey,
-    expiresInSeconds: input.ttlSeconds,
-  });
+  const result = await timeServer(
+    "catalog.storage.createSignedUrl",
+    () =>
+      getAdapter().createSignedUrl({
+        bucket,
+        objectKey,
+        expiresInSeconds: input.ttlSeconds,
+      }),
+    { bucket, ttlSeconds: input.ttlSeconds },
+  );
   return { ok: true, signedUrl: result.signedUrl };
 }
 

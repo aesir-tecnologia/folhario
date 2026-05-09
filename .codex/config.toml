@@ -1,8 +1,8 @@
 # GSD Agent Configuration — managed by get-shit-done installer
-# GSD codex_hooks ownership: section
+# GSD hooks ownership: section
 
 [features]
-codex_hooks = true
+hooks = true
 
 [agents.gsd-advisor-researcher]
 description = "Researches a single gray area decision and returns a structured comparison table with rationale. Spawned by discuss-phase advisor mode."

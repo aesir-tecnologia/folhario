@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
@@ -52,28 +53,26 @@ export function EmptyState({
   ctaHref,
   ctaOnClick,
 }: EmptyStateProps): ReactNode {
-  const cta = ctaHref ? (
-    <a
-      href={ctaHref}
-      className="
-        inline-flex min-h-[48px] items-center justify-center rounded-lg
-        bg-canopy px-6 py-3 text-base font-semibold text-ivory
-      "
-    >
-      {ctaLabel}
-    </a>
-  ) : (
-    <button
-      type="button"
-      onClick={ctaOnClick}
-      className="
-        inline-flex min-h-[48px] items-center justify-center rounded-lg
-        bg-canopy px-6 py-3 text-base font-semibold text-ivory
-      "
-    >
-      {ctaLabel}
-    </button>
-  );
+  const isInternalHref = ctaHref?.startsWith("/");
+  const ctaClassName = `
+    inline-flex min-h-[48px] items-center justify-center rounded-lg
+    bg-canopy px-6 py-3 text-base font-semibold text-ivory
+  `;
+
+  const cta =
+    ctaHref && isInternalHref ? (
+      <Link href={ctaHref} className={ctaClassName}>
+        {ctaLabel}
+      </Link>
+    ) : ctaHref ? (
+      <a href={ctaHref} className={ctaClassName}>
+        {ctaLabel}
+      </a>
+    ) : (
+      <button type="button" onClick={ctaOnClick} className={ctaClassName}>
+        {ctaLabel}
+      </button>
+    );
 
   return (
     <div className="flex flex-col items-center gap-4 px-5 py-8 text-center">

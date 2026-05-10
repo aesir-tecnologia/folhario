@@ -24,8 +24,8 @@ created: 2026-05-10
 | Preset | not applicable |
 | Component library | Radix UI (Dialog, Combobox — wrapped in src/shared/ui/) |
 | Icon library | Lucide — 1.5px stroke, rounded caps |
-| Font — editorial | Source Serif 4 (variable, weight 500–600) |
-| Font — interface | Plus Jakarta Sans (variable, weight 400/500/600) |
+| Font — editorial | Source Serif 4 (variable, weight 600) |
+| Font — interface | Plus Jakarta Sans (variable, weight 400/600) |
 
 No shadcn initialization. Do not propose it. The design system is the `@theme` block in `src/app/globals.css` plus the primitives in `src/shared/ui/`.
 
@@ -59,8 +59,8 @@ Inherit the PRD §17 type scale. All sizes are mobile-first; no wide-screen vari
 
 | Role | Font | Size | Weight | Line Height | Usage |
 |------|------|------|--------|-------------|-------|
-| Hero | Source Serif 4 | 32px | 500 | 38px (1.19) | Screen titles, loading headline "Identificando sua planta…" |
-| Title | Source Serif 4 | 24px | 500 | 30px (1.25) | ModalSheet titles, results page heading |
+| Hero | Source Serif 4 | 32px | 600 | 38px (1.19) | Screen titles, loading headline "Identificando sua planta…" |
+| Title | Source Serif 4 | 24px | 600 | 30px (1.25) | ModalSheet titles, results page heading |
 | Section label | Plus Jakarta Sans | 14px | 600 | 18px (1.29) | Uppercase +4% tracking, e.g. "RESULTADOS", "HISTÓRICO" |
 | Body | Plus Jakarta Sans | 16px | 400 | 24px (1.5) | Card common names, copy in modals, error messages |
 | Metadata | Plus Jakarta Sans | 14px | 400 | 20px (1.43) | Confidence percentage, scientific names (italic, lang=la), timestamps, failure reasons in history |
@@ -143,7 +143,7 @@ Track (unfilled portion): Hairline Beige / Hairline Umber.
 
 ### Segments
 
-3 equal-width pill segments separated by 2px gaps. Filled segments use the tier bar color. Unfilled segments use Hairline Beige / Hairline Umber. The bar is a continuous fill behind the segmented visual overlay (bar handles the accessible aria-valuenow; segments are decorative `aria-hidden`).
+3 equal-width pill segments separated by 4px gaps. Filled segments use the tier bar color. Unfilled segments use Hairline Beige / Hairline Umber. The bar is a continuous fill behind the segmented visual overlay (bar handles the accessible aria-valuenow; segments are decorative `aria-hidden`).
 
 ### Accessibility
 
@@ -177,7 +177,7 @@ The default state when the user lands on the Identify screen.
 - "Identificar" primary button: Plus Jakarta Sans 16px 600, Canopy fill, Ivory label, 48px tall, 8px radius — renders below thumbnails strip once ≥1 photo is selected; disabled (opacity 50%, pointer-events none) when no photos selected
 
 **Copy:**
-- Screen heading (Source Serif 4, 24px, 500): `"Identificar planta"`
+- Screen heading (Source Serif 4, 24px, 600): `"Identificar planta"`
 - Guide caption: `"Mais fotos melhoram a precisão"`
 - CTA: `"Identificar"`
 - Thumbnail remove button `aria-label`: `"Remover foto"`
@@ -196,7 +196,7 @@ The default state when the user lands on the Identify screen.
 Triggered by "Identificar" tap. Cannot be cancelled (D-20 — no cancel button).
 
 **Layout:**
-- Hero heading (Source Serif 4, 32px, 500, Forest Ink/Moonpaper): `"Identificando sua planta…"` — centered
+- Hero heading (Source Serif 4, 32px, 600, Forest Ink/Moonpaper): `"Identificando sua planta…"` — centered
 - Below heading: `<SkeletonGroup delay={300}>` wrapping 3 stacked `<Skeleton>` blocks simulating result cards (height 120px each, full width minus 32px margin, 8px radius, 16px gap between)
 - Reduced-motion: SkeletonGroup still gates at 300ms; Skeleton renders static Hairline block (no shimmer) with 80ms fade-in — existing Skeleton behavior
 
@@ -217,7 +217,7 @@ Triggered by "Identificar" tap. Cannot be cancelled (D-20 — no cancel button).
 3 result cards stacked vertically, equal visual weight (D-24 — no hero treatment for card #1).
 
 **Layout:**
-- Page heading (Source Serif 4, 24px, 500): `"Resultados"`
+- Page heading (Source Serif 4, 24px, 600): `"Resultados"`
 - Caption below heading (Plus Jakarta Sans 14px, 400, Calm Slate): `"Resultados ordenados pelo nível de confiança"`
 - 3 cards, vertical stack, full-width minus 32px margin (16px each side), 16px gap
 - Each card (Warm Ivory/Embered Surface bg, 8px radius, 16px padding):
@@ -260,7 +260,7 @@ Triggered by "Identificar" tap. Cannot be cancelled (D-20 — no cancel button).
 All provider results were below `min_confidence=0.30` threshold (server filtered).
 
 **Layout:**
-- Heading (Source Serif 4, 24px, 500): `"Não conseguimos identificar"`
+- Heading (Source Serif 4, 24px, 600): `"Não conseguimos identificar"`
 - Body (Plus Jakarta Sans 16px, 400, body): `"As fotos não continham informação suficiente para identificar a planta com segurança. Tente fotos mais próximas e com boa iluminação."`
 - Retake guidance row (Understory Sage Lucide icons, 24px each, with text below each):
   - `<CameraIcon>` → `"Mais próxima"`
@@ -282,7 +282,7 @@ Shown on first-ever identification attempt for a user without `identification_th
 **Layout:**
 - ModalSheet title: `"Envio de fotos para identificação"`
 - Close button label: `"Cancelar"`
-- Trust Teal info strip (8px top-bottom padding, 12px left-right padding, 4px radius, Trust Teal/Trust Mist bg at 10% opacity with Trust Teal/Trust Mist left border 3px):
+- Trust Teal info strip (8px top-bottom padding, 16px left-right padding, 4px radius, Trust Teal/Trust Mist bg at 10% opacity with Trust Teal/Trust Mist left border 3px):
   - Trust Teal `<InfoIcon>` 18px + body text (14px, Trust Teal/Trust Mist): `"Conforme o Art. 33 da LGPD, suas fotos serão enviadas a provedores internacionais para identificação."`
 - Body paragraph (16px, 400): `"Para identificar sua planta, enviaremos as fotos para:"`
 - Provider list (16px, 600, Forest Ink):
@@ -308,7 +308,7 @@ User has exceeded their daily or period identification limit.
 
 #### 6a: Trial user — daily cap hit (5/day)
 
-- Heading (Source Serif 4, 24px, 500): `"Limite diário atingido"`
+- Heading (Source Serif 4, 24px, 600): `"Limite diário atingido"`
 - Body: `"Você usou todas as 5 identificações de hoje. Tente novamente amanhã ou adicione a planta manualmente."`
 - Reset time note (14px, Calm Slate): `"Identificações recarregam em [HH:MM] (meia-noite, horário de Brasília)"`
 - Tertiary text link: `"Adicionar manualmente"`
@@ -350,7 +350,7 @@ All providers exhausted (internal reasons: `cost_ceiling_reached`, `breaker_open
 
 **Layout:**
 - `<AlertCircleIcon>` 32px, Overdue Rust/Overdue Copper, centered
-- Heading (Source Serif 4, 24px, 500): `"Identificação temporariamente indisponível"`
+- Heading (Source Serif 4, 24px, 600): `"Identificação temporariamente indisponível"`
 - Body (16px, 400): `"Tente novamente mais tarde. Suas fotos foram salvas e estão prontas para nova tentativa."`
 - Primary button (full-width): `"Tentar novamente"` — available; restores to State 1 with photos retained in IndexedDB (per IDENT-12)
 - Tertiary text link: `"Adicionar manualmente"`
@@ -425,7 +425,7 @@ Always-visible above the capture/picker affordance on State 1. Never a tutorial 
 | 3 | `<TreeDeciduousIcon>` 48px, Sage fill | `"Planta inteira"` |
 
 - Row: `flex justify-around`, each slot `flex-col items-center gap-2`
-- Slot labels: Plus Jakarta Sans 12px, 400, Calm Slate
+- Slot labels: Plus Jakarta Sans 14px, 400, Calm Slate
 - Caption beneath row: `"Mais fotos melhoram a precisão"` — Plus Jakarta Sans 14px, 400, Calm Slate, centered
 - All icons `aria-hidden="true"` — the caption is the accessible description of the guide's purpose
 
@@ -438,7 +438,7 @@ Route: `/historico` (or nested under profile; exact route TBD by planner)
 ### List View
 
 **Layout:**
-- Screen heading (Source Serif 4, 24px, 500): `"Histórico de identificações"`
+- Screen heading (Source Serif 4, 24px, 600): `"Histórico de identificações"`
 - Cursor-paginated list (page size 50, Phase 2 D-36 contract — opaque base64 cursor encoding `{created_at, id}`)
 - Each row: horizontal strip with thumbnails + metadata + status badge
   - Thumbnail strip: up to 3 thumbnails 48×48px, 4px radius, 4px gap; if more than 3 photos, show 2 + `"+N mais"` overlay (14px, 400, Ivory/Night Cream on semi-transparent Forest/Night bg)
@@ -650,3 +650,4 @@ No third-party registry blocks. All components are hand-rolled Radix + Tailwind 
 
 _Phase: 06-identification-flow-cost-controls_
 _UI-SPEC created: 2026-05-10_
+_UI-SPEC revised: 2026-05-10 (checker fix pass 1); 2026-05-10 (checker fix pass 2 — collapse Source Serif 4 to weight 600 only, system-wide set now {400, 600})_

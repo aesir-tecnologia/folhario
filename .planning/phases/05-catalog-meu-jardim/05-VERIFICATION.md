@@ -1,9 +1,10 @@
 ---
 phase: 05-catalog-meu-jardim
 verified: 2026-05-03T12:00:00Z
-status: human_needed
+status: passed
 score: 5/5 must-haves verified
-overrides_applied: 0
+overrides_applied: 8
+human_approved_at: 2026-05-09
 re_verification:
   previous_status: human_needed
   previous_score: 5/5
@@ -19,27 +20,43 @@ human_verification:
   - test: "Open /catalog as a user with 0 plants; verify Home empty state ('Identifique sua primeira planta' + camera + 'Adicionar manualmente') and Catalog empty state ('Sua estante ainda está esperando a primeira planta.' + Canopy CTA) render with correct line-art / typography per PRD §17."
     expected: "Visual + screen-reader announcement matches spec."
     why_human: "Visual + assistive-tech check requires real browser/device."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "Add a plant manually; verify the catalog grid is 2 cols at ≤375px, 3 cols at 600–899px, 4 cols at ≥900px and acquisition_date DESC NULLS LAST sort is applied."
     expected: "Breakpoints + sort hold across viewport resize."
     why_human: "Responsive grid breakpoints need a real viewport."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "On plant-profile, attempt inline-edit of name/nickname/location/acquisition_date/notes (tap-to-edit, blur-to-save, Esc-to-cancel) and verify optimistic UI + sonner failure toast. After saving any field, verify the cover image remains visible."
     expected: "Fields save on blur, revert on Esc, toast on PATCH failure, cover image persists after edit."
     why_human: "Input/blur/keyboard interaction + visual cover image persistence validated only in real browser."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "Open the location-picker on plant-profile and on /catalog/add; click (without typing) to verify the listbox opens immediately. Verify it shows prior user locations + 8 i18n defaults + free-text 'Adicionar {typed}' affordance."
     expected: "Combobox opens on click and focus without typing; renders all three sources with APG keyboard nav; outside-click closes listbox."
     why_human: "Combobox click-to-open behavior + keyboard + visual behavior requires real browser."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "Online → offline transition while browsing /catalog and /catalog/[plantId]; verify offline banner appears, previously-loaded plants stay visible (Serwist SWR cache), identify is blocked with clear message. The Chrome dino must NOT appear."
     expected: "OFF-08 catalog browseable + identify blocked banner. Chrome dino does not appear."
     why_human: "SW cache + offline UX requires real browser DevTools offline mode."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "Plant-profile delete flow end-to-end on a real device — tap overflow → 'Excluir planta' → confirm sheet → confirm. Verify: plant disappears from grid, redirect to /catalog, success toast 'Planta excluída com sucesso.' appears, no hydration mismatch errors."
     expected: "Delete completes; redirect to /catalog; toast appears; sort state initialized as 'Adicionadas recentes' on both server and client (no hydration mismatch)."
     why_human: "End-to-end delete UX flow including confirmation sheet, optimistic cache update, route redirect, toast, and hydration parity needs real device."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "Photo-journal lightbox + thumbnail strip on a plant with ≥2 photos. The advisory NEW-CR-01 flagged that listPhotoEntries reverses to newest-first while plant-profile.tsx still slices(1) — newest photo may be missing from carousel; cover may render twice."
     expected: "Open lightbox from cover, swipe through carousel; verify (a) newest photo is reachable, (b) cover does not appear twice, (c) thumbnail strip below cover does not duplicate the cover."
     why_human: "Lightbox carousel composition + thumbnail-strip ordering is observable only by clicking through photos on a plant with 3+ entries."
+    result: approved
+    override: "user-approved 2026-05-09"
   - test: "Idempotency-key behavior on photo-journal add when the network fails mid-request. Advisory NEW-CR-05 flagged that journal-add-sheet.tsx regenerates the key on retry — defeats the duplicate-protection purpose of the Idempotency-Keys table."
     expected: "Two POSTs of the same payload after a transient 5xx should reach the server with the SAME Idempotency-Key (server returns the previous response, no duplicate row)."
     why_human: "Requires triggering a 5xx + retry on a real backend with the idempotency_keys table; functional bug that's user-observable as duplicate journal entries on flaky networks."
+    result: approved
+    override: "user-approved 2026-05-09"
 ---
 
 # Phase 5: Catalog — Meu Jardim Verification Report
@@ -47,7 +64,8 @@ human_verification:
 **Phase Goal:** A verified user can manually add plants, see them as a responsive 2/3/4-column grid sorted by acquisition date, open a plant profile with photo journal + location picker + delete, and browse a previously-loaded catalog offline — producing the "something to identify INTO" that Phase 6 needs.
 
 **Verified:** 2026-05-03T12:00:00Z
-**Status:** human_needed
+**Status:** passed
+**Human approved:** 2026-05-09 (user override — all 8 human UAT items approved)
 **Re-verification:** Yes — after Plan 05-gap-closure (Plans 05-24 commits ff7fc0c, 8629ad7, da64edd, 58e482b) closed 5 UAT gaps from the 05-HUMAN-UAT.md cycle.
 
 ## Goal Achievement
@@ -143,9 +161,9 @@ These are NOT blocking gaps for phase completion. They are tracked here for deve
 | NEW-CR-04 | `delete-photo-entry.ts:34-38` | `extractObjectKey` does not validate bucket prefix against KNOWN_BUCKETS | CRIT (latent) |
 | NEW-CR-05 | `journal-add-sheet.tsx:138, 143` | Idempotency-Key regenerated on retry — defeats dedupe purpose on flaky networks | CRIT (user-observable as duplicate journal entries) |
 
-### Human Verification Required
+### Human Verification
 
-Eight items — see `human_verification` in frontmatter.
+Eight items — all approved by user on 2026-05-09. See `human_verification` in frontmatter.
 
 **Three items were updated by this gap-closure re-verification pass:**
 
@@ -184,7 +202,7 @@ Eight items — see `human_verification` in frontmatter.
 
 **All ROADMAP success criteria verified.** Phase 6 remains unblocked.
 
-**Eight human verification items remain** before the phase can move to status: passed. No automated blocking gaps remain.
+**All 8 human verification items approved by user on 2026-05-09.** Phase status: passed.
 
 ---
 

@@ -206,7 +206,8 @@ Plans:
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls
-**Goal**: A verified, trial-active user opens the Identify screen, snaps or picks 1-N photos, accepts the first-time LGPD Art. 33 third-party transfer consent, and — within the 50s function budget — receives ≤3 honest top-3 results with confidence-ladder UI, selects one, and lands in their catalog with a Plant+Species linked; meanwhile the platform enforces per-user caps, per-provider daily ceilings, atomic counters, and a circuit breaker so a runaway provider can never blow the $5/day budget.
+**Goal**: As a verified trialing user, I want to snap a photo and get an honest identification, so that I know what plant I have without guessing.
+**Mode:** mvp
 **Depends on**: Phase 5
 **Requirements**: IDENT-01, IDENT-02, IDENT-03, IDENT-04, IDENT-05, IDENT-06, IDENT-07, IDENT-08, IDENT-09, IDENT-10, IDENT-11, IDENT-12, IDENT-13, IDENT-14, IDENT-15, IDENT-16, IDENT-17, IDENT-18, IDENT-19, IDENT-20, IDENT-21, COST-01, COST-02, COST-03, COST-04, COST-05, COST-06, COST-07, COST-08, COST-09, COST-10, LGPD-09, UI-06, UI-12, UI-15
 **Success Criteria** (what must be TRUE):

@@ -120,27 +120,34 @@ A vision-based plant species identifier for Brazilian beginners who just bought 
 
 ## 2. Framework Decision
 
-**Selected Framework:** No AI framework — direct vendor SDKs under the locked `IdentificationProvider` adapter (D-01/D-02). Plant.id connector uses native `fetch` + Zod 4 validation; OpenAI-compat connector uses `openai` SDK with `baseURL` override + Zod 4 on the parsed response.
+**Selected Framework:** Vercel AI SDK (`ai` v5+ with `@ai-sdk/openai-compatible` provider) **inside the OpenAI-compat connector only**, under the locked `IdentificationProvider` adapter (D-01/D-02). Plant.id connector remains on native `fetch` + Zod 4 (Plant.id is a vision REST taxonomy API, not an LLM — the AI SDK has no surface there). Both connectors validate provider responses with Zod 4 and return `{canonical, raw}` per D-03.
 
-**Version:** `openai` ^5.x; `zod` ^4.3.6 (already in deps); native `fetch` (Node 22+ on Vercel runtime).
+**Version:** `ai` ^5.x + `@ai-sdk/openai-compatible` ^1.x; `zod` ^4.3.6 (already in deps); native `fetch` (Node 22+ on Vercel runtime).
 
 **Rationale:**
 
-Phase 6 architecture is already locked at exactly the layer a framework would try to own:
+Phase 6 architecture is already locked at exactly the layer a framework would otherwise try to own. The Vercel AI SDK fits this constraint cleanly because it does NOT own the call site — it sits one level down, inside a single connector implementation:
 
-- **D-01/D-02** lock the `IdentificationProvider` adapter interface and connector layout
-- **D-05** locks atomic preflight cost reservation in a single Postgres transaction BEFORE any provider HTTP call
-- **D-06** locks `AbortController` propagation through the connector to the underlying `fetch` call (50s outer / 30s per-call / ≥10s remaining-budget guard)
-- **D-08–D-10** lock a DB-backed circuit breaker with specific fault-counting semantics
-- **D-31** locks per-test injected mock connectors via `__setProviderForTests` test seam
+- **D-01/D-02** lock the `IdentificationProvider` adapter interface and connector layout — the AI SDK lives entirely inside `openai-compat.ts` and never leaks past the adapter boundary
+- **D-05** locks atomic preflight cost reservation in a single Postgres transaction BEFORE any provider HTTP call — the use-case still controls when the connector is invoked; the AI SDK is invoked synchronously inside the connector after reservation commits
+- **D-06** locks `AbortController` propagation — `generateObject({ abortSignal })` accepts the per-call 30s child controller and propagates it to the underlying provider HTTP call
+- **D-08–D-10** lock the DB-backed circuit breaker — unchanged; the connector still throws/returns `{canonical, raw}` and the router counts faults
+- **D-31** locks per-test injected mock connectors — unchanged; tests inject a fake connector via `__setProviderForTests` without ever touching the AI SDK
 
-Any framework that owns the call site (LangChain, LangGraph, OpenAI Agents SDK, Vercel AI SDK as a primary) would conflict with these locks and add abstraction surface CLAUDE.md and D-01 explicitly minimized. The use case is one-shot structured image classification with two REST APIs — no chain, no graph, no agent, no retrieval, no tool use. Direct SDKs are the honest answer.
+Why prefer it over the bare `openai` SDK:
+- **Native production fit with Vercel.** Same vendor as the deploy target; first-class observability hooks (`telemetry: { isEnabled }`, OpenTelemetry exporter) line up with Sentry/PostHog without bespoke wrapping.
+- **`generateObject({ schema })` + Zod 4** removes the manual `response_format: { type: 'json_schema', schema: zodToJsonSchema(...) }` boilerplate and the `additionalProperties: false` foot-gun (the SDK handles strict-mode JSON Schema generation correctly).
+- **Provider-swap option without code change.** `createOpenAICompatible({ baseURL, apiKey })` lets us point at Together, Groq, OpenRouter, a local vLLM, or OpenAI itself purely via env without any SDK-level changes — exactly what the model-agnostic posture in §1 calls for.
+- **Vision content shape is uniform** across providers (`{type: 'file', mediaType: 'image', data: Buffer|URL}`) — no per-provider vision-block translation.
+
+The use case is still one-shot structured image classification — no chain, no graph, no agent, no retrieval, no tool use. The AI SDK is used only for the structured-object generation primitive, not for any of the orchestration features it ships with.
 
 **Alternatives Considered:**
 
 | Framework | Ruled Out Because |
 | --------- | ----------------- |
-| Vercel AI SDK 5+ (`generateObject({ schema })`) | Marginal upside over `openai` SDK + Zod for vision-response parsing; cannot unify Plant.id (non-LLM REST taxonomy API), so the `IdentificationProvider` adapter remains required regardless. May be reconsidered _inside_ the OpenAI-compat connector only if Zod-based parsing proves brittle. |
+| `openai` SDK directly (with `baseURL` override) | Works, but requires manual JSON Schema generation from Zod, manual `additionalProperties: false` handling for strict mode, and per-provider vision-content translation. Vercel AI SDK gives those for free with no extra abstraction cost since both libs are equally thin around the same OpenAI-compatible HTTP call. |
+| Vercel AI SDK as a **primary** orchestration layer (agents, tools, multi-step) | We have no chain, no agent, no tool calls — using the SDK's `generateObject` primitive is the right scope; using its agent features would conflict with D-05/D-06 locks. |
 | LangChain / LangGraph | Anti-pattern #1 in `ai-frameworks.md`. No chain, no graph, no agent — adds abstraction overhead with no payoff. Owns call site, conflicts with D-05/D-06 locks. |
 | OpenAI Agents SDK | Designed for agentic delegation (Handoffs, Guardrails, Tracing); we need a single classification call, not an agent. Locks vendor (we need fallover to a different vendor by design — D-04). |
 | LlamaIndex | RAG-first; Phase 6 has no retrieval, no documents, no vector store. Wrong tool. |
@@ -152,24 +159,22 @@ Any framework that owns the call site (LangChain, LangGraph, OpenAI Agents SDK, 
 
 ## 3. Framework Quick Reference
 
-> Two-connector adapter — no AI framework. Distilled from official `openai` SDK docs and Plant.id v3 Postman documentation (May 2026).
+> Two-connector adapter. OpenAI-compat connector uses Vercel AI SDK (`generateObject` + `@ai-sdk/openai-compatible`); Plant.id connector uses native `fetch`. Distilled from official AI SDK docs (`/vercel/ai`, ai_5_0_0) and Plant.id v3 Postman documentation (May 2026).
 
 ### Installation
 
 ```bash
-# zod 4.3.6 + drizzle-zod 0.8.3 already in package.json — only the openai SDK is new
-pnpm add openai
+# zod 4.3.6 + drizzle-zod 0.8.3 already in package.json
+pnpm add ai @ai-sdk/openai-compatible
 # Plant.id needs no SDK; we hit its REST endpoint with native fetch
 ```
 
 ### Core Imports
 
 ```typescript
-import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { generateObject } from 'ai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
-// VERIFY: openai/helpers/zod ships a Zod-3 import path in some SDK versions; if Zod 4 fails
-// at runtime, drop zodResponseFormat and use the manual json_schema fallback shown in §4b.1.
 ```
 
 ### Entry Point Pattern
@@ -277,7 +282,7 @@ const TopThreeSchema = z.object({
     .array(
       z.object({
         scientificName: z.string(),
-        commonName: z.string().nullable(),
+        commonName: z.string().nullable(),       // .nullable() — NOT .nullish()/.optional() (strict-mode rule)
         confidence: z.number().min(0).max(1),
       }),
     )
@@ -298,10 +303,15 @@ export class OpenAiCompatProvider implements IdentificationProvider {
   readonly model = 'gpt-4o-mini';                 // VERIFY: confirm vendor catalog name at deploy
   readonly costPerCallCents = 1;                  // ~$0.005 floor; estimateCost refines per-photo
 
-  private readonly client: OpenAI;
+  private readonly model$;
 
-  constructor(opts: { apiKey: string; baseURL?: string }) {
-    this.client = new OpenAI({ apiKey: opts.apiKey, baseURL: opts.baseURL });
+  constructor(opts: { apiKey: string; baseURL: string; providerName?: string }) {
+    const provider = createOpenAICompatible({
+      name: opts.providerName ?? 'openai-compat',
+      apiKey: opts.apiKey,
+      baseURL: opts.baseURL,                      // OpenAI itself: 'https://api.openai.com/v1'
+    });
+    this.model$ = provider.chatModel(this.model);
   }
 
   estimateCost(input: IdentificationInput): number {
@@ -310,29 +320,37 @@ export class OpenAiCompatProvider implements IdentificationProvider {
   }
 
   async identify(input: IdentificationInput): Promise<IdentifyOutcome> {
-    const imageContent = input.photos.map((p) => ({
-      type: 'image_url' as const,
-      image_url: {
-        url: `data:${p.mime};base64,${p.bytes.toString('base64')}`,
-        detail: 'low' as const,                   // 1MB client-compressed images need no high-res tokens
+    const result = await generateObject({
+      model: this.model$,
+      schema: TopThreeSchema,
+      schemaName: 'top3_species',
+      schemaDescription: 'Top-3 plant species candidates with calibrated confidence.',
+      temperature: 0,                             // deterministic extraction
+      maxOutputTokens: 600,                       // cap output; never unbounded in production
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Identify this plant.' },
+            ...input.photos.map((p) => ({
+              type: 'file' as const,
+              mediaType: p.mime,                  // e.g. 'image/jpeg'
+              data: p.bytes,                      // Buffer; AI SDK encodes per provider
+            })),
+          ],
+        },
+      ],
+      abortSignal: input.signal,                  // D-06: AI SDK propagates to underlying fetch
+      providerOptions: {
+        // gpt-4o vision detail control if the OpenAI provider honors it via the compat layer.
+        // VERIFY: option key name varies; if unsupported, image_url 'detail' is omitted and the
+        // server defaults to 'auto'. 1MB client-compressed images make this a minor cost concern.
       },
-    }));
-    const completion = await this.client.chat.completions.parse(
-      {
-        model: this.model,
-        temperature: 0,                           // deterministic extraction
-        max_tokens: 600,                          // cap output; never unbounded in production
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: [{ type: 'text', text: 'Identify this plant.' }, ...imageContent] },
-        ],
-        response_format: zodResponseFormat(TopThreeSchema, 'top3_species'),
-      },
-      { signal: input.signal },                   // signal goes in the SECOND arg, not the body
-    );
-    const parsed = completion.choices[0]?.message?.parsed;
-    if (!parsed) throw new Error('openai-compat: empty parsed payload');  // → invalid_response (D-15)
-    return { canonical: parsed, raw: completion };
+      // NoObjectGeneratedError is thrown if the model returns text that does not parse to schema —
+      // catch upstream in the router → failure_reason='invalid_response' (D-15) → breaker++ (D-10).
+    });
+    return { canonical: result.object, raw: result };
   }
 }
 ```
@@ -343,16 +361,18 @@ export class OpenAiCompatProvider implements IdentificationProvider {
 | ------- | ---------- | --------------- |
 | `IdentificationProvider` adapter (D-01) | Single TS interface — `identify` + `estimateCost` + static metadata | Every new vendor connector implements it; router consumes it; tests inject mocks via D-31 seam |
 | `NormalizedResult` (D-03) | Vendor-agnostic shape `{ results: [{ scientificName, commonName, confidence }] }` | UI filtering / sorting / threshold check (IDENT-04); `raw` audit trail persisted alongside |
-| `AbortSignal` propagation (D-06) | One outer 50s controller + one 30s per-call child; both signals threaded into `fetch`/`openai.chat.completions.parse({}, { signal })` | Every provider call. Without it, network reads keep running after the wall-clock budget expires |
+| `AbortSignal` propagation (D-06) | One outer 50s controller + one 30s per-call child; threaded into `fetch({ signal })` for Plant.id and `generateObject({ abortSignal })` for OpenAI-compat | Every provider call. Without it, network reads keep running after the wall-clock budget expires |
+| `generateObject({ schema })` | AI SDK primitive that constrains LLM output to a Zod schema; returns `{ object, finishReason, usage, ... }` | Inside the OpenAI-compat connector. Throws `NoObjectGeneratedError` on parse failure — caught upstream as `invalid_response` (D-15) |
+| `createOpenAICompatible({ baseURL, apiKey, name })` | AI SDK provider factory for any OpenAI-compatible HTTP endpoint (OpenAI, Together, Groq, OpenRouter, vLLM) | Once at module init; produces a `provider.chatModel('model-id')` handle reused across calls |
 | `estimateCost(input)` (D-01) | Per-call cents estimate — flat for Plant.id, photo-count derived for OpenAI-compat | Feeds the atomic preflight reservation (D-05) BEFORE any HTTP call |
 | Atomic preflight reservation (D-05) | One short transaction: conditional `INSERT ... ON CONFLICT DO UPDATE` only when `current + estimate <= ceiling` | Once per attempt, before connector.identify(). Zero rows updated → mark provider exhausted, try next |
 | Circuit breaker state (D-08) | Module-level `Map<provider, BreakerState>` fronting `provider_breaker_states` table; same TTL as budget cache | Read before each call to skip-open providers; written on consecutive-failure threshold trip |
 
 ### Common Pitfalls
 
-1. **Forgetting to forward `AbortSignal` into the underlying `fetch`** — A 30s parent timeout cancels nothing if the connector never plumbed `signal` into the `fetch` call. The result is zombie HTTP requests that keep the Vercel function alive past the 50s budget and burn provider quota for results no one will read. Plumb `input.signal` into BOTH the native `fetch({ signal })` AND `openai.chat.completions.parse(params, { signal })` (the SDK takes signal as the SECOND argument; passing it inside the params object is silently ignored).
-2. **Confusing the OpenAI SDK's `timeout` option with `AbortSignal`** — The SDK's per-request `timeout` is a client-side fetch timer. It does not satisfy D-06 (which requires the outer 50s wall-clock budget to abort whichever provider is currently in-flight). Only `AbortSignal` propagates from the use-case down to the network read. Use `timeout` as belt-and-braces if desired, but `AbortSignal` is load-bearing.
-3. **OpenAI strict-mode `json_schema` rejects schemas without `additionalProperties: false`** — When using the manual `response_format: { type: 'json_schema', strict: true }` fallback (instead of `zodResponseFormat`), the JSON Schema MUST set `additionalProperties: false` on every object node. Zod 4's `z.toJSONSchema()` does this by default (strips unknown keys), so prefer it over hand-rolled schemas.
+1. **Forgetting to forward `AbortSignal`** — A 30s parent timeout cancels nothing if the connector never plumbed `signal` through. Plant.id: pass `signal` into `fetch({ signal })`. OpenAI-compat: pass `abortSignal` (note the parameter name — `abortSignal`, not `signal`) into `generateObject({ abortSignal })`. The AI SDK propagates it to its underlying `fetch`; without it, the call survives wall-clock cancellation and burns budget on a result no one will read.
+2. **Using `.nullish()` or `.optional()` in the Zod schema** — OpenAI strict-mode JSON Schema rejects fields it cannot mark `required`. Use `z.string().nullable()` instead (allow `null`, but still required to be present). Vercel AI SDK / `vercel/ai` documentation calls this out explicitly because it's the most common cause of `NoObjectGeneratedError` with `provider.responseFormat: 'json_schema'`. The shipped `TopThreeSchema` above already uses `.nullable()` on `commonName` for this reason.
+3. **`NoObjectGeneratedError` swallowed silently** — `generateObject` throws this when the model returns text that does not parse to the schema (or finishes with a content filter). It MUST surface to the router as `failure_reason='invalid_response'` (D-15) and increment the breaker (D-10). Do NOT add a retry loop inside the connector — D-10 says one parse attempt, then breaker++. The router decides fallover. Catch in the router, NOT in the connector.
 4. **Plant.id `details.common_names[]` may not include pt-BR for every species** — Even with `?language=pt`, less common Brazilian flora returns an empty/missing common-names list. Fall back to `commonName: null` (PRD §17 anti-fake-precision) — do NOT fabricate a Portuguese common name from English data, and do NOT silently drop the result.
 5. **Zod parse failure on a novel provider response variant** — When Plant.id ships a new field or OpenAI-compat returns a malformed JSON, `Schema.parse()` throws. This MUST surface as `failure_reason=invalid_response` (D-15) and increment the breaker (D-10). It MUST NOT be retried inside the connector (no retry loop) and MUST NOT be silently swallowed; the router decides whether to fall over to the next provider.
 6. **Plant.id rate limits and credit-tier pricing** — VERIFY current limits and credit pricing at deploy time. Entry tier (~€0.05/credit) means the $5/day Plant.id ceiling caps at ~90 calls/day; a higher-volume tier or a swap to OpenAI-compat-only fits more calls. Surface this asymmetry in operator dashboards (later phase) — for MVP, the priority router and ceilings handle it.
@@ -376,7 +396,7 @@ src/
     ├── infrastructure/
     │   ├── providers/
     │   │   ├── plant-id.ts                 # Plant.id v3 connector
-    │   │   ├── openai-compat.ts            # OpenAI SDK + baseURL override
+    │   │   ├── openai-compat.ts            # Vercel AI SDK + @ai-sdk/openai-compatible
     │   │   ├── plant-id.unit.test.ts       # connector internals (D-31 layer 2)
     │   │   └── openai-compat.unit.test.ts
     │   ├── repositories/                   # Drizzle-only zone (PRD §17 D-17)
@@ -391,13 +411,14 @@ src/
 
 ### Sources
 
-- OpenAI Node SDK — `chat.completions.parse()` + `zodResponseFormat` helper: <https://github.com/openai/openai-node/blob/master/helpers.md>
-- OpenAI Node SDK — request timeout + AbortSignal: <https://github.com/openai/openai-node>
-- OpenAI vision (`image_url` + `detail`): <https://platform.openai.com/docs/guides/vision>
+- Vercel AI SDK — `generateObject({ schema })` with Zod: <https://github.com/vercel/ai/blob/main/content/docs/03-ai-sdk-core/10-generating-structured-data.mdx>
+- Vercel AI SDK — `abortSignal` parameter (`AbortSignal.timeout()` and external signals): <https://github.com/vercel/ai/blob/main/content/docs/03-ai-sdk-core/25-settings.mdx>
+- Vercel AI SDK — vision content blocks (`{type:'file', mediaType:'image', data}`): <https://github.com/vercel/ai/blob/main/content/cookbook/05-node/41-stream-object-with-image-prompt.mdx>
+- Vercel AI SDK — `.nullable()` vs `.nullish()` for OpenAI strict-mode schemas: <https://github.com/vercel/ai/blob/main/content/docs/09-troubleshooting/20-no-object-generated-content-filter.mdx>
+- `@ai-sdk/openai-compatible` — `createOpenAICompatible({ baseURL, apiKey, name })`: <https://github.com/vercel/ai/blob/main/packages/openai-compatible/README.md>
 - Plant.id v3 Postman documentation (endpoint, request shape, response shape): <https://documenter.getpostman.com/view/24599534/2s93z5A4v2/index>
 - Kindwise (Plant.id) pricing tiers: <https://www.kindwise.com/pricing>
 - Zod 4 — `z.toJSONSchema` emits `additionalProperties: false`: <https://github.com/colinhacks/zod/blob/main/packages/docs/content/json-schema.mdx>
-- Zod 4 — `safeParse`/`parse` discriminated-union pattern: <https://zod.dev>
 
 ---
 
@@ -406,7 +427,7 @@ src/
 **Model Configuration:**
 
 - **Plant.id (primary, `priority=10`):** `POST https://api.plant.id/v3/identification` with header `Api-Key: ${PLANT_ID_API_KEY}`. Body `{ images: [base64...], classification_level: 'species', similar_images: false }`. Query `?details=common_names&language=pt` for pt-BR common names. No prompt, no temperature — it is a classifier, not an LLM. Per-call ≈ €0.05 at the 1k-credit entry tier; seed `ProviderBudget.cost_per_call_cents = 6`. // VERIFY current Plant.id v3 endpoint + pricing tier at deploy time.
-- **OpenAI-compat (fallback, `priority=20`):** `model='gpt-4o-mini'` (May 2026 — vendor-neutral compatible endpoint); `temperature=0` (deterministic extraction); `max_tokens=600` (caps output cost — never unbounded in production); `response_format=zodResponseFormat(TopThreeSchema, 'top3_species')` (strict JSON Schema with `additionalProperties: false` enforced by Zod 4 → JSON Schema conversion); image content blocks use `detail: 'low'` since the 1MB client-side compress per D-28 already keeps images small enough that high-detail vision tokens would be wasted. // VERIFY: confirm the chosen OpenAI-compatible vendor's exact model identifier at deploy time — gpt-4o-mini is the OpenAI canonical name; a vendor-neutral compat endpoint may use a renamed alias.
+- **OpenAI-compat (fallback, `priority=20`):** Vercel AI SDK `generateObject` against a `createOpenAICompatible({ baseURL, apiKey, name })` provider. `model='gpt-4o-mini'` (May 2026 default; vendor-neutral via `baseURL`). `temperature=0` (deterministic extraction). `maxOutputTokens=600` (cap output cost — never unbounded). `schema=TopThreeSchema` (Zod 4 — AI SDK emits strict JSON Schema with `additionalProperties: false` from Zod 4 by default). Vision input via `{type:'file', mediaType:'image/jpeg', data: Buffer}` content blocks; the 1MB client-side compress per D-28 keeps image-token cost low without manual `detail: 'low'` tuning. // VERIFY at deploy: chosen vendor's exact model identifier — `gpt-4o-mini` is OpenAI canonical; a vendor-neutral compat endpoint (Together, Groq, OpenRouter) may expose a renamed alias.
 
 **Core Pattern:**
 
@@ -515,47 +536,35 @@ export const NormalizedResultSchema = z.object({
 export type NormalizedResult = z.infer<typeof NormalizedResultSchema>;
 ```
 
-**OpenAI-compat connector — preferred path (`zodResponseFormat`):**
+**OpenAI-compat connector — Vercel AI SDK `generateObject`:**
 
 ```typescript
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { generateObject } from 'ai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-const completion = await client.chat.completions.parse(
-  {
-    model: 'gpt-4o-mini',
-    temperature: 0,
-    max_tokens: 600,
-    messages: [...],
-    response_format: zodResponseFormat(NormalizedResultSchema, 'top3_species'),
-  },
-  { signal: input.signal },
-);
-const parsed = completion.choices[0]?.message?.parsed;
-if (!parsed) throw new Error('empty parsed payload');       // → invalid_response (D-15)
+const provider = createOpenAICompatible({
+  name: 'openai-compat',
+  apiKey: process.env.OPENAI_COMPAT_API_KEY!,
+  baseURL: process.env.OPENAI_COMPAT_BASE_URL!,             // e.g. 'https://api.openai.com/v1'
+});
+
+const result = await generateObject({
+  model: provider.chatModel('gpt-4o-mini'),
+  schema: NormalizedResultSchema,                           // Zod 4 — AI SDK handles strict-mode JSON Schema
+  schemaName: 'top3_species',
+  schemaDescription: 'Top-3 plant species candidates with calibrated confidence.',
+  temperature: 0,
+  maxOutputTokens: 600,
+  system: SYSTEM_PROMPT,
+  messages: [{ role: 'user', content: [{ type: 'text', text: 'Identify this plant.' }, ...imageContent] }],
+  abortSignal: input.signal,                                // D-06 — propagates to underlying fetch
+});
+// result.object is fully typed as z.infer<typeof NormalizedResultSchema>
+// On parse / content-filter failure, generateObject throws NoObjectGeneratedError →
+// connector throws → router maps to invalid_response (D-15) → breaker++ (D-10)
 ```
 
-**Manual fallback (if `zodResponseFormat` proves incompatible with Zod 4 in the chosen openai SDK version):**
-
-```typescript
-// VERIFY: only needed if the helper above errors at runtime under Zod 4
-const completion = await client.chat.completions.create(
-  {
-    model: 'gpt-4o-mini',
-    messages: [...],
-    response_format: {
-      type: 'json_schema',
-      json_schema: {
-        name: 'top3_species',
-        strict: true,                                        // OpenAI strict mode requires...
-        schema: z.toJSONSchema(NormalizedResultSchema),      // ...additionalProperties: false (Zod 4 emits this by default)
-      },
-    },
-  },
-  { signal: input.signal },
-);
-const raw = JSON.parse(completion.choices[0]!.message.content!);
-const parsed = NormalizedResultSchema.parse(raw);            // throw → invalid_response (D-15)
-```
+**Why no manual `response_format` fallback:** the AI SDK owns the JSON Schema generation from Zod and the strict-mode handshake. The only Zod-shape rule the developer must remember is the `.nullable()` (NOT `.nullish()` / `.optional()`) constraint — see Pitfall #2.
 
 **Plant.id connector — manual Zod parse (no SDK helper available):**
 
@@ -570,10 +579,10 @@ const canonical: NormalizedResult = NormalizedResultSchema.parse({
 
 **Retry policy on validation failure — DO NOT retry inside the connector.** Per D-10 the lock is: `invalid_response` faults count toward the breaker. A silent in-connector retry would (a) double-bill the user against `ProviderUsageCounter`, (b) hide a real provider regression behind retry success, and (c) lose the breaker signal that protects budget. Concrete policy:
 
-1. One Zod parse attempt per provider call.
-2. On `ZodError`, the connector throws — the use-case maps to `failure_reason=invalid_response` (IDENT-15) and writes the row.
+1. One parse attempt per provider call. For Plant.id this is `Schema.parse(json)`; for OpenAI-compat the AI SDK's `generateObject` throws `NoObjectGeneratedError` if the model output cannot be coerced to the Zod schema.
+2. On parse failure (Plant.id `ZodError` or OpenAI-compat `NoObjectGeneratedError`), the connector throws — the use-case maps to `failure_reason=invalid_response` (IDENT-15) and writes the row.
 3. The router increments the breaker (D-10) and falls over to the next provider in priority order (D-04), provided ≥10s remain (D-06).
-4. Log the `ZodError.issues` to Sentry breadcrumb for diagnosis; never include the user's raw image bytes in the breadcrumb.
+4. Log the parse error (`ZodError.issues` or `NoObjectGeneratedError.cause`) to Sentry breadcrumb for diagnosis; never include the user's raw image bytes in the breadcrumb.
 
 ### Async-First Design
 
@@ -601,7 +610,7 @@ Applies to OpenAI-compat ONLY. Plant.id has no prompt — it is a vision classif
 - **Anti-fake-precision (PRD §17).** The system prompt MUST instruct: "Confidence is a calibrated 0..1 probability, NOT a fabricated marketing number" and "If you are uncertain, return fewer items or set confidence below 0.30". The backend then applies the `min_confidence=0.30` filter (IDENT-04) — defense in depth.
 - **No fabricated common names.** Explicit prompt clause: "Prefer pt-BR common names; if no Brazilian Portuguese common name exists, set commonName to null — do NOT invent one." Mirrors the Plant.id `commonName: null` fallback for symmetry across providers.
 - **Few-shot.** None at MVP. The Zod-derived JSON Schema response_format already constrains output structure; in-context examples would inflate input tokens (cost) without changing well-defined extraction behaviour. Revisit only if eval flags consistent format violations.
-- **`max_tokens`.** Always set explicitly. `max_tokens=600` for OpenAI-compat (≈ 3 results × ~200 tokens of structured JSON, well-padded). Never leave unbounded — a hung-output token loop on a $0.60/M-output model can multiply cost by 100x in seconds.
+- **`maxOutputTokens`.** Always set explicitly. `maxOutputTokens=600` for OpenAI-compat (≈ 3 results × ~200 tokens of structured JSON, well-padded). The Vercel AI SDK normalizes the parameter name across providers — never leave it unbounded; a hung-output token loop on a $0.60/M-output model can multiply cost by 100x in seconds.
 
 ### Context Window Management
 
@@ -617,11 +626,11 @@ This system is single-shot stateless — context-management complexity is struct
 **Per-call cost order of magnitude (May 2026, VERIFY at deploy):**
 
 - Plant.id v3 — flat-rate per identification credit: ~€0.05 at the 1k-credit entry tier, dropping to ~€0.012 at 800k+ credits. At the entry tier, the $5/day per-provider ceiling caps at **~90 calls/day**.
-- OpenAI-compat (`gpt-4o-mini`, May 2026) — $0.15/1M input + $0.60/1M output. With 1MB client-compressed images at `detail: 'low'` (~1.5k input tokens/photo) + ~300 output tokens, single-photo calls are ≈ $0.0005–$0.001; multi-photo (3-5 images) ≈ $0.002–$0.005. The $5/day per-provider ceiling caps at **~1,000–2,500 calls/day** depending on photo count.
+- OpenAI-compat (`gpt-4o-mini`, May 2026) — $0.15/1M input + $0.60/1M output. With 1MB client-compressed images (~1.5k–3k input tokens/photo at the AI SDK's default vision encoding) + ~300 output tokens, single-photo calls are ≈ $0.0005–$0.001; multi-photo (3-5 images) ≈ $0.002–$0.005. The $5/day per-provider ceiling caps at **~1,000–2,500 calls/day** depending on photo count.
 
 **The asymmetry matters.** Plant.id at entry tier is ~10x more expensive per call than OpenAI-compat. The router's priority ordering (Plant.id `priority=10` first, OpenAI-compat `priority=20` second) is a correctness choice (Plant.id has higher domain accuracy on Brazilian flora, hence primary), not a cost choice. Operators MAY flip the ordering in `provider_budgets.priority` if Plant.id quality is acceptable at the OpenAI-compat price floor — the adapter pattern (D-02) supports it without code change.
 
-**Latency budget:** total wall-clock 50s (D-06), per-call cap 30s (D-06), fallover requires ≥10s remaining (IDENT-18). Plant.id p50 is sub-3s for typical loads; OpenAI-compat vision p50 is 4–10s with `detail: 'low'`. Sequential primary-then-fallback fits comfortably; parallel calls are ruled out (cost asymmetry above).
+**Latency budget:** total wall-clock 50s (D-06), per-call cap 30s (D-06), fallover requires ≥10s remaining (IDENT-18). Plant.id p50 is sub-3s for typical loads; OpenAI-compat vision p50 is 4–10s for 1MB-compressed images. Sequential primary-then-fallback fits comfortably; parallel calls are ruled out (cost asymmetry above).
 
 **Caching strategy: NONE.** Every user upload is a unique photo. There is no cache-key candidate — neither exact-match (every byte stream differs) nor semantic (would need an embedding pipeline that doesn't exist in this phase and would itself cost money). The only "caching" in scope is the budget/breaker state cache (D-14/D-15) — not response cache.
 

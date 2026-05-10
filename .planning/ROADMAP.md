@@ -13,7 +13,7 @@ Folhário is a Brazilian plant-identification + care-guide + reminder PWA whose 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Next 16 + Serwist scaffold, local Supabase + Docker dev, Sentry + PostHog baseline with verification, security headers, error registry, ci.yml-only (no deploy)
-- [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, image pipeline, API conventions
+- [x] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, image pipeline, API conventions
 - [x] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings (completed 2026-04-27; PWA install + Lighthouse human verifications outstanding per `03-VERIFICATION.md` status `human_needed`)
 - [x] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Inngest `serve()` + Resend transactional-email backbone (first async consumer)
 - [x] **Phase 5: Catalog — Meu Jardim** - Manual plant add, plant profile, photo journal, location picker, offline-browsable catalog (completed 2026-05-03)
@@ -215,49 +215,7 @@ Plans:
   3. The confidence ladder renders three states (high ≥70%, medium 40-69%, low threshold-39%) with redundant signals (bar + segments + percentage + SR label), zero-results shows "could not identify" + retake guidance (with the Identification row still persisted for history), and the identification-history screen lists every success/timeout/provider_unavailable attempt with status + failure_reason plus a re-associate-with-catalog link.
   4. Per-user caps are enforced BEFORE any `ProviderUsageCounter` increment or provider call: a trialing user over 5/day or 75/period sees `cap_hit` 429 with a reset time and a manual-entry link (no retry button); an active user over 15/day or 200/period sees `cap_hit` 429; two concurrent requests to the same provider serialize atomically with zero lost writes; the 80% ceiling triggers an operator Resend alert; operator DB tuning of `IdentificationLimit` or `ProviderBudget` takes effect on next request past cache TTL.
   5. When Plant.id hits its $5/day ceiling or trips its circuit breaker, the router skips it (logging internal `cost_ceiling_reached` / `breaker_open`) and fallovers to OpenAI-compat with ≥10s remaining budget (else short-circuits `provider_unavailable`); the `care_guide` provider budget is independent from `identification` so exhausting one never starves the other; clients only ever see `provider_unavailable` 503, `timeout` 504, `cap_hit` 429, `consent_required` 403, `validation_failed`, or `subscription_required` 402 — internal reasons never leak; offline identify shows "Identificação requer conexão à internet." and read-only-mode shows the "Reative sua assinatura para identificar novas plantas." paywall modal.
-**Plans**: 16 plans
-
-Plans:
-**Wave 1** (parallel — schema + test infra + providers + i18n/contracts)
-- [ ] 06-01-PLAN.md -- Schema migration + identification-photos bucket + circuit_breakers table [BLOCKING db migrate]
-- [ ] 06-02-PLAN.md -- Wave 0 test infra (consentedUser fixture + provider fetch-mock helpers + stub mode in playwright config)
-- [ ] 06-03-PLAN.md -- IdentificationProvider interface + Plant.id + OpenAI-compat + Stub provider + factory (TDD)
-- [ ] 06-04-PLAN.md -- i18n pt-BR namespace + snake-case mappers + Zod request/response schemas + TanStack Query factory
-
-**Wave 2** _(blocked on Wave 1; UI primitives parallel with repositories — no file overlap)_
-- [ ] 06-05-PLAN.md -- Identification + IAM repositories (atomic UPSERT + TTL cache + hasActiveConsent + getCurrentPolicyVersionString)
-- [ ] 06-06-PLAN.md -- IdentificationRouter (TDD — primary→fallback→short-circuit dispatch with budget+breaker+timeout)
-- [ ] 06-07-PLAN.md -- CircuitBreaker repository (TDD — atomic state machine with 10-min window + 60s cooldown + in-flight half-open guard)
-- [ ] 06-12-PLAN.md -- UI primitives Group A: ConfidenceLadder + AiProvenanceChip + CapHitChip + CaptureGuide (axe-on-unit)
-
-**Wave 3** _(blocked on Wave 2)_
-- [ ] 06-08-PLAN.md -- identify use-case orchestration (TDD — lock + consent + cap + router + INSERT + telemetry)
-- [ ] 06-09-PLAN.md -- confirm/correct/list-identifications use-cases (TDD)
-
-**Wave 4** _(blocked on Wave 3 — file overlap with 06-08)_
-- [ ] 06-08b-PLAN.md -- identify use-case counter UPSERT + 80% ceiling alert (TDD — extends 06-08)
-
-**Wave 5** _(blocked on Wave 4)_
-- [ ] 06-10-PLAN.md -- Route handlers POST/GET /v1/identifications + confirm + correct + iam/consents (TDD)
-- [ ] 06-11-PLAN.md -- Inngest notifyCeiling function consuming provider.ceiling_reached (TDD)
-
-**Wave 6** _(blocked on Wave 5)_
-- [ ] 06-13-PLAN.md -- Identify page state machine + ConsentModal + PaywallDialog + ResultSheet + PhotoStrip + IdentificationResultCard
-- [ ] 06-14-PLAN.md -- History pages (global + per-plant) + IdentificationHistoryItem + plant profile section
-
-**Wave 7** _(blocked on Wave 6; checkpoint:human-verify for visual baselines)_
-- [ ] 06-15-PLAN.md -- E2E specs (consent + multi-photo + paywall + history + 13-state visual baselines + offline extension)
-
-Cross-cutting constraints:
-- Phase 6 introduces ZERO new infrastructure dependencies — all libraries already pinned in package.json (Inngest, Resend, Radix Dialog, Sentry, PostHog, exifr, browser-image-compression, motion). `vitest-axe` may be added as a dev dep in 06-12 if axe-core matchers are not already wired.
-- Vercel Pro tier required for `maxDuration = 60` on `POST /api/v1/identifications` — STATE.md prerequisite (logged in 06-01 SUMMARY).
-- `IDENTIFICATION_PROVIDER_MODE=stub` enforced in playwright.config.ts (06-02) — no real Plant.id / OpenAI calls in CI.
-- Photo storage: NEW `identification-photos` private bucket created in 06-01; route handler 06-10 uploads photos via `uploadIdentificationPhoto` BEFORE calling identify(); `Identification.photoUrls` stores the resulting `storedUrl[]`; history thumbnails are 24h signed URLs (D-21 / Phase 5 D-20 pattern).
-- Sentry PII scrubbing: existing `/\/api\/v1\/identifications(\/|$)/` regex (Phase 1 D-22) covers `…/confirm` and `…/correct` subroutes — NO scrub-list change needed.
-- Half-open circuit breaker concurrency: resolved via `in_flight_at TIMESTAMPTZ` column on `provider_circuit_breakers` (RESEARCH Open Question 1; chosen over expanding the state CHECK enum).
-- Per-process caches: identification_limits (06-05) and policy_version (06-08) both use 30s TTL per CONTEXT D-04 / RESEARCH Pitfall 8.
-- 06-08b is split from 06-08 to keep each TDD plan within ~40% context budget; 06-08b EDITS 06-08's identify.ts to add the counter+alert step.
-- `identification.succeeded` Inngest event fires from `confirm-identification.ts` (06-09) — NOT from identify.ts. Phase 7's care-guide augment trigger consumes this event.
+**Plans**: TBD
 **UI hint**: yes
 
 ### Phase 7: Species, Care Guides & Augmentation

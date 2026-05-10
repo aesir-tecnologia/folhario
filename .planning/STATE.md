@@ -152,6 +152,7 @@ Launch-blocker dependencies tracked in ROADMAP.md "Launch-Blocker Dependencies" 
 
 | #          | Description                                                          | Date       | Commit  | Directory                                                                                                       |
 | ---------- | -------------------------------------------------------------------- | ---------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| 260510-4z1 | Create comprehensive designer-facing UX handoff                      | 2026-05-10 | pending | [260510-4z1-create-comprehensive-designer-facing-ux-](./quick/260510-4z1-create-comprehensive-designer-facing-ux-/) |
 | 260509-s0x | Fix internal links that trigger full page reloads                    | 2026-05-09 | pending | [260509-s0x-fix-internal-links-that-trigger-full-pag](./quick/260509-s0x-fix-internal-links-that-trigger-full-pag/) |
 | 260509-rw5 | Instrument production page navigation latency hotspots               | 2026-05-09 | pending | [260509-rw5-instrument-production-page-navigation-la](./quick/260509-rw5-instrument-production-page-navigation-la/) |
 | 260509-rgi | Fix aria-invalid lint warning                                        | 2026-05-09 | pending | [260509-rgi-fix-aria-invalid-lint-warning](./quick/260509-rgi-fix-aria-invalid-lint-warning/)                   |

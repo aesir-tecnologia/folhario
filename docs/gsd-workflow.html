@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GSD Phase Workflow</title>
+    <style>
+      :root {
+        --bg: #0b0f10;
+        --panel: #121819;
+        --panel-2: #182022;
+        --border: #233033;
+        --text: #e6edee;
+        --muted: #8a9a9d;
+        --accent: #4ade80;
+        --accent-dim: #4ade8033;
+        --warn: #fbbf24;
+        --beta: #a78bfa;
+        --code-bg: #0a0e0f;
+        --shadow: 0 1px 0 #ffffff08, 0 8px 24px #00000040;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f7faf9;
+          --panel: #ffffff;
+          --panel-2: #f0f4f3;
+          --border: #d8e0de;
+          --text: #0e1a1c;
+          --muted: #5a6a6c;
+          --accent: #16a34a;
+          --accent-dim: #16a34a22;
+          --warn: #b45309;
+          --beta: #7c3aed;
+          --code-bg: #0e1a1c;
+          --shadow: 0 1px 0 #00000008, 0 8px 24px #00000010;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+          system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+      header {
+        padding: 32px 24px 16px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .filter-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-right: 4px;
+      }
+      .pill {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-family: inherit;
+      }
+      .pill:hover {
+        border-color: var(--accent);
+      }
+      .pill.active {
+        background: var(--accent);
+        color: #0a0e0f;
+        border-color: var(--accent);
+        font-weight: 600;
+      }
+      .search {
+        flex: 1;
+        min-width: 200px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .search:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      main {
+        padding: 16px 24px 80px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+      .stages {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 16px;
+        position: relative;
+      }
+      @media (max-width: 1100px) {
+        .stages {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 640px) {
+        .stages {
+          grid-template-columns: 1fr;
+        }
+      }
+      .stage {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 200px;
+      }
+      .stage-head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      .stage-num {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        background: var(--accent-dim);
+        padding: 2px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.06em;
+      }
+      .stage-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      .stage-desc {
+        color: var(--muted);
+        font-size: 12px;
+        margin: -4px 0 0;
+      }
+      .cmd {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+        transition:
+          border-color 0.12s ease,
+          opacity 0.18s ease,
+          transform 0.12s ease;
+        position: relative;
+      }
+      .cmd:hover {
+        border-color: var(--accent);
+      }
+      .cmd.dim {
+        opacity: 0.32;
+      }
+      .cmd.hidden {
+        display: none;
+      }
+      .cmd-name {
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 13px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .cmd-tagline {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+      .badges {
+        display: flex;
+        gap: 4px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+      }
+      .badge {
+        font-size: 10px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .badge-tdd {
+        background: #2563eb22;
+        color: #60a5fa;
+      }
+      .badge-mvp {
+        background: #f59e0b22;
+        color: #fbbf24;
+      }
+      .badge-ai {
+        background: #a78bfa22;
+        color: var(--beta);
+      }
+      .badge-ui {
+        background: #ec489922;
+        color: #f472b6;
+      }
+      .badge-beta {
+        background: #a78bfa22;
+        color: var(--beta);
+      }
+      .badge-opt {
+        background: var(--border);
+        color: var(--muted);
+      }
+      .badge-core {
+        background: var(--accent-dim);
+        color: var(--accent);
+      }
+      .stage-arrow {
+        position: absolute;
+        right: -14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 20px;
+        pointer-events: none;
+        z-index: 1;
+      }
+      @media (max-width: 1100px) {
+        .stage-arrow {
+          display: none;
+        }
+      }
+      .stage {
+        position: relative;
+      }
+
+      /* Detail panel */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: #00000080;
+        backdrop-filter: blur(4px);
+        display: none;
+        align-items: flex-end;
+        justify-content: center;
+        z-index: 100;
+        padding: 20px;
+      }
+      .overlay.open {
+        display: flex;
+      }
+      @media (min-width: 720px) {
+        .overlay {
+          align-items: center;
+        }
+      }
+      .detail {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        max-width: 720px;
+        width: 100%;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow);
+      }
+      .detail-head {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: var(--panel);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .detail-head h2 {
+        margin: 0 0 6px;
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      .detail-head p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .close-btn {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text);
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .close-btn:hover {
+        border-color: var(--accent);
+      }
+      .detail-body {
+        padding: 16px 24px 24px;
+      }
+      .detail-body h3 {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 18px 0 8px;
+      }
+      .detail-body h3:first-child {
+        margin-top: 0;
+      }
+      .detail-body p {
+        margin: 0 0 8px;
+        font-size: 14px;
+      }
+      .flag-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .flag-table td {
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .flag-table td:first-child {
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        color: var(--accent);
+        white-space: nowrap;
+        width: 1%;
+      }
+      .flag-table tr:last-child td {
+        border-bottom: 0;
+      }
+      pre.usage {
+        background: var(--code-bg);
+        color: #e6edee;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        overflow-x: auto;
+        margin: 0 0 6px;
+        line-height: 1.5;
+      }
+      .legend {
+        margin-top: 32px;
+        padding: 16px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .legend-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 8px 16px;
+        margin-top: 8px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      kbd {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-bottom-width: 2px;
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 11px;
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+      }
+      .seq-section {
+        margin-top: 32px;
+        padding: 24px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .seq-section h2 {
+        margin: 0 0 6px;
+        font-size: 20px;
+        letter-spacing: -0.01em;
+      }
+      .seq-section .lede {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .seq-section h3 {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin: 24px 0 8px;
+      }
+      .walkthrough {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+        margin: 0 0 8px;
+      }
+      .walk-card {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .walk-card strong {
+        display: block;
+        color: var(--accent);
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      pre.seq-diagram {
+        background: var(--code-bg);
+        color: #e6edee;
+        padding: 16px;
+        border-radius: 8px;
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        overflow-x: auto;
+        margin: 0;
+        white-space: pre;
+      }
+      .seq-flag {
+        margin-top: 16px;
+        padding: 12px 14px;
+        background: var(--panel-2);
+        border-left: 3px solid var(--warn);
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .seq-flag strong {
+        color: var(--warn);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .seq-flag code {
+        font-family:
+          "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        background: var(--code-bg);
+        color: var(--accent);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>GSD Phase Workflow</h1>
+      <p class="subtitle">
+        Every command that operates on a single phase, ordered by lifecycle
+        stage. Click a card for flags &amp; usage. Ad-hoc and project-level
+        commands omitted.
+      </p>
+      <div class="controls">
+        <span class="filter-label">Path</span>
+        <button class="pill active" data-filter="all">All</button>
+        <button class="pill" data-filter="core">Core only</button>
+        <button class="pill" data-filter="tdd">TDD</button>
+        <button class="pill" data-filter="mvp">MVP slice</button>
+        <button class="pill" data-filter="ai">AI phase</button>
+        <button class="pill" data-filter="ui">UI phase</button>
+        <input
+          class="search"
+          id="search"
+          type="search"
+          placeholder="Search commands…"
+          autocomplete="off"
+        />
+      </div>
+    </header>
+
+    <main>
+      <div class="stages" id="stages"></div>
+
+      <div class="legend">
+        <strong style="color: var(--text)">Legend</strong>
+        <div class="legend-grid">
+          <div class="legend-item">
+            <span class="badge badge-core">Core</span> Standard happy path
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-opt">Opt</span> Optional — use when needed
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-tdd">TDD</span> Test-driven path
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-mvp">MVP</span> Vertical-slice MVP path
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-ai">AI</span> AI-system phases
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-ui">UI</span> Frontend phases
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-beta">Beta</span> Early / cloud-only
+          </div>
+        </div>
+        <p style="margin: 12px 0 0; font-size: 12px">
+          Press <kbd>Esc</kbd> to close detail panel.
+        </p>
+      </div>
+
+      <section class="seq-section">
+        <h2>Sequence Diagram</h2>
+        <p class="lede">
+          The full per-phase pipeline traced from ROADMAP entry to opened PR,
+          with the rationale for each stage's internal ordering.
+        </p>
+
+        <h3>Walkthrough</h3>
+        <div class="walkthrough">
+          <div class="walk-card">
+            <strong>01 · Frame</strong>
+            Each artifact must exist before plan-phase reads it. SPEC.md sets
+            WHAT (most upstream), CONTEXT.md captures vision, AI-SPEC and
+            UI-SPEC are specialty contracts (parallel branches), and mvp-phase
+            mutates ROADMAP and <em>triggers</em> plan-phase — so it must be
+            terminal in this stage.
+          </div>
+          <div class="walk-card">
+            <strong>02 · Plan</strong>
+            plan-phase OR ultraplan-phase produces PLAN.md. review then runs
+            against PLAN.md producing REVIEWS.md. plan-review-convergence wraps
+            both in a loop — replan with feedback until no HIGH concerns remain.
+          </div>
+          <div class="walk-card">
+            <strong>03 · Execute</strong>
+            execute-phase consumes verified PLAN.md, runs waves in parallel,
+            emits commits + SUMMARY.md + VERIFICATION.md. autonomous is a
+            meta-runner that re-runs Frame + Plan + Execute per phase.
+          </div>
+          <div class="walk-card">
+            <strong>04 · Verify</strong>
+            Cheaper checks first. <em>Automated audits</em> (code-review,
+            secure-phase, ui-review, eval-review) pre-screen the code →
+            <em>manual UAT</em> (verify-work) on already-cleaned code →
+            <em>fill coverage gaps</em> (validate-phase, add-tests) →
+            <em>auto-fix audit findings</em> (audit-fix) → <em>reflect</em>
+            (extract-learnings). verify-work may loop back to
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">execute-phase --gaps-only</code>.
+          </div>
+          <div class="walk-card">
+            <strong>05 · Ship</strong>
+            pr-branch (filters out .planning/ commits) → ship (push branch,
+            open PR with auto-generated body). Ship is final and requires the
+            phase to be verified.
+          </div>
+        </div>
+
+        <h3>Diagram</h3>
+        <pre class="seq-diagram">
+START ▸ Phase entry in ROADMAP.md
+  │
+  ▼
+┌─ 01  FRAME ────────────────────────────────────────────────────┐
+│                                                                │
+│  /gsd-spec-phase ─────────────────► SPEC.md           [opt]    │
+│        │                                                       │
+│        ▼                                                       │
+│  /gsd-discuss-phase ──────────────► CONTEXT.md        [core]   │
+│        │                                                       │
+│        ├──► /gsd-ai-integration-phase ─► AI-SPEC.md   [ai]     │
+│        │                                                       │
+│        ├──► /gsd-ui-phase ─────────────► UI-SPEC.md   [ui]     │
+│        │                                                       │
+│        ▼                                                       │
+│  /gsd-mvp-phase ──► ROADMAP mutation ──┐              [mvp]    │
+│                                        │ triggers              │
+└────────────────────────────────────────┼───────────────────────┘
+                                         │
+  ┌──────────────────────────────────────┘
+  ▼
+┌─ 02  PLAN ─────────────────────────────────────────────────────┐
+│                                                                │
+│   ╔═══════════════════════════╗                                │
+│   ║ /gsd-plan-phase     [core]║──┐                             │
+│   ║       OR                  ║  │                             │
+│   ║ /gsd-ultraplan-phase[beta]║──┤                             │
+│   ╚═══════════════════════════╝  │                             │
+│                                  ▼                             │
+│                               PLAN.md                          │
+│                                  │                             │
+│                                  ▼                             │
+│   /gsd-review ────────────────► REVIEWS.md            [opt]    │
+│                                  │                             │
+│                                  ▼                             │
+│   /gsd-plan-review-convergence (loops plan ⇄ review)  [opt]    │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─ 03  EXECUTE ──────────────────────────────────────────────────┐
+│                                                                │
+│   /gsd-execute-phase ──► commits + SUMMARY.md         [core]   │
+│                          + VERIFICATION.md                     │
+│              OR                                                │
+│   /gsd-autonomous ──► runs Frame+Plan+Execute per phase[opt]   │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─ 04  VERIFY ───────────────────────────────────────────────────┐
+│                                                                │
+│   ── automated audits (cheap, pre-screen) ───────────────────  │
+│   /gsd-code-review ──► REVIEW.md (--fix auto-commits) [core]   │
+│   /gsd-secure-phase ──► SECURITY.md                   [opt]    │
+│   /gsd-ui-review ─────► UI-REVIEW.md                  [ui]     │
+│   /gsd-eval-review ───► EVAL-REVIEW.md                [ai]     │
+│              │                                                 │
+│              ▼                                                 │
+│   ── manual UAT (human attention) ───────────────────────────  │
+│   /gsd-verify-work ──► UAT log ─┐ may loop back to    [core]   │
+│                                 │ execute-phase --gaps-only    │
+│              ▼                                                 │
+│   ── fill coverage gaps ─────────────────────────────────────  │
+│   /gsd-validate-phase ──► Nyquist tests               [opt]    │
+│   /gsd-add-tests ───────► UAT-derived tests           [opt]    │
+│              │                                                 │
+│              ▼                                                 │
+│   ── auto-fix audit findings ────────────────────────────────  │
+│   /gsd-audit-fix ───────► fix commits                 [opt]    │
+│              │                                                 │
+│              ▼                                                 │
+│   ── reflect ────────────────────────────────────────────────  │
+│   /gsd-extract-learnings ► LEARNINGS.md               [opt]    │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+┌─ 05  SHIP ─────────────────────────────────────────────────────┐
+│                                                                │
+│   /gsd-pr-branch ──► clean branch (filters .planning/)[opt]    │
+│              │                                                 │
+│              ▼                                                 │
+│   /gsd-ship ───────► GitHub PR + STATE.md update      [core]   │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+  │
+  ▼
+END ▸ PR opened</pre>
+
+        <div class="seq-flag">
+          <strong>Sanity-check flag</strong>
+          <code>/gsd-audit-fix</code> documents only
+          <code>--source &lt;audit-uat&gt;</code>, and
+          <code>/gsd-audit-uat</code> is explicitly milestone-level ("use
+          before starting a new milestone to clear verification debt"). Strictly
+          per-phase, audit-fix lives one level up. It is shown here because its
+          character (find → fix → test → commit) belongs in the verify cluster,
+          but drop it if you want pure per-phase fidelity.
+        </div>
+      </section>
+    </main>
+
+    <div class="overlay" id="overlay">
+      <div class="detail" id="detail" role="dialog" aria-modal="true"></div>
+    </div>
+
+    <script>
+      const STAGES = [
+        {
+          id: "frame",
+          num: "01",
+          title: "Frame",
+          desc: "Optional pre-planning — clarify what & how before writing PLAN.md.",
+          commands: [
+            {
+              cmd: "/gsd-spec-phase",
+              tags: ["opt"],
+              tagline:
+                "Clarify WHAT a phase delivers with ambiguity scoring; produces SPEC.md before discuss-phase.",
+              when: "WHAT is fuzzy. Use first when acceptance criteria are unclear and you don't yet trust the phase brief.",
+              creates: "SPEC.md",
+              flags: [
+                ["<phase>", "Phase number to spec."],
+                ["--auto", "Skip interactive prompts."],
+                ["--text", "Plain text output mode."],
+              ],
+              usage: ["/gsd-spec-phase 3", "/gsd-spec-phase 3 --auto"],
+            },
+            {
+              cmd: "/gsd-discuss-phase",
+              tags: ["core"],
+              tagline:
+                "Articulate vision through adaptive questioning. Captures essentials & boundaries into CONTEXT.md.",
+              when: "Default starting point — even if quick. Seeds the planner with intent so it doesn't over-engineer.",
+              creates: "CONTEXT.md",
+              flags: [
+                ["<number>", "Phase number."],
+                ["--chain", "Chained-prompt discuss flow."],
+                ["--analyze", "Deep assumption analysis pass."],
+                ["--power", "Extended question set for power users."],
+                [
+                  "--assumptions",
+                  "Surface implementation assumptions without an interactive session.",
+                ],
+                [
+                  "--batch[=N]",
+                  "Ask 2-5 related questions per turn (default 3).",
+                ],
+              ],
+              usage: [
+                "/gsd-discuss-phase 2",
+                "/gsd-discuss-phase 2 --batch=3",
+                "/gsd-discuss-phase 2 --analyze",
+              ],
+            },
+            {
+              cmd: "/gsd-ai-integration-phase",
+              tags: ["ai"],
+              tagline:
+                "Generate AI-SPEC.md design contract for phases that build AI systems (framework, evals, guardrails, monitoring).",
+              when: "Phase introduces an LLM/agent feature. Run before plan-phase so AI-SPEC.md grounds the planner.",
+              creates: "AI-SPEC.md",
+              flags: [["[phase]", "Phase number (defaults to current)."]],
+              usage: ["/gsd-ai-integration-phase 4"],
+            },
+            {
+              cmd: "/gsd-ui-phase",
+              tags: ["ui"],
+              tagline:
+                "Generate UI-SPEC.md design contract for frontend phases — design system state, components, contracts.",
+              when: "Phase ships UI. Run before plan-phase so UI contracts feed into PLAN.md and ui-checker.",
+              creates: "UI-SPEC.md",
+              flags: [["[phase]", "Phase number (defaults to current)."]],
+              usage: ["/gsd-ui-phase 5"],
+            },
+            {
+              cmd: "/gsd-mvp-phase",
+              tags: ["mvp"],
+              tagline:
+                "Frame the phase as a vertical MVP slice — As a / I want to / So that, with SPIDR splitting if too large.",
+              when: "Phase should ship a thin end-to-end slice. Mutates ROADMAP entry to MVP mode and delegates straight to plan-phase, so run any AI/UI specs first.",
+              creates: "ROADMAP.md mutation + delegated PLAN.md",
+              flags: [
+                ["<number>", "Phase number."],
+                [
+                  "--force",
+                  "Override status guard for already-started or completed phases.",
+                ],
+              ],
+              usage: ["/gsd-mvp-phase 1", "/gsd-mvp-phase 2 --force"],
+            },
+          ],
+        },
+        {
+          id: "plan",
+          num: "02",
+          title: "Plan",
+          desc: "Turn intent into a concrete task plan, optionally peer-reviewed across AIs.",
+          commands: [
+            {
+              cmd: "/gsd-plan-phase",
+              tags: ["core", "tdd", "mvp"],
+              tagline:
+                "Create the executable phase plan with task breakdown, deps, and goal-backward verification.",
+              when: "The main planner. Spawns researcher → planner → plan-checker → verifier loop.",
+              creates: ".planning/phases/XX-name/XX-YY-PLAN.md",
+              flags: [
+                ["<number>", "Phase number."],
+                ["--research", "Force-refresh researcher (no prompt)."],
+                ["--skip-research", "Bypass the research subagent."],
+                [
+                  "--research-phase <N>",
+                  "Research-only mode: spawn researcher for phase N, write RESEARCH.md, exit.",
+                ],
+                [
+                  "--view",
+                  "Print existing RESEARCH.md to stdout (no spawn).",
+                ],
+                ["--gaps", "Focus only on closing gaps from a prior plan-check."],
+                ["--skip-verify", "Skip post-plan verifier loop."],
+                ["--tdd", "Plan in test-driven order (tests before code)."],
+                ["--mvp", "Vertical-slice MVP planning mode."],
+                [
+                  "--prd <file>",
+                  "Express path: PRD becomes locked decisions in CONTEXT.md, skipping discuss-phase.",
+                ],
+                [
+                  "--reviews",
+                  "Feed prior /gsd-review feedback back into replanning.",
+                ],
+              ],
+              usage: [
+                "/gsd-plan-phase 1",
+                "/gsd-plan-phase 2 --tdd",
+                "/gsd-plan-phase 3 --prd docs/req.md",
+                "/gsd-plan-phase --research-phase 4 --view",
+                "/gsd-plan-phase 2 --gaps",
+              ],
+            },
+            {
+              cmd: "/gsd-ultraplan-phase",
+              tags: ["beta"],
+              tagline:
+                "Offload planning to Claude Code's ultraplan cloud; review in browser and import back.",
+              when: "Large/complex phase where you want a heavier model and can wait. Optional substitute for plan-phase.",
+              creates: "Cloud-generated PLAN.md (imported)",
+              flags: [["[phase]", "Phase number."]],
+              usage: ["/gsd-ultraplan-phase 4"],
+            },
+            {
+              cmd: "/gsd-review",
+              tags: ["opt"],
+              tagline:
+                "Cross-AI peer review — Gemini / Codex / Claude / CodeRabbit / OpenCode / Qwen / Cursor independently review the plan.",
+              when: "Stakes are high or you want a sanity check before committing to execution. Feed REVIEWS.md back via plan-phase --reviews.",
+              creates: "REVIEWS.md",
+              flags: [
+                ["--phase N", "Phase number (required)."],
+                ["--gemini", "Use Gemini CLI."],
+                ["--claude", "Use Claude CLI."],
+                ["--codex", "Use Codex CLI."],
+                ["--coderabbit", "Use CodeRabbit (reviews git diff, ≤5 min)."],
+                ["--opencode", "Use OpenCode CLI."],
+                ["--qwen", "Use Qwen CLI."],
+                ["--cursor", "Use Cursor CLI."],
+                ["--all", "Use every detected CLI."],
+              ],
+              usage: [
+                "/gsd-review --phase 3 --all",
+                "/gsd-review --phase 3 --codex --gemini",
+              ],
+            },
+            {
+              cmd: "/gsd-plan-review-convergence",
+              tags: ["opt"],
+              tagline:
+                "Replan-with-review loop until no HIGH concerns remain. Supports cloud + local model runtimes.",
+              when: "When a single review pass isn't enough and you want automated convergence before execution.",
+              creates: "Iteratively updated PLAN.md + convergence log",
+              flags: [
+                ["<phase>", "Phase number."],
+                ["--codex / --gemini / --claude / --opencode", "Cloud reviewers."],
+                [
+                  "--ollama / --lm-studio / --llama-cpp",
+                  "Local runtime reviewers.",
+                ],
+                ["--all", "Every available reviewer."],
+                ["--text", "Plain-text mode."],
+                ["--ws <name>", "Workspace name."],
+                ["--max-cycles N", "Hard cap on loop iterations."],
+              ],
+              usage: [
+                "/gsd-plan-review-convergence 3 --all --max-cycles 3",
+              ],
+            },
+          ],
+        },
+        {
+          id: "execute",
+          num: "03",
+          title: "Execute",
+          desc: "Run the plan. Wave-based parallelism, atomic commits, deviation handling.",
+          commands: [
+            {
+              cmd: "/gsd-execute-phase",
+              tags: ["core", "tdd"],
+              tagline:
+                "Execute all plans in a phase, grouped into waves; plans inside a wave run in parallel.",
+              when: "After plan-phase verifies. Updates REQUIREMENTS / ROADMAP / STATE on completion and runs the verifier.",
+              creates: "Atomic commits + SUMMARY.md + VERIFICATION.md",
+              flags: [
+                ["<phase-number>", "Phase to execute."],
+                ["--wave N", "Execute only wave N and stop."],
+                [
+                  "--gaps-only",
+                  "Re-run only plans flagged as gaps by a prior verifier.",
+                ],
+                ["--tdd", "Enforce test-driven order during execution."],
+              ],
+              usage: [
+                "/gsd-execute-phase 5",
+                "/gsd-execute-phase 5 --wave 2",
+                "/gsd-execute-phase 5 --gaps-only",
+              ],
+            },
+            {
+              cmd: "/gsd-autonomous",
+              tags: ["opt"],
+              tagline:
+                "Discuss → plan → execute every remaining phase without stopping. Fully unattended pipeline.",
+              when: "Long greenfield runs where you trust the brief and want hands-off advancement. Optional substitute for the manual loop.",
+              creates: "All standard phase artifacts, sequentially",
+              flags: [
+                ["--from N", "Start phase."],
+                ["--to N", "Stop phase (inclusive)."],
+                ["--only N", "Single phase."],
+                [
+                  "--interactive",
+                  "Confirm at each phase boundary instead of full auto.",
+                ],
+              ],
+              usage: [
+                "/gsd-autonomous --from 4 --to 7",
+                "/gsd-autonomous --only 5 --interactive",
+              ],
+            },
+          ],
+        },
+        {
+          id: "verify",
+          num: "04",
+          title: "Verify",
+          desc: "Multi-axis quality gates — UAT, code, security, validation, UI, AI evals, learnings.",
+          commands: [
+            {
+              cmd: "/gsd-code-review",
+              tags: ["core"],
+              tagline:
+                "Review files changed during the phase for bugs, security, and code-quality problems. Severity-classified findings.",
+              when: "First verify gate — automated, often with --fix. Pre-screens the code before any human UAT cycles burn.",
+              creates: "REVIEW.md (and fix commits with --fix)",
+              flags: [
+                ["<phase>", "Phase number."],
+                [
+                  "--depth=quick|standard|deep",
+                  "Review depth (default standard).",
+                ],
+                ["--files file1,file2", "Limit to specific files."],
+                ["--fix", "Auto-apply fixes via gsd-code-fixer."],
+                ["--all", "With --fix: apply every finding."],
+                ["--auto", "With --fix: skip per-fix confirmation."],
+              ],
+              usage: [
+                "/gsd-code-review 3",
+                "/gsd-code-review 3 --depth=deep",
+                "/gsd-code-review 3 --fix --all",
+              ],
+            },
+            {
+              cmd: "/gsd-secure-phase",
+              tags: ["opt"],
+              tagline:
+                "Verify each PLAN.md threat-model mitigation actually exists in the implemented code.",
+              when: "Phase touched auth, RLS, secrets, network surface, or PII. Run with the other automated audits, before verify-work.",
+              creates: "SECURITY.md",
+              flags: [["[phase]", "Phase number."]],
+              usage: ["/gsd-secure-phase 3"],
+            },
+            {
+              cmd: "/gsd-ui-review",
+              tags: ["ui"],
+              tagline:
+                "Retroactive 6-pillar visual audit of implemented frontend code. Scored UI-REVIEW.md.",
+              when: "Phase shipped UI. Pairs with /gsd-ui-phase up front; this audits what actually got built. Run before verify-work so visual issues surface to an agent first.",
+              creates: "UI-REVIEW.md",
+              flags: [["[phase]", "Phase number."]],
+              usage: ["/gsd-ui-review 5"],
+            },
+            {
+              cmd: "/gsd-eval-review",
+              tags: ["ai"],
+              tagline:
+                "Audit an executed AI phase against AI-SPEC.md eval plan; produce EVAL-REVIEW.md remediation plan.",
+              when: "Phase shipped AI behavior. Pairs with /gsd-ai-integration-phase up front; this audits eval coverage. Run before verify-work.",
+              creates: "EVAL-REVIEW.md",
+              flags: [["[phase]", "Phase number."]],
+              usage: ["/gsd-eval-review 4"],
+            },
+            {
+              cmd: "/gsd-verify-work",
+              tags: ["core"],
+              tagline:
+                "Conversational UAT: walk through testable deliverables one yes/no at a time. Failures auto-create fix plans.",
+              when: "Manual gate after the automated audits. Confirms user-visible behavior actually works on code that has already been pre-screened.",
+              creates: "UAT log; optional fix plans",
+              flags: [["[phase]", "Phase number."]],
+              usage: ["/gsd-verify-work 3"],
+            },
+            {
+              cmd: "/gsd-validate-phase",
+              tags: ["opt"],
+              tagline:
+                "Audit and fill Nyquist validation gaps — generate tests where coverage of phase requirements is missing.",
+              when: "Coverage is thin or you skipped --tdd. Closes the gap between PLAN.md verification criteria and shipped tests.",
+              creates: "Generated tests + coverage report",
+              flags: [["[phase]", "Phase number."]],
+              usage: ["/gsd-validate-phase 3"],
+            },
+            {
+              cmd: "/gsd-add-tests",
+              tags: ["opt", "tdd"],
+              tagline:
+                "Generate tests for a completed phase based on UAT criteria and implementation.",
+              when: "Tests are missing and you want them inferred from SUMMARY.md / VERIFICATION.md rather than hand-written.",
+              creates: "Test files + commits",
+              flags: [
+                ["<phase>", "Phase number."],
+                ["[additional instructions]", "Free-form constraints."],
+              ],
+              usage: [
+                '/gsd-add-tests 3',
+                '/gsd-add-tests 3 "focus on edge cases in repo layer"',
+              ],
+            },
+            {
+              cmd: "/gsd-audit-fix",
+              tags: ["opt"],
+              tagline:
+                "Autonomous audit-to-fix pipeline — find, classify, fix, test, commit each issue from a UAT audit.",
+              when: "After /gsd-verify-work flagged many issues and you want them resolved in one batch.",
+              creates: "Atomic fix commits per issue",
+              flags: [
+                ["--source <audit-uat>", "Audit source (required)."],
+                ["--severity medium|high|all", "Filter by severity."],
+                ["--max N", "Cap number of fixes."],
+                ["--dry-run", "Plan without applying."],
+              ],
+              usage: [
+                "/gsd-audit-fix --source audit-uat --severity high",
+                "/gsd-audit-fix --source audit-uat --max 5 --dry-run",
+              ],
+            },
+            {
+              cmd: "/gsd-extract-learnings",
+              tags: ["opt"],
+              tagline:
+                "Extract decisions, lessons, patterns, and surprises from completed phase artifacts.",
+              when: "End of phase, before shipping. Compounds into RETROSPECTIVE.md and graphify edges.",
+              creates: "LEARNINGS.md entry",
+              flags: [["<phase>", "Phase number."]],
+              usage: ["/gsd-extract-learnings 3"],
+            },
+          ],
+        },
+        {
+          id: "ship",
+          num: "05",
+          title: "Ship",
+          desc: "Get the phase out the door — clean branch and PR with auto-generated context.",
+          commands: [
+            {
+              cmd: "/gsd-pr-branch",
+              tags: ["opt"],
+              tagline:
+                "Create a clean branch for the PR by filtering out .planning/ commits — reviewers see only code.",
+              when: "Before /gsd-ship when reviewers shouldn't see GSD planning artifacts (OSS, client repos, etc.).",
+              creates: "Clean branch with cherry-picked code commits",
+              flags: [
+                ["[target]", "Target branch (default main)."],
+              ],
+              usage: ["/gsd-pr-branch", "/gsd-pr-branch develop"],
+            },
+            {
+              cmd: "/gsd-ship",
+              tags: ["core"],
+              tagline:
+                "Push branch and open PR with body auto-built from SUMMARY.md, VERIFICATION.md, REQUIREMENTS.md.",
+              when: "Final step. Phase must be verified; gh CLI required.",
+              creates: "GitHub PR + STATE.md update",
+              flags: [
+                ["[phase]", "Phase number."],
+                ["--draft", "Open as draft PR."],
+              ],
+              usage: ["/gsd-ship 4", "/gsd-ship 4 --draft"],
+            },
+          ],
+        },
+      ];
+
+      // Render
+      const stagesEl = document.getElementById("stages");
+      STAGES.forEach((stage, i) => {
+        const el = document.createElement("section");
+        el.className = "stage";
+        el.dataset.stage = stage.id;
+        el.innerHTML = `
+          <div class="stage-head">
+            <span class="stage-num">${stage.num}</span>
+            <div>
+              <h2 class="stage-title">${stage.title}</h2>
+            </div>
+          </div>
+          <p class="stage-desc">${stage.desc}</p>
+        `;
+        stage.commands.forEach((c, idx) => {
+          const cmdEl = document.createElement("div");
+          cmdEl.className = "cmd";
+          cmdEl.dataset.tags = c.tags.join(" ");
+          cmdEl.dataset.cmd = c.cmd;
+          cmdEl.innerHTML = `
+            <div class="cmd-name">${c.cmd}</div>
+            <div class="cmd-tagline">${c.tagline}</div>
+            <div class="badges">${c.tags
+              .map((t) => `<span class="badge badge-${t}">${t}</span>`)
+              .join("")}</div>
+          `;
+          cmdEl.addEventListener("click", () => openDetail(stage, c));
+          el.appendChild(cmdEl);
+        });
+        if (i < STAGES.length - 1) {
+          const arrow = document.createElement("div");
+          arrow.className = "stage-arrow";
+          arrow.innerHTML = "→";
+          el.appendChild(arrow);
+        }
+        stagesEl.appendChild(el);
+      });
+
+      // Detail panel
+      const overlay = document.getElementById("overlay");
+      const detail = document.getElementById("detail");
+
+      function openDetail(stage, c) {
+        const flagRows = c.flags
+          .map(
+            ([f, d]) =>
+              `<tr><td>${escapeHtml(f)}</td><td>${escapeHtml(d)}</td></tr>`,
+          )
+          .join("");
+        const usageBlocks = c.usage
+          .map((u) => `<pre class="usage">${escapeHtml(u)}</pre>`)
+          .join("");
+        detail.innerHTML = `
+          <div class="detail-head">
+            <div>
+              <h2>${c.cmd}</h2>
+              <p>Stage ${stage.num} — ${stage.title}</p>
+            </div>
+            <button class="close-btn" aria-label="Close">×</button>
+          </div>
+          <div class="detail-body">
+            <h3>What it does</h3>
+            <p>${c.tagline}</p>
+            <h3>When to use</h3>
+            <p>${c.when}</p>
+            <h3>Output</h3>
+            <p>${c.creates}</p>
+            <h3>Flags</h3>
+            <table class="flag-table">${flagRows}</table>
+            <h3>Usage</h3>
+            ${usageBlocks}
+          </div>
+        `;
+        overlay.classList.add("open");
+        detail
+          .querySelector(".close-btn")
+          .addEventListener("click", closeDetail);
+      }
+      function closeDetail() {
+        overlay.classList.remove("open");
+      }
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeDetail();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeDetail();
+      });
+
+      // Filters
+      const pills = document.querySelectorAll(".pill");
+      let activeFilter = "all";
+      let activeSearch = "";
+
+      pills.forEach((p) => {
+        p.addEventListener("click", () => {
+          pills.forEach((x) => x.classList.remove("active"));
+          p.classList.add("active");
+          activeFilter = p.dataset.filter;
+          applyFilters();
+        });
+      });
+
+      const searchEl = document.getElementById("search");
+      searchEl.addEventListener("input", (e) => {
+        activeSearch = e.target.value.trim().toLowerCase();
+        applyFilters();
+      });
+
+      function applyFilters() {
+        document.querySelectorAll(".cmd").forEach((el) => {
+          const tags = el.dataset.tags.split(" ");
+          const cmd = el.dataset.cmd.toLowerCase();
+          const text = el.textContent.toLowerCase();
+
+          let matchesFilter = true;
+          if (activeFilter === "all") matchesFilter = true;
+          else if (activeFilter === "core")
+            matchesFilter = tags.includes("core");
+          else matchesFilter = tags.includes(activeFilter);
+
+          const matchesSearch =
+            !activeSearch ||
+            cmd.includes(activeSearch) ||
+            text.includes(activeSearch);
+
+          el.classList.remove("hidden", "dim");
+          if (!matchesSearch) el.classList.add("hidden");
+          else if (!matchesFilter) el.classList.add("dim");
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+    </script>
+  </body>
+</html>

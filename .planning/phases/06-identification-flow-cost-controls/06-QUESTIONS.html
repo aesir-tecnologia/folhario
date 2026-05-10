@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phase 6 — Identification Flow & Cost Controls — Discussion Questions</title>
+  <style>
+    :root {
+      --paper: #fbfaf6;
+      --ink: #143424;
+      --canopy: #2f6f4e;
+      --canopy-40: rgba(47, 111, 78, 0.4);
+      --sage: #a4c1a3;
+      --slate: #4a5d54;
+      --hairline: #d8d4c4;
+      --rust: #b85c38;
+      --orange: #f97316;
+      --green-border: #22c55e;
+      --green-bg: #f0fdf4;
+      --gray-border: #e2e8f0;
+      --shadow: 0 2px 12px rgba(20, 52, 36, 0.06);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "Segoe UI", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      background: var(--paper);
+      border-bottom: 1px solid var(--hairline);
+      padding: 16px 24px;
+      z-index: 100;
+      box-shadow: 0 1px 0 var(--hairline);
+    }
+    h1 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 28px;
+      font-weight: 500;
+      margin: 0 0 8px;
+      color: var(--ink);
+    }
+    .subtitle {
+      color: var(--slate);
+      font-size: 14px;
+      margin: 0 0 16px;
+    }
+    .stats {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .stat {
+      font-size: 14px;
+      color: var(--slate);
+    }
+    .stat strong {
+      color: var(--ink);
+      font-size: 16px;
+    }
+    .progress {
+      flex: 1;
+      min-width: 200px;
+      height: 8px;
+      background: var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--canopy);
+      transition: width 200ms ease-out;
+    }
+    .save-button {
+      background: var(--canopy);
+      color: var(--paper);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 150ms;
+    }
+    .save-button:hover { background: #265a3e; }
+    .save-button:focus-visible {
+      outline: 3px solid var(--canopy-40);
+      outline-offset: 2px;
+    }
+    .instructions {
+      background: #fff8e9;
+      border: 1px solid #f0d68a;
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: #4a3a10;
+    }
+    .instructions code {
+      background: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: "Menlo", "Monaco", monospace;
+      font-size: 13px;
+    }
+    section.topic {
+      margin: 32px 0;
+    }
+    .topic-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      padding: 12px 0;
+      border-bottom: 2px solid var(--hairline);
+      user-select: none;
+    }
+    .topic-header h2 {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: 22px;
+      font-weight: 500;
+      margin: 0;
+      color: var(--ink);
+      flex: 1;
+    }
+    .topic-count {
+      color: var(--slate);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .toggle {
+      transition: transform 200ms;
+      color: var(--slate);
+      font-size: 18px;
+    }
+    .topic.collapsed .toggle { transform: rotate(-90deg); }
+    .topic.collapsed .questions-grid { display: none; }
+    .questions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 20px;
+      padding: 20px 0;
+    }
+    .question-card {
+      background: white;
+      border: 1px solid var(--gray-border);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      transition: border 200ms, background 200ms;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .question-card.answered {
+      border: 2px solid var(--green-border);
+      background: var(--green-bg);
+    }
+    .question-card.has-chat-more .chat-more-input {
+      border: 2px solid var(--orange);
+    }
+    .qid {
+      display: inline-block;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: "Menlo", "Monaco", monospace;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .qid.answered { background: var(--canopy); }
+    .question-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--ink);
+      margin: 0;
+    }
+    .question-context {
+      font-size: 13px;
+      color: var(--slate);
+      font-style: italic;
+      line-height: 1.5;
+      padding: 8px 12px;
+      background: rgba(216, 212, 196, 0.25);
+      border-left: 3px solid var(--sage);
+      border-radius: 0 4px 4px 0;
+    }
+    .options { display: flex; flex-direction: column; gap: 8px; }
+    .option {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--gray-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border 150ms, background 150ms;
+    }
+    .option:hover { background: rgba(164, 193, 163, 0.1); }
+    .option input[type="radio"] {
+      margin-top: 3px;
+      accent-color: var(--canopy);
+      cursor: pointer;
+    }
+    .option-body { flex: 1; }
+    .option-label {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--ink);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .option-desc {
+      font-size: 13px;
+      color: var(--slate);
+      line-height: 1.5;
+    }
+    .option input[type="radio"]:checked + .option-body .option-label {
+      color: var(--canopy);
+    }
+    .custom-input {
+      margin-top: 6px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--gray-border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      display: none;
+    }
+    .option.custom input[type="radio"]:checked ~ .custom-input { display: block; }
+    .chat-more-label {
+      font-size: 12px;
+      color: var(--slate);
+      font-weight: 600;
+      margin-top: 6px;
+    }
+    .chat-more-input {
+      width: 100%;
+      min-height: 60px;
+      padding: 8px 10px;
+      border: 1px solid var(--gray-border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      resize: vertical;
+      transition: border 200ms;
+    }
+    .chat-more-input::placeholder { color: #a4a09a; font-style: italic; }
+    footer {
+      margin: 48px 0 24px;
+      text-align: center;
+      color: var(--slate);
+      font-size: 13px;
+      padding-top: 24px;
+      border-top: 1px solid var(--hairline);
+    }
+    .download-link {
+      display: inline-block;
+      margin-left: 12px;
+      color: var(--canopy);
+      text-decoration: underline;
+      font-size: 13px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container" style="padding: 0;">
+      <h1>Phase 6 — Identification Flow &amp; Cost Controls</h1>
+      <p class="subtitle">
+        SPEC.md locked 35 requirements. These are HOW questions: router internals, breaker thresholds, cache TTL, connector layout, UX flow.
+        Power mode — answer at your own pace, save, then say "refresh" or "finalize".
+      </p>
+      <div class="stats">
+        <span class="stat"><strong id="stat-total">0</strong> total</span>
+        <span class="stat"><strong id="stat-answered">0</strong> answered</span>
+        <span class="stat"><strong id="stat-remaining">0</strong> remaining</span>
+        <span class="stat"><strong id="stat-chat-more">0</strong> with notes</span>
+        <div class="progress"><div class="progress-fill" id="progress-fill" style="width: 0%;"></div></div>
+        <button class="save-button" onclick="saveAnswers()">Save answers</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="instructions">
+      <strong>How to use:</strong> Pick the option that matches your intent for each question.
+      Add nuance in the "More context" textarea where helpful (it shows up as binding refinement in CONTEXT.md).
+      When ready, click <strong>Save answers</strong> — your browser saves the JSON file. Drop it back into
+      <code>.planning/phases/06-identification-flow-cost-controls/</code> overwriting <code>06-QUESTIONS.json</code>.
+      Then return to Claude and say <code>refresh</code> (process partial answers + redraw HTML)
+      or <code>finalize</code> (write 06-CONTEXT.md from all answers).
+      <br /><br />
+      Spec to consult: <code>.planning/phases/06-identification-flow-cost-controls/06-SPEC.md</code>
+      &nbsp;·&nbsp; PRD: <code>docs/CAVE-PRD.md</code> §3 (contexts) §5 (errors) §6 (identification) §11 (image) §13 (LGPD) §16 (screens) §17 (design) §20 (events)
+    </div>
+
+    <div id="topics"></div>
+
+    <footer>
+      <button class="save-button" onclick="saveAnswers()">Save answers</button>
+      <a class="download-link" href="#" onclick="downloadJson(); return false;">Or download JSON</a>
+      <p style="margin-top: 16px;">Phase 6 — power mode discussion · 32 questions · spec_locked: true</p>
+    </footer>
+  </div>
+
+  <script>
+    const QUESTIONS = {
+      "phase": "06-identification-flow-cost-controls",
+      "generated_at": "2026-05-10T00:00:00Z",
+      "spec_locked": true,
+      "spec_path": ".planning/phases/06-identification-flow-cost-controls/06-SPEC.md",
+      "stats": { "total": 32, "answered": 0, "chat_more": 0, "remaining": 32 },
+      "sections": []
+    };
+
+    let SECTIONS = [];
+
+    async function loadSections() {
+      try {
+        const resp = await fetch("06-QUESTIONS.json", { cache: "no-store" });
+        if (!resp.ok) throw new Error("fetch failed");
+        const data = await resp.json();
+        SECTIONS = data.sections;
+      } catch (err) {
+        document.getElementById("topics").innerHTML =
+          '<p style="color:#b85c38;padding:24px;background:#fff5f0;border-radius:6px;">Could not load 06-QUESTIONS.json from disk. Open this HTML via a local server (<code>npx http-server .planning/phases/06-identification-flow-cost-controls</code>) or use a file:// browser that allows fetch from local files.</p>';
+        return;
+      }
+      render();
+      updateStats();
+    }
+
+    function render() {
+      const root = document.getElementById("topics");
+      root.innerHTML = "";
+      for (const section of SECTIONS) {
+        const sec = document.createElement("section");
+        sec.className = "topic";
+        sec.id = "topic-" + section.id;
+        sec.innerHTML = `
+          <div class="topic-header" onclick="this.parentElement.classList.toggle('collapsed')">
+            <h2>${escape(section.title)}</h2>
+            <span class="topic-count" id="count-${section.id}">0/${section.questions.length} answered</span>
+            <span class="toggle">▾</span>
+          </div>
+          <div class="questions-grid"></div>
+        `;
+        const grid = sec.querySelector(".questions-grid");
+        for (const q of section.questions) {
+          grid.appendChild(renderQuestion(q));
+        }
+        root.appendChild(sec);
+      }
+    }
+
+    function renderQuestion(q) {
+      const card = document.createElement("div");
+      card.className = "question-card";
+      card.id = "card-" + q.id;
+      const optionsHtml = q.options.map(opt => {
+        const isCustom = opt.id === "d" || /custom/i.test(opt.label);
+        const customClass = isCustom ? "custom" : "";
+        return `
+          <label class="option ${customClass}">
+            <input type="radio" name="${q.id}" value="${escape(opt.id)}"
+              ${q.answer === opt.id ? "checked" : ""}
+              onchange="onAnswerChange('${q.id}', this.value)" />
+            <div class="option-body">
+              <span class="option-label">${escape(opt.label)}</span>
+              <span class="option-desc">${escape(opt.description || '')}</span>
+              ${isCustom ? `<input type="text" class="custom-input" placeholder="Type custom answer..."
+                value="${q.answer && q.answer.startsWith('custom:') ? escape(q.answer.slice(7)) : ''}"
+                onchange="onCustomChange('${q.id}', this.value)" oninput="onCustomChange('${q.id}', this.value)" />` : ''}
+            </div>
+          </label>
+        `;
+      }).join("");
+      card.innerHTML = `
+        <div>
+          <span class="qid ${q.answer ? 'answered' : ''}" id="qid-${q.id}">${q.id}</span>
+          <span class="question-title">${escape(q.title)}</span>
+        </div>
+        <div class="question-context">${escape(q.context)}</div>
+        <div class="options">${optionsHtml}</div>
+        <label class="chat-more-label" for="chat-${q.id}">More context (optional)</label>
+        <textarea class="chat-more-input" id="chat-${q.id}"
+          placeholder="Add context, nuance, or clarification for this question..."
+          oninput="onChatMore('${q.id}', this.value)">${escape(q.chat_more || '')}</textarea>
+      `;
+      if (q.answer) card.classList.add("answered");
+      if (q.chat_more) card.classList.add("has-chat-more");
+      return card;
+    }
+
+    function escape(s) {
+      if (s == null) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function findQuestion(qid) {
+      for (const s of SECTIONS) {
+        for (const q of s.questions) {
+          if (q.id === qid) return { question: q, section: s };
+        }
+      }
+      return null;
+    }
+
+    function onAnswerChange(qid, value) {
+      const ref = findQuestion(qid);
+      if (!ref) return;
+      const q = ref.question;
+      if (value === "d" || /custom/i.test(q.options.find(o => o.id === value)?.label || "")) {
+        const customInput = document.querySelector(`#card-${qid} .custom-input`);
+        const customVal = customInput ? customInput.value.trim() : "";
+        q.answer = customVal ? `custom:${customVal}` : "d";
+      } else {
+        q.answer = value;
+      }
+      q.status = q.answer ? "answered" : (q.chat_more ? "chat-more" : "unanswered");
+      updateCardState(qid);
+      updateStats();
+    }
+
+    function onCustomChange(qid, value) {
+      const ref = findQuestion(qid);
+      if (!ref) return;
+      const q = ref.question;
+      const radio = document.querySelector(`#card-${qid} input[type=radio][value=d]`);
+      if (radio) radio.checked = true;
+      q.answer = value.trim() ? `custom:${value.trim()}` : "d";
+      q.status = q.answer ? "answered" : "unanswered";
+      updateCardState(qid);
+      updateStats();
+    }
+
+    function onChatMore(qid, value) {
+      const ref = findQuestion(qid);
+      if (!ref) return;
+      const q = ref.question;
+      q.chat_more = value;
+      const card = document.getElementById("card-" + qid);
+      if (q.chat_more) card.classList.add("has-chat-more");
+      else card.classList.remove("has-chat-more");
+      q.status = q.answer ? "answered" : (q.chat_more ? "chat-more" : "unanswered");
+      updateStats();
+    }
+
+    function updateCardState(qid) {
+      const ref = findQuestion(qid);
+      if (!ref) return;
+      const q = ref.question;
+      const card = document.getElementById("card-" + qid);
+      const qidBadge = document.getElementById("qid-" + qid);
+      if (q.answer) {
+        card.classList.add("answered");
+        qidBadge.classList.add("answered");
+      } else {
+        card.classList.remove("answered");
+        qidBadge.classList.remove("answered");
+      }
+    }
+
+    function updateStats() {
+      let total = 0, answered = 0, chatMore = 0;
+      for (const s of SECTIONS) {
+        let secAnswered = 0;
+        for (const q of s.questions) {
+          total++;
+          if (q.answer) { answered++; secAnswered++; }
+          if (q.chat_more) chatMore++;
+        }
+        const cnt = document.getElementById("count-" + s.id);
+        if (cnt) cnt.textContent = `${secAnswered}/${s.questions.length} answered`;
+      }
+      document.getElementById("stat-total").textContent = total;
+      document.getElementById("stat-answered").textContent = answered;
+      document.getElementById("stat-remaining").textContent = total - answered;
+      document.getElementById("stat-chat-more").textContent = chatMore;
+      const pct = total > 0 ? (answered / total) * 100 : 0;
+      document.getElementById("progress-fill").style.width = pct + "%";
+    }
+
+    function buildPayload() {
+      let total = 0, answered = 0, chatMore = 0;
+      for (const s of SECTIONS) {
+        for (const q of s.questions) {
+          total++;
+          if (q.answer) answered++;
+          if (q.chat_more) chatMore++;
+        }
+      }
+      return {
+        phase: "06-identification-flow-cost-controls",
+        generated_at: "2026-05-10T00:00:00Z",
+        spec_locked: true,
+        spec_path: ".planning/phases/06-identification-flow-cost-controls/06-SPEC.md",
+        stats: { total, answered, chat_more: chatMore, remaining: total - answered },
+        sections: SECTIONS
+      };
+    }
+
+    async function saveAnswers() {
+      const payload = buildPayload();
+      const json = JSON.stringify(payload, null, 2);
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: "06-QUESTIONS.json",
+            types: [{ description: "JSON", accept: { "application/json": [".json"] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(json);
+          await writable.close();
+          alert("Saved. Now return to Claude and say 'refresh' or 'finalize'.");
+          return;
+        } catch (err) {
+          if (err.name !== "AbortError") console.warn("File System Access API failed, falling back to download:", err);
+          else return;
+        }
+      }
+      downloadJson();
+    }
+
+    function downloadJson() {
+      const payload = buildPayload();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "06-QUESTIONS.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      alert("Downloaded 06-QUESTIONS.json — replace the file in .planning/phases/06-identification-flow-cost-controls/ then say 'refresh' or 'finalize' in Claude.");
+    }
+
+    loadSections();
+  </script>
+</body>
+</html>

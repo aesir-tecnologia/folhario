@@ -1,0 +1,1034 @@
+{
+  "phase": "06-identification-flow-cost-controls",
+  "generated_at": "2026-05-10T00:00:00Z",
+  "spec_locked": true,
+  "spec_path": ".planning/phases/06-identification-flow-cost-controls/06-SPEC.md",
+  "stats": {
+    "total": 32,
+    "answered": 32,
+    "chat_more": 0,
+    "remaining": 0
+  },
+  "sections": [
+    {
+      "id": "adapter-connectors",
+      "title": "Adapter & Connector Layout",
+      "questions": [
+        {
+          "id": "Q-01",
+          "title": "IdentificationProvider interface shape",
+          "context": "IDENT-19 locks the path src/shared/adapters/identification-provider.ts (mirroring src/shared/adapters/storage.ts pattern). Open question: what methods does the contract expose? The use-case needs to: (a) call the provider with photos+config, (b) honor a per-call timeout, (c) get a normalized result back, (d) optionally let the router know the static cost-per-call before dispatch.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single identify() method, normalized response",
+              "description": "interface IdentificationProvider { identify(input: { photos: PhotoRef[]; signal: AbortSignal; minConfidence: number }): Promise<NormalizedResult>; readonly providerId: string; readonly model: string; readonly costPerCallCents: number; }. Cost is a static property the router reads before dispatch. Smallest surface, matches the StorageAdapter shape."
+            },
+            {
+              "id": "b",
+              "label": "identify() + estimateCost(input)",
+              "description": "Adds a separate estimateCost(input) so connectors can return per-call dynamic cost (e.g. OpenAI cost depends on photo count + token estimate). Router consults estimateCost() before each call. More accurate budget tracking; one extra method per connector."
+            },
+            {
+              "id": "c",
+              "label": "identify() + healthCheck() + costPerCallCents",
+              "description": "Adds healthCheck() the breaker can use as a half-open probe instead of a real identification call. Static cost stays. More moving parts but cheaper breaker recovery; requires both connectors to expose a real health endpoint."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-02",
+          "title": "Connector file location",
+          "context": "Two connectors ship: Plant.id + OpenAI-compat. Storage adapter precedent is src/shared/adapters/supabase-storage.ts. Other providers (auth-adapter, resend-adapter) live closer to their context. Phase 4 D-17 keeps Resend at src/contexts/notifications/infrastructure/resend-adapter.ts.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Context-local connectors",
+              "description": "src/contexts/identification/infrastructure/providers/plant-id.ts + openai-compat.ts. Matches Phase 4 D-17 (resend-adapter inside notifications context). Bounded-context discipline; the connectors never used outside this context."
+            },
+            {
+              "id": "b",
+              "label": "Shared adapter directory",
+              "description": "src/shared/adapters/plant-id.ts + openai-compat-vision.ts alongside supabase-storage.ts. Matches storage precedent; flatter file tree."
+            },
+            {
+              "id": "c",
+              "label": "Hybrid — interface in shared, connectors in context",
+              "description": "Interface at src/shared/adapters/identification-provider.ts (locked by IDENT-19) but implementations under src/contexts/identification/infrastructure/providers/. Interface-vs-impl boundary mirrored at the directory level."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-03",
+          "title": "Provider response normalization",
+          "context": "Plant.id and OpenAI-compat return different JSON shapes. Backend must filter by min_confidence, sort desc, slice top 3 (IDENT-04). Where does the canonical shape get produced?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Connector returns canonical shape",
+              "description": "Each connector translates raw provider JSON → { results: Array<{ scientificName, commonName, confidence, raw }> } before returning. Router/use-case operates on uniform data. Translation lives next to the provider quirks. PRD §6 normalized result type lives in src/contexts/identification/domain/."
+            },
+            {
+              "id": "b",
+              "label": "Connector returns raw, normalizer in use-case",
+              "description": "Connector returns raw provider JSON wrapped in a tagged union { provider: 'plant-id', raw } | { provider: 'openai-compat', raw }. Use-case calls a normalizer per provider. Raw payload is queryable via Identification.results jsonb (D-06)."
+            },
+            {
+              "id": "c",
+              "label": "Connector returns canonical + raw alongside",
+              "description": "Connector returns { canonical: NormalizedResult, raw: unknown }. Use-case persists raw into Identification.results (preserves audit trail), uses canonical for filtering/sorting/UI."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "router-selection",
+      "title": "Router & Provider Selection",
+      "questions": [
+        {
+          "id": "Q-04",
+          "title": "Provider ordering source",
+          "context": "IDENT-19 acceptance says 'router uses ProviderBudget.priority ordering' but the existing schema (src/contexts/identification/infrastructure/db/schema.ts) has NO priority column — only provider, purpose, dailyCostCapCents, alertThresholdPct, minConfidence, isActive. Choice has migration consequences.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Add priority INT column to provider_budgets",
+              "description": "New Drizzle migration adds priority INT NOT NULL DEFAULT 100. Lower number = higher priority. Plant.id seeded priority=10, OpenAI-compat priority=20. Router queries WHERE purpose='identification' AND is_active ORDER BY priority. Operator-tunable per CLAUDE.md hot-reload constraint. Aligns SPEC text with schema."
+            },
+            {
+              "id": "b",
+              "label": "Static config in src/contexts/identification/config.ts",
+              "description": "PROVIDER_ORDER = ['plant-id', 'openai-compat'] as const. Router filters DB providers by this order. No migration. Order changes require redeploy — violates CLAUDE.md hot-reload-without-redeploy intent. Faster to ship, weaker on tunability."
+            },
+            {
+              "id": "c",
+              "label": "Hardcode in router with DB enable/disable only",
+              "description": "Router has primary=plant-id, fallback=openai-compat hardcoded. ProviderBudget.is_active is the only DB knob. Simplest; gives up runtime ordering."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-05",
+          "title": "Pre-call cost-ceiling check",
+          "context": "COST-05 says provider at ceiling → marked unavailable rest of UTC day; router skips. ProviderUsageCounter has a row keyed (provider, purpose, utc_date) with estimated_cost_cents. Question is when/how the router reads it.",
+          "options": [
+            {
+              "id": "a",
+              "label": "SELECT counter row inside same TX as increment",
+              "description": "Router opens TX, SELECT current counter, compare to ceiling (from cached ProviderBudget), if under → INSERT ON CONFLICT increment, commit, then call provider. If over → skip and try next. Strongest atomicity; transaction held during provider call (long-tx concern)."
+            },
+            {
+              "id": "b",
+              "label": "Read cached counter, increment after success",
+              "description": "Read counter via in-memory cache (TTL same as budget cache). If under ceiling → call provider. Counter incremented in a separate short TX after the call returns. Simpler; race condition: 2 concurrent calls might both pass the check before either increments. Acceptable if ceiling has small headroom; rejected by COST-09 atomicity AC."
+            },
+            {
+              "id": "c",
+              "label": "Atomic INSERT ON CONFLICT in pre-flight, rollback on skip",
+              "description": "TX 1: INSERT ON CONFLICT UPDATE counter+1, SELECT new total, compare to ceiling. If new total > ceiling → mark provider rest-of-day-unavailable + rollback the increment + skip. If under → commit + call provider. Optimistic-then-rollback pattern; satisfies COST-09 atomicity AC."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "d",
+          "chat_more": "Custom: use a short atomic preflight reservation. In one short transaction, conditionally increment/reserve estimated cost only when current estimated_cost_cents + estimatedCost <= daily_cost_cap_cents, then commit and call the provider outside the transaction. If the reservation cannot be made, mark/skip the provider for the rest of the UTC day and try the next provider. This preserves atomic ceiling enforcement without holding a transaction during provider HTTP latency.",
+          "status": "answered"
+        },
+        {
+          "id": "Q-06",
+          "title": "Remaining-budget calculation for fallover guard",
+          "context": "IDENT-18: total wall-clock 50s, per-call 30s, fallover requires ≥10s remaining else short-circuit provider_unavailable. Need a way to track elapsed time across multiple provider attempts inside the use-case.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Date.now() captured at use-case entry, computed before each attempt",
+              "description": "const start = Date.now(); function remainingMs() { return TOTAL_BUDGET_MS - (Date.now() - start); }. Before each provider call: if (remainingMs() < FALLOVER_FLOOR_MS) → short-circuit. Simple; no library overhead."
+            },
+            {
+              "id": "b",
+              "label": "AbortController + timer-based AbortSignal cascade",
+              "description": "Outer 50s AbortController, per-call 30s child AbortController. Provider connector receives signal; on abort, fetch is cancelled. Remaining computed from outer signal's timeout. Cleaner cancellation semantics; more wiring."
+            },
+            {
+              "id": "c",
+              "label": "AbortController + computed remaining via Date.now()",
+              "description": "Both: AbortController for cancellation propagation through connector → fetch, plus Date.now()-based remainingMs() for the ≥10s fallover guard decision. The signal handles 'stop the in-flight call'; the Date.now() handles 'should we even start the next call'."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-07",
+          "title": "Failure recording timing per attempt",
+          "context": "When the router tries provider A then provider B then both fail, do we write 1 Identification row capturing the final outcome, or 1 row per attempt? IDENT-12/13/15 acceptance criteria all say 'Identification row persisted' on failure (singular). IDENT-08 history says 'lists success + timeout + provider_unavailable attempts' — implying user-facing row per request, not per provider attempt.",
+          "options": [
+            {
+              "id": "a",
+              "label": "One Identification row per user request",
+              "description": "Single row per POST. failure_reason = most-specific internal reason from the LAST attempt (or first if all timed out). Per-attempt traces go into Sentry breadcrumbs / PostHog properties for ops, not into the user-visible row. History screen shows one row per request. Matches IDENT-08 wording."
+            },
+            {
+              "id": "b",
+              "label": "One row per provider attempt + parent_request_id",
+              "description": "Schema migration: add nullable parent_identification_id; failed attempts get rows linked to the parent. History shows only top-level rows. More detailed audit, schema churn, history-query complexity."
+            },
+            {
+              "id": "c",
+              "label": "One row per request + provider_attempts JSONB column",
+              "description": "Single row per request with a new provider_attempts jsonb column { attempts: [{provider, failure_reason, latency_ms, attempted_at}] }. Schema migration adds the column. Full audit without the join, but inflates the row size."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "circuit-breaker",
+      "title": "Circuit Breaker",
+      "questions": [
+        {
+          "id": "Q-08",
+          "title": "Breaker state location",
+          "context": "COST-08 requires per-provider circuit breaker with open / half-open / closed states. Vercel functions are stateless across invocations — anything in-memory dies between requests.",
+          "options": [
+            {
+              "id": "a",
+              "label": "DB-only — new provider_breaker_states table",
+              "description": "Migration: provider_breaker_states (provider PK, state enum, opened_at, last_failure_at, consecutive_failures, half_open_probe_at). Router reads on each call. Survives Lambda recycling and concurrent invocations. Adds 1 read per identification."
+            },
+            {
+              "id": "b",
+              "label": "Hybrid — in-memory cache fronting DB",
+              "description": "Module-level Map<provider, BreakerState> with the same TTL as the budget cache (Q-15). On miss, read DB; on state change, write DB + invalidate cache. Saves a read on warm Lambda. Eventual consistency between Lambda instances during state flips (acceptable: a few wasted calls before caches expire)."
+            },
+            {
+              "id": "c",
+              "label": "Reuse provider_usage_counters with breaker columns",
+              "description": "Add breaker_state, breaker_opened_at, breaker_failures columns to existing daily counter row. Bounded by utc_date; resets daily naturally. Mixes concerns; daily reset may be wrong if breaker should outlive a UTC day boundary."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-09",
+          "title": "Breaker thresholds (N consecutive, window, cooldown)",
+          "context": "Need concrete numbers. Constraints: per-call 30s timeout, daily 50 wall-clock budget per request, $5/day budget per provider, ~50–500 identifications/day across all users at MVP scale.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Aggressive — N=3, window=2min, cooldown=60s",
+              "description": "3 consecutive failures within 2 min → open. Cooldown 60s, half-open allows 1 probe. Trips fast, recovers fast. Risk: noisy networks could flap under low traffic."
+            },
+            {
+              "id": "b",
+              "label": "Moderate — N=5, window=5min, cooldown=120s",
+              "description": "5 consecutive failures within 5 min → open. Cooldown 2 min, half-open allows 1 probe. Balanced default for MVP traffic."
+            },
+            {
+              "id": "c",
+              "label": "Conservative — N=10, window=10min, cooldown=300s",
+              "description": "10 consecutive failures within 10 min → open. Cooldown 5 min. Slow to trip, slow to recover. Risk: bleeds budget on bad provider before tripping."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-10",
+          "title": "Which failures count toward the breaker",
+          "context": "IDENT-15 (invalid_response) explicitly increments breaker counter. IDENT-13 (timeout) and IDENT-12 (provider_unavailable) are also failure modes. validation_failed (GPS-bearing photo, IDENT-16) is user-error, not provider-error.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Provider faults only — timeout + 5xx + invalid_response",
+              "description": "Network timeouts, HTTP 5xx, invalid JSON shapes. User-input failures (validation_failed, GPS reject) and 4xx (e.g. provider rejects malformed image as 400) do NOT count. Cleanest signal."
+            },
+            {
+              "id": "b",
+              "label": "Provider faults + 4xx",
+              "description": "Adds 4xx because a provider returning 400 on every request is also broken (e.g. API key rotated). Risk: per-image rejects mask real provider issues."
+            },
+            {
+              "id": "c",
+              "label": "Any non-success",
+              "description": "Anything that doesn't return >=1 result above min_confidence counts. Simpler logic; trips on legitimate zero-result identifications (IDENT-05). Probably wrong."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "counter-cap-check",
+      "title": "Counter & Cap Check",
+      "questions": [
+        {
+          "id": "Q-11",
+          "title": "Atomic counter increment SQL",
+          "context": "COST-09 acceptance: 'concurrent requests (Promise.all of 10 POSTs) → counter row reflects exactly 10 increments, not less'. Counter row keyed (provider, purpose, utc_date).",
+          "options": [
+            {
+              "id": "a",
+              "label": "INSERT ... ON CONFLICT DO UPDATE SET request_count = request_count + 1",
+              "description": "Single statement, atomic, no explicit lock. Postgres serializes the conflict-update path automatically. Standard pattern; matches SPEC §COST-09 target wording."
+            },
+            {
+              "id": "b",
+              "label": "SELECT ... FOR UPDATE then UPDATE",
+              "description": "Explicit row lock acquired before increment. Higher latency under contention; equivalent correctness. More code."
+            },
+            {
+              "id": "c",
+              "label": "Postgres advisory lock + read-modify-write",
+              "description": "pg_advisory_xact_lock keyed on (provider, utc_date). Most flexible (allows side effects under the lock — e.g. reading other rows atomically), highest overhead. Overkill for a single counter."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-12",
+          "title": "Cap-check window math",
+          "context": "Trial: window = [trial_start_date, trial_end_date], daily_cap=5, period_cap=75. Paid: window = [current_period_start, current_period_end], daily_cap=15, period_cap=200. Daily window = current UTC date. Question is where this math lives.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Repository helper countIdentificationsInWindow(userId, from, to)",
+              "description": "src/contexts/identification/infrastructure/db/identifications.ts exposes count helpers for daily + period windows. Use-case computes window bounds from User+Subscription+IdentificationLimit and calls the helper. Repo is the only Drizzle consumer (PRD §17 D-17)."
+            },
+            {
+              "id": "b",
+              "label": "Use-case computes counts inline via injected tx",
+              "description": "Use-case opens UoW, reads User+Subscription+IdentificationLimit, runs two count queries inline (daily + period). All logic in one place; mixes domain logic with SQL. Violates D-17 'no Drizzle in route handlers' — also discouraged for use-cases."
+            },
+            {
+              "id": "c",
+              "label": "Domain service check-cap(userId) returning {allowed, reason, resetAt}",
+              "description": "src/contexts/identification/domain/check-cap.ts delegates to repository helpers. Use-case calls a single function and gets a verdict. Highest abstraction; one extra layer."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-13",
+          "title": "Cap + counter + provider call ordering",
+          "context": "COST-03 acceptance: 'cap check → consent check → counter increment + provider call (atomic)'. The 'atomic' bit is ambiguous — does the provider HTTP call live inside the increment TX or not? A long-running TX (30s provider call) holds Postgres locks.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Cap → Consent → TX{counter inc} commit → Provider call → TX{Identification row write}",
+              "description": "Three short transactions. Counter incremented atomically, committed, then provider called outside any TX, then row written. If provider crashes mid-flight, counter is incremented but no row exists — reconciler-style backfill needed for accuracy. Best perf, weakest consistency."
+            },
+            {
+              "id": "b",
+              "label": "Cap → Consent → TX{counter inc + Identification 'in_progress' row} → Provider call → TX{update row to success/failed}",
+              "description": "Pre-write a row with status='in_progress' alongside counter inc. If provider crashes, row exists for the reconciler to mark failed. Schema needs 'in_progress' added to status enum (currently only success/failed). One extra DB write per request."
+            },
+            {
+              "id": "c",
+              "label": "Cap → Consent → single TX{counter inc + provider call + row write}",
+              "description": "All inside one TX as the SPEC text suggests. Provider call holds the TX open up to 30s. Postgres lock pressure under load + risk of TX timeout misalignment with HTTP timeout. Strongest consistency, worst scaling."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "hot-reload-cache",
+      "title": "Hot-Reload Cache for Caps + Budgets",
+      "questions": [
+        {
+          "id": "Q-14",
+          "title": "Cache location",
+          "context": "COST-10 requires DB updates to IdentificationLimit + ProviderBudget take effect on next request past TTL. Vercel functions are stateless across cold starts but warm Lambdas reuse module memory.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Module-level Map per Lambda instance",
+              "description": "const cache = new Map<string, {value, expiresAt}>() at module scope. Survives within a warm Lambda. Each Lambda instance has its own copy → up to {N_lambdas * TTL} delay before all see new values. Simple; no infra dependency."
+            },
+            {
+              "id": "b",
+              "label": "Vercel KV or Upstash Redis",
+              "description": "Shared cache across all Lambdas. Stronger consistency on operator updates. Adds infra dependency + cost (Vercel KV pricing or Upstash free tier). Out of CLAUDE.md tech stack — not currently approved."
+            },
+            {
+              "id": "c",
+              "label": "No cache — DB read every request",
+              "description": "Both tables are tiny (a handful of rows). Postgres can serve them <1ms. Eliminates the staleness issue entirely. Costs ~2 extra reads per identification request. Simplest correctness."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-15",
+          "title": "Cache TTL value",
+          "context": "Only relevant if Q-14 picks (a) module-level cache. Operator runtime tuning expectations: a budget bump should take effect 'soon' but not necessarily instantly. Phase 5 D-17 used 24h for catalog query persistence (different concern).",
+          "options": [
+            {
+              "id": "a",
+              "label": "60 seconds",
+              "description": "Operator change visible within 60s on each Lambda. Bounded staleness, acceptable for non-emergency tuning. Minimal cache hit rate cost."
+            },
+            {
+              "id": "b",
+              "label": "300 seconds (5 min)",
+              "description": "Higher cache hit rate; 5-minute window before a cap bump propagates. Acceptable for budget tuning, possibly too slow for emergency provider disable."
+            },
+            {
+              "id": "c",
+              "label": "Configurable via env (default 60s)",
+              "description": "CACHE_BUDGET_TTL_SECONDS env var, default 60. Operator can dial to 0 (effectively no cache) for emergency mode without redeploy of business code."
+            },
+            {
+              "id": "d",
+              "label": "N/A — Q-14 picked no-cache",
+              "description": "Skip this question if Q-14 = (c)."
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "consent-modal",
+      "title": "Consent Modal UX & Wiring",
+      "questions": [
+        {
+          "id": "Q-16",
+          "title": "Modal trigger placement",
+          "context": "IDENT-02: first identification ever without identification_third_party consent triggers modal disclosing both providers + Art. 33; no provider call until granted. Question: when in the user flow does the modal appear?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Gate at Identify CTA tap (before camera/picker opens)",
+              "description": "Tapping the camera button on /identify checks consent first. If missing → modal. User decides before taking a photo. Cleanest mental model; the user is committing to identification, not just exploring the screen."
+            },
+            {
+              "id": "b",
+              "label": "Gate at submit (after photos chosen)",
+              "description": "User can capture photos freely; modal appears when they tap 'Identificar'. Less disruptive to exploration; risk of feeling 'bait-and-switch' if user already invested in capture."
+            },
+            {
+              "id": "c",
+              "label": "Gate at Identify screen entry",
+              "description": "Modal blocks the screen on first visit until consent granted (or user backs out). Most explicit; arguably too aggressive (blocks viewing the capture guide)."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-17",
+          "title": "Provider naming in disclosure",
+          "context": "Art. 33 LGPD requires disclosing the recipients of international transfer. SPEC IDENT-02 acceptance: 'modal listing both provider names + Art. 33 international transfer'.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Real names — 'Plant.id (Kindwise) e provedor compatível com OpenAI'",
+              "description": "Maximum transparency. Names are public anyway. Couples copy to specific vendors — vendor swap requires copy update + re-consent."
+            },
+            {
+              "id": "b",
+              "label": "Generic — 'provedores de IA terceirizados nos EUA e Europa'",
+              "description": "Names not pinned, jurisdiction stated. Future vendor swap doesn't trigger re-consent prompt. Weaker on transparency; ANPD interpretation risk."
+            },
+            {
+              "id": "c",
+              "label": "Real names + 'or equivalent successors' clause",
+              "description": "Names today + legal-style escape clause. Transparent on current state, future-proofed for swap. Read-aloud copy gets clunky."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-18",
+          "title": "Consent grant submission endpoint",
+          "context": "src/contexts/iam/application/record-consent.ts already exists (Phase 4) with input.purpose='identification_third_party' recognized. src/contexts/iam/api/consent-route.ts is the existing diagnostics consent route. Question: does the modal POST to a new identification-specific endpoint or reuse?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Reuse existing /api/v1/iam/consent endpoint",
+              "description": "Modal calls the existing consent endpoint with purpose='identification_third_party'. ConsentLog row written with the active policy_version. Zero new endpoints. Consent logic stays in one place."
+            },
+            {
+              "id": "b",
+              "label": "New dedicated /api/v1/identifications/consent endpoint",
+              "description": "Phase 6 ships its own consent endpoint that wraps recordConsent({purpose:'identification_third_party'}). Cleaner separation per bounded context; one extra route handler that is essentially a pass-through."
+            },
+            {
+              "id": "c",
+              "label": "Inline grant — POST /v1/identifications carries grant_consent: true field",
+              "description": "First identification request with grant_consent=true creates the ConsentLog row + proceeds. No separate request. Coupled flow; consent grant is a side effect of an identification call."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "identify-screen",
+      "title": "Identify Screen & Capture UX",
+      "questions": [
+        {
+          "id": "Q-19",
+          "title": "Photo capture flow (1..N photos)",
+          "context": "IDENT-17: accepts 1..N photos with capture guide visible. Phase 5 D-15 photo-journal uses bottom-sheet single-photo flow. The Identify capture is multi-photo by design.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single batch picker + thumbnails strip",
+              "description": "User taps camera button → native multi-select picker (or sequence in single capture session). Selected photos render as a horizontal thumbnails strip with [+] add-more affordance and [×] remove. One Identificar button submits all. Familiar mental model."
+            },
+            {
+              "id": "b",
+              "label": "Capture-then-confirm sequential loop",
+              "description": "Tap → capture/select 1 photo → preview → 'Adicionar mais?' or 'Identificar'. Loop until user submits. More guided, slower. Better for users uncertain about multi-photo benefit."
+            },
+            {
+              "id": "c",
+              "label": "Always allow N from start, default to 1",
+              "description": "Picker accepts up to N (cap configurable, e.g. 5) at any time. Pre-checked default = 1 photo if user hesitates. Hybrid; balances casual vs careful users."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-20",
+          "title": "Loading state messaging",
+          "context": "Identification can take up to 30s (per-call cap). UI-06 includes 'loading' state. Phase 3 D-25 ships <Skeleton> with 300ms gate + 120ms fade + reduced-motion fallback. Capture-to-result is the longest single wait in the app.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single skeleton with brand copy 'Identificando…'",
+              "description": "Phase 3 Skeleton component with 'Identificando sua planta…' Source Serif 4 headline above. No progress bar, no stage messages. Honest about uncertainty; PRD §17 anti-fake-precision posture."
+            },
+            {
+              "id": "b",
+              "label": "Multi-stage messages with skeleton",
+              "description": "Stage 1 'Carregando fotos…' (~2s), stage 2 'Analisando com IA…' (until response). Two-stage messaging from a setTimeout. More feedback; risk of 'stage 2' hanging visibly when provider is slow."
+            },
+            {
+              "id": "c",
+              "label": "Skeleton + cancel button after 10s",
+              "description": "Single skeleton; after 10s a 'Cancelar' button fades in (still respecting reduced-motion). User can abort. UI cancels client-side; server-side request still completes per IDENT-14. More user agency; client/server divergence."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-21",
+          "title": "Manual correction surface",
+          "context": "IDENT-07: manual correction stored in manual_correction; resolved by name match (case-insensitive) → species_id, else null + Species flag. Question: where does the user enter it?",
+          "options": [
+            {
+              "id": "a",
+              "label": "Inline 'Não é nenhuma destas?' link under top-3 results",
+              "description": "Link under the results list opens a small input + submit. User types the species name (e.g. 'Monstera deliciosa'). Available alongside selection of any of the top-3. Good for partial-confidence cases."
+            },
+            {
+              "id": "b",
+              "label": "Only on zero-results screen (no top-3 returned)",
+              "description": "Manual correction available only when provider returned no results above threshold. Cleaner mental model; users who got top-3 still proceed via selection. Loses correction when results exist but are wrong."
+            },
+            {
+              "id": "c",
+              "label": "Both — under results AND on zero-results",
+              "description": "Available on both screens. Most flexibility; biggest UI surface to build."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-22",
+          "title": "Read-only paywall surface for identify",
+          "context": "IDENT-21: read-only mode shows 'Reative sua assinatura para identificar novas plantas.' Phase 3 D-25 ships <ModalSheet> (Radix Dialog wrapper). Phase 5 D-21 stubs useSubscription() returning readOnly: false (Phase 10 wires real Stripe).",
+          "options": [
+            {
+              "id": "a",
+              "label": "ModalSheet with literal copy + reactivate CTA",
+              "description": "Tap Identify CTA in read-only → ModalSheet opens with the locked copy + 'Reativar assinatura' Canopy primary CTA linking to /settings/subscription. Phase 5 D-21 hides mutating affordances; Phase 6 surfaces an explicit paywall on Identify only."
+            },
+            {
+              "id": "b",
+              "label": "Inline read-only banner replaces capture controls",
+              "description": "Identify screen renders the persistent read-only banner (Phase 5 D-21) full-width across the capture area. CTA inline. Less interruptive; possibly less attention-grabbing for the reactivate signal."
+            },
+            {
+              "id": "c",
+              "label": "Full-page redirect to subscription paywall",
+              "description": "Read-only user navigating to /identify → server redirect to /settings/subscription. Most heavy-handed; loses the 'this is what you would identify' framing."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "results-confidence",
+      "title": "Results & Confidence Ladder",
+      "questions": [
+        {
+          "id": "Q-23",
+          "title": "ConfidenceLadder component location & API",
+          "context": "UI-15: 3 states (high ≥70%, medium 40–69%, low threshold–39%) with redundant signals (bar + segments + percentage + SR label). Reusable component (Phase 7 care guide may reuse for augmented-content trust signals).",
+          "options": [
+            {
+              "id": "a",
+              "label": "src/shared/ui/confidence-ladder.tsx, prop = confidence number",
+              "description": "<ConfidenceLadder confidence={0.74} /> derives state internally from thresholds (also exported as constants). Caller passes raw 0..1 number. Component is self-contained; thresholds change in one place."
+            },
+            {
+              "id": "b",
+              "label": "src/shared/ui/confidence-ladder.tsx, prop = level enum",
+              "description": "<ConfidenceLadder level='high' percentage={74} />. Caller computes level (or repository returns it). Component renders. Caller controls; risk of inconsistent thresholding across surfaces."
+            },
+            {
+              "id": "c",
+              "label": "Context-local at src/contexts/identification/ui/confidence-ladder.tsx",
+              "description": "Tied to identification context. Phase 7 builds its own equivalent if needed. Bounded-context discipline; potential duplication."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-24",
+          "title": "Results layout on the Identify screen",
+          "context": "UI-06 lists 'results (top 3 cards)' as a state. Top-3 card composition: photo + scientific name (italic, lang='la') + common name + ConfidenceLadder + 'Adicionar à minha estante' CTA. Mobile-first viewport.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Vertical card stack (one per result)",
+              "description": "Three cards stacked vertically, full-width minus padding. Each card has photo, names, ladder, CTA. Tap anywhere on the card → selection sheet. Standard mobile pattern."
+            },
+            {
+              "id": "b",
+              "label": "Top-result hero + 2 alternative cards",
+              "description": "Result #1 rendered large with prominent CTA. Results #2 and #3 below as compact rows ('Outras possibilidades'). Asymmetric hierarchy; signals provider's confidence ranking. Risk: nudges users away from #2/#3 when the model is unsure."
+            },
+            {
+              "id": "c",
+              "label": "Equal-prominence vertical cards (no hero)",
+              "description": "Same as (a) but with explicit 'Resultados ordenados pelo nível de confiança' caption. Equal visual weight to honor the 'no fake confidence' constraint while keeping ranking visible via the ladder."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-25",
+          "title": "Selection → Plant create flow",
+          "context": "IDENT-06: 'User selects a result and confirms → Plant created linked to Species, name pre-filled, Identification.plant_id FK set'. The create-plant identification branch already exists at src/contexts/catalog/application/create-plant.ts:101-121.",
+          "options": [
+            {
+              "id": "a",
+              "label": "One-tap 'Adicionar' → straight to plant profile",
+              "description": "Tap CTA on a result card → server creates Plant with default name (species common name pt-BR) + species_id + identification photos as cover/journal entries → user lands on /catalog/{plantId}. Fastest; matches <2-min core value promise."
+            },
+            {
+              "id": "b",
+              "label": "Intermediate confirmation sheet",
+              "description": "Tap CTA → ModalSheet with name (editable), location (Combobox from Phase 5 D-08), notes (optional) → 'Confirmar'. Then navigate to plant profile. Captures location at creation time; adds a step."
+            },
+            {
+              "id": "c",
+              "label": "Pre-filled add-plant page",
+              "description": "Tap CTA → navigate to /catalog/add with name + species_id + photos pre-filled. User reviews/edits + submits. Reuses Phase 5 manual-add page; full flexibility; slowest. Risk: feels redundant after just selecting a species."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "b",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "persistence-storage",
+      "title": "Persistence & Storage",
+      "questions": [
+        {
+          "id": "Q-26",
+          "title": "Identification photo upload route",
+          "context": "Phase 2 ships POST /api/v1/photos/upload (single photo, returns { photoUrl, thumbnailUrl }). Identification needs 1..N photos. Reuse vs context-specific multipart.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Single multipart POST /v1/identifications with all photos",
+              "description": "Client sends multipart with N photo parts + metadata in one request. Server uploads each (per-photo MIME/size/GPS guard) inside the use-case before calling provider. Atomic; fewer round-trips; longer single request."
+            },
+            {
+              "id": "b",
+              "label": "Pre-upload via existing /v1/photos/upload, POST identifications with photo_urls[]",
+              "description": "Client uploads each photo via existing endpoint, gets URLs back, then POSTs JSON {photo_urls: [...]} to /v1/identifications. Reuses Phase 2 plumbing; multiple round-trips; client-side orchestration; risk of orphaned photo bytes if user abandons."
+            },
+            {
+              "id": "c",
+              "label": "Context-specific /v1/identifications/photos pre-upload + JSON identifications POST",
+              "description": "New endpoint /v1/identifications/photos uploads to a temp prefix; identifications POST consumes refs. Cleanup cron deletes orphans after 24h. Adds infra; cleanest separation."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-27",
+          "title": "Identification.photo_urls persistence shape",
+          "context": "Schema: photo_urls TEXT[]. Phase 5 D-20 mints 24h-TTL signed URLs at read time, stores raw bucket/key in DB. Phase 5 catalog photos use bucket=plant-photos.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Store {bucket}/{key} refs; sign at history-screen read time",
+              "description": "photo_urls = ['plant-photos/{userId}/identifications/{idId}/{photoId}.jpg']. History screen mints signed URLs on render. Matches Phase 5 D-20 pattern. Renderer needs to know bucket conventions."
+            },
+            {
+              "id": "b",
+              "label": "Store full bucket+key+ext in JSON, sign on read",
+              "description": "photo_urls = ['{\"bucket\":\"...\",\"key\":\"...\",\"ext\":\"jpg\"}']. Self-describing. Schema is text[], so requires JSON.parse at read."
+            },
+            {
+              "id": "c",
+              "label": "Dedicated identification_photos bucket",
+              "description": "New bucket 'identification-photos' separate from plant-photos. Storage admin can apply different retention/cost rules. Cross-flow when selection→Plant creation needs to reference (move bytes, share keys, or duplicate)."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-28",
+          "title": "Server-side EXIF/GPS guard reuse",
+          "context": "IDENT-16: server rejects GPS-bearing photos as validation_failed. Phase 2 D-30 + INFRA-19 ship rejectGpsMetadata in src/shared/images/server-validate.ts. Already used by /api/v1/photos/upload and src/contexts/catalog/application/create-plant.ts.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Call rejectGpsMetadata per photo inside the use-case",
+              "description": "Use-case loops over uploaded photos, calls rejectGpsMetadata(buffer) for each, returns validation_failed on first hit. Identical to create-plant.ts pattern. Centralized in identification use-case."
+            },
+            {
+              "id": "b",
+              "label": "Centralize in route handler before reaching the use-case",
+              "description": "Route handler runs the guard on each multipart part as it parses, then passes safe buffers to the use-case. Use-case stays focused on identification logic. Splits validation across layers (already the create-plant.ts approach for MIME/size at use-case level)."
+            },
+            {
+              "id": "c",
+              "label": "New shared helper validateIdentificationPhotos(photos[])",
+              "description": "Wrap rejectGpsMetadata + size + MIME in a single helper specific to identification's 1..N batch. Use-case calls once. Reusable across pre-upload routes if Q-26 picks (b) or (c)."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    },
+    {
+      "id": "history-telemetry-tests",
+      "title": "History, Operator Alert, Tests & Telemetry",
+      "questions": [
+        {
+          "id": "Q-29",
+          "title": "History screen pagination",
+          "context": "UI-12 + IDENT-08: per-user list of all Identifications. Phase 2 D-36 ships cursor pagination contract. Phase 5 D-12 uses opaque base64 cursor for catalog. Volume per user: trial 75/period, paid 200/period — small.",
+          "options": [
+            {
+              "id": "a",
+              "label": "Cursor pagination (matches Phase 2 D-36 + Phase 5 D-12)",
+              "description": "Opaque base64 cursor encoding {created_at, id}. Page size 50 default, 200 max. Matches established pattern. Probably overkill for typical user volume but stays consistent."
+            },
+            {
+              "id": "b",
+              "label": "Last-30-days window + 'Ver mais' loads previous 30d",
+              "description": "Default view: last 30 days. Older requests behind a CTA. Volume-friendly UI; no cursor complexity for typical users."
+            },
+            {
+              "id": "c",
+              "label": "Single page — no pagination (volume guard)",
+              "description": "MVP volume is bounded (75–200 per period). One page suffices. Server caps response at 200. Pagination added if/when needed. Simplest."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-30",
+          "title": "80% cost-alert idempotency mechanism",
+          "context": "COST-04: 'second identification at 81% does not duplicate the alert' — exactly one email per provider per UTC day. Operator email goes through existing notifications/send-email Inngest function (Phase 4).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Add alert_sent_at column to provider_usage_counters",
+              "description": "Migration: alert_sent_at TIMESTAMPTZ NULL on the existing daily counter row. Cap-check use-case sets it inside the same TX as the increment that crosses 80%. Email dispatched only if column was NULL at TX entry. One DB column, no new table."
+            },
+            {
+              "id": "b",
+              "label": "Separate provider_cost_alerts table",
+              "description": "(provider, purpose, utc_date) PK row inserted ON CONFLICT DO NOTHING. Email dispatched only on successful insert. Audit-friendly; new table to maintain."
+            },
+            {
+              "id": "c",
+              "label": "Inngest event idempotency key",
+              "description": "Emit notifications/email.requested with idempotency key 'cost-80pct-{provider}-{utc_date}'. Inngest dedups same-day repeats. Free-tier behavior depends on Inngest's idempotency window — verify before relying."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-31",
+          "title": "Provider stub strategy under IDENTIFICATION_PROVIDER_MODE",
+          "context": "Phase 1 ships IDENTIFICATION_PROVIDER_MODE env gating stub vs real (CLAUDE.md INFRA-26 + Phase 1 SC-5). Phase 6 lands the real connectors and the stub. Stub must support all SPEC tests (timeout, invalid_response, malformed, sub-threshold, etc.).",
+          "options": [
+            {
+              "id": "a",
+              "label": "Two stub connectors that read scenario from request header/env",
+              "description": "PlantIdStubConnector + OpenAiCompatStubConnector implementing IdentificationProvider. Read X-Test-Scenario header (only honored when MODE=stub) — values like 'timeout', 'sub-threshold', 'invalid-response', 'success-monstera'. Predictable; couples test-only branching into the codebase."
+            },
+            {
+              "id": "b",
+              "label": "MSW HTTP intercepts in tests; real connectors against intercepts",
+              "description": "Real connectors run unchanged. Tests start MSW worker with handlers per scenario. Stubs the network layer, not the connector layer. Tests exercise real connector code; MSW dependency only in test bundle. Higher fidelity."
+            },
+            {
+              "id": "c",
+              "label": "Per-test injected mock connectors via __setProviderForTests test seam",
+              "description": "Mirror Phase 5 D-27 __setStorageAdapterForTests pattern. Integration tests inject deterministic mock connectors. Connector internals not exercised by integration tests (separate unit tests cover them)."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "c",
+          "chat_more": "",
+          "status": "answered"
+        },
+        {
+          "id": "Q-32",
+          "title": "PostHog event firing layer",
+          "context": "Constraint: 'PostHog event taxonomy includes identification_started, identification_succeeded, identification_cap_hit (per OBS-03 — wired in this phase for those three events)'. Phase 1 D-21 + Phase 5 D-28/29 fire server-side via posthog-node from route handlers / use-cases.",
+          "options": [
+            {
+              "id": "a",
+              "label": "All three server-side via posthog-node",
+              "description": "identification_started fired in route handler at request entry (after JWT). identification_succeeded fired post-TX-commit in use-case. identification_cap_hit fired in cap-check use-case before short-circuit. Matches Phase 5 D-28/29 server-only pattern. Privacy-clean (no PII)."
+            },
+            {
+              "id": "b",
+              "label": "Started client-side, succeeded + cap_hit server-side",
+              "description": "identification_started client-side from Identify screen submit handler (more accurate funnel start); the rest server-side. Two transports; Phase 1 D-21 client posture (autocapture:false, identified_only) preserved. More wiring."
+            },
+            {
+              "id": "c",
+              "label": "All client-side from results/error screens",
+              "description": "All three from client. Simplest funnel attribution; server-side TX commit doesn't gate the event so order can be wrong. Doesn't fire if user closes the tab mid-request (per IDENT-14 the row persists but the event wouldn't). Wrong fit."
+            },
+            {
+              "id": "d",
+              "label": "Custom",
+              "description": ""
+            }
+          ],
+          "answer": "a",
+          "chat_more": "",
+          "status": "answered"
+        }
+      ]
+    }
+  ]
+}

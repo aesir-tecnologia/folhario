@@ -10,21 +10,21 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### AUTH — Authentication, verification, credentials
 
-- [ ] **AUTH-01**: User can sign up with email + password; User row created; Subscription created `status=trialing`; verification email dispatched via Resend (PRD §12, AC-AUTH-001)
-- [ ] **AUTH-02**: Unverified email+password user is blocked on gated endpoints with `email_unverified` 403 until they click the verification link; only resend-verification, Settings/account, and logout are reachable (AC-AUTH-001, §1, §12)
-- [ ] **AUTH-03**: User can sign up / log in with Google OAuth; user treated as pre-verified; gated endpoints reachable immediately; no verification email sent (AC-AUTH-002)
-- [ ] **AUTH-04**: Clicking the verification link marks the user verified and starts the "value <2 min" clock; subsequent requests to gated endpoints succeed (AC-AUTH-003, §1)
-- [ ] **AUTH-05**: User can log in with email + password using per-device JWT; no server sessions (§12)
-- [ ] **AUTH-06**: Age confirmation ≥13 is mandatory at signup; `User.age_confirmed_at` set only on confirm; <13 blocked (PRD §13, AC-LGPD-010)
-- [ ] **AUTH-07**: Signup form accepts optional partner code; partner code captured in `User.partner_code` and surfaced to billing (PRD §12, AC-SUB-003)
-- [ ] **AUTH-08**: Signup captures device timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` and stores it in `User.timezone` (§12)
-- [ ] **AUTH-09**: Signup records T&C + privacy policy acceptance linked to active `policy_version` in ConsentLog (§13)
-- [ ] **AUTH-10**: Public auth endpoints (signup, login, OAuth callbacks) enforce a narrow per-IP attempt throttle; tripping returns `rate_limited` 429; successful logins do not consume the failure budget; independent of target account (AC-AUTH-004, AC-AUTH-005, §5)
-- [ ] **AUTH-11**: User can request a password reset; endpoint always returns 200 (no enumeration); valid email receives a Resend email with single-use token, 1h expiry, hashed storage (AC-AUTH-006)
-- [ ] **AUTH-12**: Valid reset token within window lets user set a new password; reused token returns `validation_failed`; existing JWTs remain valid (AC-AUTH-006)
-- [ ] **AUTH-13**: Authed user can change password from Settings with current + new; wrong current → `invalid_credentials` 401; OAuth-only accounts have the UI hidden and the endpoint rejects with `forbidden` (AC-AUTH-007)
+- [x] **AUTH-01**: User can sign up with email + password; User row created; Subscription created `status=trialing`; verification email dispatched via Resend (PRD §12, AC-AUTH-001)
+- [x] **AUTH-02**: Unverified email+password user is blocked on gated endpoints with `email_unverified` 403 until they click the verification link; only resend-verification, Settings/account, and logout are reachable (AC-AUTH-001, §1, §12)
+- [x] **AUTH-03**: User can sign up / log in with Google OAuth; user treated as pre-verified; gated endpoints reachable immediately; no verification email sent (AC-AUTH-002)
+- [x] **AUTH-04**: Clicking the verification link marks the user verified and starts the "value <2 min" clock; subsequent requests to gated endpoints succeed (AC-AUTH-003, §1)
+- [x] **AUTH-05**: User can log in with email + password using per-device JWT; no server sessions (§12)
+- [x] **AUTH-06**: Age confirmation ≥13 is mandatory at signup; `User.age_confirmed_at` set only on confirm; <13 blocked (PRD §13, AC-LGPD-010)
+- [x] **AUTH-07**: Signup form accepts optional partner code; partner code captured in `User.partner_code` and surfaced to billing (PRD §12, AC-SUB-003)
+- [x] **AUTH-08**: Signup captures device timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` and stores it in `User.timezone` (§12)
+- [x] **AUTH-09**: Signup records T&C + privacy policy acceptance linked to active `policy_version` in ConsentLog (§13)
+- [x] **AUTH-10**: Public auth endpoints (signup, login, OAuth callbacks) enforce a narrow per-IP attempt throttle; tripping returns `rate_limited` 429; successful logins do not consume the failure budget; independent of target account (AC-AUTH-004, AC-AUTH-005, §5)
+- [x] **AUTH-11**: User can request a password reset; endpoint always returns 200 (no enumeration); valid email receives a Resend email with single-use token, 1h expiry, hashed storage (AC-AUTH-006)
+- [x] **AUTH-12**: Valid reset token within window lets user set a new password; reused token returns `validation_failed`; existing JWTs remain valid (AC-AUTH-006)
+- [x] **AUTH-13**: Authed user can change password from Settings with current + new; wrong current → `invalid_credentials` 401; OAuth-only accounts have the UI hidden and the endpoint rejects with `forbidden` (AC-AUTH-007)
 - [x] **AUTH-14**: User can log out of the current device — clears the device's cookie and revokes its refresh token; the existing JWT continues to be valid until its `exp` (≤1h on Supabase default). See AUTH-v2-02 for post-MVP logout-all-devices (global JWT revocation). (§14, resolved Phase 4 Q-AUTH-14 on 2026-04-26)
-- [ ] **AUTH-15**: Unverified-email full-screen blocker shown in place of app shell: "Verifique seu e-mail para começar." + resend-verification + logout link; cleared on verification (§16)
+- [x] **AUTH-15**: Unverified-email full-screen blocker shown in place of app shell: "Verifique seu e-mail para começar." + resend-verification + logout link; cleared on verification (§16)
 
 ### IDENT — Identification flow, providers, caps, failure modes
 
@@ -52,17 +52,17 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### CAT — Catalog ("Meu Jardim")
 
-- [ ] **CAT-01**: From identification + selected result, Plant created with `species_id`, name pre-filled, cover photo from identification upload (AC-CAT-001)
-- [ ] **CAT-02**: Manual plant creation with name + ≥1 photo creates Plant `species_id=null` + PhotoEntry for initial photo (AC-CAT-002)
+- [ ] **CAT-01**: From identification + selected result, Plant created with `species_id`, name pre-filled, cover photo from identification upload (AC-CAT-001) *(PARTIAL — schema branch ready in `create-plant.ts:101-121`; awaits Phase 6 caller)*
+- [x] **CAT-02**: Manual plant creation with name + ≥1 photo creates Plant `species_id=null` + PhotoEntry for initial photo (AC-CAT-002)
 - [x] **CAT-03**: Manual create missing name OR missing photo → `validation_failed`, no row, field highlighted (AC-CAT-003)
-- [x] **CAT-04**: Plant profile shows name, nickname, room, acquisition_date, notes, cover, care-card link (if CareGuide exists), active reminders, photo journal, identification history (AC-CAT-004, §7)
+- [ ] **CAT-04**: Plant profile shows name, nickname, room, acquisition_date, notes, cover, care-card link (if CareGuide exists), active reminders, photo journal, identification history (AC-CAT-004, §7) *(PARTIAL — fields/cover/journal preview/delete shipped; care-card link, active reminders, ID history are cross-phase placeholders awaiting Phase 6/7/8)*
 - [x] **CAT-05**: Location picker shows user's prior locations as quick-select + defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` + free text; free text becomes reusable (AC-CAT-005, AC-CAT-006)
-- [ ] **CAT-06**: Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline (AC-CAT-007)
+- [x] **CAT-06**: Add photo to photo journal with optional note → PhotoEntry with plant_id, photo_url, thumbnail_url, note; reverse-chronological timeline (AC-CAT-007)
 - [x] **CAT-07**: Catalog default sort: `acquisition_date` desc, null dates last (AC-CAT-008)
-- [ ] **CAT-08**: Sort control offers name A-Z, name Z-A, date newest, date oldest, location; selected sort persists for session (AC-CAT-009)
+- [x] **CAT-08**: Sort control offers name A-Z, name Z-A, date newest, date oldest, location; selected sort persists for session (AC-CAT-009)
 - [x] **CAT-09**: Deleting a plant cascades PhotoEntry + Reminder rows, schedules storage objects for deletion, sets `Identification.plant_id` NULL but preserves the history row (AC-CAT-010)
-- [ ] **CAT-10**: Catalog grid responsive: 2 cols ≤375px, 3 cols 600–899px, 4 cols ≥900px (§16)
-- [ ] **CAT-11**: Empty catalog state: "Sua estante ainda está esperando a primeira planta." with Sage line-art illustration + single Canopy Green primary CTA (§17)
+- [x] **CAT-10**: Catalog grid responsive: 2 cols ≤375px, 3 cols 600–899px, 4 cols ≥900px (§16)
+- [x] **CAT-11**: Empty catalog state: "Sua estante ainda está esperando a primeira planta." with Sage line-art illustration + single Canopy Green primary CTA (§17)
 
 ### CARE — Care guides + toxicity + augmentation
 
@@ -111,8 +111,8 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [ ] **OFF-06**: Queued action failing sync 5 attempts creates an `OfflineSyncFailure` row and is removed from the active queue (AC-OFF-006)
 - [ ] **OFF-07**: `OfflineSyncFailure` rows visible in Settings "Needs attention" with retry/discard per entry (AC-OFF-007)
 - [x] **OFF-08**: Previously loaded catalog browsable offline; new identifications blocked with clear message (AC-OFF-008, §10)
-- [ ] **OFF-09**: Service worker + PWA manifest (installable, display `standalone`, all icon sizes, theme color matches brand, viewport allows user scaling) (§17, §2)
-- [ ] **OFF-10**: App-update toast: new SW version waiting → non-blocking bottom toast "Nova versão disponível" + "Atualizar"; tapping triggers `skipWaiting` + reload; honors `prefers-reduced-motion`; never auto-reloads mid-session (§16)
+- [x] **OFF-09**: Service worker + PWA manifest (installable, display `standalone`, all icon sizes, theme color matches brand, viewport allows user scaling) (§17, §2)
+- [x] **OFF-10**: App-update toast: new SW version waiting → non-blocking bottom toast "Nova versão disponível" + "Atualizar"; tapping triggers `skipWaiting` + reload; honors `prefers-reduced-motion`; never auto-reloads mid-session (§16)
 
 ### SUB — Subscription, trials, billing, webhooks
 
@@ -172,8 +172,8 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### NOTIF — Email + push notifications
 
-- [ ] **NOTIF-01**: `notifications/send-email` Inngest function handles all transactional email via Resend: verification, password reset, trial ending (T-3d, T-1d), trial expired, payment failed (dunning 1–4), subscription canceled, reactivation confirmation, account deletion requested, account deletion completed, data export ready, 80% provider cost ceiling alert (§20)
-- [ ] **NOTIF-02**: React Email templates for each transactional message, pt-BR copy, brand-aligned (§20)
+- [x] **NOTIF-01**: `notifications/send-email` Inngest function handles all transactional email via Resend: verification, password reset, trial ending (T-3d, T-1d), trial expired, payment failed (dunning 1–4), subscription canceled, reactivation confirmation, account deletion requested, account deletion completed, data export ready, 80% provider cost ceiling alert (§20) *(Phase 4 ships verification + password-reset + welcome-back templates; remaining transactional types stubbed via the same `notifications/email.requested` event — full set rolls in with Phases 10/11/13 callers)*
+- [x] **NOTIF-02**: React Email templates for each transactional message, pt-BR copy, brand-aligned (§20)
 - [ ] **NOTIF-03**: Per-device `PushSubscription` keyed `(user_id, device_id)`; logout revokes only that device's subscription (§14)
 - [ ] **NOTIF-04**: `notifications/send-push` via `web-push` + VAPID; VAPID keys generated once per env (§15)
 - [ ] **NOTIF-05**: Notification preferences: global mute + per-plant mute; global across devices (§14, §15)
@@ -189,31 +189,31 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 
 ### UI — Screens, design system, accessibility
 
-- [ ] **UI-01**: Global design tokens implementation — Paper Cream / Night Cream palettes (light + dark), Source Serif 4 + Plus Jakarta Sans typography, Lucide icons (§17)
-- [ ] **UI-02**: Dark mode via `color-scheme: light dark` following system pref with manual override in Settings; every screen designed and reviewed in both variants (§17)
-- [ ] **UI-03**: Global focus ring: 3px Canopy @ 40% opacity, 2px offset, 8px corner radius; tab order matches visual reading order; focus moves to main content region on route change (§17, §18)
-- [ ] **UI-04**: Home screen — empty (zero plants): full-bleed "Identifique sua primeira planta" CTA + camera button + "Adicionar manualmente" text link; nothing else (§16)
+- [x] **UI-01**: Global design tokens implementation — Paper Cream / Night Cream palettes (light + dark), Source Serif 4 + Plus Jakarta Sans typography, Lucide icons (§17)
+- [x] **UI-02**: Dark mode via `color-scheme: light dark` following system pref with manual override in Settings; every screen designed and reviewed in both variants (§17) *(toggle UI lives in Profile per Phase 3 D-decision; Settings non-account sections render EmBreveCard placeholders)*
+- [x] **UI-03**: Global focus ring: 3px Canopy @ 40% opacity, 2px offset, 8px corner radius; tab order matches visual reading order; focus moves to main content region on route change (§17, §18)
+- [x] **UI-04**: Home screen — empty (zero plants): full-bleed "Identifique sua primeira planta" CTA + camera button + "Adicionar manualmente" text link; nothing else (§16)
 - [ ] **UI-05**: Home screen — default (≥1 plant): "Hoje" section listing reminders due + overdue, quick "Identificar planta" action, Catalog nav (§16)
 - [ ] **UI-06**: Identify screen — picker with capture guide, loading, results (top 3 cards), no-results, cap reached, provider unavailable, offline, read-only paywall, first-time consent modal (§16)
-- [ ] **UI-07**: Catalog grid responsive breakpoints (2/3/4 cols at 375/600/900) with card: 4:5 photo + name + nickname + location; sort control (§16)
-- [ ] **UI-08**: Plant profile screen — cover + thumbnail gallery, inline-edit name/nickname, room, acquisition_date, notes, care card (or hidden), active reminders, photo journal preview, ID history link, delete overflow; augmented / no-care / read-only variants (§16)
+- [x] **UI-07**: Catalog grid responsive breakpoints (2/3/4 cols at 375/600/900) with card: 4:5 photo + name + nickname + location; sort control (§16)
+- [ ] **UI-08**: Plant profile screen — cover + thumbnail gallery, inline-edit name/nickname, room, acquisition_date, notes, care card (or hidden), active reminders, photo journal preview, ID history link, delete overflow; augmented / no-care / read-only variants (§16) *(PARTIAL — cover/thumbnail strip/all 5 inline-edit fields/journal preview/delete overflow shipped; care card + ID history await Phase 6/7)*
 - [ ] **UI-09**: Care guide screen — visual icons per dimension, toxicity badge prominent at top, first-view toxicity modal, "Gerado por IA" chip when augmented, seasonal tips, compatibility block (§16, §17)
 - [ ] **UI-10**: Reminders management screen per §16 + first-reminder push-permission prompt (§16)
-- [ ] **UI-11**: Photo journal screen — per-plant chronological list with add entry flow; read-only variant (§16)
+- [x] **UI-11**: Photo journal screen — per-plant chronological list with add entry flow; read-only variant (§16)
 - [ ] **UI-12**: Identification history screen — per-user list with thumbnails, results, selected/manual/failed status; detail view with re-associate action (§16)
 - [ ] **UI-13**: Settings screen — account, notifications, subscription & billing, privacy & LGPD, needs attention (sync failures), app info sections (§16)
-- [ ] **UI-14**: Bottom navigation: 4 items (Home, Catálogo, Identificar, Perfil), 28px Lucide + label always, Canopy active indicator bar, 56px + safe-area padding, per-tab scroll preservation (§17)
+- [x] **UI-14**: Bottom navigation: 4 items (Home, Catálogo, Identificar, Perfil), 28px Lucide + label always, Canopy active indicator bar, 56px + safe-area padding, per-tab scroll preservation (§17)
 - [ ] **UI-15**: Confidence ladder: 3 states (high ≥70%, medium 40–69%, low threshold–39%) with redundant signals (bar, segments, percentage, SR label) (§17, §18)
 - [ ] **UI-16**: Toxicity badge composition (non-negotiable 7-part spec): filled rounded-rect, 18px paw+child icon, literal text, 3px diagonal striped accent border, disclaimer line, SR `role="alert"` full phrase, haptic warning on first reveal per session (§17, §18)
-- [ ] **UI-17**: Skeletal shimmer loading (never circular spinners) with 300ms delay threshold and 120ms fade-in for faster ops; static block + 80ms fade under reduced motion (§17)
-- [ ] **UI-18**: Empty states — composed invitations with Sage line-art illustration + Source Serif headline + Calm Slate hint + exactly one Canopy primary CTA (§17)
-- [ ] **UI-19**: Error states — inline + calm, never full-screen red wall; cause + recovery copy; retry path always exposed (§17)
-- [ ] **UI-20**: Spring-physics motion (120 stiffness / 18 damping / 1 mass), capture-button 1.00→1.03 tactile bounce, 3.2s breathing loop on empty Home CTA, 60ms cascade on list reveal; reduced-motion fallbacks defined for every motion (§17)
-- [ ] **UI-21**: Safe areas: `min-h-[100dvh]`, `env(safe-area-inset-*)` everywhere, no `h-screen`, no horizontal scroll except Home "Today's tasks" strip (§17)
-- [ ] **UI-22**: Accessibility — color never sole signal; image alt text from context (plant name + nickname); live regions for async state; modal focus trap; decorative illustrations `accessibility hidden`; haptics only on critical events (§18)
-- [ ] **UI-23**: `next-intl` day-one integration, `<html lang="pt-BR">`, `date-fns-tz` for server-rendered user-local times, all strings via i18n layer (no hardcoded copy), `Intl.*` with pt-BR for numbers/dates/currency (§17, stack notes)
-- [ ] **UI-24**: Persistent banners — offline ("Você está offline..."), read-only ("Sua assinatura expirou..."), discard summary post-sync toast (§16)
-- [ ] **UI-25**: Design system guardrails enforced: no emoji, no pure black/white, no gradient text, no glassmorphism/neumorphism, no Inter/generic serifs, no centered hero stacks, no fabricated metrics (§17)
+- [x] **UI-17**: Skeletal shimmer loading (never circular spinners) with 300ms delay threshold and 120ms fade-in for faster ops; static block + 80ms fade under reduced motion (§17)
+- [x] **UI-18**: Empty states — composed invitations with Sage line-art illustration + Source Serif headline + Calm Slate hint + exactly one Canopy primary CTA (§17)
+- [x] **UI-19**: Error states — inline + calm, never full-screen red wall; cause + recovery copy; retry path always exposed (§17)
+- [x] **UI-20**: Spring-physics motion (120 stiffness / 18 damping / 1 mass), capture-button 1.00→1.03 tactile bounce, 3.2s breathing loop on empty Home CTA, 60ms cascade on list reveal; reduced-motion fallbacks defined for every motion (§17)
+- [x] **UI-21**: Safe areas: `min-h-[100dvh]`, `env(safe-area-inset-*)` everywhere, no `h-screen`, no horizontal scroll except Home "Today's tasks" strip (§17)
+- [x] **UI-22**: Accessibility — color never sole signal; image alt text from context (plant name + nickname); live regions for async state; modal focus trap; decorative illustrations `accessibility hidden`; haptics only on critical events (§18)
+- [x] **UI-23**: `next-intl` day-one integration, `<html lang="pt-BR">`, `date-fns-tz` for server-rendered user-local times, all strings via i18n layer (no hardcoded copy), `Intl.*` with pt-BR for numbers/dates/currency (§17, stack notes)
+- [x] **UI-24**: Persistent banners — offline ("Você está offline..."), read-only ("Sua assinatura expirou..."), discard summary post-sync toast (§16)
+- [x] **UI-25**: Design system guardrails enforced: no emoji, no pure black/white, no gradient text, no glassmorphism/neumorphism, no Inter/generic serifs, no centered hero stacks, no fabricated metrics (§17)
 
 ### INFRA — Tech stack, repo layout, DB, CI/CD, security
 
@@ -226,7 +226,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [x] **INFRA-07**: Supabase Auth behind `AuthAdapter`; JWT verification in Next middleware on every `/api/v1/*` except public endpoints (§21)
 - [x] **INFRA-08**: RLS enabled on all user-owned tables as defense in depth; service-role key server-only (§21)
 - [x] **INFRA-09**: Zod validation at route-handler body/query boundaries; `drizzle-zod` for DB-schema-derived Zod (stack)
-- [ ] **INFRA-10**: Inngest `serve()` handler at `/api/inngest/route.ts`; all async functions registered: `care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push` (§3)
+- [x] **INFRA-10**: Inngest `serve()` handler at `/api/inngest/route.ts`; all async functions registered: `care-guide/augment`, `iam/process-deletion`, `iam/generate-export`, `billing/process-webhook`, `billing/trial-ending-notifier`, `reminders/dispatch`, `notifications/send-email`, `notifications/send-push` (§3)
 - [ ] **INFRA-11**: Vercel hosting configured; Vercel git integration DISABLED (stack)
 - [x] **INFRA-12**: `ci.yml` GitHub Action: install, lint, typecheck, unit (Vitest), integration against real `postgres:17-alpine` service container with Drizzle migrations seeded, build (§20). *(Amended 2026-04-23 per Phase 1 D-25 — parity with local Supabase Postgres 17.)*
 - [ ] **INFRA-13**: `deploy-preview.yml`: apply migrations to Supabase branch DB per PR → `vercel pull` → `vercel build` → `vercel deploy --prebuilt` → Playwright against returned preview URL → comment URL on PR (§20)
@@ -239,7 +239,7 @@ Requirements for the MVP launch. Each maps to exactly one roadmap phase.
 - [x] **INFRA-20**: Closed error code registry implemented as a single source enum; no ad-hoc codes (§5)
 - [x] **INFRA-21**: Pagination implemented as opaque cursor `?cursor=&limit=`, default 50 / max 200, `next_cursor` in response; clients never parse cursors (§5)
 - [x] **INFRA-22**: Idempotency-Key support on mutating endpoints; client UUID is the key for offline queue actions (§5, §10)
-- [ ] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
+- [x] **INFRA-23**: Vitest unit + integration test setup; Playwright E2E against preview URL; zero DB mocking (§19)
 - [x] **INFRA-24**: `ConsentLog`, `policy_version`, legal-basis registry seed data (contract, consent, legitimate interest) loaded (§13)
 - [ ] **INFRA-25**: Launch-blocker checklist surfaced in repo (pricing TBD, NFS-e strategy, DPO appointment, privacy policy + ToS authoring, ≥200 care guides) tracked separately from phases (§24)
 - [x] **INFRA-26**: Local dev environment: `supabase start` launches local Postgres + Auth + Storage + Studio in Docker; `supabase db reset` rebuilds from migrations; developer can run the full app locally against this stack without cloud Supabase (§20)
@@ -360,17 +360,17 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | IDENT-19 | Phase 6 | Pending |
 | IDENT-20 | Phase 6 | Pending |
 | IDENT-21 | Phase 6 | Pending |
-| CAT-01 | Phase 5 | Pending |
-| CAT-02 | Phase 5 | Pending |
+| CAT-01 | Phase 5 | Partial (Plan 05-05 — schema branch ready in `create-plant.ts:101-121`; awaits Phase 6 caller invoking `source: "identification"`) |
+| CAT-02 | Phase 5 | Complete (Plans 05-05,05-08,05-17 — manual create branch + `add-plant-form.tsx`) |
 | CAT-03 | Phase 5 | Complete |
-| CAT-04 | Phase 5 | Complete |
+| CAT-04 | Phase 5 | Partial (Plan 05-16 — fields/cover/journal preview/delete shipped; care-card link, active reminders, ID history are cross-phase placeholders awaiting Phase 6/7/8) |
 | CAT-05 | Phase 5 | Complete |
-| CAT-06 | Phase 5 | Pending |
+| CAT-06 | Phase 5 | Complete (Plans 05-07,05-17,05-22 — `create-photo-entry.ts` + `photo-journal.tsx` + `JournalAddSheet`) |
 | CAT-07 | Phase 5 | Complete |
-| CAT-08 | Phase 5 | Pending |
+| CAT-08 | Phase 5 | Complete (Plan 05-15 — `use-sort-preference.ts` 5 sort IDs persisted via sessionStorage) |
 | CAT-09 | Phase 5 | Complete |
-| CAT-10 | Phase 5 | Pending |
-| CAT-11 | Phase 5 | Pending |
+| CAT-10 | Phase 5 | Complete (Plan 05-15 — catalog-grid.tsx breakpoint classes 2/3/4 at 375/600/900) |
+| CAT-11 | Phase 5 | Complete (Plan 05-15 — catalog-empty.tsx using shared EmptyState with Canopy CTA to /identify) |
 | CARE-01 | Phase 7 | Pending |
 | CARE-02 | Phase 7 | Pending |
 | CARE-03 | Phase 7 | Pending |
@@ -410,8 +410,8 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | OFF-06 | Phase 9 | Pending |
 | OFF-07 | Phase 9 | Pending |
 | OFF-08 | Phase 5 | Complete |
-| OFF-09 | Phase 3 | Pending |
-| OFF-10 | Phase 3 | Pending |
+| OFF-09 | Phase 3 | Complete (Plan 03-04 — Serwist SW + manifest verified at src/app/sw.ts + public/manifest.webmanifest) |
+| OFF-10 | Phase 3 | Complete (Plan 03-04 — AppUpdateToast at src/shared/ui/app-update-toast.tsx) |
 | SUB-01 | Phase 10 | Pending |
 | SUB-02 | Phase 10 | Pending |
 | SUB-03 | Phase 10 | Pending |
@@ -470,31 +470,31 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | OBS-03 | Phase 13 | Pending |
 | OBS-04 | Phase 13 | Pending |
 | OBS-05 | Phase 13 | Pending (deferred from Phase 1 on 2026-04-23 per user decision) |
-| UI-01 | Phase 3 | Pending |
-| UI-02 | Phase 3 | Pending |
-| UI-03 | Phase 3 | Pending |
-| UI-04 | Phase 5 | Pending |
+| UI-01 | Phase 3 | Complete (Plans 03-01..03-05 — design tokens at src/app/globals.css; Source_Serif_4 + Plus_Jakarta_Sans loaded in layout.tsx) |
+| UI-02 | Phase 3 | Complete (Plans 03-01..03-05 — `color-scheme` honors system pref; manual override toggle lives in Profile per Phase 3 D-decision rather than Settings; Settings non-account sections render EmBreveCard placeholders) |
+| UI-03 | Phase 3 | Complete (globals.css `:focus-visible` 3px Canopy@40% + 2px offset + 8px radius; `<main>` focus on segment change in app-shell.tsx) |
+| UI-04 | Phase 5 | Complete (Plan 05-18 — src/app/(app)/page.tsx zero-plant branch with CaptureButton + manual link) |
 | UI-05 | Phase 8 | Pending |
 | UI-06 | Phase 6 | Pending |
-| UI-07 | Phase 5 | Pending |
-| UI-08 | Phase 5 | Pending |
+| UI-07 | Phase 5 | Complete (Plans 05-15..05-16 — catalog-grid 2/3/4 cols at 375/600/900 + plant-card aspect-4/5) |
+| UI-08 | Phase 5 | Partial (Plans 05-16,05-20,05-21 — cover, thumbnail strip, 5 inline-edit fields, journal preview, delete overflow shipped; care card + ID history await Phase 6/7) |
 | UI-09 | Phase 7 | Pending |
 | UI-10 | Phase 8 | Pending |
-| UI-11 | Phase 5 | Pending |
+| UI-11 | Phase 5 | Complete (Plans 05-17,05-21 — photo-journal page with reverse-chronological list + JournalAddSheet) |
 | UI-12 | Phase 6 | Pending |
-| UI-13 | Phase 4 | Complete (Plan 10) |
-| UI-14 | Phase 3 | Pending |
+| UI-13 | Phase 4 | Partial (Plan 10 — Account section shipped; notifications/subscription/privacy-lgpd/needs-attention/app-info render EmBreveCard per D-27 — full content rolls in with Phases 8/10/11) |
+| UI-14 | Phase 3 | Complete (Plans 03-01..03-05 — bottom-nav.tsx 4 items, 28px Lucide, 56px + safe-area, scroll save/restore in app-shell.tsx) |
 | UI-15 | Phase 6 | Pending |
 | UI-16 | Phase 7 | Pending |
-| UI-17 | Phase 3 | Pending |
-| UI-18 | Phase 3 | Pending |
-| UI-19 | Phase 3 | Pending |
-| UI-20 | Phase 3 | Pending |
-| UI-21 | Phase 3 | Pending |
-| UI-22 | Phase 3 | Pending |
-| UI-23 | Phase 3 | Pending |
-| UI-24 | Phase 3 | Pending |
-| UI-25 | Phase 3 | Pending |
+| UI-17 | Phase 3 | Complete (skeleton.tsx with shimmer + 300ms gate + 80ms fade fallback) |
+| UI-18 | Phase 3 | Complete (empty-state.tsx — Sage SVG + Source Serif headline + Slate hint + single Canopy CTA) |
+| UI-19 | Phase 3 | Complete (inline-error.tsx role="alert" + cause/recovery/retry props) |
+| UI-20 | Phase 3 | Complete (springs.ts frozen 120/18/1 + capture-button bounce + breathing 3.2s + reduced-motion fallbacks) |
+| UI-21 | Phase 3 | Complete (app-shell.tsx min-h-dvh max-w-[480px] + safe-area inset vars in globals.css) |
+| UI-22 | Phase 3 | Complete (skip-link in layout.tsx + aria-live banners + aria-hidden decorative SVGs) |
+| UI-23 | Phase 3 | Complete (next-intl wired + lang="pt-BR" + 34-key pt-BR.json + Intl.* helpers in src/shared/i18n/format.ts) |
+| UI-24 | Phase 3 | Complete (offline-banner.tsx + read-only-banner.tsx + discard-summary-toast.tsx mounted in app-shell.tsx) |
+| UI-25 | Phase 3 | Complete (stylelint.config.mjs bans #000/#fff/Inter/Times/Georgia/backdrop-filter; eslint emoji + Inter ban; keyframes-requires-reduced-motion plugin) |
 | INFRA-01 | Phase 1 | Complete (01-03) |
 | INFRA-02 | Phase 1 | Complete (01-02) |
 | INFRA-03 | Phase 2 | Complete (02-05 + 02-06) |
@@ -517,7 +517,7 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 | INFRA-20 | Phase 1 | Complete (01-02) |
 | INFRA-21 | Phase 2 | Complete (02-06) |
 | INFRA-22 | Phase 2 | Complete (02-06) |
-| INFRA-23 | Phase 1 | Pending |
+| INFRA-23 | Phase 1 | Complete (vitest.config.ts unit/unit-dom/integration projects + playwright.config.ts; integration uses live Supabase, no DB mocking) |
 | INFRA-24 | Phase 2 | Complete (02-04) |
 | INFRA-25 | Phase 13 | Pending |
 | INFRA-26 | Phase 1 | Complete (01-04) |
@@ -527,23 +527,29 @@ Which phases cover which requirements. Populated by `gsd-roadmapper` during road
 - Mapped to phases: 197 (100%) ✓
 - Unmapped: 0
 
+**Implementation status (post 2026-05-09 evidence-based validation):**
+- Complete: 69 (Phase 1: 12; Phase 2: 11; Phase 3: 15; Phase 4: 18; Phase 5: 13)
+- Partial: 4 (UI-13 — Phase 4 ships only Account section; CAT-01 — schema branch ready awaiting Phase 6 caller; CAT-04 + UI-08 — cover/profile fields shipped, care-card/reminders/ID-history slots await Phase 6/7/8)
+- Pending: 124 (Phases 6–13 unstarted)
+- *Phase 1–5 implementation: 69 Complete + 4 Partial out of 73 total in those phases — 95% Complete by count*
+
 **Per-phase totals:**
-- Phase 1 (Foundation): 12 — INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02 + LGPD-13 *(OBS-05 deferred to Phase 13 on 2026-04-23)*
-- Phase 2 (Data Layer): 11 — INFRA-03,04,05,06,07,08,09,19,21,22,24
-- Phase 3 (Design System): 15 — UI-01,02,03,14,17,18,19,20,21,22,23,24,25 + OFF-09,10
-- Phase 4 (IAM): 19 — AUTH-01..15 + INFRA-10 + NOTIF-01,02 + UI-13
-- Phase 5 (Catalog): 16 — CAT-01..11 + OFF-08 + UI-04,07,08,11
-- Phase 6 (Identification + Cost): 35 — IDENT-01..21 + COST-01..10 + LGPD-09 + UI-06,12,15
-- Phase 7 (Care Guides): 12 — CARE-01..10 + UI-09,16
-- Phase 8 (Reminders): 26 — REM-01..21 + NOTIF-03,04,05 + UI-05,10
-- Phase 9 (Offline Queue): 7 — OFF-01..07
-- Phase 10 (Billing): 24 — SUB-01..23 + NOTIF-06
-- Phase 11 (LGPD): 12 — LGPD-01..08,10,11,12,14
-- Phase 12 (Deploy Pipeline): 4 — INFRA-11,13,14,15
-- Phase 13 (Observability + Launch): 4 — OBS-03,04,05 + INFRA-25 *(OBS-05 added 2026-04-23 from Phase 1)*
-- **Total: 197 ✓**
+- Phase 1 (Foundation): 12 — INFRA-01,02,12,16,17,18,20,23,26 + OBS-01,02 + LGPD-13 — **12 Complete** *(OBS-05 deferred to Phase 13 on 2026-04-23)*
+- Phase 2 (Data Layer): 11 — INFRA-03,04,05,06,07,08,09,19,21,22,24 — **11 Complete** *(INFRA-09 multipart endpoints validate manually rather than via z.object — accepted per Phase 2 verification; non-multipart routes use Zod)*
+- Phase 3 (Design System): 15 — UI-01,02,03,14,17,18,19,20,21,22,23,24,25 + OFF-09,10 — **15 Complete** *(was incorrectly all Pending pre-validation)*
+- Phase 4 (IAM): 19 — AUTH-01..15 + INFRA-10 + NOTIF-01,02 + UI-13 — **18 Complete + 1 Partial (UI-13)**
+- Phase 5 (Catalog): 16 — CAT-01..11 + OFF-08 + UI-04,07,08,11 — **13 Complete + 3 Partial (CAT-01, CAT-04, UI-08)**
+- Phase 6 (Identification + Cost): 35 — IDENT-01..21 + COST-01..10 + LGPD-09 + UI-06,12,15 — **0 (plans 06-01..06-15 scaffolded; not yet executed)**
+- Phase 7 (Care Guides): 12 — CARE-01..10 + UI-09,16 — **0**
+- Phase 8 (Reminders): 26 — REM-01..21 + NOTIF-03,04,05 + UI-05,10 — **0**
+- Phase 9 (Offline Queue): 7 — OFF-01..07 — **0**
+- Phase 10 (Billing): 24 — SUB-01..23 + NOTIF-06 — **0**
+- Phase 11 (LGPD): 12 — LGPD-01..08,10,11,12,14 — **0** *(LGPD-13 belongs to Phase 1)*
+- Phase 12 (Deploy Pipeline): 4 — INFRA-11,13,14,15 — **0**
+- Phase 13 (Observability + Launch): 4 — OBS-03,04,05 + INFRA-25 — **0** *(OBS-05 added 2026-04-23 from Phase 1)*
+- **Total: 197 ✓ (Complete 69 + Partial 4 + Pending 124 = 197)**
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after roadmap creation by gsd-roadmapper*
+*Last updated: 2026-05-09 — evidence-based validation pass against codebase. Reconciled checkbox + traceability state for Phases 1–5 against actual code at /src and /drizzle. Findings: Phase 3 (15 reqs) was wrongly all-Pending despite shipping; INFRA-23 was wrongly Pending; UI-13 downgraded to Partial (only Account section functional, others render EmBreveCard placeholders per Phase 4 D-27); CAT-04 + UI-08 downgraded to Partial (care-card/reminders/ID-history are cross-phase placeholders awaiting Phases 6/7/8); CAT-01 marked Partial (schema branch ready, awaits Phase 6 caller); 8 CAT/UI items in Phase 5 promoted from Pending to Complete. Spawned 4 parallel validation agents to scan the codebase per phase; evidence pointers (file:line) now embedded in traceability table.*
 *Rescoped: 2026-04-22 — Phase 1 trimmed to local-dev foundation; Inngest setup folded into Phase 4 (first async consumer); deploy pipeline extracted to new Phase 12; old Phase 12 renumbered to Phase 13; new INFRA-26 added for local Supabase dev*

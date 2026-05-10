@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Next 16 + Serwist scaffold, local Supabase + Docker dev, Sentry + PostHog baseline with verification, security headers, error registry, ci.yml-only (no deploy)
 - [ ] **Phase 2: Data Layer & Bounded Contexts** - Drizzle schema, Supabase adapters, image pipeline, API conventions
-- [ ] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings
+- [x] **Phase 3: Design System & App Shell** - Paper Cream tokens, bottom-nav, PWA manifest, a11y base, next-intl pt-BR strings (completed 2026-04-27; PWA install + Lighthouse human verifications outstanding per `03-VERIFICATION.md` status `human_needed`)
 - [x] **Phase 4: IAM — Auth, Verification, Consent** - Email+Google signup, verification gate, per-IP throttle, Inngest `serve()` + Resend transactional-email backbone (first async consumer)
 - [x] **Phase 5: Catalog — Meu Jardim** - Manual plant add, plant profile, photo journal, location picker, offline-browsable catalog (completed 2026-05-03)
 - [ ] **Phase 6: Identification Flow & Cost Controls** - Plant.id + OpenAI-compat adapters, per-user caps, per-provider ceilings, breakers, LGPD transfer consent, confidence ladder
@@ -149,7 +149,7 @@ Cross-cutting constraints:
   3. Returning users log in with email+password via per-device JWT (no server sessions), log out of the current device (clears the device cookie and revokes its refresh token; the existing JWT remains valid until its `exp` ≤1h — see AUTH-v2-02 for post-MVP logout-all-devices), request a password reset from a public endpoint that always returns 200 (no enumeration) and — when the email exists — receive a Resend email with a single-use hashed token expiring in 1h that lets them set a new password while existing JWTs remain valid.
   4. From `Settings → Account`, an email+password user changes their password with current + new (wrong current → `invalid_credentials` 401); OAuth-only accounts see the change-password UI hidden and the endpoint rejects with `forbidden`; the Settings shell renders with placeholder sections for Notifications, Subscription & billing, Privacy & LGPD, Needs attention, and App info that later phases will fill.
   5. The signup, login, and OAuth callback endpoints enforce a narrow per-IP attempt throttle returning `rate_limited` 429 when tripped, independent of the target account and without consuming the failure budget on successful logins, and `notifications/send-email` Inngest function is wired to Resend with pt-BR React Email templates for verification + password-reset as the first consumers (later phases add templates).
-**Plans**: 11 plans
+**Plans**: 13 plans
 
 Plans:
 - [x] 04-01-PLAN.md -- Phase 2/3 prerequisite gate (D-33 hard execute-time block with --allow-missing-phase-3 override)
@@ -163,6 +163,8 @@ Plans:
 - [x] 04-09-PLAN.md -- Change password + me endpoints + OAuth callback + oauth-complete (NO Drizzle in /api/v1/iam/me per Codex HIGH #3; D-32)
 - [x] 04-10-PLAN.md -- UI surfaces under route groups (public)/(authed) per Codex HIGH #7 (replaces x-pathname); CLIENT components + JSON fetch per D-31; T&C/Privacy hyperlinks per Codex MEDIUM
 - [x] 04-11-PLAN.md -- Doc-fixes (AUTH-14 wording, PRD §4 email_verified_at, AUTH-v2-02 cross-reference)
+- [x] 04-12-PLAN.md -- Gap closure: cold-start AuthApiError (supabase-server + auth-adapter + proxy hardening)
+- [x] 04-13-PLAN.md -- Gap closure: Inngest dev-mode fix + bare-catch observability
 
 **UI hint**: yes
 
@@ -176,7 +178,7 @@ Plans:
   3. A plant profile opens with cover + thumbnail gallery, inline-editable name/nickname/room/acquisition_date/notes, active-reminders placeholder, photo-journal preview, ID-history link placeholder, and a delete overflow; the location picker shows the user's prior locations as quick-select plus defaults `[sala, varanda, quarto, banheiro, cozinha, escritório, jardim, outro]` plus free text that becomes reusable next time.
   4. A user adds a new photo-journal entry with an optional note (creating a `PhotoEntry` linked to the plant), and the photo journal screen lists entries reverse-chronologically; a sort control offers name A-Z, name Z-A, date newest, date oldest, location, and the selection persists for the session.
   5. Deleting a plant cascades its PhotoEntry + Reminder rows, schedules its storage objects for deletion, sets `Identification.plant_id` NULL while preserving the history row, and a user who had previously loaded the catalog online can go offline (airplane mode) and still browse those cached plants with a clear offline banner visible.
-**Plans**: 23 plans (5a + 5b + 5c gap closure)
+**Plans**: 24 plans (5a + 5b + 5c gap closure)
 - [x] 05-01-wave0-test-infra-PLAN.md - Wave 0 test infra (axe-core + fake-indexeddb + transaction-rollback fixture + test directories + Playwright auth-bypass fixture)
 - [x] 05-02-pending-deletions-schema-cursor-PLAN.md - pending_storage_deletions schema + cursor extension (Open Q1 resolution)
 - [x] 05-03-catalog-repositories-PLAN.md - Catalog repositories (plants, photo-entries, pending-storage-deletions, location-suggestions)
@@ -200,6 +202,7 @@ Plans:
 - [x] 05-21-photo-journal-signed-urls-and-id-history-PLAN.md - Gap CR-03 + ID-history placeholder: sign photoUrl + thumbnailUrl in listPhotoEntries; add Histórico de Identificação placeholder section
 - [x] 05-22-journal-add-response-shape-fix-PLAN.md - Gap WR-05: journal-add-sheet reads body.photo_entry from POST response
 - [x] 05-23-focus-ring-brand-spec-PLAN.md - Gap WR-04: focus-ring 3px Canopy/40 across InlineEditField + ModalSheet + Toggle
+- [x] 05-gap-closure-PLAN.md (plan 24) - Post-UAT gap closure: SSR mutations, combobox a11y, sort hook, SW order, journal i18n
 **UI hint**: yes
 
 ### Phase 6: Identification Flow & Cost Controls
@@ -354,9 +357,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 8/9 | In progress | - |
+| 1. Foundation | 9/9 | Complete | 2026-04-24 |
 | 2. Data Layer & Bounded Contexts | 11/11 | Complete | 2026-04-26 |
-| 3. Design System & App Shell | 0/5 | Ready to execute | - |
+| 3. Design System & App Shell | 5/5 | Complete (PWA install + Lighthouse human verifications outstanding) | 2026-04-27 |
 | 4. IAM — Auth, Verification, Consent | 13/13 | Complete | 2026-04-29 |
 | 5. Catalog — Meu Jardim | 24/24 | Complete   | 2026-05-03 |
 | 6. Identification Flow & Cost Controls | 0/16 | Ready to execute | - |
